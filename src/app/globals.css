@@ -1101,7 +1101,10 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .admin-banner-record-heading { align-items: flex-start; flex-direction: column; }
   .shell { width: min(calc(100% - 34px), var(--max-width)); }
   .header-inner { min-height: 66px; gap: 10px; }
+  .header-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   .header-inner, .header-actions { min-width: 0; }
+  .site-header .header-maker { display: none; }
+  .site-header .menu-button { display: grid; }
   .brand { font-size: 18px; }
   .main-nav { position: absolute; top: 65px; right: 0; left: 0; display: none; flex-direction: column; align-items: stretch; gap: 0; padding: 8px 17px 16px; border-bottom: 1px solid var(--line); background: var(--paper); }
   .main-nav.is-open { display: flex; }
@@ -1111,6 +1114,11 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .header-maker { display: none; }
   .icon-button { width: 35px; height: 35px; }
   .menu-button { display: grid; }
+  .viewer-page { width: 100%; overflow-x: clip; }
+  .viewer-page .shell, .viewer-shell, .viewer-layout, .viewer-stage-wrap, .viewer-inspector { min-width: 0; max-width: 100%; }
+  .viewer-page-intro, .viewer-topline { min-width: 0; }
+  .viewer-topline { gap: 8px; }
+  .viewer-topline span:last-child { max-width: 50%; overflow-wrap: anywhere; text-align: right; }
   .calculator-page { padding-bottom: 40px; }
   .calculator-page-back { padding-top: 18px; }
   .calculator-page-back > span { font-size: 7px; }
