@@ -101,7 +101,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <div><dt>Filamento</dt><dd>{printer.filamentDiameterMm ? `${printer.filamentDiameterMm} mm` : "Não informado"}</dd></div>
               <div><dt>Hotend máximo</dt><dd>{printer.maxNozzleTemperatureC ? `${printer.maxNozzleTemperatureC} °C` : "Não informado"}</dd></div>
               <div><dt>Mesa máxima</dt><dd>{printer.maxBedTemperatureC ? `${printer.maxBedTemperatureC} °C` : "Não informado"}</dd></div>
-              <div><dt>Velocidade máxima</dt><dd>{printer.maximumSpeedMmPerSecond ? `${printer.maximumSpeedMmPerSecond} mm/s` : "Não informado"}</dd></div>
+              <div><dt>Velocidade máxima</dt><dd>{printer.maximumSpeedDescription ?? (printer.maximumSpeedMmPerSecond ? `${printer.maximumSpeedMmPerSecond} mm/s` : "Não informado")}</dd></div>
               <div><dt>Potência máxima</dt><dd>{powerText(printer.maximumPowerWatts)}</dd></div>
               <div><dt>Potência média medida</dt><dd>{powerText(printer.measuredAveragePowerWatts)}</dd></div>
               <div><dt>Multicolorido</dt><dd>{printer.multicolorSystem ? `${printer.multicolorSystem} · até ${printer.multicolorSlots} filamentos` : "Não informado"}</dd></div>

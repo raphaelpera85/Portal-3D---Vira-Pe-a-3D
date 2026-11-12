@@ -8,6 +8,7 @@ export type PrinterEntry = CatalogPrinter & {
   buildVolumeDescription?: string | null;
   extruders: number | null;
   maximumSpeedMmPerSecond: number | null;
+  maximumSpeedDescription?: string | null;
   maximumPowerWatts: number | null;
   measuredAveragePowerWatts: number | null;
   multicolorSystem: string | null;

@@ -57,6 +57,7 @@ export function mapTechnicalCatalog(
     const x = number(row.build_volume_x_mm), y = number(row.build_volume_y_mm), z = number(row.build_volume_z_mm);
     const buildVolumeMm = x != null && y != null && z != null ? { x, y, z } : null;
     const properties = object(row.technical_properties);
+    const toolheadSpeed = number(properties.maxToolheadSpeedMmPerSecond);
     return {
       id: text(row.id), name: [text(row.manufacturer), text(row.model), text(row.variant)].filter(Boolean).join(" "),
       brand: text(row.manufacturer), model: text(row.model), variant: text(row.variant, "standard"),
@@ -65,6 +66,7 @@ export function mapTechnicalCatalog(
       buildVolumeMm, extruders: number(row.extruder_count), filamentDiameterMm: number(row.filament_diameter_mm),
       maxNozzleTemperatureC: number(row.max_nozzle_temperature_c), maxBedTemperatureC: number(row.max_bed_temperature_c),
       heatedBed: boolean(row.heated_bed), enclosure: boolean(row.enclosure), maximumSpeedMmPerSecond: number(row.max_print_speed_mm_s),
+      maximumSpeedDescription: toolheadSpeed == null ? null : `${toolheadSpeed} mm/s de deslocamento do cabeçote; velocidade de impressão não informada`,
       maximumPowerWatts: number(row.maximum_power_w), measuredAveragePowerWatts: number(row.measured_average_power_w),
       multicolorSlots: number(row.multicolor_filament_count), multicolorSystem: text(row.multicolor_system) || null,
       supportedMaterials, sources: source(row),
