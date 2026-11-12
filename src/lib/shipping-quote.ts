@@ -1,5 +1,11 @@
 const carriers = ["correios", "melhor_envio", "transportadora"] as const;
 
+export function validateShippingOriginPostalCode(value: unknown) {
+  if (typeof value !== "string") return null;
+  const postalCode = value.trim();
+  return /^\d{5}-?\d{3}$/.test(postalCode) ? postalCode.replace("-", "") : null;
+}
+
 export function validateShippingQuote(values: Record<string, unknown>) {
   const carrier = typeof values.carrier === "string" ? values.carrier : "";
   const service = typeof values.service === "string" ? values.service.trim() : "";

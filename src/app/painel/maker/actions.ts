@@ -12,7 +12,7 @@ import { validateMaintenanceEntry, validateMakerPrinter } from "@/lib/printer-eq
 import { validateConsignmentInput, validateConsignmentMovement } from "@/lib/consignment";
 import { validatePrintProfile } from "@/lib/print-profiles";
 import { validatePrinterModelSuggestion } from "@/lib/printer-model-suggestion";
-import { validateShipmentTracking, validateShippingQuote } from "@/lib/shipping-quote";
+import { validateShipmentTracking, validateShippingOriginPostalCode, validateShippingQuote } from "@/lib/shipping-quote";
 import { validateDigitalAsset } from "@/lib/digital-assets";
 
 export type MakerProductState = { message: string; success: boolean; productId?: string; personalPriceBrl?: number };
@@ -210,6 +210,21 @@ export async function saveMakerStoreProfile(formData: FormData): Promise<void> {
   revalidatePath("/lojas");
   revalidatePath("/");
   redirect("/painel/maker?resultado=loja-perfil-salvo");
+}
+
+export async function saveMakerShippingOrigin(formData: FormData): Promise<void> {
+  const postalCode = validateShippingOriginPostalCode(formData.get("postalCode"));
+  if (!postalCode) redirect("/painel/maker?resultado=frete-origem-erro#loja");
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
+  if (!store) redirect("/painel/maker?resultado=frete-origem-erro#loja");
+  const { error } = await actor.supabase.from("store_shipping_origins").upsert({
+    store_id: store.id, postal_code: postalCode, updated_at: new Date().toISOString(),
+  }, { onConflict: "store_id" });
+  if (error) redirect("/painel/maker?resultado=frete-origem-erro#loja");
+  revalidatePath("/painel/maker");
+  redirect("/painel/maker?resultado=frete-origem-salvo#loja");
 }
 
 export async function markQuoteRequestNotificationRead(formData: FormData): Promise<void> {

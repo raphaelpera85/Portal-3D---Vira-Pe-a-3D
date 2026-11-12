@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { validateShipmentTracking, validateShippingQuote } from "./shipping-quote";
+import { validateShipmentTracking, validateShippingOriginPostalCode, validateShippingQuote } from "./shipping-quote";
+
+describe("validateShippingOriginPostalCode", () => {
+  it("normalizes a Brazilian CEP and rejects malformed input", () => {
+    expect(validateShippingOriginPostalCode("01310-100")).toBe("01310100");
+    expect(validateShippingOriginPostalCode(" 01310100 ")).toBe("01310100");
+    expect(validateShippingOriginPostalCode("1310-100")).toBeNull();
+    expect(validateShippingOriginPostalCode(null)).toBeNull();
+  });
+});
 
 describe("validateShippingQuote", () => {
   it("normalizes a seller-provided carrier rate into integer cents", () => {
