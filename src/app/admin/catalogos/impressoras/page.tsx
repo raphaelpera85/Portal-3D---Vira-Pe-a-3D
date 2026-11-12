@@ -68,7 +68,7 @@ export default async function PrinterCatalogAdminPage({ searchParams }: { search
     <SiteHeader />
     <main className="admin-dashboard shell">
       <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
-      <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link aria-current="page" href="/admin/catalogos/impressoras">Impressoras</Link><Link href="/admin/catalogos/materiais">Materiais e resinas</Link><Link href="/admin/catalogos/bicos">Bicos e compatibilidade</Link></nav>
+      <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link aria-current="page" href="/admin/catalogos/impressoras">Impressoras</Link><Link href="/admin/catalogos/materiais">Materiais e resinas</Link><Link href="/admin/catalogos/bicos">Bicos e compatibilidade</Link><Link href="/admin/catalogos/atualizacoes">Atualizações</Link></nav>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Impressoras</h1><p>Cadastre especificações com fonte e data de conferência. Só publique registros verificados.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
       <section className="account-card admin-banner-create"><div className="admin-section-title"><span className="account-kicker">NOVO REGISTRO</span><h2>Adicionar impressora</h2></div><PrinterModelForm /></section>

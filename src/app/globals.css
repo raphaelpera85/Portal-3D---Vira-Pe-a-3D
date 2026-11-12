@@ -213,6 +213,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .admin-catalog-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
 .admin-catalog-links a { padding: 9px 12px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted-strong); font-size: 11px; font-weight: 700; }
 .admin-catalog-links a[aria-current="page"] { border-color: var(--brand); color: var(--brand); }
+.catalog-version-snapshot { max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 .relationship-form { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
 .admin-catalog-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .admin-catalog-pagination > div { display: flex; gap: 8px; }

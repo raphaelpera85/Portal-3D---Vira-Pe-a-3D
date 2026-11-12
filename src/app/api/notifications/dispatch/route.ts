@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 import { reconcilePendingSellerRefunds } from "@/lib/seller-payment-reconciliation.server";
 import { cleanupStaleChargebackEvidenceUploads } from "@/lib/chargeback-evidence-cleanup.server";
+import { runCatalogSourceCheck } from "@/lib/catalog-source-check.server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,5 +19,7 @@ export async function GET(request: Request) {
   const result = await dispatchNotificationQueue();
   const refunds = await reconcilePendingSellerRefunds();
   const evidenceCleanup = await cleanupStaleChargebackEvidenceUploads();
-  return Response.json({ notifications: result.body, refundReconciliation: refunds, evidenceCleanup }, { status: result.status });
+  const catalogSourceCheck = await runCatalogSourceCheck();
+  const status = result.status === 200 && !catalogSourceCheck.ok ? 500 : result.status;
+  return Response.json({ notifications: result.body, refundReconciliation: refunds, evidenceCleanup, catalogSourceCheck }, { status });
 }

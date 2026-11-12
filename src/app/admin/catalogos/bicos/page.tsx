@@ -79,7 +79,7 @@ export default async function NozzleCatalogAdminPage({ searchParams }: { searchP
     <SiteHeader />
     <main className="admin-dashboard shell">
       <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
-      <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link href="/admin/catalogos/impressoras">Impressoras</Link><Link href="/admin/catalogos/materiais">Materiais e resinas</Link><Link aria-current="page" href="/admin/catalogos/bicos">Bicos e compatibilidade</Link></nav>
+      <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link href="/admin/catalogos/impressoras">Impressoras</Link><Link href="/admin/catalogos/materiais">Materiais e resinas</Link><Link aria-current="page" href="/admin/catalogos/bicos">Bicos e compatibilidade</Link><Link href="/admin/catalogos/atualizacoes">Atualizações</Link></nav>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Bicos e compatibilidade</h1><p>Diâmetro, interface e compatibilidade são relações distintas. Cada vínculo publicado exige fonte própria.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
       {hasErrors && <p className="auth-notice is-error" role="alert">Parte do catálogo não pôde ser carregada. Confira a migração 002.</p>}

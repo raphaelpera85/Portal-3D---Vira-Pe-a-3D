@@ -89,6 +89,7 @@ export default async function AdminPage() {
         <Link className="button button-secondary" href="/admin/catalogos/impressoras">Catálogo de impressoras</Link>
         <Link className="button button-secondary" href="/admin/catalogos/materiais">Materiais e resinas</Link>
         <Link className="button button-secondary" href="/admin/catalogos/bicos">Bicos e compatibilidade</Link>
+        <Link className="button button-secondary" href="/admin/catalogos/atualizacoes">Atualizações dos catálogos</Link>
         <Link className="button button-secondary" href="/admin/avaliacoes">Moderação de avaliações</Link>
         <Link className="button button-secondary" href="/admin/denuncias-digitais">Denúncias de conteúdo</Link>
         <Link className="button button-secondary" href="/admin/atendimento">Central de atendimento</Link>

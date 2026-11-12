@@ -54,7 +54,7 @@ export default async function MaterialCatalogAdminPage({ searchParams }: { searc
     <SiteHeader />
     <main className="admin-dashboard shell">
       <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
-      <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link href="/admin/catalogos/impressoras">Impressoras</Link><Link aria-current="page" href="/admin/catalogos/materiais">Materiais e resinas</Link><Link href="/admin/catalogos/bicos">Bicos e compatibilidade</Link></nav>
+      <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link href="/admin/catalogos/impressoras">Impressoras</Link><Link aria-current="page" href="/admin/catalogos/materiais">Materiais e resinas</Link><Link href="/admin/catalogos/bicos">Bicos e compatibilidade</Link><Link href="/admin/catalogos/atualizacoes">Atualizações</Link></nav>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Materiais e resinas</h1><p>Registre as condições por produto. Campos desconhecidos permanecem vazios; publicar exige fonte HTTPS e data de conferência.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
       <section className="account-card admin-banner-create"><div className="admin-section-title"><span className="account-kicker">NOVO REGISTRO</span><h2>Adicionar material</h2></div><MaterialForm /></section>
