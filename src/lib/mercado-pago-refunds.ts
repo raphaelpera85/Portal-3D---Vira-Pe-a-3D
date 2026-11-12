@@ -28,3 +28,26 @@ export function prepareMercadoPagoRefund(orderValue: unknown, expected: {
     refundCents,
   };
 }
+
+export function prepareMercadoPagoRefundRetry(orderValue: unknown, expected: {
+  id: string; paymentId: string; sellerId: string; totalCents: number; marketplaceFeeCents: number;
+}, refundCents: number, availableCents: number) {
+  const prepared = prepareMercadoPagoRefund(orderValue, expected, refundCents, availableCents);
+  if (prepared) return prepared;
+  if (!Number.isSafeInteger(refundCents) || refundCents < 1 || !Number.isSafeInteger(availableCents)
+    || refundCents > availableCents || !isMercadoPagoOrderForPayment(orderValue, expected)) return null;
+  const order = orderValue as Record<string, unknown>;
+  if (!["refunded", "partially_refunded"].includes(String(order.status))) return null;
+  const transactions = order.transactions && typeof order.transactions === "object" && !Array.isArray(order.transactions)
+    ? order.transactions as Record<string, unknown> : {};
+  const payments = Array.isArray(transactions.payments) ? transactions.payments : [];
+  if (payments.length !== 1 || !payments[0] || typeof payments[0] !== "object" || Array.isArray(payments[0])) return null;
+  const payment = payments[0] as Record<string, unknown>;
+  if (typeof payment.id !== "string" || !payment.id || payment.id.length > 100
+    || !["processed", "refunded"].includes(String(payment.status))) return null;
+  const fullRefund = refundCents === expected.totalCents && availableCents === expected.totalCents;
+  return {
+    body: fullRefund ? undefined : { transactions: [{ id: payment.id, amount: formatMercadoPagoAmount(refundCents) }] },
+    refundCents,
+  };
+}

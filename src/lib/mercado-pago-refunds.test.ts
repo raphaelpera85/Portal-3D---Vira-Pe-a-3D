@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRefundAmountCents, prepareMercadoPagoRefund } from "./mercado-pago-refunds";
+import { parseRefundAmountCents, prepareMercadoPagoRefund, prepareMercadoPagoRefundRetry } from "./mercado-pago-refunds";
 
 const expected = { id: "ord-1", paymentId: "payment-1", sellerId: "seller-1", totalCents: 10_000, marketplaceFeeCents: 1_000 };
 const paidOrder = {
@@ -33,5 +33,22 @@ describe("Mercado Pago refunds", () => {
     expect(prepareMercadoPagoRefund({ ...paidOrder, transactions: { payments: [{ amount: "100.00", status: "processed" }] } }, expected, 100, 10_000)).toBeNull();
     expect(prepareMercadoPagoRefund(paidOrder, expected, 10_001, 10_000)).toBeNull();
     expect(prepareMercadoPagoRefund(paidOrder, expected, 2_500, 2_000)).toBeNull();
+  });
+
+  it("replays the original body for a refund whose order already reached refunded", () => {
+    const refundedOrder = { ...paidOrder, status: "refunded", status_detail: "refunded",
+      transactions: { payments: [{ id: "txn-1", amount: "100.00", status: "refunded" }] } };
+    expect(prepareMercadoPagoRefundRetry(refundedOrder, expected, 10_000, 10_000)).toEqual({ body: undefined, refundCents: 10_000 });
+    expect(prepareMercadoPagoRefundRetry(refundedOrder, expected, 2_500, 7_500)).toEqual({
+      body: { transactions: [{ id: "txn-1", amount: "25.00" }] }, refundCents: 2_500,
+    });
+    expect(prepareMercadoPagoRefundRetry({ ...paidOrder, status: "charged_back" }, expected, 2_500, 7_500)).toBeNull();
+  });
+
+  it("replays the original body after an accepted partial refund", () => {
+    const order = { ...paidOrder, status: "partially_refunded", status_detail: "partially_refunded" };
+    expect(prepareMercadoPagoRefundRetry(order, expected, 2_500, 7_500)).toEqual({
+      body: { transactions: [{ id: "txn-1", amount: "25.00" }] }, refundCents: 2_500,
+    });
   });
 });
