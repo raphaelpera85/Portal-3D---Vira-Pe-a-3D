@@ -57,9 +57,9 @@ export function ThreeMfSlicerImporter({ onApply }: {
         <div><dt>Tempo previsto</dt><dd>{plate.printTimeSeconds == null ? "Não informado" : `${(plate.printTimeSeconds / 3600).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} h`}</dd></div>
         <div><dt>Suportes</dt><dd>{plate.supportUsed == null ? "Não informado" : plate.supportUsed ? "Incluídos" : "Não usados"}</dd></div>
       </dl>
-      {plate.filaments.length > 0 && <div className="price-ocr-filaments"><strong>Consumo por filamento</strong><ul>{plate.filaments.map((filament, index) => <li key={`${filament.color ?? "sem-cor"}-${index}`}><span>{filament.color && <i className="three-mf-filament-color" style={{ backgroundColor: `#${filament.color}` }} aria-hidden="true" />}{filament.type || `Filamento ${index + 1}`}{filament.color ? ` · #${filament.color}` : ""}</span><b>{filament.weightGrams == null ? "—" : `${filament.weightGrams.toLocaleString("pt-BR")} g`}</b></li>)}</ul></div>}
+      {plate.filaments.length > 0 && <div className="price-ocr-filaments"><strong>Consumo por filamento</strong><ul>{plate.filaments.map((filament, index) => <li key={`${filament.color ?? "sem-cor"}-${index}`}><span>{filament.color && <i className="three-mf-filament-color" style={{ backgroundColor: `#${filament.color}` }} aria-hidden="true" />}{filament.type || `Filamento ${index + 1}`}{filament.color ? ` · #${filament.color}` : ""}</span><b>{filament.weightGrams == null ? "—" : `${filament.weightGrams.toLocaleString("pt-BR")} g`}{filament.lengthMeters == null ? "" : ` · ${filament.lengthMeters.toLocaleString("pt-BR")} m`}</b></li>)}</ul></div>}
       {plate.weightGrams == null && <p className="price-ocr-note">Se o total não estiver disponível, o cálculo soma as massas por filamento apenas quando todas estiverem registradas.</p>}
-      <button className="button button-primary" type="button" onClick={apply}>Revisar e preencher peso/tempo</button>
+      <button className="button button-primary" type="button" onClick={apply}>Revisar e preencher dados</button>
     </div>}
   </section>;
 }

@@ -27,13 +27,14 @@ export function mapPrintProfileToCalculator(
   const filaments: SavedSlicerMetrics["filaments"] = profile.materialByColor.map((item, index) => ({
     index: index + 1,
     grams: item.grams * runs,
+    lengthMeters: null,
     pricePerKg: existingFilaments.find((existing) => existing.color?.toUpperCase() === item.color.toUpperCase())?.pricePerKg ?? null,
     material: profile.materialName || null,
     color: item.color,
   }));
   const unassignedGrams = filamentGrams - filaments.reduce((sum, item) => sum + (item.grams ?? 0), 0);
   if (unassignedGrams > 0.001) filaments.push({
-    index: filaments.length + 1, grams: unassignedGrams, pricePerKg: null,
+    index: filaments.length + 1, grams: unassignedGrams, lengthMeters: null, pricePerKg: null,
     material: profile.materialName || null, color: null,
   });
 

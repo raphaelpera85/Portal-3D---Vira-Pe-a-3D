@@ -75,13 +75,18 @@ function parseOne(text: string) {
     const row = /\b(?:filament|filamento)\s+#?(\d+)\s*[:=\-]?\s*(.*)$/i.exec(line);
     if (!row) return [];
     const mass = new RegExp(`${numberPattern}\\s*(kg|g|gr|grams?|gramas?)\\b`, "i").exec(row[2]);
-    if (!mass) return [];
-    const amount = parseNumber(mass[1]);
-    const gramsValue = mass[2].toLowerCase() === "kg" ? amount * 1000 : amount;
+    const lengthMatch = new RegExp(`${numberPattern}\\s*(mm|meters?|metros?|m)\\b`, "i").exec(row[2]);
+    if (!mass && !lengthMatch) return [];
+    const massAmount = mass ? parseNumber(mass[1]) : null;
+    const gramsValue = massAmount === null ? null : mass![2].toLowerCase() === "kg" ? massAmount * 1000 : massAmount;
+    const lengthAmount = lengthMatch ? parseNumber(lengthMatch[1]) : null;
+    const lengthMeters = lengthAmount === null ? null : lengthMatch![2].toLowerCase() === "mm" ? lengthAmount / 1000 : lengthAmount;
     const material = new RegExp(`\\b${materialPattern}\\b`, "i").exec(row[2])?.[0]?.toUpperCase() ?? null;
     const labeledColor = new RegExp(`(?:color|colour|cor)\\s*[:=]\\s*(#[0-9a-f]{3,8}|${colorPattern})`, "i").exec(row[2])?.[1];
     const namedColor = new RegExp(`\\b(${colorPattern})\\b`, "i").exec(row[2])?.[1];
-    return Number.isFinite(gramsValue) ? [{ index: Number(row[1]), grams: gramsValue, material, color: (labeledColor ?? namedColor ?? null)?.toLowerCase() ?? null }] : [];
+    return (gramsValue === null || Number.isFinite(gramsValue)) && (lengthMeters === null || Number.isFinite(lengthMeters))
+      ? [{ index: Number(row[1]), grams: gramsValue, lengthMeters, material, color: (labeledColor ?? namedColor ?? null)?.toLowerCase() ?? null }]
+      : [];
   });
   const slicer = /Anycubic\s+Slicer\s+Next|OrcaSlicer|Bambu\s+Studio|PrusaSlicer|Cura/i.exec(text)?.[0] ?? null;
   return {
@@ -117,20 +122,32 @@ export function parseSlicerOcrTexts(texts: string[]) {
   const purgeGrams = unique<number>("purgeGrams", "purga");
   const wipeTowerGrams = unique<number>("wipeTowerGrams", "torre de limpeza");
   const canDeriveMass = totalGrams === null && !conflicts.includes("consumo total") && modelGrams !== null && supportGrams !== null;
-  const filaments = new Map<number, { index: number; grams: number; material: string | null; color: string | null }>();
+  const filaments = new Map<number, { index: number; grams: number | null; lengthMeters: number | null; material: string | null; color: string | null }>();
   const conflictingFilaments = new Set<number>();
+  const conflictingFilamentLengths = new Set<number>();
   for (const reading of parsed.flatMap((item) => item.filamentReadings)) {
     const previous = filaments.get(reading.index);
-    if (previous && (Math.abs(previous.grams - reading.grams) > 0.001
+    if (previous && ((previous.grams !== null && reading.grams !== null && Math.abs(previous.grams - reading.grams) > 0.001)
       || (previous.material && reading.material && previous.material !== reading.material)
       || (previous.color && reading.color && previous.color !== reading.color))) {
       conflictingFilaments.add(reading.index);
       filaments.delete(reading.index);
     } else if (!conflictingFilaments.has(reading.index)) {
-      filaments.set(reading.index, { ...reading, material: reading.material ?? previous?.material ?? null, color: reading.color ?? previous?.color ?? null });
+      let lengthMeters = reading.lengthMeters ?? previous?.lengthMeters ?? null;
+      if (previous?.lengthMeters !== null && previous?.lengthMeters !== undefined && reading.lengthMeters !== null
+        && Math.abs(previous.lengthMeters - reading.lengthMeters) > 0.001) {
+        conflictingFilamentLengths.add(reading.index);
+        lengthMeters = null;
+      }
+      if (conflictingFilamentLengths.has(reading.index)) lengthMeters = null;
+      filaments.set(reading.index, {
+        ...reading, grams: reading.grams ?? previous?.grams ?? null, lengthMeters,
+        material: reading.material ?? previous?.material ?? null, color: reading.color ?? previous?.color ?? null,
+      });
     }
   }
   for (const index of conflictingFilaments) conflicts.push(`filamento ${index}`);
+  for (const index of conflictingFilamentLengths) conflicts.push(`comprimento do filamento ${index}`);
   const slicers = [...new Set(parsed.map((item) => item.slicer).filter((value): value is string => value !== null))];
   const fullText = texts.slice(0, 3).map((text) => text.slice(0, 6000)).join("\n\n--- imagem ---\n\n").slice(0, 12_000);
   return {

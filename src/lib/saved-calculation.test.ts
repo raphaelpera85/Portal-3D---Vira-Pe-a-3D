@@ -61,13 +61,15 @@ describe("validateCalculationToSave", () => {
       slicer: "OrcaSlicer", modelGrams: 10, supportGrams: 2, totalGrams: 15, purgeGrams: 2,
       wipeTowerGrams: 1, filamentGrams: 15, derivedMass: false, lengthMeters: 4.5, printHours: 3,
       filamentChanges: 2, estimatedCost: 7.5, materials: ["PLA"],
-      filaments: [{ index: 1, grams: 15, material: "PLA", color: "#ff0000" }], conflicts: [],
+      filaments: [{ index: 1, grams: 15, lengthMeters: 4.5, material: "PLA", color: "#ff0000" }], conflicts: [],
       text: "Do not persist screenshot OCR text",
     };
     const result = validateCalculationToSave("Suporte de mesa", JSON.stringify({ ...snapshot, slicer }));
     expect(result.error).toBeNull();
     expect(result.calculation?.slicer).toMatchObject({ slicer: "OrcaSlicer", purgeGrams: 2, wipeTowerGrams: 1, filaments: slicer.filaments });
     expect(JSON.stringify(result.calculation?.slicer)).not.toContain("screenshot OCR text");
+    const legacy = validateCalculationToSave("Cálculo antigo", JSON.stringify({ ...snapshot, slicer: { ...slicer, filaments: [{ index: 1, grams: 15, material: "PLA", color: "#ff0000" }] } }));
+    expect(legacy.calculation?.slicer?.filaments[0].lengthMeters).toBeNull();
     expect(validateCalculationToSave("Teste", JSON.stringify({ ...snapshot, slicer: { ...slicer, filaments: Array(33).fill(slicer.filaments[0]) } })).calculation).toBeNull();
   });
 

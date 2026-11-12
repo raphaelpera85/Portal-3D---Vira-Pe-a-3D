@@ -11,7 +11,7 @@ export type SavedSlicerMetrics = {
   slicer: string; modelGrams: number | null; supportGrams: number | null; totalGrams: number | null;
   purgeGrams: number | null; wipeTowerGrams: number | null; filamentGrams: number | null; derivedMass: boolean;
   lengthMeters: number | null; printHours: number | null; filamentChanges: number | null; estimatedCost: number | null;
-  materials: string[]; filaments: Array<{ index: number; grams: number | null; pricePerKg: number | null; material: string | null; color: string | null }>;
+  materials: string[]; filaments: Array<{ index: number; grams: number | null; lengthMeters: number | null; pricePerKg: number | null; material: string | null; color: string | null }>;
   conflicts: string[];
 };
 
@@ -37,7 +37,7 @@ export function mapThreeMfPlateToSlicerMetrics(plate: ThreeMfSlicePlate, plateNu
     estimatedCost: null,
     materials: [...new Set(plate.filaments.map((filament) => filament.type).filter((type): type is string => Boolean(type)))].slice(0, 20),
     filaments: plate.filaments.slice(0, 32).map((filament, index) => ({
-      index: index + 1, grams: filament.weightGrams, pricePerKg: null, material: filament.type, color: filament.color,
+      index: index + 1, grams: filament.weightGrams, lengthMeters: filament.lengthMeters, pricePerKg: null, material: filament.type, color: filament.color,
     })),
     conflicts: [],
   };
@@ -55,13 +55,14 @@ function parseSlicerMetrics(value: unknown): SavedSlicerMetrics | null | undefin
     || !Array.isArray(value.filaments) || value.filaments.length > 32 || value.filaments.some((item) => !isRecord(item)
       || !Number.isSafeInteger(item.index) || (item.index as number) < 0 || !(item.grams === null || validNumber(item.grams))
       || !(item.pricePerKg === undefined || item.pricePerKg === null || validNumber(item.pricePerKg))
+      || !(item.lengthMeters === undefined || item.lengthMeters === null || validNumber(item.lengthMeters))
       || !(item.material === null || typeof item.material === "string" && item.material.length <= 40)
       || !(item.color === null || typeof item.color === "string" && item.color.length <= 40))) return undefined;
   return {
     slicer: value.slicer, derivedMass: value.derivedMass,
     ...Object.fromEntries(metricFields.map((field) => [field, value[field]])),
     materials: value.materials as string[], conflicts: value.conflicts as string[],
-    filaments: value.filaments.map((item) => ({ ...item, pricePerKg: item.pricePerKg ?? null })) as SavedSlicerMetrics["filaments"],
+    filaments: value.filaments.map((item) => ({ ...item, lengthMeters: item.lengthMeters ?? null, pricePerKg: item.pricePerKg ?? null })) as SavedSlicerMetrics["filaments"],
   } as SavedSlicerMetrics;
 }
 

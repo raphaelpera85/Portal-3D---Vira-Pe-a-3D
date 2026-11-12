@@ -1017,7 +1017,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .price-ocr-result dd { overflow-wrap: anywhere; margin: 0; color: var(--ink); font-size: 9px; font-weight: 700; }
 .price-ocr-filaments > strong { display: block; margin-bottom: 6px; color: var(--muted-strong); font-size: 9px; }
 .price-ocr-filaments ul { display: grid; margin: 0; padding: 0; border-top: 1px solid var(--line); list-style: none; }
-.price-ocr-filaments.is-editable li { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(62px, 90px) minmax(76px, 110px); align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 9px; }
+.price-ocr-filaments.is-editable li { display: grid; grid-template-columns: minmax(100px, 1fr) repeat(3, minmax(52px, 75px)); align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 9px; }
 .price-ocr-filaments.is-editable li > span { min-width: 0; overflow-wrap: anywhere; }
 .price-ocr-filaments.is-editable li input { width: 100%; min-width: 0; padding: 6px 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); font: inherit; }
 .price-ocr-filaments b { color: var(--ink); font-weight: 700; }

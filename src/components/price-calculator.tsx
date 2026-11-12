@@ -248,8 +248,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   }
 
   function applyOcr(extraction: ReturnType<typeof parseSlicerOcrTexts>): boolean | null {
-    if (extraction.filamentGrams == null && extraction.printHours == null) return false;
-    if ((fields.filamentGrams !== "" || fields.printHours !== "") && !window.confirm("Preencher com os dados reconhecidos substituirá os valores atuais de peso e tempo. Continuar?")) return null;
+    if (extraction.filamentGrams == null && extraction.printHours == null && !extraction.filaments.some((item) => item.grams !== null || item.lengthMeters !== null)) return false;
+    if ((fields.filamentGrams !== "" || fields.printHours !== "" || slicerMetrics?.filaments.length) && !window.confirm("Preencher com os dados reconhecidos substituirá os valores atuais de peso, tempo e consumo por filamento. Continuar?")) return null;
     setFields((current) => ({
       ...current,
       ...(extraction.filamentGrams == null ? {} : { filamentGrams: String(extraction.filamentGrams) }),
@@ -261,7 +261,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       filamentGrams: extraction.filamentGrams, derivedMass: extraction.derivedMass, lengthMeters: extraction.lengthMeters,
       printHours: extraction.printHours, filamentChanges: extraction.filamentChanges, estimatedCost: extraction.estimatedCost,
       materials: extraction.materials.slice(0, 20),
-      filaments: extraction.filaments.slice(0, 32).map(({ index, grams, material, color }) => ({ index, grams, pricePerKg: null, material, color })),
+      filaments: extraction.filaments.slice(0, 32).map(({ index, grams, lengthMeters, material, color }) => ({ index, grams, lengthMeters, pricePerKg: null, material, color })),
       conflicts: extraction.conflicts.slice(0, 30),
     });
     return true;
@@ -280,7 +280,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     return true;
   }
 
-  function updateSlicerFilament(index: number, values: Partial<Pick<SavedSlicerMetrics["filaments"][number], "grams" | "pricePerKg">>) {
+  function updateSlicerFilament(index: number, values: Partial<Pick<SavedSlicerMetrics["filaments"][number], "grams" | "lengthMeters" | "pricePerKg">>) {
     if (!slicerMetrics) return;
     const filaments = slicerMetrics.filaments.map((item, itemIndex) => itemIndex === index ? { ...item, ...values } : item);
     setSlicerMetrics({ ...slicerMetrics, filaments });
@@ -356,10 +356,11 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             </div>
             {slicerMetrics?.filaments.length ? <div className="price-ocr-filaments is-editable">
               <strong>Consumo e custo por cor/material</strong>
-              <p className="price-field-hint">Edite a massa e o preço por quilo de cada filamento. O custo total por cor substitui o preço geral somente quando todas as linhas tiverem massa e preço preenchidos.</p>
+              <p className="price-field-hint">Revise massa, comprimento e preço por quilo de cada filamento. O custo total por cor substitui o preço geral somente quando todas as linhas tiverem massa e preço preenchidos.</p>
               <ul>{slicerMetrics.filaments.map((filament, index) => <li key={`${filament.index}-${index}`}>
                 <span>{filament.color && <i className="three-mf-filament-color" style={{ backgroundColor: `#${filament.color.replace(/^#/, "")}` }} aria-hidden="true" />}{filament.material || `Filamento ${filament.index}`}{filament.color ? ` · #${filament.color.replace(/^#/, "")}` : ""}</span>
                 <label><span className="sr-only">Massa em gramas do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.grams ?? ""} placeholder="g" onChange={(event) => updateSlicerFilament(index, { grams: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+                <label><span className="sr-only">Comprimento em metros do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.lengthMeters ?? ""} placeholder="m" onChange={(event) => updateSlicerFilament(index, { lengthMeters: event.target.value === "" ? null : Number(event.target.value) })} /></label>
                 <label><span className="sr-only">Preço por quilo do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.pricePerKg ?? ""} placeholder="R$/kg" onChange={(event) => updateSlicerFilament(index, { pricePerKg: event.target.value === "" ? null : Number(event.target.value) })} /></label>
               </li>)}</ul>
               {input.filamentCosts?.length ? <p className="price-ocr-note">O cálculo soma o custo de cada filamento informado.</p> : null}
@@ -535,7 +536,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             {saveState.message && <p className={saveState.success ? "auth-notice is-success" : "auth-notice is-error"} role="status">{saveState.message}</p>}
           </form>
           {savedCalculationsError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar o histórico. Confira as migrações da calculadora e dos vínculos com produtos, equipamentos e perfis.</p> : savedCalculations.length === 0 ? <p className="price-history-empty">Os cálculos salvos aparecerão aqui.</p> : <div className="price-history-list">{savedCalculations.map((saved) => <article className="price-history-item" key={saved.id}>
-            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}{saved.printerName && <span>Equipamento: {saved.printerName}</span>}{saved.profileName && <span>Perfil: {saved.profileName}</span>}{saved.slicer && <><span>Origem dos dados · {saved.slicer.slicer} · modelo {metric(saved.slicer.modelGrams, "g")} · suportes {metric(saved.slicer.supportGrams, "g")} · purga {metric(saved.slicer.purgeGrams, "g")} · torre {metric(saved.slicer.wipeTowerGrams, "g")} · tempo {metric(saved.slicer.printHours, "h")}</span>{saved.slicer.filaments.length > 0 && <details><summary>Consumo por filamento ({saved.slicer.filaments.length})</summary><ul>{saved.slicer.filaments.map((filament) => <li key={filament.index}>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""} · {metric(filament.grams, "g")}</li>)}</ul></details>}{saved.slicer.conflicts.length > 0 && <span>Campos com conflito ignorados: {saved.slicer.conflicts.join(", ")}</span>}</>}</div>
+            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}{saved.printerName && <span>Equipamento: {saved.printerName}</span>}{saved.profileName && <span>Perfil: {saved.profileName}</span>}{saved.slicer && <><span>Origem dos dados · {saved.slicer.slicer} · modelo {metric(saved.slicer.modelGrams, "g")} · suportes {metric(saved.slicer.supportGrams, "g")} · purga {metric(saved.slicer.purgeGrams, "g")} · torre {metric(saved.slicer.wipeTowerGrams, "g")} · tempo {metric(saved.slicer.printHours, "h")}</span>{saved.slicer.filaments.length > 0 && <details><summary>Consumo por filamento ({saved.slicer.filaments.length})</summary><ul>{saved.slicer.filaments.map((filament) => <li key={filament.index}>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""} · {metric(filament.grams, "g")} · {metric(filament.lengthMeters, "m")}</li>)}</ul></details>}{saved.slicer.conflicts.length > 0 && <span>Campos com conflito ignorados: {saved.slicer.conflicts.join(", ")}</span>}</>}</div>
             <div className="price-history-actions"><button className="button button-secondary" type="button" onClick={() => duplicateCalculation(saved.snapshot, saved.title, saved.productId, saved.printerId, saved.profileId)}>Abrir como cópia</button><form action={deleteMakerCalculation} onSubmit={(event) => { if (!window.confirm(`Excluir “${saved.title}” do histórico?`)) event.preventDefault(); }}><input type="hidden" name="calculationId" value={saved.id} /><button className="price-history-delete" type="submit">Excluir</button></form></div>
           </article>)}</div>}
         </> : <div className="price-history-locked"><p>Entre com uma conta de fabricante e loja aprovada para manter um histórico privado dos seus custos.</p><Link className="button button-secondary" href="/conta">Acessar conta</Link></div>}

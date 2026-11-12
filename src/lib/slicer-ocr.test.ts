@@ -26,9 +26,26 @@ describe("parseSlicerOcrTexts", () => {
     const result = parseSlicerOcrTexts(["Filament 1: PLA red 12,5 g\nFilamento 2: PETG cor: azul 8 g"]);
     expect(result.totalGrams).toBeNull();
     expect(result.filaments).toEqual([
-      { index: 1, grams: 12.5, material: "PLA", color: "red" },
-      { index: 2, grams: 8, material: "PETG", color: "azul" },
+      { index: 1, grams: 12.5, lengthMeters: null, material: "PLA", color: "red" },
+      { index: 2, grams: 8, lengthMeters: null, material: "PETG", color: "azul" },
     ]);
+  });
+
+  it("merges per-filament lengths with weights recognized in separate images", () => {
+    const result = parseSlicerOcrTexts([
+      "Filament 1: PLA red 12,5 g\nFilament 2: PETG blue 8 g",
+      "Filament 1 length: 4,8 m\nFilament 2 comprimento: 3200 mm",
+    ]);
+    expect(result.filaments).toEqual([
+      { index: 1, grams: 12.5, lengthMeters: 4.8, material: "PLA", color: "red" },
+      { index: 2, grams: 8, lengthMeters: 3.2, material: "PETG", color: "blue" },
+    ]);
+  });
+
+  it("leaves conflicting per-filament lengths blank", () => {
+    const result = parseSlicerOcrTexts(["Filament 1 length: 4 m", "Filament 1 length: 5 m"]);
+    expect(result.filaments).toMatchObject([{ index: 1, grams: null, lengthMeters: null }]);
+    expect(result.conflicts).toContain("comprimento do filamento 1");
   });
 
   it("recognizes purge and wipe tower separately without adding either to total filament", () => {
