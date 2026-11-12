@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { cancelCustomPrintRequest, cancelProductQuoteRequest, confirmSellerPurchaseOrderDelivery, respondToCustomPrintOffer, respondToProductQuoteOffer, respondToSellerOrderShippingQuote, submitMarketplaceReviewAction } from "./actions";
-import { startSellerOrderPayment } from "./payment-actions";
+import { cancelPendingSellerPayment, startSellerOrderPayment } from "./payment-actions";
 import { downloadDigitalAssetAction } from "./digital-actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { formatBrl, formatBrlTotal } from "@/lib/money";
@@ -11,6 +12,7 @@ import { getCustomPrintEventLabel } from "@/lib/custom-print-events";
 import { isMercadoPagoCheckoutUrl } from "@/lib/mercado-pago-payments";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 export const metadata: Metadata = { title: "Meus pedidos e orçamentos | ViraPeça 3D", robots: { index: false, follow: false } };
 
 const resultMessages: Record<string, string> = {
@@ -23,6 +25,10 @@ const resultMessages: Record<string, string> = {
   "pagamento-erro": "Não foi possível iniciar o pagamento. Atualize a página e tente novamente.",
   "pagamento-aguardando": "Estamos confirmando a criação do checkout. Atualize esta página em instantes.",
   "pagamento-frete": "Aceite a cotação de frete da loja antes de iniciar o pagamento.",
+  "pagamento-cancelado": "Checkout cancelado no Mercado Pago. O estoque reservado foi liberado.",
+  "cancelamento-pendente": "O Mercado Pago ainda não confirmou o cancelamento. Atualize a página e tente novamente; a solicitação será repetida com segurança.",
+  "cancelamento-indisponivel": "Esta cobrança já está em processamento ou foi concluída e não pode ser cancelada.",
+  "cancelamento-dados-invalidos": "Confirme o cancelamento e tente novamente.",
   "download-erro": "O download não está disponível. Confirme o pagamento ou tente novamente.",
   "retorno-pagamento": "Retorno recebido. A confirmação do pagamento pode levar alguns instantes; consulte o status abaixo.",
   "frete-aceito": "Cotação aceita. Você já pode pagar o pedido com o frete incluído.", "frete-recusado": "Cotação recusada. A loja poderá enviar outra opção.",
@@ -42,17 +48,27 @@ function ReviewForm({ sourceType, sourceId, reviewType, itemId = "", label }: { 
   return <form action={submitMarketplaceReviewAction} className="auth-form"><input type="hidden" name="sourceType" value={sourceType} /><input type="hidden" name="sourceId" value={sourceId} /><input type="hidden" name="itemId" value={itemId} /><input type="hidden" name="reviewType" value={reviewType} /><label>Nota<select name="rating" defaultValue="5" required><option value="5">5 · Excelente</option><option value="4">4 · Muito bom</option><option value="3">3 · Bom</option><option value="2">2 · Regular</option><option value="1">1 · Ruim</option></select></label><label>Comentário (opcional)<textarea name="body" maxLength={1200} rows={3} /></label><button className="button button-primary" type="submit">{label}</button></form>;
 }
 const reviewStatus = (review: { status: string; rating: number }) => `${review.status === "pending" ? "Aguardando moderação" : review.status === "published" ? "Avaliação publicada" : "Avaliação não publicada"} · ${review.rating}/5`;
+function PendingPaymentCancellation({ payment }: { payment: { id: string; status: string; cancellations?: { status: string }[] } }) {
+  if (payment.status !== "pending") return null;
+  const cancellation = payment.cancellations?.[0];
+  if (cancellation?.status === "failed") return <p className="quote-small-note">O Mercado Pago informou que esta cobrança não pode mais ser cancelada. Atualize a página para consultar o status.</p>;
+  return <details className="seller-refund-details"><summary>Cancelar pagamento pendente</summary><form action={cancelPendingSellerPayment} className="seller-refund-form">
+    <label className="seller-refund-confirm"><input type="checkbox" name="confirmCancel" value="yes" required />Confirmo o cancelamento desta cobrança ainda não paga.</label>
+    <input type="hidden" name="paymentId" value={payment.id} /><input type="hidden" name="idempotencyKey" value={randomUUID()} />
+    <button className="button button-secondary" type="submit">Cancelar checkout</button>
+  </form></details>;
+}
 
 export default async function BuyerQuotesPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
   const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("buyer")]);
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const [requestResult, orderResult, customResult] = await Promise.all([
     actor.supabase.from("product_quote_requests")
-      .select("id, request_type, license_type, product_id, unit_price_brl, product_name, store_name, quantity, customization, due_date, status, created_at, offer:product_quote_offers(id, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at), downloads:digital_asset_downloads(id, created_at)")
+      .select("id, request_type, license_type, product_id, unit_price_brl, product_name, store_name, quantity, customization, due_date, status, created_at, offer:product_quote_offers(id, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), downloads:digital_asset_downloads(id, created_at)")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
-    actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, shipping_shipped_at, shipping_delivered_at, completed_at, items:seller_purchase_order_items(id, product_id, product_name, unit_price_brl, quantity), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at), events:seller_purchase_order_events(id, event_type, description, created_at)")
+    actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, shipping_shipped_at, shipping_delivered_at, completed_at, items:seller_purchase_order_items(id, product_id, product_name, unit_price_brl, quantity), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), events:seller_purchase_order_events(id, event_type, description, created_at)")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
-    actor.supabase.from("custom_print_requests").select("id, upload_id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, winning_store_id, production_started_at, production_completed_at, created_at, offers:custom_print_offers(id, store_name, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at), targets:custom_print_request_targets(id, store:stores(name), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at))")
+    actor.supabase.from("custom_print_requests").select("id, upload_id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, winning_store_id, production_started_at, production_completed_at, created_at, offers:custom_print_offers(id, store_name, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), targets:custom_print_request_targets(id, store:stores(name), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at))")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
   ]);
   const { data, error } = requestResult;
@@ -105,6 +121,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
                         {payment && <p className="auth-notice is-error" role="status">A tentativa anterior foi encerrada. Você pode iniciar uma nova.</p>}
                         {acceptedOffer && <form action={startSellerOrderPayment}><input type="hidden" name="customPrintRequestId" value={request.id} /><button className="button button-primary" type="submit">{payment ? "Tentar pagamento novamente" : "Pagar e iniciar produção"} · {formatBrl(acceptedOffer.total_brl)}</button></form>}
                       </>}
+            {payment?.status === "pending" && <PendingPaymentCancellation payment={payment} />}
             <p className="quote-small-note">A produção só começa após a confirmação do pagamento. O envio e o frete são combinados com a loja.</p>
           </>}
           {request.status === "in_production" && <p className="quote-small-note">O fabricante iniciou a produção em {dateLabel(request.production_started_at)}.</p>}
@@ -139,6 +156,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
                   ? <div className="quote-offer-summary"><span>Pagamento aguardando confirmação · {formatBrl(payment.total_cents / 100)}</span><a className="button button-primary" href={payment.checkout_url!} rel="noreferrer">Continuar pagamento</a></div>
                     : payment?.status === "creating" ? <p className="quote-small-note" role="status">O checkout está sendo preparado. A mesma tentativa pode ser retomada.</p>
                     : payment && <p className="auth-notice is-error" role="status">A tentativa anterior de pagamento foi encerrada. Você pode iniciar uma nova tentativa.</p>}
+              {payment?.status === "pending" && <PendingPaymentCancellation payment={payment} />}
               {payment?.status !== "paid" && payment?.status !== "refunded" && payment?.status !== "partially_refunded" && payment?.status !== "charged_back" && payment?.status !== "pending" && <form action={startSellerOrderPayment}><input type="hidden" name="orderId" value={order.id} /><button className="button button-primary" type="submit">{payment?.status === "creating" ? "Retomar checkout" : "Pagar com Mercado Pago"} · {formatBrl(totalCents / 100)}</button></form>}
               <p className="quote-small-note">O checkout cobra os produtos e o frete aceito. A comissão da plataforma é calculada sobre o subtotal dos produtos.</p>
             </>}
@@ -179,6 +197,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
                       ? <div className="quote-offer-summary"><span>Pagamento aguardando confirmação · {formatBrl(payment.total_cents / 100)}</span><a className="button button-primary" href={payment.checkout_url!} rel="noreferrer">Continuar pagamento</a></div>
                       : payment?.status === "creating" ? <p className="quote-small-note" role="status">O checkout está sendo preparado.</p>
                         : payment && <p className="auth-notice is-error" role="status">A tentativa anterior foi encerrada. Você pode iniciar uma nova.</p>}
+              {payment?.status === "pending" && <PendingPaymentCancellation payment={payment} />}
               {payment?.status !== "paid" && payment?.status !== "refunded" && payment?.status !== "partially_refunded" && payment?.status !== "charged_back" && payment?.status !== "pending" && <form action={startSellerOrderPayment}><input type="hidden" name="purchaseRequestId" value={request.id} /><button className="button button-primary" type="submit">{payment?.status === "creating" ? "Retomar checkout" : "Pagar com Mercado Pago"} · {formatBrlTotal(request.unit_price_brl!, request.quantity)}</button></form>}
               <p className="quote-small-note">{request.license_type ? "O download fica disponível somente após confirmação do pagamento." : "O fabricante confirmou a disponibilidade. O checkout cobra os produtos; o frete é combinado com a loja."}</p>
               {payment?.status === "paid" && !purchaseReviews.error && <section className="marketplace-order-reviews" aria-label="Avaliar sua compra"><h3>Avaliações da compra</h3>{(["store", "product"] as const).map((reviewType) => {

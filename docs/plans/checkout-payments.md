@@ -16,7 +16,8 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Implementar webhook assinado, consulta server-to-server e transição auditável do pagamento.
 - [x] Registrar o status de contestação quando a order consultada no webhook retorna `charged_back`, bloquear nova cobrança da mesma origem e exibir o caso nos painéis.
 - [x] Permitir ao fabricante pedir reembolso total ou parcial com confirmação, reserva transacional e idempotência no Mercado Pago.
-- [ ] Implementar cancelamentos de pagamentos pendentes, reconciliação periódica de reembolsos e gerenciamento dos casos do tópico `chargebacks`.
+- [x] Permitir ao comprador cancelar uma cobrança ainda não paga, com validação da order, idempotência e liberação do estoque reservado.
+- [ ] Implementar reconciliação periódica de reembolsos e gerenciamento dos casos do tópico `chargebacks`.
 - [ ] Adicionar testes de integração com contas de teste e validar as migrations no Supabase conectado.
 - [x] Implementar cotação manual de frete por loja, aceite do comprador, inclusão no checkout, rastreio manual e confirmação de recebimento.
 - [ ] Integrar provedor para cotações automáticas, compra de etiquetas e atualização automática de rastreio.
@@ -37,6 +38,6 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - O checkout online atende pedidos do carrinho, solicitações diretas de compra e propostas de impressão aceitos, sempre por loja.
 - Para pedidos de carrinho, o checkout inclui o frete manual cotado pela loja e aceito pelo comprador; a comissão é calculada somente sobre os produtos. A cotação não usa tarifas ao vivo e não emite etiqueta.
 - Estoque contado de produtos é reservado atomicamente ao iniciar o checkout de carrinho ou compra direta, confirmado como vendido apenas pelo webhook e devolvido se o provedor rejeitar, cancelar ou expirar a order. Serviços de impressão não reservam estoque de produto; a produção só pode começar após o webhook confirmar o pagamento. Orders do Mercado Pago expiram em um dia.
-- Cancelamento de pagamentos pendentes, conciliação financeira, gestão e envio de evidências de disputas, frete automatizado e validação com contas sandbox ainda não estão concluídos.
+- Conciliação periódica de reembolsos, gestão e envio de evidências de disputas, frete automatizado e validação com contas sandbox ainda não estão concluídos.
 - O webhook atualiza o estado do pagamento após validar a assinatura e consultar a order no Mercado Pago. A página de retorno não confirma pagamento.
 - A contestação é registrada somente quando o webhook de orders leva a API da order a retornar `charged_back`; o fluxo não recebe eventos do tópico separado `chargebacks`, envia evidências ou administra prazos e decisões do caso.

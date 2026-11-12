@@ -36,6 +36,8 @@ Tokens OAuth do Mercado Pago ficam criptografados com AES-256-GCM em tabela sem 
 
 Quando a order verificada retorna `charged_back`, o webhook grava a contestação sem liberar estoque nem autorizar nova cobrança para a mesma origem. A atualização posterior do detalhe do caso é mantida no status do provedor. O painel sinaliza o status e orienta as partes a consultar o Mercado Pago; evidências e decisões ainda precisam ser tratadas no painel do provedor.
 
+O comprador só pode cancelar um pagamento próprio ainda pendente. Uma função `SECURITY DEFINER` trava a cobrança e persiste uma única chave de idempotência; a ação valida order, vendedor, moeda e valores com a API do Mercado Pago e só libera estoque quando o provedor confirma o cancelamento. Respostas externas incertas mantêm a tentativa pendente para repetição segura.
+
 O formulário de reembolso exige maker autenticado e consentimento explícito. Uma função privada do servidor confirma a propriedade da loja, trava a cobrança e reserva o valor disponível antes da chamada externa; uma tentativa pendente mantém a reserva e reutiliza a mesma chave de idempotência em uma repetição. A ação valida a order e o vendedor junto ao Mercado Pago antes de solicitar o estorno; entradas do navegador nunca escolhem a loja, o token OAuth, a order ou o recebedor.
 
 O extrato financeiro exige papel `maker`, resolve a loja do usuário autenticado e filtra os pagamentos por `store_id`; além disso, a tabela mantém RLS para participantes. Não exibe dados do comprador nem trata o total menos a comissão como repasse efetivo: tarifas, saldo e liquidação permanecem no Mercado Pago.

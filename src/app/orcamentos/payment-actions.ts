@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getMercadoPagoSellerAccessToken } from "@/lib/mercado-pago-access-token.server";
-import { calculateMarketplaceFeeCents, customPrintOfferPaymentItem, formatMercadoPagoAmount, parseMercadoPagoOrderResponse } from "@/lib/mercado-pago-payments";
+import { calculateMarketplaceFeeCents, customPrintOfferPaymentItem, formatMercadoPagoAmount, isMercadoPagoOrderForPayment, mapMercadoPagoOrderStatus, parseMercadoPagoOrderResponse } from "@/lib/mercado-pago-payments";
+import { getMercadoPagoOrderCancellationStatus } from "@/lib/mercado-pago-cancellations";
 import { getSiteUrl } from "@/lib/site-url";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserWithRole } from "@/lib/auth-role.server";
@@ -151,4 +152,106 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
   if (saveError) redirect("/orcamentos?resultado=pagamento-aguardando");
   revalidatePath("/orcamentos");
   redirect(providerOrder.checkoutUrl);
+}
+
+export async function cancelPendingSellerPayment(formData: FormData): Promise<void> {
+  const paymentId = formData.get("paymentId");
+  const idempotencyKey = formData.get("idempotencyKey");
+  if (typeof paymentId !== "string" || !uuidPattern.test(paymentId) || typeof idempotencyKey !== "string"
+    || !uuidPattern.test(idempotencyKey) || formData.get("confirmCancel") !== "yes") {
+    redirect("/orcamentos?resultado=cancelamento-dados-invalidos");
+  }
+  const actor = await getUserWithRole("buyer");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { data: payment } = await actor.supabase.from("seller_order_payments")
+    .select("id, store_id, buyer_id, total_cents, marketplace_fee_cents, provider_order_id, status")
+    .eq("id", paymentId).eq("buyer_id", actor.user.id).maybeSingle();
+  if (!payment || !payment.provider_order_id || payment.status !== "pending") {
+    redirect("/orcamentos?resultado=cancelamento-indisponivel");
+  }
+  const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/orcamentos?resultado=pagamento-configurar");
+  const { data: reservationData, error: reservationError } = await admin.rpc("reserve_seller_order_payment_cancellation", {
+    p_payment_id: payment.id, p_buyer_id: actor.user.id, p_idempotency_key: idempotencyKey,
+  });
+  if (reservationError) redirect("/orcamentos?resultado=cancelamento-indisponivel");
+  const reservation = Array.isArray(reservationData) ? reservationData[0] : reservationData;
+  if (!reservation || reservation.cancellation_payment_id !== payment.id
+    || typeof reservation.cancellation_status !== "string" || typeof reservation.cancellation_idempotency_key !== "string") {
+    redirect("/orcamentos?resultado=cancelamento-indisponivel");
+  }
+  if (reservation.cancellation_status === "processed") redirect("/orcamentos?resultado=pagamento-cancelado");
+  if (reservation.cancellation_status === "failed") redirect("/orcamentos?resultado=cancelamento-indisponivel");
+
+  const { data: connection, error: connectionError } = await admin.from("store_payment_connections")
+    .select("provider_user_id").eq("store_id", payment.store_id).maybeSingle();
+  if (connectionError || !connection) redirect("/orcamentos?resultado=pagamento-conta-vendedor");
+  let accessToken: string;
+  try { accessToken = await getMercadoPagoSellerAccessToken(payment.store_id); }
+  catch { redirect("/orcamentos?resultado=cancelamento-pendente"); }
+
+  const expected = {
+    id: payment.provider_order_id, paymentId: payment.id, sellerId: connection.provider_user_id,
+    totalCents: Number(payment.total_cents), marketplaceFeeCents: Number(payment.marketplace_fee_cents),
+  };
+  let orderResponse: Response;
+  try {
+    orderResponse = await fetch(`https://api.mercadopago.com/v1/orders/${encodeURIComponent(payment.provider_order_id)}`, {
+      headers: { Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(8000), cache: "no-store", redirect: "error",
+    });
+  } catch { redirect("/orcamentos?resultado=cancelamento-pendente"); }
+  if (!orderResponse.ok) redirect("/orcamentos?resultado=cancelamento-pendente");
+  const order = objectValue(await orderResponse.json().catch(() => null));
+  const cancellationState = getMercadoPagoOrderCancellationStatus(order, expected);
+  const providerStatus = typeof order.status === "string" ? order.status : "";
+  const statusDetail = typeof order.status_detail === "string" ? order.status_detail : "";
+  const providerStatusText = statusDetail ? `${providerStatus}:${statusDetail}` : providerStatus;
+  if (cancellationState === "mismatch") {
+    await admin.rpc("complete_seller_order_payment_cancellation", {
+      p_payment_id: payment.id, p_status: "failed", p_provider_status: "provider_order_mismatch",
+    });
+    redirect("/orcamentos?resultado=cancelamento-indisponivel");
+  }
+  if (cancellationState === "cancelled") {
+    const { error } = await admin.rpc("complete_seller_order_payment_cancellation", {
+      p_payment_id: payment.id, p_status: "processed", p_provider_status: providerStatusText, p_payment_status: "cancelled",
+    });
+    if (error) redirect("/orcamentos?resultado=cancelamento-pendente");
+    revalidatePath("/orcamentos");
+    revalidatePath("/painel/maker");
+    redirect("/orcamentos?resultado=pagamento-cancelado");
+  }
+  if (cancellationState === "not_cancelable") {
+    const currentPaymentStatus = mapMercadoPagoOrderStatus(providerStatus, statusDetail);
+    const { error } = await admin.rpc("complete_seller_order_payment_cancellation", {
+      p_payment_id: payment.id, p_status: "failed", p_provider_status: providerStatusText,
+      ...(currentPaymentStatus ? { p_payment_status: currentPaymentStatus } : {}),
+    });
+    if (error) redirect("/orcamentos?resultado=cancelamento-pendente");
+    revalidatePath("/orcamentos");
+    redirect("/orcamentos?resultado=cancelamento-indisponivel");
+  }
+
+  let cancelResponse: Response;
+  try {
+    cancelResponse = await fetch(`https://api.mercadopago.com/v1/orders/${encodeURIComponent(payment.provider_order_id)}/cancel`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "X-Idempotency-Key": reservation.cancellation_idempotency_key },
+      signal: AbortSignal.timeout(8000), cache: "no-store", redirect: "error",
+    });
+  } catch { redirect("/orcamentos?resultado=cancelamento-pendente"); }
+  if (!cancelResponse.ok) redirect("/orcamentos?resultado=cancelamento-pendente");
+  const cancelledOrder = objectValue(await cancelResponse.json().catch(() => null));
+  if (getMercadoPagoOrderCancellationStatus(cancelledOrder, expected) !== "cancelled") {
+    redirect("/orcamentos?resultado=cancelamento-pendente");
+  }
+  const cancelledProviderStatus = typeof cancelledOrder.status_detail === "string"
+    ? `${String(cancelledOrder.status)}:${cancelledOrder.status_detail}` : String(cancelledOrder.status);
+  const { error: completionError } = await admin.rpc("complete_seller_order_payment_cancellation", {
+    p_payment_id: payment.id, p_status: "processed", p_provider_status: cancelledProviderStatus, p_payment_status: "cancelled",
+  });
+  if (completionError) redirect("/orcamentos?resultado=cancelamento-pendente");
+  revalidatePath("/orcamentos");
+  revalidatePath("/painel/maker");
+  redirect("/orcamentos?resultado=pagamento-cancelado");
 }
