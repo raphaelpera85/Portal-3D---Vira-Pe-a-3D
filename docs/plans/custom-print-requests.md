@@ -8,9 +8,9 @@ Concluir quando a jornada estiver ligada à biblioteca, painel do fabricante, pa
 
 ## Evidência atual
 
-- `product_quote_requests` exige produto e loja, e `product_quote_offers.request_id` é único (`supabase/migrations/202611110006_product_quotes.sql`).
-- A biblioteca de arquivos usa bucket privado e acesso somente ao comprador (`supabase/migrations/202611110012_private_model_uploads.sql`).
-- `/orcamentos` e `/painel/maker` só carregam solicitações ligadas a produtos; equipamentos do fabricante vinculam-se a modelos mestres (`src/app/orcamentos/page.tsx`, `src/app/painel/maker/page.tsx`, `supabase/migrations/202611110010_maker_equipment.sql`).
+- `product_quote_requests` exige produto e loja, e `product_quote_offers.request_id` é único (`supabase/migrations/20261112040043_product_quotes.sql`).
+- A biblioteca de arquivos usa bucket privado e acesso somente ao comprador (`supabase/migrations/20261112040057_private_model_uploads.sql`).
+- `/orcamentos` e `/painel/maker` só carregam solicitações ligadas a produtos; equipamentos do fabricante vinculam-se a modelos mestres (`src/app/orcamentos/page.tsx`, `src/app/painel/maker/page.tsx`, `supabase/migrations/20261112040052_maker_equipment.sql`).
 - O Prompt Master V5, seção 14, pede arquivo 3D, configuração, múltiplas propostas, contratação, pagamento e acompanhamento da produção.
 
 ## Abordagem escolhida
@@ -19,7 +19,7 @@ Criar tabelas próprias para solicitações personalizadas, lojas compatíveis e
 
 ## Escopo desta etapa
 
-- Migração `supabase/migrations/202611110021_custom_print_requests.sql` com regras de compatibilidade, RLS, concorrência, arquivos e avisos externos.
+- Migração `supabase/migrations/20261112040236_custom_print_requests.sql` com regras de compatibilidade, RLS, concorrência, arquivos e avisos externos.
 - Validação e testes em `src/lib/custom-print-request.ts` e `src/lib/custom-print-request.test.ts`.
 - Formulário e ação no visualizador/biblioteca privada; listagem, comparação, proposta, aceite e cancelamento em `/orcamentos` e `/painel/maker`.
 - Links temporários para os arquivos do modelo apenas aos fabricantes atribuídos, com checagem no servidor.

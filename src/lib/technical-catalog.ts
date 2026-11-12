@@ -31,17 +31,17 @@ export type NozzleEntry = CatalogNozzle & {
 const machineSource = {
   label: "Bambu Lab — Quick Start A1 mini Combo",
   url: "https://cdn1.bambulab.com/documentation/Quick%20Start%20Guide%20for%20A1%20mini%20Combo.pdf",
-  checkedAt: "2026-11-11",
+  checkedAt: "2026-11-12",
 };
 const plaSource = {
   label: "Bambu Lab — PLA Basic",
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
-  checkedAt: "2026-11-11",
+  checkedAt: "2026-11-12",
 };
 const ppaSource = {
   label: "Bambu Lab — PPA-CF",
   url: "https://bambulab-us.myshopify.com/products/ppa-cf",
-  checkedAt: "2026-11-11",
+  checkedAt: "2026-11-12",
 };
 
 export const printers: PrinterEntry[] = [{
@@ -94,7 +94,7 @@ export const materials: MaterialEntry[] = [
     abrasive: false,
     multicolorCompatible: true,
     printSpeedMaximumMmPerSecond: 300,
-    drying: { required: false, temperatureC: 50, hours: 8 },
+    drying: { required: false, temperatureC: 55, hours: 8 },
     resinWavelengthNm: null,
     resinExposureSeconds: null,
     colors: [
