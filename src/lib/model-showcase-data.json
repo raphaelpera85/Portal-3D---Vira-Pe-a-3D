@@ -1,0 +1,907 @@
+[
+  {
+    "id": "65efab07f3fd",
+    "name": "capivara final",
+    "category": "Suporte para Óculos",
+    "categorySlug": "suporte-para-oculos",
+    "image": "/modelos/65efab07f3fd.png",
+    "tags": [
+      "óculos",
+      "capivara"
+    ]
+  },
+  {
+    "id": "ed02512a7e12",
+    "name": "cat",
+    "category": "Suporte para Óculos",
+    "categorySlug": "suporte-para-oculos",
+    "image": "/modelos/ed02512a7e12.png",
+    "tags": [
+      "óculos",
+      "cat"
+    ]
+  },
+  {
+    "id": "2a2e5f6c6d90",
+    "name": "Coruja Descanso Oculos",
+    "category": "Suporte para Óculos",
+    "categorySlug": "suporte-para-oculos",
+    "image": "/modelos/2a2e5f6c6d90.png",
+    "tags": [
+      "óculos",
+      "coruja",
+      "descanso",
+      "oculos"
+    ]
+  },
+  {
+    "id": "803903c6b264",
+    "name": "Improved Cat Glasses Holder",
+    "category": "Suporte para Óculos",
+    "categorySlug": "suporte-para-oculos",
+    "image": "/modelos/803903c6b264.png",
+    "tags": [
+      "óculos",
+      "improved",
+      "cat"
+    ]
+  },
+  {
+    "id": "882ecc1d8c46",
+    "name": "Piggy V1",
+    "category": "Suporte para Óculos",
+    "categorySlug": "suporte-para-oculos",
+    "image": "/modelos/882ecc1d8c46.png",
+    "tags": [
+      "óculos",
+      "piggy"
+    ]
+  },
+  {
+    "id": "5dc254fbe95d",
+    "name": "Pika Final",
+    "category": "Suporte para Óculos",
+    "categorySlug": "suporte-para-oculos",
+    "image": "/modelos/5dc254fbe95d.png",
+    "tags": [
+      "óculos",
+      "pika"
+    ]
+  },
+  {
+    "id": "c49b6124e601",
+    "name": "The Unnecessary Frenchy Glasses Holder",
+    "category": "Suporte para Óculos",
+    "categorySlug": "suporte-para-oculos",
+    "image": "/modelos/c49b6124e601.png",
+    "tags": [
+      "óculos",
+      "unnecessary",
+      "frenchy"
+    ]
+  },
+  {
+    "id": "9e269939a2fd",
+    "name": "고양이 노서포트 v8",
+    "category": "Suporte para Óculos",
+    "categorySlug": "suporte-para-oculos",
+    "image": "/modelos/9e269939a2fd.png",
+    "tags": [
+      "óculos"
+    ]
+  },
+  {
+    "id": "0abb3bfe4329",
+    "name": "CHAINSAWMAN V2",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/0abb3bfe4329.png",
+    "tags": [
+      "infantil",
+      "chainsawman"
+    ]
+  },
+  {
+    "id": "cf75cd6ec89b",
+    "name": "DEADPOOL A1 MINI V3",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/cf75cd6ec89b.png",
+    "tags": [
+      "infantil",
+      "deadpool"
+    ]
+  },
+  {
+    "id": "3aae3a040ee3",
+    "name": "Green goblin - V1 - AMS",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/3aae3a040ee3.png",
+    "tags": [
+      "infantil",
+      "green",
+      "goblin"
+    ]
+  },
+  {
+    "id": "478552387b6d",
+    "name": "naruto4",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/478552387b6d.png",
+    "tags": [
+      "infantil",
+      "naruto4"
+    ]
+  },
+  {
+    "id": "6a3b29dd7fd9",
+    "name": "Proto 9 Goku Origin",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/6a3b29dd7fd9.png",
+    "tags": [
+      "infantil",
+      "proto",
+      "goku",
+      "origin"
+    ]
+  },
+  {
+    "id": "4bd267727913",
+    "name": "spider man - dummy 13 -V1(4 Plates)",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/4bd267727913.png",
+    "tags": [
+      "infantil",
+      "spider",
+      "man",
+      "dummy",
+      "plates"
+    ]
+  },
+  {
+    "id": "3e82b106534a",
+    "name": "Zoro",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/3e82b106534a.png",
+    "tags": [
+      "infantil",
+      "zoro"
+    ]
+  },
+  {
+    "id": "70bda315e46e",
+    "name": "247d32bf94a2fe3d3171a12165d265b9",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/70bda315e46e.png",
+    "tags": [
+      "chaveiro",
+      "247d32bf94a2fe3d3171a12165d265b9"
+    ]
+  },
+  {
+    "id": "e454ea0dcb3e",
+    "name": "charmander final Cats3DStudio",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/e454ea0dcb3e.png",
+    "tags": [
+      "chaveiro",
+      "charmander",
+      "cats3dstudio"
+    ]
+  },
+  {
+    "id": "5e87c684e2b9",
+    "name": "Chibi Spider-Man Articulated",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/5e87c684e2b9.png",
+    "tags": [
+      "chaveiro",
+      "chibi",
+      "spider",
+      "man",
+      "articulated"
+    ]
+  },
+  {
+    "id": "093ac9295cdf",
+    "name": "christmas olaf keychain print",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/093ac9295cdf.png",
+    "tags": [
+      "chaveiro",
+      "christmas",
+      "olaf"
+    ]
+  },
+  {
+    "id": "989b32ec6500",
+    "name": "Creeper Articulated 16 UNITS",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/989b32ec6500.png",
+    "tags": [
+      "chaveiro",
+      "creeper",
+      "articulated",
+      "units"
+    ]
+  },
+  {
+    "id": "1e901dba6ff3",
+    "name": "eevee Keychain",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/1e901dba6ff3.png",
+    "tags": [
+      "chaveiro",
+      "eevee"
+    ]
+  },
+  {
+    "id": "44063047fa39",
+    "name": "flexi garfield makerworld",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/44063047fa39.png",
+    "tags": [
+      "chaveiro",
+      "flexi",
+      "garfield"
+    ]
+  },
+  {
+    "id": "54a04395187c",
+    "name": "Goku ssj",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/54a04395187c.png",
+    "tags": [
+      "chaveiro",
+      "goku",
+      "ssj"
+    ]
+  },
+  {
+    "id": "ad6aa008e1bc",
+    "name": "HELLO KITTY KAKASHI",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/ad6aa008e1bc.png",
+    "tags": [
+      "chaveiro",
+      "hello",
+      "kitty",
+      "kakashi"
+    ]
+  },
+  {
+    "id": "27f391c3f155",
+    "name": "HELLO KITTY LINK",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/27f391c3f155.png",
+    "tags": [
+      "chaveiro",
+      "hello",
+      "kitty",
+      "link"
+    ]
+  },
+  {
+    "id": "829bf0aea8ab",
+    "name": "HELLO KITTY MUMMY",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/829bf0aea8ab.png",
+    "tags": [
+      "chaveiro",
+      "hello",
+      "kitty",
+      "mummy"
+    ]
+  },
+  {
+    "id": "c8460b4d7bf4",
+    "name": "HELLO KITTY PENNYWISE",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/c8460b4d7bf4.png",
+    "tags": [
+      "chaveiro",
+      "hello",
+      "kitty",
+      "pennywise"
+    ]
+  },
+  {
+    "id": "d4b1e591b759",
+    "name": "HELLO KITTY POOH",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/d4b1e591b759.png",
+    "tags": [
+      "chaveiro",
+      "hello",
+      "kitty",
+      "pooh"
+    ]
+  },
+  {
+    "id": "3b4f94aacea2",
+    "name": "HELLO KITTY SUPERGIRL",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/3b4f94aacea2.png",
+    "tags": [
+      "chaveiro",
+      "hello",
+      "kitty",
+      "supergirl"
+    ]
+  },
+  {
+    "id": "a6c156358457",
+    "name": "HELLO KITTY VAMPIRE",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/a6c156358457.png",
+    "tags": [
+      "chaveiro",
+      "hello",
+      "kitty",
+      "vampire"
+    ]
+  },
+  {
+    "id": "7d5f8fa629e2",
+    "name": "jesus makerworld",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/7d5f8fa629e2.png",
+    "tags": [
+      "chaveiro",
+      "jesus"
+    ]
+  },
+  {
+    "id": "d24712782c7e",
+    "name": "kurAAAAA",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/d24712782c7e.png",
+    "tags": [
+      "chaveiro",
+      "kuraaaaa"
+    ]
+  },
+  {
+    "id": "b36c47c76307",
+    "name": "Mew flexy def",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/b36c47c76307.png",
+    "tags": [
+      "chaveiro",
+      "mew",
+      "flexy",
+      "def"
+    ]
+  },
+  {
+    "id": "faa89d687c46",
+    "name": "mickey v2 final",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/faa89d687c46.png",
+    "tags": [
+      "chaveiro",
+      "mickey"
+    ]
+  },
+  {
+    "id": "8f09afcbb9d2",
+    "name": "mini fox keychain",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/8f09afcbb9d2.png",
+    "tags": [
+      "chaveiro",
+      "fox"
+    ]
+  },
+  {
+    "id": "b9c0c8ed6a7e",
+    "name": "minie keychainv3 print",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/b9c0c8ed6a7e.png",
+    "tags": [
+      "chaveiro",
+      "minie",
+      "keychainv3"
+    ]
+  },
+  {
+    "id": "0bccdaa474e9",
+    "name": "mr creeper Cats3D Studio",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/0bccdaa474e9.png",
+    "tags": [
+      "chaveiro",
+      "creeper"
+    ]
+  },
+  {
+    "id": "49b103dbdaa6",
+    "name": "new stitch keychain print",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/49b103dbdaa6.png",
+    "tags": [
+      "chaveiro",
+      "new",
+      "stitch"
+    ]
+  },
+  {
+    "id": "b50df79a0102",
+    "name": "one piece christmas 40mm 4farben",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/b50df79a0102.png",
+    "tags": [
+      "chaveiro",
+      "one",
+      "piece",
+      "christmas",
+      "40mm"
+    ]
+  },
+  {
+    "id": "8147317fdda3",
+    "name": "paw patrol marshall",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/8147317fdda3.png",
+    "tags": [
+      "chaveiro",
+      "paw",
+      "patrol",
+      "marshall"
+    ]
+  },
+  {
+    "id": "b624126a9ca9",
+    "name": "pikachu more resistant",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/b624126a9ca9.png",
+    "tags": [
+      "chaveiro",
+      "pikachu",
+      "resistant"
+    ]
+  },
+  {
+    "id": "9e7d90340063",
+    "name": "Spidy",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/9e7d90340063.png",
+    "tags": [
+      "chaveiro",
+      "spidy"
+    ]
+  },
+  {
+    "id": "fb4326d92e74",
+    "name": "Spidy",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/fb4326d92e74.png",
+    "tags": [
+      "chaveiro",
+      "spidy"
+    ]
+  },
+  {
+    "id": "b5bb8102324d",
+    "name": "strongergroot keychain print",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/b5bb8102324d.png",
+    "tags": [
+      "chaveiro",
+      "strongergroot"
+    ]
+  },
+  {
+    "id": "3268b58700f4",
+    "name": "superman",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/3268b58700f4.png",
+    "tags": [
+      "chaveiro",
+      "superman"
+    ]
+  },
+  {
+    "id": "8795b4b84b8a",
+    "name": "Vegeta",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/8795b4b84b8a.png",
+    "tags": [
+      "chaveiro",
+      "vegeta"
+    ]
+  },
+  {
+    "id": "0a48e107a782",
+    "name": "Venom keychain print",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/0a48e107a782.png",
+    "tags": [
+      "chaveiro",
+      "venom"
+    ]
+  },
+  {
+    "id": "ed9ebff12064",
+    "name": "Wiggle Wiggle Articulated Squirtle",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/ed9ebff12064.png",
+    "tags": [
+      "chaveiro",
+      "wiggle",
+      "articulated",
+      "squirtle"
+    ]
+  },
+  {
+    "id": "33be14321369",
+    "name": "Zuma",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/33be14321369.png",
+    "tags": [
+      "chaveiro",
+      "zuma"
+    ]
+  },
+  {
+    "id": "d0a11ead551b",
+    "name": "3 color criceto v2",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/d0a11ead551b.png",
+    "tags": [
+      "chaveiro",
+      "criceto"
+    ]
+  },
+  {
+    "id": "254940e7f223",
+    "name": "3Deep Flexi Pug Keychain (AMS)",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/254940e7f223.png",
+    "tags": [
+      "chaveiro",
+      "3deep",
+      "flexi",
+      "pug"
+    ]
+  },
+  {
+    "id": "842b11790cac",
+    "name": "3Deep Flexi Pug Keychain (AMS)",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/842b11790cac.png",
+    "tags": [
+      "chaveiro",
+      "3deep",
+      "flexi",
+      "pug"
+    ]
+  },
+  {
+    "id": "6b7fd218dc9d",
+    "name": "bas key 1",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/6b7fd218dc9d.png",
+    "tags": [
+      "chaveiro",
+      "bas"
+    ]
+  },
+  {
+    "id": "5e61567440ea",
+    "name": "Beagle Brown White",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/5e61567440ea.png",
+    "tags": [
+      "chaveiro",
+      "beagle",
+      "brown",
+      "white"
+    ]
+  },
+  {
+    "id": "ffcd1251d90c",
+    "name": "Beagle Tricolor",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/ffcd1251d90c.png",
+    "tags": [
+      "chaveiro",
+      "beagle",
+      "tricolor"
+    ]
+  },
+  {
+    "id": "917ef3dc290d",
+    "name": "Black Pug",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/917ef3dc290d.png",
+    "tags": [
+      "chaveiro",
+      "black",
+      "pug"
+    ]
+  },
+  {
+    "id": "9be8503eefde",
+    "name": "Border Collie Tricolor",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/9be8503eefde.png",
+    "tags": [
+      "chaveiro",
+      "border",
+      "collie",
+      "tricolor"
+    ]
+  },
+  {
+    "id": "a08d58a5f11e",
+    "name": "Border Collie",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/a08d58a5f11e.png",
+    "tags": [
+      "chaveiro",
+      "border",
+      "collie"
+    ]
+  },
+  {
+    "id": "d12cc7160bc2",
+    "name": "bulldog franc ams",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/d12cc7160bc2.png",
+    "tags": [
+      "chaveiro",
+      "bulldog",
+      "franc"
+    ]
+  },
+  {
+    "id": "e752bde69af8",
+    "name": "cat black",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/e752bde69af8.png",
+    "tags": [
+      "chaveiro",
+      "cat",
+      "black"
+    ]
+  },
+  {
+    "id": "cb706de3adc8",
+    "name": "cat gray",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/cb706de3adc8.png",
+    "tags": [
+      "chaveiro",
+      "cat",
+      "gray"
+    ]
+  },
+  {
+    "id": "bcde0a3aca26",
+    "name": "cat white",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/bcde0a3aca26.png",
+    "tags": [
+      "chaveiro",
+      "cat",
+      "white"
+    ]
+  },
+  {
+    "id": "3da01bc3192f",
+    "name": "chihuahua",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/3da01bc3192f.png",
+    "tags": [
+      "chaveiro",
+      "chihuahua"
+    ]
+  },
+  {
+    "id": "2efa9477c8b0",
+    "name": "French Bulldog Black",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/2efa9477c8b0.png",
+    "tags": [
+      "chaveiro",
+      "french",
+      "bulldog",
+      "black"
+    ]
+  },
+  {
+    "id": "b593314ca05c",
+    "name": "French Bulldog",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/b593314ca05c.png",
+    "tags": [
+      "chaveiro",
+      "french",
+      "bulldog"
+    ]
+  },
+  {
+    "id": "a5836bded0cd",
+    "name": "korgi ams",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/a5836bded0cd.png",
+    "tags": [
+      "chaveiro",
+      "korgi"
+    ]
+  },
+  {
+    "id": "a0988396307f",
+    "name": "Orange & White Cat",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/a0988396307f.png",
+    "tags": [
+      "chaveiro",
+      "orange",
+      "white",
+      "cat"
+    ]
+  },
+  {
+    "id": "2b3b8197b828",
+    "name": "panda ams",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/2b3b8197b828.png",
+    "tags": [
+      "chaveiro",
+      "panda"
+    ]
+  },
+  {
+    "id": "977324b2988d",
+    "name": "PAST",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/977324b2988d.png",
+    "tags": [
+      "chaveiro",
+      "past"
+    ]
+  },
+  {
+    "id": "6ad21ca46a99",
+    "name": "Pug",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/6ad21ca46a99.png",
+    "tags": [
+      "chaveiro",
+      "pug"
+    ]
+  },
+  {
+    "id": "2331df662d5c",
+    "name": "Shih Tzu",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/2331df662d5c.png",
+    "tags": [
+      "chaveiro",
+      "shih",
+      "tzu"
+    ]
+  },
+  {
+    "id": "c2eb6b6e518f",
+    "name": "spanis ams",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/c2eb6b6e518f.png",
+    "tags": [
+      "chaveiro",
+      "spanis"
+    ]
+  },
+  {
+    "id": "62c0b4672073",
+    "name": "WOLF V1 AMS",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/62c0b4672073.png",
+    "tags": [
+      "chaveiro",
+      "wolf"
+    ]
+  },
+  {
+    "id": "08c4d5f6a257",
+    "name": "WOLF V2 MONO AMS",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/08c4d5f6a257.png",
+    "tags": [
+      "chaveiro",
+      "wolf",
+      "mono"
+    ]
+  },
+  {
+    "id": "8d0a92160a0b",
+    "name": "York Black and Tan",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/8d0a92160a0b.png",
+    "tags": [
+      "chaveiro",
+      "york",
+      "black",
+      "tan"
+    ]
+  },
+  {
+    "id": "d4211589e816",
+    "name": "York Silver",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/d4211589e816.png",
+    "tags": [
+      "chaveiro",
+      "york",
+      "silver"
+    ]
+  }
+]

@@ -8,7 +8,7 @@
 - Página inicial: **Sua ideia vira realidade**
 - Descrição: **Encontre peças feitas por fabricantes independentes ou transforme seu modelo 3D em uma peça real.**
 - Título padrão: **ViraPeça 3D — Sua ideia vira realidade**
-- Sitemap: `https://<domínio-publicado>/sitemap.xml`
+- Sitemap: `https://<domínio-publicado>/sitemap.xml` (inclui a galeria pública `/modelos`)
 - Robots: `https://<domínio-publicado>/robots.txt`
 
 O domínio público ainda não foi definido. Configure `NEXT_PUBLIC_SITE_URL` com a origem HTTPS exata antes de publicar; páginas canônicas, Open Graph e sitemap usam esse endereço. Produtos demonstrativos não entram no sitemap nem são indexáveis. Produtos reais entram somente quando publicados e acessíveis pelas políticas públicas do banco.

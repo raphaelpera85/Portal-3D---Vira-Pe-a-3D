@@ -5,7 +5,7 @@ import { ImageUp, LoaderCircle } from "lucide-react";
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
-export function CatalogImageSearch({ configured, category }: { configured: boolean; category: string }) {
+export function CatalogImageSearch({ configured, category, redirectPath = "/modelos" }: { configured: boolean; category: string; redirectPath?: string }) {
   const [image, setImage] = useState<File | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ export function CatalogImageSearch({ configured, category }: { configured: boole
       if (!response.ok || !data?.query) throw new Error(data?.error ?? "image_search_provider_failed");
       const params = new URLSearchParams({ q: data.query });
       if (category) params.set("categoria", category);
-      window.location.href = `/?${params.toString()}#produtos`;
+      window.location.href = `${redirectPath}?${params.toString()}#modelos`;
     } catch (reason) {
       const code = reason instanceof Error ? reason.message : "image_search_provider_failed";
       const messages: Record<string, string> = {

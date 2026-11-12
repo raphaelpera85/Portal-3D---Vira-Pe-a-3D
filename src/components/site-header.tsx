@@ -42,6 +42,7 @@ export function SiteHeader() {
         </Link>
         <nav className={`main-nav${menuOpen ? " is-open" : ""}`} aria-label="Navegação principal">
           <Link ref={firstMenuLinkRef} href="/#produtos" onClick={closeMenu}>Explorar</Link>
+          <Link href="/modelos" onClick={closeMenu}>Modelos 3D</Link>
           <Link href="/visualizador" onClick={closeMenu}>Visualizador 3D</Link>
           <Link href="/catalogos" onClick={closeMenu}>Catálogos</Link>
           <Link href="/lojas" onClick={closeMenu}>Lojas</Link>
