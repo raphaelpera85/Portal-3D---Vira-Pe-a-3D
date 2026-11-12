@@ -104,7 +104,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <div><dt>Velocidade máxima</dt><dd>{printer.maximumSpeedDescription ?? (printer.maximumSpeedMmPerSecond ? `${printer.maximumSpeedMmPerSecond} mm/s` : "Não informado")}</dd></div>
               <div><dt>Potência máxima</dt><dd>{powerText(printer.maximumPowerWatts)}</dd></div>
               <div><dt>Potência média medida</dt><dd>{powerText(printer.measuredAveragePowerWatts)}</dd></div>
-              <div><dt>Multicolorido</dt><dd>{printer.multicolorSystem ? `${printer.multicolorSystem} · até ${printer.multicolorSlots} filamentos` : "Não informado"}</dd></div>
+              <div><dt>Multicolorido</dt><dd>{printer.multicolorSystem ? `${printer.multicolorSystem}${printer.multicolorSlots == null ? "" : ` · até ${printer.multicolorSlots} filamentos`}` : "Não informado"}</dd></div>
             </dl>
             <SourceLinks sources={printer.sources} />
           </section>
