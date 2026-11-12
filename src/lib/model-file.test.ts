@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
-import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfUnit, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
+import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
 
 describe("model upload validation", () => {
   it("accepts STL, OBJ, 3MF, GLB and GLTF files under the size limit", () => {
@@ -79,6 +79,30 @@ describe("model dimensions", () => {
     expect(parseThreeMfUnit('<model unit="inch" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">')).toBe("in");
     expect(parseThreeMfUnit("<model>")).toBe("mm");
     expect(parseThreeMfUnit('<model unit="league">')).toBeNull();
+  });
+
+  it("reads slicer-reported per-plate and per-filament consumption without combining plates", () => {
+    const plates = parseThreeMfSliceInfo(`<config>
+      <plate><metadata key="index" value="1"/><metadata key="prediction" value="7535"/><metadata key="weight" value="33.94"/><metadata key="support_used" value="true"/><filament id="2" type="PLA" color="#FFFFFF" used_m="11.38" used_g="33.94"/></plate>
+      <plate><metadata key="index" value="2"/><metadata key="weight" value="1.5"/><filament id="1" type="PETG" color="#ff0000" used_g="1.5"/></plate>
+    </config>`);
+    expect(plates).toEqual([
+      { index: 1, weightGrams: 33.94, printTimeSeconds: 7535, supportUsed: true, filaments: [{ color: "ffffff", type: "PLA", weightGrams: 33.94, lengthMeters: 11.38 }] },
+      { index: 2, weightGrams: 1.5, printTimeSeconds: null, supportUsed: null, filaments: [{ color: "ff0000", type: "PETG", weightGrams: 1.5, lengthMeters: null }] },
+    ]);
+  });
+
+  it("ignores malformed and oversized slicer metadata", () => {
+    expect(parseThreeMfSliceInfo('<plate><metadata key="weight" value="-1"/><filament color="url(x)" used_g="NaN"/></plate>')).toEqual([]);
+    expect(parseThreeMfSliceInfo(" ".repeat(256 * 1024 + 1))).toEqual([]);
+  });
+
+  it("loads slicer results from the 3MF package when present", async () => {
+    const archive = zipSync({
+      "3D/3dmodel.model": strToU8('<model unit="millimeter"/>'),
+      "Metadata/slice_info.config": strToU8('<plate><metadata key="weight" value="2.4"/></plate>'),
+    });
+    await expect(readThreeMfPackage(archive)).resolves.toMatchObject({ slicePlates: [{ weightGrams: 2.4 }] });
   });
 
   it("maps Bambu filament slots to build objects and named parts", () => {

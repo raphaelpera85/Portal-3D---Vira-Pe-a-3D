@@ -7,6 +7,7 @@ export type ModelSourceUnit = ModelUnit | "um" | "in" | "ft";
 export type ModelFormat = "stl" | "obj" | "3mf" | "glb" | "gltf";
 export type ModelDimensions = { x: number; y: number; z: number };
 export type ThreeMfColorData = { componentPaintColors: string[][]; componentTriangleColors: string[][][]; componentPartColors: string[][]; faceColors: Record<number, string[]>; objectColors: string[]; namedColors: Record<string, string>; palette: string[]; paintPaletteColors: string[] };
+export type ThreeMfSlicePlate = { index: number | null; weightGrams: number | null; printTimeSeconds: number | null; supportUsed: boolean | null; filaments: Array<{ color: string | null; type: string | null; weightGrams: number | null; lengthMeters: number | null }> };
 
 export function getModelColorMatchedComponentIds(components: Array<{ id: string; colors: string[] }>, color: string | null) {
   return color ? components.filter((component) => component.colors.includes(color)).map((component) => component.id) : [];
@@ -75,6 +76,7 @@ export async function readThreeMfPackage(data: Uint8Array) {
   const modelXml = new TextDecoder().decode(modelPart);
   const projectSettings = Object.entries(archive).find(([name]) => /^metadata\/project_settings\.config$/i.test(name))?.[1];
   const modelSettings = Object.entries(archive).find(([name]) => /^metadata\/model_settings\.config$/i.test(name))?.[1];
+  const sliceInfo = Object.entries(archive).find(([name]) => /^metadata\/slice_info\.config$/i.test(name))?.[1];
   const colors = parseThreeMfColors(
     modelXml,
     modelSettings ? new TextDecoder().decode(modelSettings) : "",
@@ -84,7 +86,34 @@ export async function readThreeMfPackage(data: Uint8Array) {
   return {
     unit: parseThreeMfUnit(modelXml),
     colors,
+    slicePlates: sliceInfo ? parseThreeMfSliceInfo(new TextDecoder().decode(sliceInfo)) : [],
   };
+}
+
+export function parseThreeMfSliceInfo(xml: string): ThreeMfSlicePlate[] {
+  // shortcut: slice metadata above 256 KiB is skipped; raise the cap if real slicer exports require it.
+  if (xml.length > 256 * 1024) return [];
+  const numeric = (value: string | undefined) => value !== undefined && value.trim() !== "" && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null;
+  const attribute = (text: string, name: string) => text.match(new RegExp(`\\b${name}=["']([^"']*)["']`, "i"))?.[1];
+  return [...xml.matchAll(/<plate\b[^>]*>([\s\S]*?)<\/plate>/gi)].flatMap(([, body]) => {
+    const values = new Map([...body.matchAll(/<metadata\b([^>]*)\/?\s*>/gi)].map(([, attrs]) => [attribute(attrs, "key") ?? "", attribute(attrs, "value") ?? ""]));
+    const filaments = [...body.matchAll(/<filament\b([^>]*)\/?\s*>/gi)].map(([, attrs]) => {
+      const rawColor = attribute(attrs, "color")?.replace(/^#/, "");
+      return {
+        color: rawColor && /^#[\da-f]{6}$/i.test(`#${rawColor}`) ? rawColor.toLowerCase() : null,
+        type: attribute(attrs, "type") || null,
+        weightGrams: numeric(attribute(attrs, "used_g")),
+        lengthMeters: numeric(attribute(attrs, "used_m")),
+      };
+    }).filter((filament) => filament.color || filament.type || filament.weightGrams !== null || filament.lengthMeters !== null);
+    const index = numeric(values.get("index"));
+    const weightGrams = numeric(values.get("weight"));
+    const printTimeSeconds = numeric(values.get("prediction"));
+    const rawSupportUsed = values.get("support_used")?.toLowerCase();
+    const supportUsed = rawSupportUsed === "true" ? true : rawSupportUsed === "false" ? false : null;
+    if (index === null && weightGrams === null && printTimeSeconds === null && supportUsed === null && filaments.length === 0) return [];
+    return [{ index, weightGrams, printTimeSeconds, supportUsed, filaments }];
+  });
 }
 
 export function parseThreeMfColors(modelXml: string, modelSettingsXml: string, projectSettingsText: string, modelParts: Array<{ path: string; xml: string }> = []): ThreeMfColorData {

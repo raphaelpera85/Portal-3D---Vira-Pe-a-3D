@@ -10,7 +10,7 @@ import { ModelUploadManager, type SavedModelUpload } from "@/components/model-up
 import { createMeterExportCopy } from "@/lib/model-export";
 import {
   formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
-  type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, getModelColorMatchedComponentIds, getModelFormat, readThreeMfPackage, validateModelFiles,
+  type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
 
 type ViewName = "frente" | "tras" | "topo" | "base" | "esquerda" | "direita";
@@ -50,6 +50,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
   const [sourceUnit, setSourceUnit] = useState<ModelSourceUnit | null>(null);
   const [components, setComponents] = useState<ViewerComponent[]>([]);
   const [modelColors, setModelColors] = useState<string[]>([]);
+  const [slicePlates, setSlicePlates] = useState<ThreeMfSlicePlate[]>([]);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [unit, setUnit] = useState<ModelUnit | "">("");
   const [scale, setScale] = useState(100);
@@ -213,6 +214,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
     if (!kind) return false;
     setBusy(true);
     setMessage("Preparando a visualização…");
+    setSlicePlates([]);
     resourceUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     const fileUrls = new Map<string, string>();
     resourceUrlsRef.current = files.map((item) => {
@@ -226,6 +228,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
       if (!rendererRef.current) throw new Error("Este dispositivo não conseguiu iniciar a visualização WebGL.");
       const [THREE, buffer] = await Promise.all([import("three"), file.arrayBuffer()]);
       let threeMfColors: ThreeMfColorData | null = null;
+      let threeMfSlicePlates: ThreeMfSlicePlate[] = [];
       const manager = new THREE.LoadingManager();
       manager.setURLModifier((resource) => {
         let filename = resource.split(/[?#]/)[0].split(/[\\/]/).pop()!;
@@ -262,6 +265,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
         ]);
         modelUnit = packageData.unit;
         threeMfColors = packageData.colors;
+        threeMfSlicePlates = packageData.slicePlates;
         object = new ThreeMFLoader(manager).parse(buffer);
         applyThreeMfColors(object, threeMfColors, THREE);
         object.rotation.x = -Math.PI / 2;
@@ -319,6 +323,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
         ...Object.values(threeMfColors?.namedColors ?? {}),
         ...(threeMfColors?.paintPaletteColors ?? []),
       ])].filter(Boolean).slice(0, 12));
+      setSlicePlates(threeMfSlicePlates);
       const size = bounds.getSize(new THREEAgain.Vector3());
       const grid = sceneRef.current?.getObjectByName("build-grid");
       const axes = sceneRef.current?.getObjectByName("build-axes");
@@ -514,6 +519,22 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
             {views.map((view) => <button key={view.name} type="button" className="viewer-view-button" disabled={!rawDimensions} onClick={() => selectView(view.name)}>{view.label}</button>)}
             <span className="viewer-hint">Arraste para girar · scroll para zoom · botão direito para mover</span>
           </div>
+          {slicePlates.length > 0 && <section className="slice-info-panel" aria-label="Resultados registrados pelo fatiador">
+            <h2>Consumo registrado pelo fatiador</h2>
+            <p>Dados gravados no arquivo 3MF; placas separadas representam opções distintas.</p>
+            {slicePlates.map((plate, plateIndex) => <div className="slice-info-plate" key={`${plate.index ?? plateIndex}-${plateIndex}`}>
+              <strong>Placa {plate.index ?? plateIndex + 1}</strong>
+              <div className="slice-info-summary">
+                {plate.weightGrams !== null && <span>Total: {formatSliceNumber(plate.weightGrams)} g</span>}
+                {plate.printTimeSeconds !== null && <span>Tempo previsto: {formatSliceTime(plate.printTimeSeconds)}</span>}
+                {plate.supportUsed !== null && <span>{plate.supportUsed ? "Inclui suportes" : "Sem suportes"}</span>}
+              </div>
+              {plate.filaments.length > 0 && <ul>{plate.filaments.map((filament, filamentIndex) => <li key={`${filament.color ?? filament.type ?? "filamento"}-${filamentIndex}`}>
+                <span className="slice-info-filament-name">{filament.color && <i style={{ backgroundColor: `#${filament.color}` }} aria-hidden="true" />}{filament.type || `Filamento ${filamentIndex + 1}`}</span>
+                <span>{filament.weightGrams !== null ? `${formatSliceNumber(filament.weightGrams)} g` : ""}{filament.lengthMeters !== null ? `${filament.weightGrams !== null ? " · " : ""}${formatSliceNumber(filament.lengthMeters)} m` : ""}</span>
+              </li>)}</ul>}
+            </div>)}
+          </section>}
         </div>
         {!readOnly && <aside className="viewer-inspector">
           <div className="inspector-heading"><div><p className="eyebrow">PAINEL DO MODELO</p><h1>Inspecione<br /><em>cada detalhe.</em></h1></div><span className="inspector-mark"><Box size={19} /></span></div>
@@ -557,6 +578,16 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
       </div>
     </section>
   );
+}
+
+function formatSliceNumber(value: number) {
+  return value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}
+
+function formatSliceTime(seconds: number) {
+  const minutes = Math.round(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  return hours ? `${hours} h ${minutes % 60} min` : `${minutes} min`;
 }
 
 function extractModelColors(root: THREE.Object3D, format: ModelFormat, THREE: typeof import("three")) {
