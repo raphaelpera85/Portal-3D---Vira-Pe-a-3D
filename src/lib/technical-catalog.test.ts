@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { evaluateCompatibility } from "./compatibility";
+import { mapTechnicalCatalog } from "./technical-catalog-data";
 import { materials, nozzles, printers } from "./technical-catalog";
 
 describe("verified technical catalog records", () => {
@@ -16,5 +17,19 @@ describe("verified technical catalog records", () => {
     expect(result.status).toBe("incompatible");
     expect(result.checks.find((check) => check.key === "heated-bed")?.status).toBe("incompatible");
     expect(materials.every((material) => material.sources.length > 0)).toBe(true);
+  });
+
+  it("keeps cylindrical build volume descriptive instead of treating it as a rectangular box", () => {
+    const catalog = mapTechnicalCatalog([{
+      id: "flsun-v400-max",
+      manufacturer: "FLSUN",
+      model: "V400 Max",
+      variant: "standard",
+      technology: "FDM",
+      technical_properties: { buildVolumeDescription: "Cilíndrico · Ø500 × 550 mm" },
+    }], [], [], [], []);
+
+    expect(catalog.printers[0].buildVolumeMm).toBeNull();
+    expect(catalog.printers[0].buildVolumeDescription).toBe("Cilíndrico · Ø500 × 550 mm");
   });
 });

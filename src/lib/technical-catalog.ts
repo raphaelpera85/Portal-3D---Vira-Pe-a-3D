@@ -5,6 +5,7 @@ export type PrinterEntry = CatalogPrinter & {
   brand: string;
   model: string;
   variant: string;
+  buildVolumeDescription?: string | null;
   extruders: number | null;
   maximumSpeedMmPerSecond: number | null;
   maximumPowerWatts: number | null;
@@ -50,6 +51,7 @@ export const printers: PrinterEntry[] = [{
   brand: "Bambu Lab",
   model: "A1 mini",
   variant: "Combo",
+  buildVolumeDescription: null,
   technology: "FDM",
   buildVolumeMm: { x: 180, y: 180, z: 180 },
   extruders: null,

@@ -31,10 +31,11 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   const [useMulticolor, setUseMulticolor] = useState(false);
   const printer = printers.find((item) => item.id === printerId) ?? printers[0];
   const material = materials.find((item) => item.id === materialId) ?? materials[0];
-  const nozzle = nozzles.find((item) => item.id === nozzleId) ?? nozzles[0] ?? {
-    id: "unlisted-nozzle", name: "Bico não cadastrado", diameterMm: Number.NaN, material: null,
-    maxTemperatureC: null, abrasionResistant: null, printerCompatibility: null,
-  };
+  const printerNozzles = nozzles.filter((item) => {
+    const fit = item.printerCompatibility?.[printer.id];
+    return fit === "compatible" || fit === "conditional";
+  });
+  const nozzle = printerNozzles.find((item) => item.id === nozzleId) ?? printerNozzles[0];
   const checkDimensions = Object.values(dimensions).some((value) => value !== "");
   const compatibility = useMemo(() => evaluateCompatibility(printer, material, nozzle, {
     ...(checkDimensions && {
@@ -70,7 +71,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
             </label>
             <dl className="technical-facts">
               <div><dt>Tecnologia</dt><dd>{printer.technology}</dd></div>
-              <div><dt>Volume útil</dt><dd>{printer.buildVolumeMm ? `${printer.buildVolumeMm.x} × ${printer.buildVolumeMm.y} × ${printer.buildVolumeMm.z} mm` : "Não informado"}</dd></div>
+              <div><dt>Volume útil</dt><dd>{printer.buildVolumeDescription ?? (printer.buildVolumeMm ? `${printer.buildVolumeMm.x} × ${printer.buildVolumeMm.y} × ${printer.buildVolumeMm.z} mm` : "Não informado")}</dd></div>
               <div><dt>Filamento</dt><dd>{printer.filamentDiameterMm ? `${printer.filamentDiameterMm} mm` : "Não informado"}</dd></div>
               <div><dt>Hotend máximo</dt><dd>{printer.maxNozzleTemperatureC ? `${printer.maxNozzleTemperatureC} °C` : "Não informado"}</dd></div>
               <div><dt>Mesa máxima</dt><dd>{printer.maxBedTemperatureC ? `${printer.maxBedTemperatureC} °C` : "Não informado"}</dd></div>
@@ -111,16 +112,16 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
 
           {material.process === "filament" ? <section className="technical-panel">
             <div className="technical-panel-heading"><span className="technical-panel-icon is-sand"><Cpu size={17} /></span><div><p>03 / BICO</p><h2>Diâmetros cadastrados</h2></div></div>
-            {nozzles.length > 0 ? <><label className="technical-select">Bico instalado na configuração analisada
-              <select value={nozzleId} onChange={(event) => setNozzleId(event.target.value)}>
-                {nozzles.filter((item) => item.printerCompatibility?.[printer.id] !== "incompatible").map((item) => <option key={item.id} value={item.id}>{item.name}{item.original ? " · original" : ""}</option>)}
+            {printerNozzles.length > 0 ? <><label className="technical-select">Bico instalado na configuração analisada
+              <select value={nozzle?.id ?? ""} onChange={(event) => setNozzleId(event.target.value)}>
+                {printerNozzles.map((item) => <option key={item.id} value={item.id}>{item.name}{item.original ? " · original" : ""}</option>)}
               </select>
             </label>
-            <div className="nozzle-facts"><span>Material do bico</span><strong>{nozzle.material ?? "Não informado para esta variante"}</strong></div>
+            <div className="nozzle-facts"><span>Material do bico</span><strong>{nozzle?.material ?? "Não informado para esta variante"}</strong></div>
             <div className="nozzle-options" aria-label="Diâmetros listados pelo fabricante">
-              {nozzles.map((item) => <button type="button" key={item.id} className={item.id === nozzleId ? "is-selected" : ""} onClick={() => setNozzleId(item.id)}>{item.diameterMm.toLocaleString("pt-BR")} <small>mm</small></button>)}
+              {printerNozzles.map((item) => <button type="button" key={item.id} className={item.id === nozzle?.id ? "is-selected" : ""} onClick={() => setNozzleId(item.id)}>{item.diameterMm.toLocaleString("pt-BR")} <small>mm</small></button>)}
             </div>
-            <SourceLinks sources={nozzle.sources} /></> : <p className="admin-empty">Nenhum bico publicado para seleção. O encaixe e os requisitos do bico permanecem não verificados.</p>}
+            <SourceLinks sources={nozzle?.sources ?? []} /></> : <p className="admin-empty">Nenhum bico publicado para seleção. O encaixe e os requisitos do bico permanecem não verificados.</p>}
           </section> : <section className="technical-panel technical-empty-panel">
             <div className="technical-panel-heading"><span className="technical-panel-icon is-purple"><FlaskConical size={17} /></span><div><p>03 / RESINA</p><h2>Processo de cura</h2></div></div>
             <p>Resinas não usam bicos de extrusão. Compare a compatibilidade do produto com a impressora e consulte as fontes antes de definir lavagem, cura e exposição.</p>
@@ -131,7 +132,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
           <div className="compatibility-panel-heading"><ShieldCheck size={18} /><span>VERIFICAÇÃO EXPLICÁVEL</span></div>
           <h2>Compatibilidade</h2>
           <p className={`compatibility-status status-${compatibility.status}`}>{statusText[compatibility.status]}</p>
-          <p className="compatibility-model">{printer.name}<br />{material.brand} {material.name}{material.process === "filament" ? ` · ${nozzle.name}` : ""}</p>
+          <p className="compatibility-model">{printer.name}<br />{material.brand} {material.name}{material.process === "filament" && nozzle ? ` · ${nozzle.name}` : ""}</p>
           {material.process === "filament" && <label className="multicolor-toggle"><input type="checkbox" checked={useMulticolor} onChange={(event) => setUseMulticolor(event.target.checked)} /><span>Quero usar o sistema multicolorido</span></label>}
           <div className="part-dimensions">
             <span>Dimensões da peça <small>(opcional, mm)</small></span>

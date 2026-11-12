@@ -56,9 +56,11 @@ export function mapTechnicalCatalog(
     });
     const x = number(row.build_volume_x_mm), y = number(row.build_volume_y_mm), z = number(row.build_volume_z_mm);
     const buildVolumeMm = x != null && y != null && z != null ? { x, y, z } : null;
+    const properties = object(row.technical_properties);
     return {
       id: text(row.id), name: [text(row.manufacturer), text(row.model), text(row.variant)].filter(Boolean).join(" "),
       brand: text(row.manufacturer), model: text(row.model), variant: text(row.variant, "standard"),
+      buildVolumeDescription: text(properties.buildVolumeDescription) || null,
       technology: row.technology === "SLA" || row.technology === "MSLA" || row.technology === "DLP" ? row.technology : "FDM",
       buildVolumeMm, extruders: number(row.extruder_count), filamentDiameterMm: number(row.filament_diameter_mm),
       maxNozzleTemperatureC: number(row.max_nozzle_temperature_c), maxBedTemperatureC: number(row.max_bed_temperature_c),

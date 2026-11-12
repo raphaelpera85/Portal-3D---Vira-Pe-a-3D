@@ -72,7 +72,7 @@ flowchart LR
 ## Próximas integrações
 
 1. Validar os fluxos do portal contra o esquema Supabase aplicado e executar compras de teste ponta a ponta.
-2. Importar no banco as referências técnicas locais depois de rever as fontes.
+2. O primeiro lote de 14 novos modelos de impressora está em `20261112101500_seed_official_printer_catalog.sql`; relações entre os novos modelos, materiais e bicos ainda precisam de curadoria antes de serem anunciadas como compatíveis.
 3. Ligar históricos de manutenção a materiais/produtos; a calculadora identifica filamentos e resinas pelo catálogo e avalia as condições técnicas do material para o modelo de impressora vinculado. O preço de compra continua informado pelo fabricante, e a manutenção usa a média dos custos registrados por hora acumulada.
 4. Integrar um provedor de frete para cotações e etiquetas depois de definir fornecedor e credenciais.
 5. Validar pagamentos sandbox antes de qualquer cobrança real e completar conciliação financeira, relatórios administrativos e auditoria.
