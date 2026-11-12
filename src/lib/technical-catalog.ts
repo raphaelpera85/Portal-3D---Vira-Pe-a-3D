@@ -12,6 +12,7 @@ export type PrinterEntry = CatalogPrinter & {
   maximumPowerWatts: number | null;
   measuredAveragePowerWatts: number | null;
   multicolorSystem: string | null;
+  technicalProperties?: Record<string, unknown>;
   sources: CatalogSource[];
 };
 export type MaterialEntry = CatalogMaterial & {

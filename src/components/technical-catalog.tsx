@@ -40,6 +40,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   const [dimensions, setDimensions] = useState({ x: "", y: "", z: "" });
   const [useMulticolor, setUseMulticolor] = useState(false);
   const printer = printers.find((item) => item.id === printerId) ?? printers[0];
+  const multicolorSystem = printer.multicolorSystem ?? (typeof printer.technicalProperties?.multicolorUpgradeDescription === "string" ? printer.technicalProperties.multicolorUpgradeDescription : null);
   const material = materials.find((item) => item.id === materialId) ?? materials[0];
   const resinProperties = material.technicalProperties ?? {};
   const washingMethods = Array.isArray(resinProperties.washingMethods) ? resinProperties.washingMethods.filter((value): value is string => typeof value === "string") : [];
@@ -104,7 +105,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <div><dt>Velocidade máxima</dt><dd>{printer.maximumSpeedDescription ?? (printer.maximumSpeedMmPerSecond ? `${printer.maximumSpeedMmPerSecond} mm/s` : "Não informado")}</dd></div>
               <div><dt>Potência máxima</dt><dd>{powerText(printer.maximumPowerWatts)}</dd></div>
               <div><dt>Potência média medida</dt><dd>{powerText(printer.measuredAveragePowerWatts)}</dd></div>
-              <div><dt>Multicolorido</dt><dd>{printer.multicolorSystem ? `${printer.multicolorSystem}${printer.multicolorSlots == null ? "" : ` · até ${printer.multicolorSlots} filamentos`}` : "Não informado"}</dd></div>
+              <div><dt>Multicolorido</dt><dd>{multicolorSystem ? `${multicolorSystem}${printer.multicolorSlots == null ? "" : ` · até ${printer.multicolorSlots} filamentos`}` : "Não informado"}</dd></div>
             </dl>
             <SourceLinks sources={printer.sources} />
           </section>
