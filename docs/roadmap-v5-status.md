@@ -15,7 +15,7 @@ Revisão em 12 de novembro de 2026. Esta página compara os requisitos de produt
 | 7. OCR e precificação avançada | Parcial | OCR aceita até três imagens por envio, consolida leituras e deixa valores conflitantes sem preenchimento; o fabricante revisa antes de aplicar. Reconhece comprimento por filamento/cor e separa peso de purga e torre de limpeza sem somá-los automaticamente. A leitura depende do Google Cloud Vision; extração de campos, perfis, moedas e configurações ainda precisa de cobertura e validação com capturas reais por fatiador. |
 | 8. Pagamentos e logística | Parcial | Fluxos Mercado Pago, webhooks, idempotência, cancelamento e reembolso existem. O Melhor Envio oferece cotação e emissão de etiquetas com confirmação explícita do custo pelo vendedor; webhooks assinados atualizam status e rastreio. Falta validar OAuth, compra e webhooks com conta sandbox; esta versão aceita uma embalagem por pedido. |
 | 9. Orçamentos | Parcial | Solicitações, propostas, escolha do fabricante, início/conclusão da impressão, cotação manual para impressões personalizadas, pagamento, rastreio, entrega e histórico existem. Pedidos do carrinho aceitos podem receber cotação Melhor Envio, etiqueta e rastreio automático; cotação de etiqueta para impressões personalizadas segue pendente. |
-| 10. Expansão | Parcial | Arquivos digitais, suporte, notificações, perfis e relatórios têm módulos no produto. E-mail/anexos/SLA do suporte, recomendações e relatórios avançados ainda não estão completos. |
+| 10. Expansão | Parcial | Arquivos digitais, suporte com anexos privados, notificações, perfis e relatórios têm módulos no produto. E-mail/SLA do suporte, recomendações e relatórios avançados ainda não estão completos. |
 
 ## Dependências de produção observadas
 

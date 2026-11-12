@@ -696,6 +696,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .support-message > div strong { color: var(--muted-strong); }
 .support-message time { flex: 0 0 auto; }
 .support-message p { margin: 8px 0 0; color: var(--ink); font-size: 11px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.support-attachment-link { display: block; width: fit-content; max-width: 100%; margin-top: 7px; color: var(--brand); font-size: 10px; overflow-wrap: anywhere; }
+.support-attachment-link:hover { text-decoration: underline; text-underline-offset: 2px; }
 .support-reply-form { padding-top: 12px; border-top: 1px solid var(--line); }
 .admin-empty { margin: 0; padding: 18px; border: 1px dashed var(--line-strong); color: var(--muted); font-size: 12px; }
 .designer-directory { padding-bottom: 90px; }

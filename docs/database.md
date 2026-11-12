@@ -2,7 +2,7 @@
 
 A migração `supabase/migrations/20261112035854_foundation.sql` cria `profiles` e `user_roles` vinculados a `auth.users`.
 
-O atendimento está em `supabase/migrations/20261112064930_admin_support_inbox.sql`. Tickets e mensagens são visíveis somente ao usuário proprietário e aos administradores. Criação, resposta e mudança de status passam por RPCs transacionais `SECURITY DEFINER`; a sessão autenticada não recebe permissão direta de escrita nas tabelas. A exclusão da conta remove os tickets e mensagens vinculados.
+O atendimento está em `supabase/migrations/20261112064930_admin_support_inbox.sql`. Tickets e mensagens são visíveis somente ao usuário proprietário e aos administradores. Criação, resposta e mudança de status passam por RPCs transacionais `SECURITY DEFINER`; a sessão autenticada não recebe permissão direta de escrita nas tabelas. A exclusão da conta remove os tickets e mensagens vinculados. A migração `20261113010000_support_attachments.sql` adiciona anexos privados em bucket próprio; apenas participantes consultam links assinados de uma hora. São aceitos até três arquivos PDF/JPEG/PNG/WebP por resposta, com até 2 MiB por arquivo e 4 MiB combinados. O registro dos anexos valida autorização da mensagem e a presença e tamanho do objeto no Storage.
 
 - O perfil nasce automaticamente quando uma conta Supabase é criada.
 - Usuários autenticados só podem ler o próprio perfil e os próprios papéis.
