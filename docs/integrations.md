@@ -14,7 +14,7 @@ Uma solicitação de orçamento ou compra cria aviso persistente no painel do fa
 
 Itens de pronta entrega validam a quantidade contra o estoque contado no anúncio ao entrar no carrinho, na solicitação direta e na criação do pedido. Para pedidos de carrinho aceitos e solicitações diretas de compra aceitas, o início do checkout reserva o estoque de forma transacional; o webhook confirmado mantém a baixa após pagamento ou devolve as unidades quando a tentativa termina sem pagamento.
 
-A rota `GET /api/notifications/dispatch` consome a fila em lotes e exige `Authorization: Bearer <CRON_SECRET>`. `vercel.json` agenda a chamada a cada cinco minutos em deployments de produção. O worker exige `SUPABASE_SECRET_KEY` (ou a chave legada `SUPABASE_SERVICE_ROLE_KEY`), `NEXT_PUBLIC_SITE_URL` e as configurações do canal. A chave secreta é usada somente no servidor para acessar a fila; nunca deve receber o prefixo `NEXT_PUBLIC_`.
+A rota `GET /api/notifications/dispatch` consome a fila em lotes e exige `Authorization: Bearer <CRON_SECRET>`. As Server Actions também acionam o mesmo worker com `after()` depois que uma solicitação ou pedido é salvo, para que o e-mail e o WhatsApp não dependam do cron. `vercel.json` mantém uma varredura diária de recuperação compatível com o plano Hobby. O worker exige `SUPABASE_SECRET_KEY` (ou a chave legada `SUPABASE_SERVICE_ROLE_KEY`), `NEXT_PUBLIC_SITE_URL` e as configurações do canal. A chave secreta é usada somente no servidor para acessar a fila; nunca deve receber o prefixo `NEXT_PUBLIC_`.
 
 ### E-mail
 

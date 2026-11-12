@@ -1,10 +1,12 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { validateProductQuoteOffer, validateProductQuoteRequest } from "@/lib/marketplace-validation";
 import { validateCustomPrintRequest } from "@/lib/custom-print-request";
+import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const validSlug = (value: unknown): value is string => typeof value === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
@@ -25,6 +27,7 @@ export async function requestCustomPrint(formData: FormData): Promise<void> {
     p_color: request.color, p_quality: request.quality, p_due_date: request.dueDate, p_notes: request.notes,
   });
   if (error) redirect(`/visualizador?orcamento=${error.message.includes("NO_COMPATIBLE_STORES") ? "sem-fabricantes" : "erro"}`);
+  after(dispatchNotificationQueue);
   revalidatePath("/visualizador");
   revalidatePath("/orcamentos");
   revalidatePath("/painel/maker");
@@ -89,6 +92,7 @@ export async function requestProductQuote(formData: FormData): Promise<void> {
     customization: request.customization, due_date: request.dueDate,
   });
   if (error) redirect(`/produtos/${encodeURIComponent(slug)}?orcamento=erro`);
+  after(dispatchNotificationQueue);
   revalidatePath("/orcamentos");
   revalidatePath("/painel/maker");
   redirect("/orcamentos?resultado=solicitado");
@@ -112,6 +116,7 @@ export async function requestProductPurchase(formData: FormData): Promise<void> 
     quantity: request.quantity, customization: request.customization, due_date: request.dueDate,
   });
   if (error) redirect(`/produtos/${encodeURIComponent(slug)}?compra=erro`);
+  after(dispatchNotificationQueue);
   revalidatePath("/orcamentos");
   revalidatePath("/painel/maker");
   redirect("/orcamentos?resultado=compra-solicitada");

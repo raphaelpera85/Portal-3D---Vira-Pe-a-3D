@@ -1,10 +1,12 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { isBuyerAddressId } from "@/lib/buyer-address";
 import { validateProductQuoteRequest } from "@/lib/marketplace-validation";
+import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const validSlug = (value: unknown): value is string => typeof value === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
@@ -60,5 +62,6 @@ export async function checkoutCart(formData: FormData): Promise<void> {
   revalidatePath("/orcamentos");
   revalidatePath("/painel/maker");
   if (error) redirect("/carrinho?resultado=indisponivel");
+  after(dispatchNotificationQueue);
   redirect("/orcamentos?resultado=pedido-enviado");
 }

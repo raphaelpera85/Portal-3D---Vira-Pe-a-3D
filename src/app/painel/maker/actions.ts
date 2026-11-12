@@ -1,9 +1,11 @@
 "use server";
 
+import { after } from "next/server";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { validateProductDraft, validateProductInventory, validateStoreNotificationContacts } from "@/lib/marketplace-validation";
 import { validateMaintenanceEntry, validateMakerPrinter } from "@/lib/printer-equipment";
@@ -179,7 +181,8 @@ export async function retryCustomPrintNotificationDelivery(formData: FormData): 
   if (typeof deliveryId !== "string" || !uuidPattern.test(deliveryId)) return;
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) return;
-  await actor.supabase.rpc("retry_custom_print_notification_delivery", { p_delivery_id: deliveryId });
+  const { error } = await actor.supabase.rpc("retry_custom_print_notification_delivery", { p_delivery_id: deliveryId });
+  if (!error) after(dispatchNotificationQueue);
   revalidatePath("/painel/maker");
 }
 
@@ -227,7 +230,8 @@ export async function retryStoreNotificationDelivery(formData: FormData): Promis
   if (typeof deliveryId !== "string" || !uuidPattern.test(deliveryId)) return;
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) return;
-  await actor.supabase.rpc("retry_store_notification_delivery", { delivery_id: deliveryId });
+  const { error } = await actor.supabase.rpc("retry_store_notification_delivery", { delivery_id: deliveryId });
+  if (!error) after(dispatchNotificationQueue);
   revalidatePath("/painel/maker");
 }
 

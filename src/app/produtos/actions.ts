@@ -1,9 +1,11 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { validateDigitalLicense } from "@/lib/digital-assets";
+import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -16,6 +18,7 @@ export async function requestDigitalAssetPurchase(formData: FormData): Promise<v
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("request_digital_asset_purchase", { p_product_id: productId, p_license_type: licenseType });
   if (error) redirect(`/produtos/${slug}?compra=indisponivel`);
+  after(dispatchNotificationQueue);
   revalidatePath("/orcamentos");
   revalidatePath("/painel/maker");
   redirect("/orcamentos?resultado=compra-solicitada");
