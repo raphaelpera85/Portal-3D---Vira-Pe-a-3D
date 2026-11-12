@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
   if (!base) return [];
-  const fixedPages: MetadataRoute.Sitemap = ["", "/calculadora", "/catalogos", "/visualizador", "/designers"].map((path) => ({
+  const fixedPages: MetadataRoute.Sitemap = ["", "/calculadora", "/catalogos", "/visualizador", "/lojas", "/designers"].map((path) => ({
     url: new URL(path, base).toString(),
     changeFrequency: path === "" ? "weekly" : "monthly",
     priority: path === "" ? 1 : 0.6,
@@ -15,9 +15,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return fixedPages;
 
-  const [productsResult, designersResult] = await Promise.all([
+  const [productsResult, designersResult, storesResult] = await Promise.all([
     supabase.from("marketplace_products").select("slug, updated_at, media").eq("catalog_status", "published").order("published_at", { ascending: false }).limit(50000),
     supabase.from("designer_profiles").select("slug, updated_at").eq("status", "published").order("updated_at", { ascending: false }).limit(50000),
+    supabase.from("stores").select("slug, updated_at").eq("status", "published").order("updated_at", { ascending: false }).limit(50000),
   ]);
   const data = productsResult.data ?? [];
   const products: MetadataRoute.Sitemap = data.map((product) => ({
@@ -33,5 +34,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "monthly",
     priority: 0.6,
   }));
-  return [...fixedPages, ...products, ...designers];
+  const stores: MetadataRoute.Sitemap = (storesResult.data ?? []).map((store) => ({
+    url: new URL(`/lojas/${encodeURIComponent(store.slug)}`, base).toString(),
+    lastModified: store.updated_at,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+  return [...fixedPages, ...products, ...designers, ...stores];
 }

@@ -48,6 +48,8 @@
   .equipment-form-grid { grid-template-columns: 1fr; }
   .equipment-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .equipment-maintenance li { flex-direction: column; }
+  .featured-store-list, .store-directory-grid, .store-reviews-list { grid-template-columns: 1fr; }
+  .store-profile-hero { min-height: 300px; grid-template-columns: 1fr; align-content: end; gap: 14px; }
 }
 
 @theme inline {
@@ -273,6 +275,8 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .product-meta span:last-child { color: var(--muted); font-size: 14px; }
 .product-card h3 { margin: 6px 0 2px; font-family: Georgia, serif; font-size: 20px; font-weight: 400; letter-spacing: -.4px; }
 .product-maker { margin: 0; color: var(--muted); font-size: 10px; }
+.product-maker a, .product-detail-maker a { color: inherit; text-decoration: none; }
+.product-maker a:hover, .product-detail-maker a:hover { text-decoration: underline; }
 .product-price { margin: 7px 0 0; color: var(--ink); font-size: 12px; font-weight: 700; }
 .catalog-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 38px; color: var(--muted); font-size: 12px; }
 .product-detail { min-height: calc(100vh - 160px); padding-block: 34px 100px; }
@@ -306,6 +310,35 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .product-review-card > p { margin: 0; color: var(--muted-strong); line-height: 1.6; }
 .product-review-card small { color: var(--muted); font-size: 11px; }
 .product-review-stars { color: #d99016 !important; letter-spacing: 2px; font-size: 16px; }
+.featured-stores { padding-block: 30px 66px; }
+.featured-store-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.featured-store-card { display: grid; gap: 9px; padding: 17px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.featured-store-card strong { font-size: 16px; }
+.featured-store-card > span:last-child { color: var(--muted); font-size: 11px; }
+.store-directory-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.store-directory-card { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: 12px; padding: 23px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.store-directory-card > img, .store-directory-monogram { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
+.store-directory-monogram, .store-profile-monogram { display: grid; place-items: center; background: var(--surface); color: var(--brand); font-family: Georgia, serif; font-size: 34px; }
+.store-directory-card h2 { margin: 0; font-size: 22px; }
+.store-directory-card h2 a { color: var(--ink); text-decoration: none; }
+.store-directory-card p { flex: 1; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.store-profile-page { min-height: calc(100vh - 160px); padding-block: 34px 90px; }
+.store-profile-hero { position: relative; display: grid; min-height: 250px; grid-template-columns: auto 1fr; align-content: end; align-items: end; gap: 22px; overflow: hidden; margin-top: 28px; padding: clamp(22px, 5vw, 46px); border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.store-profile-banner { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .25; }
+.store-profile-hero > *:not(.store-profile-banner) { position: relative; z-index: 1; }
+.store-profile-logo, .store-profile-monogram { width: 104px; height: 104px; border: 4px solid var(--paper); border-radius: 50%; object-fit: cover; box-shadow: 0 6px 26px var(--shadow-wash); }
+.store-profile-hero h1 { margin: 8px 0; font-family: Georgia, serif; font-size: clamp(36px, 6vw, 58px); font-weight: 400; letter-spacing: -.04em; }
+.store-profile-hero p { max-width: 760px; margin: 0; color: var(--muted-strong); font-size: 14px; line-height: 1.8; white-space: pre-line; }
+.store-profile-policies { max-width: 900px; margin-top: 20px; padding: 22px; border-left: 3px solid var(--brand); background: var(--surface); }
+.store-profile-policies p { margin: 10px 0 0; color: var(--muted-strong); font-size: 13px; line-height: 1.8; white-space: pre-line; }
+.store-profile-products, .store-profile-reviews { margin-top: 56px; }
+.store-profile-products .section-heading, .store-profile-reviews .section-heading { margin-bottom: 22px; }
+.store-reviews-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.store-profile-editor { max-width: 900px; margin: 0 auto 22px; }
+.store-profile-editor .auth-form { margin-top: 18px; }
+.store-profile-editor h2 { margin-bottom: 8px; }
+.store-profile-editor > p { color: var(--muted); font-size: 12px; }
+.store-profile-editor > p a { color: var(--brand); }
 .quote-request-card { display: grid; gap: 10px; }
 .quote-request-card .auth-form { margin: 0; }
 .quote-small-note, .quote-meta { color: var(--muted); font-size: 11px; line-height: 1.6; }

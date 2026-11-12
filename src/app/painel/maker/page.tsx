@@ -15,7 +15,7 @@ import { MakerConsignmentManager } from "@/components/maker-consignment-manager"
 import { MakerPrintProfileManager } from "@/components/maker-print-profile-manager";
 import { MakerProductInventoryForm } from "@/components/maker-product-inventory-form";
 import { MakerDigitalAssetManager } from "@/components/maker-digital-asset-manager";
-import { advanceCustomPrintProduction, deleteProductDraft, markCustomPrintTargetRead, markQuoteRequestNotificationRead, markSellerOrderNotificationRead, markSellerPurchaseOrderShipped, retryCustomPrintNotificationDelivery, retryStoreNotificationDelivery, submitSellerOrderShippingQuote } from "./actions";
+import { advanceCustomPrintProduction, deleteProductDraft, markCustomPrintTargetRead, markQuoteRequestNotificationRead, markSellerOrderNotificationRead, markSellerPurchaseOrderShipped, retryCustomPrintNotificationDelivery, retryStoreNotificationDelivery, saveMakerStoreProfile, submitSellerOrderShippingQuote } from "./actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { formatBrl, formatBrlTotal } from "@/lib/money";
 import { getCustomPrintEventLabel } from "@/lib/custom-print-events";
@@ -40,9 +40,10 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user) redirect("/conta");
   if (!actor.authorized) redirect("/conta");
-  const [storeResult, categoryResult] = await Promise.all([
-    actor.supabase.from("stores").select("id, name, slug, status, description, city, state_code").eq("owner_user_id", actor.user.id).maybeSingle(),
+  const [storeResult, categoryResult, storeProfileResult] = await Promise.all([
+    actor.supabase.from("stores").select("id, name, slug, status, description, city, state_code, logo_url, banner_url").eq("owner_user_id", actor.user.id).maybeSingle(),
     actor.supabase.from("product_categories").select("id, name").eq("active", true).order("sort_order").order("name"),
+    actor.supabase.from("stores").select("commercial_policies").eq("owner_user_id", actor.user.id).maybeSingle(),
   ]);
   if (storeResult.error) return <main className="account-page shell"><p className="auth-notice is-error">Não foi possível carregar a loja. Confira as migrações do marketplace.</p></main>;
   const store = storeResult.data;
@@ -80,6 +81,10 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
         {!store ? <section className="account-card"><h2>Loja não encontrada</h2><p>Solicite a aprovação da sua conta ou fale com a equipe.</p></section> : (
           <>
             <section className="store-status-card"><span className={`store-status-dot status-${store.status}`} /> <div><strong>Status da loja: {store.status === "published" ? "Publicada" : store.status === "pending" ? "Aguardando aprovação" : "Suspensa"}</strong><p>{store.city ? `${store.city}${store.state_code ? ` · ${store.state_code}` : ""} · ` : ""}{store.description}</p></div></section>
+            {(resultado === "loja-perfil-salvo" || resultado === "loja-perfil-erro") && <p className={`auth-notice ${resultado === "loja-perfil-erro" ? "is-error" : "is-success"}`} role="status">{resultado === "loja-perfil-salvo" ? "Perfil público da loja atualizado." : "Não foi possível salvar o perfil. Confira os campos e se a migração 035 foi aplicada."}</p>}
+            {store.status !== "suspended" && <section className="account-card maker-products-card store-profile-editor"><span className="account-kicker">SUA VITRINE</span><h2>Perfil público da loja</h2>{store.status === "published" ? <p><Link href={`/lojas/${store.slug}`}>Ver página pública da loja ↗</Link></p> : <p>A página pública ficará disponível quando a loja for aprovada.</p>}
+              <form action={saveMakerStoreProfile} className="auth-form"><label>Descrição<textarea name="description" defaultValue={store.description} maxLength={1000} rows={4} required /></label><div className="equipment-form-grid"><label>URL segura do logotipo<input name="logoUrl" type="url" defaultValue={store.logo_url ?? ""} placeholder="https://..." maxLength={2048} /></label><label>URL segura do banner<input name="bannerUrl" type="url" defaultValue={store.banner_url ?? ""} placeholder="https://..." maxLength={2048} /></label><label>Cidade<input name="city" defaultValue={store.city ?? ""} maxLength={80} /></label><label>UF<input name="stateCode" defaultValue={store.state_code ?? ""} maxLength={2} pattern="[A-Za-z]{2}" /></label></div><label>Políticas comerciais<textarea name="commercialPolicies" defaultValue={storeProfileResult.data?.commercial_policies ?? ""} maxLength={2000} rows={5} placeholder="Prazo para troca, cancelamento, personalização e atendimento..." /></label><button className="button button-primary" type="submit">Salvar perfil da loja</button>{storeProfileResult.error && <small className="quote-small-note">A edição do perfil requer a migração 035 do banco.</small>}</form>
+            </section>}
             <section className="account-card maker-products-card"><span className="account-kicker">CENTRAL DE AVISOS {unreadQuotes.length + unreadCustomPrints.length + unreadOrders.length > 0 ? `· ${unreadQuotes.length + unreadCustomPrints.length + unreadOrders.length} NOVO(S)` : ""}</span><h2>Notificações</h2>
                 {quoteResult.error || customPrintResult.error || orderResult.error ? <p>As notificações ficarão disponíveis após aplicar as migrações do marketplace.</p> : unreadQuotes.length === 0 && unreadCustomPrints.length === 0 && unreadOrders.length === 0 ? <p>Você não tem novas solicitações.</p> : <>
                   {unreadQuotes.length > 0 && <ul className="maker-notification-list">{unreadQuotes.map((request) => <li key={request.id}><div><strong>{request.product_name}</strong><span>{request.request_type === "purchase" ? "Solicitação de compra" : "Pedido de orçamento"} · quantidade {request.quantity}</span></div><div className="maker-notification-actions"><Link className="viewer-back-link" href={`#request-${request.id}`}>Ver pedido</Link><form action={markQuoteRequestNotificationRead}><input type="hidden" name="requestId" value={request.id} /><button className="button button-secondary" type="submit">Marcar como lida</button></form></div></li>)}</ul>}

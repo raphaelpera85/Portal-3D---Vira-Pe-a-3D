@@ -44,6 +44,7 @@ export function SiteHeader() {
           <Link ref={firstMenuLinkRef} href="/#produtos" onClick={closeMenu}>Explorar</Link>
           <Link href="/visualizador" onClick={closeMenu}>Visualizador 3D</Link>
           <Link href="/catalogos" onClick={closeMenu}>Catálogos</Link>
+          <Link href="/lojas" onClick={closeMenu}>Lojas</Link>
           <Link href="/designers" onClick={closeMenu}>Designers</Link>
           <Link href="/favoritos" onClick={closeMenu}>Favoritos</Link>
           <Link href="/calculadora" onClick={closeMenu}>Calculadora</Link>

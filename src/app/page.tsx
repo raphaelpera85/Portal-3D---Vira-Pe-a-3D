@@ -73,6 +73,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
   ]);
   const favoriteProductIds = favoritesResult?.data?.map((favorite) => favorite.product_id) ?? [];
   const banners = bannersResult?.data ?? [];
+  const featuredStores = [...new Map(catalog.products.flatMap((product) => product.storeSlug
+    ? [[product.storeSlug, { slug: product.storeSlug, name: product.maker }] as const] : []).map(([slug, store]) => [slug, store])).values()].slice(0, 4);
   return (
     <>
       <SiteHeader />
@@ -127,6 +129,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
         </section>
 
         <ProductCatalog products={catalog.products} categories={catalog.categories} source={catalog.source} notice={catalog.error ?? (catalog.source === "local" ? "O catálogo conectado ainda não está configurado; veja produtos de demonstração." : null)} query={catalog.query} category={catalog.category} page={catalog.page} pages={catalog.pages} canFavorite={Boolean(buyer.user && buyer.authorized)} favoriteProductIds={favoriteProductIds} />
+
+        {featuredStores.length > 0 && <section className="featured-stores shell"><div className="section-heading"><div><p className="eyebrow">QUEM FAZ ACONTECER</p><h2>Lojas com novidades</h2></div><Link className="button button-secondary" href="/lojas">Ver todas as lojas</Link></div><div className="featured-store-list">{featuredStores.map((store) => <Link className="featured-store-card" href={`/lojas/${store.slug}`} key={store.slug}><span className="account-kicker">FABRICANTE APROVADO</span><strong>{store.name}</strong><span>Conheça a vitrine →</span></Link>)}</div></section>}
 
         <section className="maker-section" id="fabricantes">
           <div className="shell maker-grid">

@@ -112,6 +112,42 @@ export async function saveStoreNotificationContacts(_previous: StoreNotification
   return { message: "Contatos de notificação salvos.", success: true };
 }
 
+export async function saveMakerStoreProfile(formData: FormData): Promise<void> {
+  const description = formData.get("description");
+  const logoUrl = formData.get("logoUrl");
+  const bannerUrl = formData.get("bannerUrl");
+  const city = formData.get("city");
+  const stateCode = formData.get("stateCode");
+  const policies = formData.get("commercialPolicies");
+  const imageUrl = (value: FormDataEntryValue | null) => {
+    if (typeof value !== "string" || !value.trim()) return value === "" ? null : undefined;
+    try {
+      const url = new URL(value.trim());
+      return url.protocol === "https:" && url.hostname.includes(".") && !url.username && !url.password && value.length <= 2048 ? url.toString() : undefined;
+    } catch { return undefined; }
+  };
+  const logo = imageUrl(logoUrl);
+  const banner = imageUrl(bannerUrl);
+  if (typeof description !== "string" || description.length > 1000
+    || typeof city !== "string" || city.length > 80
+    || typeof stateCode !== "string" || (stateCode.trim() && !/^[a-z]{2}$/i.test(stateCode.trim()))
+    || typeof policies !== "string" || policies.length > 2000 || logo === undefined || banner === undefined) {
+    redirect("/painel/maker?resultado=loja-perfil-erro");
+  }
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { data: slug, error } = await actor.supabase.rpc("save_maker_store_profile", {
+    p_description: description, p_logo_url: logo, p_banner_url: banner,
+    p_city: city, p_state_code: stateCode.trim().toUpperCase() || null, p_commercial_policies: policies,
+  });
+  if (error || typeof slug !== "string") redirect("/painel/maker?resultado=loja-perfil-erro");
+  revalidatePath("/painel/maker");
+  revalidatePath(`/lojas/${slug}`);
+  revalidatePath("/lojas");
+  revalidatePath("/");
+  redirect("/painel/maker?resultado=loja-perfil-salvo");
+}
+
 export async function markQuoteRequestNotificationRead(formData: FormData): Promise<void> {
   const requestId = formData.get("requestId");
   if (typeof requestId !== "string" || !uuidPattern.test(requestId)) return;

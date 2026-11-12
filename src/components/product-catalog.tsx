@@ -56,7 +56,7 @@ export function ProductCatalog({ products, categories, source, notice, query, ca
             </Link>{canFavorite && !product.demo && <FavoriteButton productId={product.id} slug={product.slug} initialFavorite={favoriteProductIds.includes(product.id)} />}</div>
             <div className="product-meta"><span>{product.category}</span><span aria-hidden="true">↗</span></div>
             <h3><Link href={`/produtos/${product.slug}`}>{product.name}</Link></h3>
-            <p className="product-maker">{product.maker}</p>
+            <p className="product-maker">{product.storeSlug ? <Link href={`/lojas/${product.storeSlug}`}>{product.maker}</Link> : product.maker}</p>
             <p className="product-price">{product.priceLabel}</p>
           </article>
         ))}

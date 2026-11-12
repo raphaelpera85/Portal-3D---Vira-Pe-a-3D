@@ -64,7 +64,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
           <section className="product-detail-copy">
             <p className="eyebrow">{product.category}</p>
             <h1>{product.name}</h1>
-            <p className="product-detail-maker">Por <strong>{product.maker}</strong></p>
+            <p className="product-detail-maker">Por <strong>{product.storeSlug ? <Link href={`/lojas/${product.storeSlug}`}>{product.maker}</Link> : product.maker}</strong></p>
             <p className="product-detail-price">{product.priceLabel}</p>
             {!product.demo && <p className="product-availability">{product.listingType === "digital" ? "Arquivo digital STL/3MF · download privado após pagamento" : product.stockQuantity != null ? product.stockQuantity === 0 ? "Sem unidades disponíveis" : `${product.stockQuantity} unidade${product.stockQuantity === 1 ? "" : "s"} em estoque` : product.fulfillmentMode === "made_to_order" ? `Produzido sob encomenda${product.preparationDays == null ? "" : ` · preparação em até ${product.preparationDays} dias`}` : product.fulfillmentMode === "ready_to_ship" ? "Disponibilidade a confirmar com o fabricante" : "Disponibilidade confirmada após consulta"}</p>}
             {!product.demo && buyer?.user && buyer.authorized && <FavoriteButton productId={product.id} slug={product.slug} initialFavorite={Boolean(favoriteResult?.data)} />}
