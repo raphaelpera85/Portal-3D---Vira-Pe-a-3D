@@ -7,7 +7,7 @@ describe("mapTechnicalCatalog", () => {
     const catalog = mapTechnicalCatalog(
       [{ id: "printer-1", manufacturer: "Maker", model: "M1", variant: "Combo", technology: "FDM", build_volume_x_mm: 180, build_volume_y_mm: 180, build_volume_z_mm: 180, filament_diameter_mm: "1.75", max_nozzle_temperature_c: 260, max_bed_temperature_c: 100, heated_bed: true, source_url: "https://example.com/printer", verified_at: "2026-01-01" }],
       [{ id: "material-1", manufacturer: "Maker", product: "PLA", family: "PLA", process: "filament", filament_diameter_mm: 1.75, nozzle_temperature_min_c: 190, nozzle_temperature_max_c: 220, source_url: "https://example.com/material", verified_at: "2026-01-01" }],
-      [{ id: "nozzle-1", manufacturer: "Maker", model: "M1 nozzle", diameter_mm: 0.4, catalog_status: "published", technical_properties: { original: true }, source_url: "https://example.com/nozzle", verified_at: "2026-01-01" }],
+      [{ id: "nozzle-1", manufacturer: "Maker", model: "M1 nozzle", diameter_mm: 0.4, original: true, catalog_status: "published", source_url: "https://example.com/nozzle", verified_at: "2026-01-01" }],
       [{ printer_id: "printer-1", material_id: "material-1", compatibility: "compatible" }],
       [{ printer_id: "printer-1", nozzle_id: "nozzle-1", fit: "compatible" }],
     );

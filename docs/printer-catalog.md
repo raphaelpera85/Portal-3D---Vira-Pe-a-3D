@@ -8,7 +8,9 @@ A migração `20261112130331_seed_official_printer_catalog.sql` amplia o catálo
 
 A migração `20261112190000_seed_additional_official_printers.sql` adiciona Bambu Lab A1, Creality Ender-3 V3 KE e ELEGOO Saturn 4 Ultra 12K. A velocidade da Saturn permanece em mm/h nas propriedades técnicas, sem conversão para o campo de velocidade FDM em mm/s. Potência e características não publicadas pelas fontes ficam desconhecidas.
 
-O lote não publica compatibilidade entre esses novos modelos, materiais ou bicos. O painel mostra apenas bicos com relação de encaixe publicada para a impressora selecionada; materiais sem relação publicada continuam sinalizados como não verificados.
+A migração `20261112200000_expand_official_material_nozzle_catalog.sql` amplia os materiais publicados com Prusament PLA, PETG, ASA, PA11 e PA11 Carbon Fiber e ELEGOO ABS-Like Resin V3.0. Temperaturas e requisitos sem declaração de fabricante continuam como desconhecidos; materiais que não têm relação expressa com uma impressora não são marcados como compatíveis. A mesma migração cadastra os diâmetros 0,2/0,4/0,6/0,8 mm do hotend A1 e liga-os ao modelo A1, conforme o guia oficial.
+
+O lote não publica compatibilidade entre materiais e impressoras sem declaração explícita. O painel mostra apenas bicos com relação de encaixe publicada para a impressora selecionada; materiais sem relação publicada continuam sinalizados como não verificados.
 
 O cron diário dispara a verificação de fontes no dia UTC configurado em `CATALOG_SOURCE_CHECK_DAY_UTC` (segunda-feira por padrão). O monitor usa `HEAD` apenas nos domínios oficiais permitidos e guarda `ETag`/`Last-Modified`; alterações detectadas, redirecionamentos fora da lista permitida ou páginas ausentes geram alertas em `/admin/catalogos/atualizacoes`. As especificações não são alteradas automaticamente. A cada edição administrativa das impressoras, materiais ou bicos, um trigger guarda a versão anterior em `catalog_versions`. A detecção de novos modelos por índice/feed de fabricante ainda depende de uma fonte estruturada aprovada; não é feito scraping de páginas.
 

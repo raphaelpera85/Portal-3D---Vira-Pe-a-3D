@@ -80,7 +80,7 @@ export function mapTechnicalCatalog(
     id: text(row.id), name: text(row.model), brand: text(row.manufacturer), diameterMm: number(row.diameter_mm) ?? 0,
     material: text(row.body_material) || null, maxTemperatureC: number(row.max_temperature_c),
     abrasionResistant: boolean(row.abrasion_resistant), printerCompatibility: nozzleRelations.get(text(row.id)) ?? null,
-    original: boolean(object(row.technical_properties).original) ?? false, sources: source(row),
+    original: boolean(row.original) ?? boolean(object(row.technical_properties).original) ?? false, sources: source(row),
   }));
   return { printers, materials, nozzles };
 }
