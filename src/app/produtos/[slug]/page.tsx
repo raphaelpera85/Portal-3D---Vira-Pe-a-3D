@@ -15,6 +15,7 @@ import { readPrintProfileColors } from "@/lib/print-profile-colors";
 import { DigitalAssetPurchaseForm } from "@/components/digital-asset-purchase-form";
 import { DigitalAssetReportForm } from "@/components/digital-asset-report-form";
 import { ModelViewer } from "@/components/model-viewer";
+import { ProductVariantChooser } from "@/components/product-variant-chooser";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   } : { title: "Produto não encontrado | ViraPeça 3D", robots: { index: false } };
 }
 
-export default async function ProductPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ orcamento?: string; compra?: string; carrinho?: string; denuncia?: string }> }) {
+export default async function ProductPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ orcamento?: string; compra?: string; carrinho?: string; denuncia?: string; variant?: string }> }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const product = await loadMarketplaceProduct(slug);
   if (!product) notFound();
@@ -47,6 +48,10 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   const favoriteResult = buyer?.supabase && buyer.user && buyer.authorized
     ? await buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id).eq("product_id", product.id).maybeSingle()
     : null;
+  const selectedVariant = product.variants?.find((variant) => variant.id === query.variant) ?? null;
+  const availabilityLabel = selectedVariant
+    ? selectedVariant.stockQuantity == null ? "Produzido sob encomenda" : selectedVariant.stockQuantity === 0 ? "Sem unidades disponíveis" : `${selectedVariant.stockQuantity} unidade${selectedVariant.stockQuantity === 1 ? "" : "s"} em estoque`
+    : product.listingType === "digital" ? "Arquivo digital STL/3MF · download privado após pagamento" : product.stockQuantity != null ? product.stockQuantity === 0 ? "Sem unidades disponíveis" : `${product.stockQuantity} unidade${product.stockQuantity === 1 ? "" : "s"} em estoque` : product.fulfillmentMode === "made_to_order" ? `Produzido sob encomenda${product.preparationDays == null ? "" : ` · preparação em até ${product.preparationDays} dias`}` : product.fulfillmentMode === "ready_to_ship" ? "Disponibilidade a confirmar com o fabricante" : "Disponibilidade confirmada após consulta";
   const siteUrl = getSiteUrl();
   const productUrl = siteUrl ? new URL(`/produtos/${encodeURIComponent(product.slug)}`, siteUrl).toString() : null;
   const availability = (stockQuantity: number | null) => stockQuantity === 0
@@ -56,6 +61,12 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
       : undefined;
   const stockStatus = availability(product.stockQuantity);
   const hasVariants = Boolean(product.variants?.length || Object.keys(product.variantOptions ?? {}).length);
+  const variantProperties: Record<string, string> = { cor: "color", color: "color", tamanho: "size", size: "size", material: "material", estampa: "pattern", padrao: "pattern", pattern: "pattern" };
+  const normalizeVariantProperty = (name: string) => name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  const variesBy = Object.keys(product.variantOptions ?? {}).flatMap((name) => {
+    const property = variantProperties[normalizeVariantProperty(name)];
+    return property ? [`https://schema.org/${property}`] : [];
+  });
   const offers = product.listingType === "digital"
     ? product.digitalAsset ? [
       { name: "Uso pessoal", price: product.digitalAsset.personalPriceBrl },
@@ -64,11 +75,40 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
     : !hasVariants && product.priceMode === "fixed" && product.priceBrl != null
         ? [{ "@type": "Offer", price: product.priceBrl, priceCurrency: "BRL", url: productUrl, ...(stockStatus ? { availability: stockStatus } : {}) }]
         : [];
-  const productStructuredData = !product.demo && productUrl ? {
+  const productDescription = product.description || "O fabricante ainda não adicionou uma descrição para este produto.";
+  const productStructuredData = !product.demo && productUrl ? product.variants?.length ? {
+    "@context": "https://schema.org",
+    "@type": "ProductGroup",
+    name: product.name,
+    description: productDescription,
+    url: productUrl,
+    productGroupID: product.id,
+    ...(variesBy.length ? { variesBy: [...new Set(variesBy)] } : {}),
+    hasVariant: product.variants.map((variant) => {
+      const variantUrl = `${productUrl}?variant=${encodeURIComponent(variant.id)}`;
+      const variantAvailability = availability(variant.stockQuantity);
+      const attributes = Object.fromEntries(Object.entries(variant.options).flatMap(([name, value]) => {
+        const property = variantProperties[normalizeVariantProperty(name)];
+        return property ? [[property, value]] : [];
+      }));
+      return {
+        "@type": "Product",
+        sku: variant.id,
+        name: `${product.name} · ${Object.values(variant.options).join(" · ")}`,
+        url: variantUrl,
+        ...(product.media.length ? { image: product.media } : {}),
+        ...attributes,
+        offers: {
+          "@type": "Offer", url: variantUrl, price: variant.priceBrl, priceCurrency: "BRL",
+          ...(variantAvailability ? { availability: variantAvailability } : {}),
+        },
+      };
+    }),
+  } : {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.description || "O fabricante ainda não adicionou uma descrição para este produto.",
+    description: productDescription,
     category: product.category,
     url: productUrl,
     ...(product.media.length ? { image: product.media } : {}),
@@ -93,11 +133,12 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
             <p className="eyebrow">{product.category}</p>
             <h1>{product.name}</h1>
             <p className="product-detail-maker">Por <strong>{product.storeSlug ? <Link href={`/lojas/${product.storeSlug}`}>{product.maker}</Link> : product.maker}</strong></p>
-            <p className="product-detail-price">{product.priceLabel}</p>
-            {!product.demo && <p className="product-availability">{product.listingType === "digital" ? "Arquivo digital STL/3MF · download privado após pagamento" : product.stockQuantity != null ? product.stockQuantity === 0 ? "Sem unidades disponíveis" : `${product.stockQuantity} unidade${product.stockQuantity === 1 ? "" : "s"} em estoque` : product.fulfillmentMode === "made_to_order" ? `Produzido sob encomenda${product.preparationDays == null ? "" : ` · preparação em até ${product.preparationDays} dias`}` : product.fulfillmentMode === "ready_to_ship" ? "Disponibilidade a confirmar com o fabricante" : "Disponibilidade confirmada após consulta"}</p>}
+            <p className="product-detail-price">{selectedVariant ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(selectedVariant.priceBrl) : product.priceLabel}</p>
+            {!product.demo && <p className="product-availability">{availabilityLabel}</p>}
             {!product.demo && buyer?.user && buyer.authorized && <FavoriteButton productId={product.id} slug={product.slug} initialFavorite={Boolean(favoriteResult?.data)} />}
             <p className="product-detail-description">{product.description || "O fabricante ainda não adicionou uma descrição para este produto."}</p>
             {product.tags.length > 0 && <div className="product-tags" aria-label="Características">{product.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
+            {!product.demo && product.variants?.length ? <ProductVariantChooser variants={product.variants} options={product.variantOptions ?? {}} /> : null}
             {!product.demo && product.listingType === "digital" ? product.digitalAsset
               ? <DigitalAssetPurchaseForm productId={product.id} slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} personalPriceBrl={product.digitalAsset.personalPriceBrl} commercialPriceBrl={product.digitalAsset.commercialPriceBrl} />
               : <div className="product-detail-note"><strong>Arquivo digital</strong><p>As licenças estão temporariamente indisponíveis.</p></div>

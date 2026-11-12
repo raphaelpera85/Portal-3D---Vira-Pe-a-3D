@@ -9,7 +9,7 @@ export function ProductVariantFields({ options, selected, onChange }: {
 }) {
   return <>
     {Object.entries(options).map(([name, values]) => <label key={name}>{name}
-      <select required value={selected[name] ?? ""} onChange={(event) => onChange({ ...selected, [name]: event.target.value })}>
+      <select value={selected[name] ?? ""} onChange={(event) => onChange({ ...selected, [name]: event.target.value })}>
         {values.map((value) => <option key={value} value={value}>{value}</option>)}
       </select>
     </label>)}
