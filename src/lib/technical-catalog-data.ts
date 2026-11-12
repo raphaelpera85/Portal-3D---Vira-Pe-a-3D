@@ -27,7 +27,7 @@ export function mapTechnicalCatalog(
     const properties = object(row.technical_properties);
     const colors = Array.isArray(row.colors) ? row.colors.flatMap((entry) => {
       const color = object(entry);
-      return typeof color.name === "string" && typeof color.hex === "string" ? [{ name: color.name, hex: color.hex }] : [];
+      return typeof color.name === "string" && (typeof color.hex === "string" || color.hex === null) ? [{ name: color.name, hex: color.hex }] : [];
     }) : [];
     const drying = row.drying_required == null ? null : {
       required: boolean(row.drying_required) ?? false,
@@ -44,7 +44,7 @@ export function mapTechnicalCatalog(
       enclosureRequired: boolean(row.requires_enclosure), abrasive: boolean(row.abrasive),
       multicolorCompatible: boolean(row.multicolor_compatible), printSpeedMaximumMmPerSecond: number(row.max_print_speed_mm_s),
       drying, colors, resinWavelengthNm: number(row.resin_wavelength_nm),
-      resinExposureSeconds: number(row.resin_exposure_seconds), sources: source(row),
+      resinExposureSeconds: number(row.resin_exposure_seconds), technicalProperties: properties, sources: source(row),
     };
   });
   const familyByMaterialId = new Map(materials.map((item) => [item.id, item.family.toLocaleUpperCase("pt-BR")]));

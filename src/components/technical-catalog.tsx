@@ -13,6 +13,16 @@ const statusText = {
 };
 
 const powerText = (watts: number | null) => watts == null ? "Não medida" : `${watts} W`;
+const numericRange = (value: unknown) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const range = value as Record<string, unknown>;
+  return typeof range.min === "number" && Number.isFinite(range.min) && typeof range.max === "number" && Number.isFinite(range.max)
+    ? { min: range.min, max: range.max } : null;
+};
+const rangeLabel = (value: unknown, unit: string) => {
+  const range = numericRange(value);
+  return range ? `${range.min.toLocaleString("pt-BR")}–${range.max.toLocaleString("pt-BR")} ${unit}` : null;
+};
 
 type TechnicalCatalogProps = { printers: PrinterEntry[]; materials: MaterialEntry[]; nozzles: NozzleEntry[]; notice: string | null };
 
@@ -31,6 +41,16 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   const [useMulticolor, setUseMulticolor] = useState(false);
   const printer = printers.find((item) => item.id === printerId) ?? printers[0];
   const material = materials.find((item) => item.id === materialId) ?? materials[0];
+  const resinProperties = material.technicalProperties ?? {};
+  const resinExposureByPrinter = Array.isArray(resinProperties.exposureByPrinter) ? resinProperties.exposureByPrinter.flatMap((value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+    const item = value as Record<string, unknown>;
+    return typeof item.printer === "string" && typeof item.layerHeightMm === "number" && Number.isFinite(item.layerHeightMm)
+      && typeof item.normalExposureSeconds === "number" && Number.isFinite(item.normalExposureSeconds)
+      && typeof item.bottomExposureSeconds === "number" && Number.isFinite(item.bottomExposureSeconds)
+      ? [{ printer: item.printer, layerHeightMm: item.layerHeightMm, normalExposureSeconds: item.normalExposureSeconds, bottomExposureSeconds: item.bottomExposureSeconds }]
+      : [];
+  }) : [];
   const printerNozzles = nozzles.filter((item) => {
     const fit = item.printerCompatibility?.[printer.id];
     return fit === "compatible" || fit === "conditional";
@@ -91,7 +111,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               </select>
             </label>
             <div className="material-summary">
-              <strong>{material.name}</strong><span>{material.family} · densidade {material.densityGPerCm3 == null ? "não informada" : `${material.densityGPerCm3.toLocaleString("pt-BR")} g/cm³`}</span>
+              <strong>{material.name}</strong><span>{material.family} · densidade {material.densityGPerCm3 == null ? rangeLabel(resinProperties.densityGPerCm3, "g/cm³") ?? "não informada" : `${material.densityGPerCm3.toLocaleString("pt-BR")} g/cm³`}</span>
             </div>
             {material.process === "filament" ? <dl className="technical-facts material-facts">
               <div><dt>Diâmetro do filamento</dt><dd>{material.filamentDiameterMm == null ? "Não informado" : `${material.filamentDiameterMm} mm`}</dd></div>
@@ -102,11 +122,14 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <div><dt>Velocidade indicada</dt><dd>{material.printSpeedMaximumMmPerSecond ? `Até ${material.printSpeedMaximumMmPerSecond} mm/s` : "Não informada"}</dd></div>
               <div><dt>Sistema multicolorido</dt><dd>{material.multicolorCompatible == null ? "Não verificado" : material.multicolorCompatible ? "Compatível" : "Não recomendado"}</dd></div>
             </dl> : <dl className="technical-facts material-facts">
-              <div><dt>Comprimento de onda</dt><dd>{material.resinWavelengthNm == null ? "Não informado" : `${material.resinWavelengthNm} nm`}</dd></div>
-              <div><dt>Exposição por camada</dt><dd>{material.resinExposureSeconds == null ? "Não informada" : `${material.resinExposureSeconds} s`}</dd></div>
-              <div><dt>Compatibilidade</dt><dd>Verificada por modelo de impressora</dd></div>
+              <div><dt>Comprimento de onda</dt><dd>{rangeLabel(resinProperties.wavelengthNm, "nm") ?? (material.resinWavelengthNm == null ? "Não informado" : `${material.resinWavelengthNm} nm`)}</dd></div>
+              <div><dt>Viscosidade{typeof resinProperties.viscosityMpas === "object" && resinProperties.viscosityMpas && "temperatureC" in resinProperties.viscosityMpas ? ` a ${String(resinProperties.viscosityMpas.temperatureC)} °C` : ""}</dt><dd>{rangeLabel(resinProperties.viscosityMpas, "mPa·s") ?? "Não informada"}</dd></div>
+              <div><dt>Exposição normal</dt><dd>{rangeLabel(resinProperties.normalExposureSeconds, "s") ?? (material.resinExposureSeconds == null ? "Não informada" : `${material.resinExposureSeconds} s`)}</dd></div>
+              <div><dt>Exposição das primeiras camadas</dt><dd>{rangeLabel(resinProperties.firstLayerExposureSeconds, "s") ?? "Não informada"}</dd></div>
+              <div><dt>Compatibilidade</dt><dd>Consulte a verificação ao lado para o modelo selecionado</dd></div>
             </dl>}
-            {material.colors.length > 0 && <div className="material-swatches"><span>Cores de referência</span>{material.colors.map((color) => <span className="material-swatch" key={color.name} title={`${color.name} ${color.hex}`} style={{ "--swatch": color.hex } as React.CSSProperties} aria-label={color.name} />)}</div>}
+            {resinExposureByPrinter.length > 0 && <div className="resin-exposure-table-wrap"><p>Configuração do fabricante por impressora</p><table className="resin-exposure-table"><thead><tr><th>Impressora</th><th>Camada</th><th>Normal</th><th>Base</th></tr></thead><tbody>{resinExposureByPrinter.map((item) => <tr key={item.printer}><th scope="row">{item.printer}</th><td>{item.layerHeightMm} mm</td><td>{item.normalExposureSeconds} s</td><td>{item.bottomExposureSeconds} s</td></tr>)}</tbody></table></div>}
+            {material.colors.length > 0 && <div className="material-swatches"><span>Cores de referência</span>{material.colors.map((color) => <span className={`material-swatch${color.hex ? "" : " is-clear"}`} key={color.name} title={color.name} style={color.hex ? { "--swatch": color.hex } as React.CSSProperties : undefined} aria-label={color.name} />)}</div>}
             <SourceLinks sources={material.sources} />
           </section>
 

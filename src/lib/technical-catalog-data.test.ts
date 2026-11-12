@@ -3,6 +3,31 @@ import { evaluateCompatibility } from "./compatibility";
 import { mapTechnicalCatalog } from "./technical-catalog-data";
 
 describe("mapTechnicalCatalog", () => {
+  it("preserves manufacturer resin ranges, colors and printer-specific exposure settings", () => {
+    const catalog = mapTechnicalCatalog([], [{
+      id: "resin-1", manufacturer: "Anycubic", product: "Standard Resin V2", family: "standard resin", process: "resin",
+      density_g_cm3: null, colors: [{ name: "Clear", hex: null }, { name: "Blue", hex: "#00A3E0" }],
+      technical_properties: {
+        densityGPerCm3: { min: 1.05, max: 1.25 },
+        viscosityMpas: { min: 250, max: 350, temperatureC: 25 },
+        wavelengthNm: { min: 365, max: 405 },
+        firstLayerExposureSeconds: { min: 20, max: 40 },
+        normalExposureSeconds: { min: 2.5, max: 3 },
+        exposureByPrinter: [{ printer: "Photon P1", layerHeightMm: 0.05, normalExposureSeconds: 2, bottomExposureSeconds: 20 }],
+      }, source_url: "https://example.com/resin", verified_at: "2026-11-12",
+    }], [], [], []);
+
+    expect(catalog.materials[0]).toMatchObject({
+      densityGPerCm3: null,
+      colors: [{ name: "Clear", hex: null }, { name: "Blue", hex: "#00A3E0" }],
+      technicalProperties: {
+        densityGPerCm3: { min: 1.05, max: 1.25 },
+        wavelengthNm: { min: 365, max: 405 },
+        exposureByPrinter: [{ printer: "Photon P1", normalExposureSeconds: 2 }],
+      },
+    });
+  });
+
   it("maps published records and only treats an explicit relation as verified", () => {
     const catalog = mapTechnicalCatalog(
       [{ id: "printer-1", manufacturer: "Maker", model: "M1", variant: "Combo", technology: "FDM", build_volume_x_mm: 180, build_volume_y_mm: 180, build_volume_z_mm: 180, filament_diameter_mm: "1.75", max_nozzle_temperature_c: 260, max_bed_temperature_c: 100, heated_bed: true, source_url: "https://example.com/printer", verified_at: "2026-01-01" }],

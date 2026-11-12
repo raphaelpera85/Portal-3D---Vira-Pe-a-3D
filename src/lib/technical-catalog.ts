@@ -20,7 +20,8 @@ export type MaterialEntry = CatalogMaterial & {
   drying: { required: boolean; temperatureC: number | null; hours: number | null } | null;
   resinWavelengthNm: number | null;
   resinExposureSeconds: number | null;
-  colors: { name: string; hex: string }[];
+  colors: { name: string; hex: string | null }[];
+  technicalProperties?: Record<string, unknown>;
   sources: CatalogSource[];
 };
 export type NozzleEntry = CatalogNozzle & {
