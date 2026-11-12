@@ -1,0 +1,154 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { ArrowUpRight, CircleHelp, Cpu, FlaskConical, Printer, ShieldCheck } from "lucide-react";
+import { evaluateCompatibility } from "@/lib/compatibility";
+import type { MaterialEntry, NozzleEntry, PrinterEntry } from "@/lib/technical-catalog";
+
+const statusText = {
+  compatible: "Compatível",
+  conditional: "Compatível com condições",
+  incompatible: "Incompatível",
+  unverified: "Não verificado",
+};
+
+const powerText = (watts: number | null) => watts == null ? "Não medida" : `${watts} W`;
+
+type TechnicalCatalogProps = { printers: PrinterEntry[]; materials: MaterialEntry[]; nozzles: NozzleEntry[]; notice: string | null };
+
+export function TechnicalCatalog(props: TechnicalCatalogProps) {
+  if (!props.printers.length || !props.materials.length) {
+    return <section className="technical-catalog shell"><div className="technical-panel"><h1>Catálogo técnico indisponível</h1><p>{props.notice ?? "Ainda não há impressoras, materiais e bicos publicados no catálogo."}</p></div></section>;
+  }
+  return <CatalogContent {...props} />;
+}
+
+function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatalogProps) {
+  const [printerId, setPrinterId] = useState(printers[0].id);
+  const [materialId, setMaterialId] = useState(materials[0].id);
+  const [nozzleId, setNozzleId] = useState(nozzles.find((item) => item.original)?.id ?? nozzles[0].id);
+  const [dimensions, setDimensions] = useState({ x: "", y: "", z: "" });
+  const [useMulticolor, setUseMulticolor] = useState(false);
+  const printer = printers.find((item) => item.id === printerId) ?? printers[0];
+  const material = materials.find((item) => item.id === materialId) ?? materials[0];
+  const nozzle = nozzles.find((item) => item.id === nozzleId) ?? nozzles[0] ?? {
+    id: "unlisted-nozzle", name: "Bico não cadastrado", diameterMm: Number.NaN, material: null,
+    maxTemperatureC: null, abrasionResistant: null, printerCompatibility: null,
+  };
+  const checkDimensions = Object.values(dimensions).some((value) => value !== "");
+  const compatibility = useMemo(() => evaluateCompatibility(printer, material, nozzle, {
+    ...(checkDimensions && {
+      partDimensionsMm: {
+        x: dimensions.x === "" ? Number.NaN : Number(dimensions.x),
+        y: dimensions.y === "" ? Number.NaN : Number(dimensions.y),
+        z: dimensions.z === "" ? Number.NaN : Number(dimensions.z),
+      },
+    }),
+    useMulticolor,
+  }), [printer, material, nozzle, dimensions, checkDimensions, useMulticolor]);
+
+  return (
+    <section className="technical-catalog shell" aria-label="Catálogos técnicos e verificação de compatibilidade">
+      {notice && <p className="catalog-source-note" role="status">{notice}</p>}
+      <header className="technical-intro">
+        <div>
+          <p className="eyebrow"><span className="eyebrow-dot" /> BASE TÉCNICA VIRAPEÇA</p>
+          <h1>Dados para escolher<br /><em>com segurança.</em></h1>
+          <p>Compare equipamentos, materiais e bicos com referências do fabricante. A ferramenta não completa o que a documentação não informa.</p>
+        </div>
+        <div className="technical-intro-mark" aria-hidden="true"><Printer size={29} /><span>CATÁLOGO<br />01 / 03</span></div>
+      </header>
+
+      <div className="technical-layout">
+        <div className="technical-records">
+          <section className="technical-panel">
+            <div className="technical-panel-heading"><span className="technical-panel-icon"><Printer size={17} /></span><div><p>01 / IMPRESSORA</p><h2>Modelo e especificações</h2></div></div>
+            <label className="technical-select">Fabricante, modelo e variante
+              <select value={printerId} onChange={(event) => setPrinterId(event.target.value)}>
+                {printers.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.model} · {item.variant}</option>)}
+              </select>
+            </label>
+            <dl className="technical-facts">
+              <div><dt>Tecnologia</dt><dd>{printer.technology}</dd></div>
+              <div><dt>Volume útil</dt><dd>{printer.buildVolumeMm ? `${printer.buildVolumeMm.x} × ${printer.buildVolumeMm.y} × ${printer.buildVolumeMm.z} mm` : "Não informado"}</dd></div>
+              <div><dt>Filamento</dt><dd>{printer.filamentDiameterMm ? `${printer.filamentDiameterMm} mm` : "Não informado"}</dd></div>
+              <div><dt>Hotend máximo</dt><dd>{printer.maxNozzleTemperatureC ? `${printer.maxNozzleTemperatureC} °C` : "Não informado"}</dd></div>
+              <div><dt>Mesa máxima</dt><dd>{printer.maxBedTemperatureC ? `${printer.maxBedTemperatureC} °C` : "Não informado"}</dd></div>
+              <div><dt>Velocidade máxima</dt><dd>{printer.maximumSpeedMmPerSecond ? `${printer.maximumSpeedMmPerSecond} mm/s` : "Não informado"}</dd></div>
+              <div><dt>Potência máxima</dt><dd>{powerText(printer.maximumPowerWatts)}</dd></div>
+              <div><dt>Potência média medida</dt><dd>{powerText(printer.measuredAveragePowerWatts)}</dd></div>
+              <div><dt>Multicolorido</dt><dd>{printer.multicolorSystem ? `${printer.multicolorSystem} · até ${printer.multicolorSlots} filamentos` : "Não informado"}</dd></div>
+            </dl>
+            <SourceLinks sources={printer.sources} />
+          </section>
+
+          <section className="technical-panel">
+            <div className="technical-panel-heading"><span className="technical-panel-icon is-green"><FlaskConical size={17} /></span><div><p>02 / MATERIAL</p><h2>Produto e condições de impressão</h2></div></div>
+            <label className="technical-select">Marca e material
+              <select value={materialId} onChange={(event) => setMaterialId(event.target.value)}>
+                {materials.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name}</option>)}
+              </select>
+            </label>
+            <div className="material-summary">
+              <strong>{material.name}</strong><span>{material.family} · densidade {material.densityGPerCm3 == null ? "não informada" : `${material.densityGPerCm3.toLocaleString("pt-BR")} g/cm³`}</span>
+            </div>
+            {material.process === "filament" ? <dl className="technical-facts material-facts">
+              <div><dt>Diâmetro do filamento</dt><dd>{material.filamentDiameterMm == null ? "Não informado" : `${material.filamentDiameterMm} mm`}</dd></div>
+              <div><dt>Temperatura do bico</dt><dd>{material.nozzleTemperatureC ? `${material.nozzleTemperatureC.min}–${material.nozzleTemperatureC.max} °C` : "Não informada"}</dd></div>
+              <div><dt>Temperatura da mesa</dt><dd>{material.bedTemperatureC ? `${material.bedTemperatureC.min}–${material.bedTemperatureC.max} °C` : "Não informada"}</dd></div>
+              <div><dt>Câmara fechada</dt><dd>{material.enclosureRequired == null ? "Não informado" : material.enclosureRequired ? "Requerida" : "Não requerida"}</dd></div>
+              <div><dt>Secagem</dt><dd>{material.drying ? `${material.drying.required ? "Requerida" : "Opcional"}${material.drying.temperatureC == null ? "" : ` · ${material.drying.temperatureC} °C`}${material.drying.hours == null ? "" : ` por ${material.drying.hours} h`}` : "Não informada"}</dd></div>
+              <div><dt>Velocidade indicada</dt><dd>{material.printSpeedMaximumMmPerSecond ? `Até ${material.printSpeedMaximumMmPerSecond} mm/s` : "Não informada"}</dd></div>
+              <div><dt>Sistema multicolorido</dt><dd>{material.multicolorCompatible == null ? "Não verificado" : material.multicolorCompatible ? "Compatível" : "Não recomendado"}</dd></div>
+            </dl> : <dl className="technical-facts material-facts">
+              <div><dt>Comprimento de onda</dt><dd>{material.resinWavelengthNm == null ? "Não informado" : `${material.resinWavelengthNm} nm`}</dd></div>
+              <div><dt>Exposição por camada</dt><dd>{material.resinExposureSeconds == null ? "Não informada" : `${material.resinExposureSeconds} s`}</dd></div>
+              <div><dt>Compatibilidade</dt><dd>Verificada por modelo de impressora</dd></div>
+            </dl>}
+            {material.colors.length > 0 && <div className="material-swatches"><span>Cores de referência</span>{material.colors.map((color) => <span className="material-swatch" key={color.name} title={`${color.name} ${color.hex}`} style={{ "--swatch": color.hex } as React.CSSProperties} aria-label={color.name} />)}</div>}
+            <SourceLinks sources={material.sources} />
+          </section>
+
+          {material.process === "filament" ? <section className="technical-panel">
+            <div className="technical-panel-heading"><span className="technical-panel-icon is-sand"><Cpu size={17} /></span><div><p>03 / BICO</p><h2>Diâmetros cadastrados</h2></div></div>
+            {nozzles.length > 0 ? <><label className="technical-select">Bico instalado na configuração analisada
+              <select value={nozzleId} onChange={(event) => setNozzleId(event.target.value)}>
+                {nozzles.filter((item) => item.printerCompatibility?.[printer.id] !== "incompatible").map((item) => <option key={item.id} value={item.id}>{item.name}{item.original ? " · original" : ""}</option>)}
+              </select>
+            </label>
+            <div className="nozzle-facts"><span>Material do bico</span><strong>{nozzle.material ?? "Não informado para esta variante"}</strong></div>
+            <div className="nozzle-options" aria-label="Diâmetros listados pelo fabricante">
+              {nozzles.map((item) => <button type="button" key={item.id} className={item.id === nozzleId ? "is-selected" : ""} onClick={() => setNozzleId(item.id)}>{item.diameterMm.toLocaleString("pt-BR")} <small>mm</small></button>)}
+            </div>
+            <SourceLinks sources={nozzle.sources} /></> : <p className="admin-empty">Nenhum bico publicado para seleção. O encaixe e os requisitos do bico permanecem não verificados.</p>}
+          </section> : <section className="technical-panel technical-empty-panel">
+            <div className="technical-panel-heading"><span className="technical-panel-icon is-purple"><FlaskConical size={17} /></span><div><p>03 / RESINA</p><h2>Processo de cura</h2></div></div>
+            <p>Resinas não usam bicos de extrusão. Compare a compatibilidade do produto com a impressora e consulte as fontes antes de definir lavagem, cura e exposição.</p>
+          </section>}
+        </div>
+
+        <aside className="compatibility-panel" aria-live="polite">
+          <div className="compatibility-panel-heading"><ShieldCheck size={18} /><span>VERIFICAÇÃO EXPLICÁVEL</span></div>
+          <h2>Compatibilidade</h2>
+          <p className={`compatibility-status status-${compatibility.status}`}>{statusText[compatibility.status]}</p>
+          <p className="compatibility-model">{printer.name}<br />{material.brand} {material.name}{material.process === "filament" ? ` · ${nozzle.name}` : ""}</p>
+          {material.process === "filament" && <label className="multicolor-toggle"><input type="checkbox" checked={useMulticolor} onChange={(event) => setUseMulticolor(event.target.checked)} /><span>Quero usar o sistema multicolorido</span></label>}
+          <div className="part-dimensions">
+            <span>Dimensões da peça <small>(opcional, mm)</small></span>
+            <div>{(["x", "y", "z"] as const).map((axis) => <label key={axis}><span>{axis.toUpperCase()}</span><input aria-label={`Dimensão ${axis.toUpperCase()} em milímetros`} type="number" min="0" step="any" value={dimensions[axis]} onChange={(event) => setDimensions((current) => ({ ...current, [axis]: event.target.value }))} /></label>)}</div>
+          </div>
+          <ul className="compatibility-checks">
+            {compatibility.checks.map((check) => <li key={check.key}><span className={`compatibility-check-mark check-${check.status}`} aria-hidden="true">{check.status === "compatible" ? "✓" : check.status === "incompatible" ? "×" : check.status === "conditional" ? "!" : "?"}</span><div><strong>{check.label} · {statusText[check.status]}</strong><p>{check.detail}</p></div></li>)}
+          </ul>
+          <p className="compatibility-disclaimer"><CircleHelp size={14} /> Referência de triagem: confira perfil, fabricante, condições de uso e estado real do equipamento antes de fabricar.</p>
+          <div className="catalog-source-note">{material.sources[0]?.checkedAt ? `Ficha conferida em ${new Date(`${material.sources[0].checkedAt}T00:00:00`).toLocaleDateString("pt-BR")}.` : "Data de conferência não informada."} Dados ausentes permanecem sinalizados como não verificados.</div>
+          <div className="catalog-next-step"><a href="/visualizador">Abrir visualizador 3D <ArrowUpRight size={14} /></a><a href="/calculadora">Calcular custo da peça <ArrowUpRight size={14} /></a></div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function SourceLinks({ sources }: { sources: { label: string; url: string }[] }) {
+  return <div className="technical-sources">{sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label} <ArrowUpRight size={12} aria-hidden="true" /></a>)}</div>;
+}

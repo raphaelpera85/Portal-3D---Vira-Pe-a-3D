@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+coverage/
+# Local environment files may contain credentials; commit only the empty template.
+.env*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+.vercel/
+supabase/.temp/

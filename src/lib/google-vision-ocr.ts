@@ -1,0 +1,21 @@
+type VisionImage = { content: Uint8Array; mimeType: string };
+
+export async function recognizeSlicerImages(images: VisionImage[], apiKey: string, fetcher: typeof fetch = fetch) {
+  const response = await fetcher("https://vision.googleapis.com/v1/images:annotate", {
+    method: "POST",
+    signal: AbortSignal.timeout(20_000),
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify({ requests: images.map((image) => ({
+      image: { content: Buffer.from(image.content).toString("base64") },
+      features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
+      imageContext: { languageHints: ["pt", "en"] },
+    })) }),
+  });
+  if (!response.ok) throw new Error(`ocr_provider_http_${response.status}`);
+  const data = await response.json().catch(() => null) as { responses?: Array<{ fullTextAnnotation?: { text?: string }; textAnnotations?: Array<{ description?: string }>; error?: { message?: string } }> } | null;
+  if (!Array.isArray(data?.responses) || data.responses.length !== images.length) throw new Error("ocr_provider_invalid_response");
+  return data.responses.map((result) => {
+    if (result.error) throw new Error("ocr_provider_image_error");
+    return (result.fullTextAnnotation?.text ?? result.textAnnotations?.[0]?.description ?? "").slice(0, 6000);
+  });
+}

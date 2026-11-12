@@ -1,0 +1,35 @@
+# Segurança da Fase 1
+
+O `.env.local` é ignorado pelo `.gitignore` e guarda credenciais apenas na máquina de desenvolvimento. O `.env.example` versionado mantém valores vazios. `SUPABASE_SECRET_KEY` e `SUPABASE_DB_URL` nunca devem receber prefixo `NEXT_PUBLIC_`, ser enviados ao Git ou expostos no browser; a URL do banco só é necessária para a Supabase CLI. Se um segredo entrar no Git ou for compartilhado por engano, revogue-o no Supabase e gere outro.
+
+- As páginas da vitrine não contêm dados privados.
+- O cliente browser usa apenas `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- Nenhuma chave `service_role` ou chave secreta está no código ou no `.env.example`.
+- Clientes SSR são criados por requisição; `src/proxy.ts` valida claims e propaga todos os cookies e cabeçalhos de cache emitidos pelo Supabase.
+- RLS restringe perfis e papéis ao usuário autenticado. Papéis não podem ser atribuídos pelo próprio usuário.
+- O esquema local do catálogo limita leitura pública a registros publicados e escrita ao papel administrativo; a migração não foi aplicada em um projeto remoto.
+- Arquivos `.env.local` e demais `.env*` são ignorados pelo Git.
+
+O fluxo público de conta usa Supabase Auth, valida os campos no servidor e não aceita papel enviado pelo usuário. O papel comprador é concedido pelo trigger `SECURITY DEFINER`; RLS impede o usuário de alterar seus papéis. Ações de orçamento exigem o papel comprador ou maker, e o banco confere a propriedade e a transição de estado dentro de funções `SECURITY DEFINER` com `search_path` vazio.
+
+Modelos enviados à biblioteca são opcionais e ficam no bucket privado `buyer-models`. RLS restringe leitura, envio e exclusão à pasta do comprador autenticado; cada objeto e conjunto têm limite de 20 MB, e o registro valida um modelo principal, até nove arquivos associados e existência dos objetos. O visualizador continua funcionando localmente sem envio. Rate limiting e política de retenção ainda são necessários antes de liberar uploads em escala.
+
+A leitura de anúncios públicos exige que o anúncio esteja publicado, a loja esteja publicada e a categoria esteja ativa. A mídia externa aceita apenas URLs HTTPS ao mapear registros para a interface. A escrita maker é limitada à própria loja e a rascunhos; a publicação requer um papel administrativo.
+
+Solicitações de maker são privadas para o próprio usuário e para administradores. Uma função `SECURITY DEFINER` revisa a solicitação em transação, concede o papel maker e abre uma loja pendente. As políticas maker só permitem escrever rascunhos em loja publicada; triggers impedem alterar status de loja e produto fora de uma ação administrativa. O primeiro papel admin é provisionado manualmente no SQL Editor após a verificação da conta.
+
+Pedidos de orçamento e propostas ficam visíveis apenas ao comprador dono, ao fabricante dono da loja e a administradores. As funções de enviar proposta, responder e cancelar verificam papel, propriedade e estado, evitando transições diretas pelo cliente. O fluxo não movimenta dinheiro. A migração de orçamentos ainda não foi aplicada a um projeto Supabase remoto.
+
+Contatos de notificação ficam em `store_notification_contacts`, sem exposição na tabela pública `stores`. O WhatsApp só recebe mensagem quando o dono da loja informa o número e consente explicitamente. A fila guarda o destino e um resumo do tipo de solicitação/produto/quantidade para entregar o evento; não inclui personalizações ou dados do comprador. A rota de envio exige `CRON_SECRET`, usa `SUPABASE_SECRET_KEY` server-side (com suporte à chave legada `SUPABASE_SERVICE_ROLE_KEY`) e retorna apenas contagens, nunca destinos ou corpos de mensagens. E-mail e WhatsApp devem ser configurados e validados antes de produção.
+
+O endpoint OCR exige sessão e papel maker, valida PNG/JPEG/WebP por assinatura, aceita até três imagens de 2 MiB (4 MiB agregados) e impõe cota diária de 30 imagens por maker. A chave `GOOGLE_CLOUD_VISION_API_KEY` fica somente no servidor e deve ser restringida à Cloud Vision API. Cada envio exige consentimento visível; as capturas não são gravadas pelo ViraPeça e o texto retornado é limitado antes de ser mostrado ao próprio usuário. O envio depende de serviço externo e de cotas/faturamento configurados no Google Cloud.
+
+Lotes de consignação e movimentações só podem ser consultados pelo maker dono da loja. Inserções passam por funções transacionais que validam o estabelecimento, produto opcional, quantidades e saldo; movimentações não podem ser editadas diretamente pela sessão autenticada. As estimativas financeiras não enviam nem movimentam valores.
+
+O servidor confere loja, produto, impressora e referências publicadas do catálogo ao salvar perfis. RLS restringe os perfis privados e as submissões pendentes ao próprio fabricante; somente administradores podem aprovar, publicar ou marcar um perfil como oficial. A leitura pública exige perfil publicado e produto/loja publicados. Cores JSON são normalizadas antes de renderizar. Snapshots preservam os nomes mesmo quando uma referência técnica deixa de estar publicada.
+
+Endereços de entrega são dados privados e a tabela só concede leitura ao próprio comprador. Escritas são feitas por funções `SECURITY DEFINER` que revalidam o papel e a propriedade; uma trava por conta e índice único parcial mantêm um único endereço principal. Ao fechar o carrinho, uma cópia do endereço é gravada no pedido e fica visível somente ao comprador e ao fabricante responsável por aquela loja; o endereço não é enviado a um serviço de frete.
+
+O fabricante atualiza estoque por uma função que confere papel, loja e propriedade do anúncio. Triggers validam estoque no carrinho, na solicitação direta e na criação dos itens de pedido. No checkout de um pedido aceito do carrinho ou de uma compra direta, uma função exclusiva do servidor trava os produtos e reserva atomicamente o estoque contado. Um trigger impede edição manual de estoque enquanto houver reserva; o webhook assinado consulta a order no Mercado Pago e só então marca a reserva como vendida ou a libera após falha, cancelamento, expiração ou reembolso total. Propostas personalizadas usam o valor aceito persistido no banco e o fabricante só pode iniciar a produção após o webhook confirmar o pagamento. A página de retorno não altera o estado financeiro.
+
+Tokens OAuth do Mercado Pago ficam criptografados com AES-256-GCM em tabela sem acesso a `anon` ou `authenticated`. A comissão, o total e o idempotency key são persistidos antes da chamada externa. A ação de pagamento valida que o comprador é dono do pedido aceito e usa o access token da loja; o webhook exige assinatura HMAC válida e confere referência, vendedor, moeda e valores contra a order consultada server-to-server. A tabela de pagamentos é legível somente ao comprador e ao fabricante participantes. O painel ainda não inicia reembolsos nem gerencia disputas.

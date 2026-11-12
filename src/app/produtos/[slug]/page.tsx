@@ -1,0 +1,89 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { SiteHeader } from "@/components/site-header";
+import { ProductIllustration } from "@/components/product-illustration";
+import { ProductQuoteRequestForm } from "@/components/product-quote-request-form";
+import { ProductPurchaseRequestForm } from "@/components/product-purchase-request-form";
+import { ProductCartForm } from "@/components/product-cart-form";
+import { loadMarketplaceProduct } from "@/lib/marketplace.server";
+import { getUserWithRole } from "@/lib/auth-role.server";
+import { getSiteUrl } from "@/lib/site-url";
+import { FavoriteButton } from "@/components/favorite-button";
+import { ProductPrintProfiles } from "@/components/product-print-profiles";
+import { readPrintProfileColors } from "@/lib/print-profile-colors";
+import { DigitalAssetPurchaseForm } from "@/components/digital-asset-purchase-form";
+import { DigitalAssetReportForm } from "@/components/digital-asset-report-form";
+import { ModelViewer } from "@/components/model-viewer";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await loadMarketplaceProduct(slug);
+  return product ? {
+    title: `${product.name} | ViraPeça 3D`,
+    description: product.description || `${product.name}, por ${product.maker}.`,
+    robots: product.demo ? { index: false, follow: false } : undefined,
+    ...(getSiteUrl() ? {
+      alternates: { canonical: `/produtos/${encodeURIComponent(product.slug)}` },
+      openGraph: { title: product.name, description: product.description || `${product.name}, por ${product.maker}.`, url: `/produtos/${encodeURIComponent(product.slug)}`, type: "website" as const, images: product.media.slice(0, 1) },
+    } : {}),
+  } : { title: "Produto não encontrado | ViraPeça 3D", robots: { index: false } };
+}
+
+export default async function ProductPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ orcamento?: string; compra?: string; carrinho?: string; denuncia?: string }> }) {
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
+  const product = await loadMarketplaceProduct(slug);
+  if (!product) notFound();
+  const buyer = !product.demo ? await getUserWithRole("buyer") : null;
+  const profileResult = buyer?.supabase ? await buyer.supabase.from("maker_print_profiles")
+    .select("id, profile_name, profile_type, sharing_scope, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, print_hours, material_grams, material_by_color")
+    .eq("product_id", product.id).in("sharing_scope", ["community", "official"]).eq("review_status", "published").order("profile_type").order("profile_name") : null;
+  const favoriteResult = buyer?.supabase && buyer.user && buyer.authorized
+    ? await buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id).eq("product_id", product.id).maybeSingle()
+    : null;
+
+  return (
+    <>
+      <SiteHeader />
+      <main className="product-detail shell">
+        <Link className="viewer-back-link" href="/#produtos">← Voltar aos produtos</Link>
+        {query.compra === "indisponivel" && <p className="auth-notice is-error" role="alert">A licença selecionada não está disponível para compra.</p>}
+        {query.denuncia === "enviada" && <p className="auth-notice is-success" role="status">Denúncia enviada à equipe para análise.</p>}
+        {query.denuncia === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível registrar a denúncia.</p>}
+        <div className="product-detail-grid">
+          <div className={`product-detail-art art-${product.color}`}>
+            {product.media[0] ? <img src={product.media[0]} alt={product.name} width="960" height="760" /> : product.visual ? <ProductIllustration product={product} /> : <span className="product-placeholder" aria-hidden="true">3D</span>}
+            {product.media.length > 1 && <p className="product-detail-gallery">+ {product.media.length - 1} imagens na galeria</p>}
+          </div>
+          <section className="product-detail-copy">
+            <p className="eyebrow">{product.category}</p>
+            <h1>{product.name}</h1>
+            <p className="product-detail-maker">Por <strong>{product.maker}</strong></p>
+            <p className="product-detail-price">{product.priceLabel}</p>
+            {!product.demo && <p className="product-availability">{product.listingType === "digital" ? "Arquivo digital STL/3MF · download privado após pagamento" : product.stockQuantity != null ? product.stockQuantity === 0 ? "Sem unidades disponíveis" : `${product.stockQuantity} unidade${product.stockQuantity === 1 ? "" : "s"} em estoque` : product.fulfillmentMode === "made_to_order" ? `Produzido sob encomenda${product.preparationDays == null ? "" : ` · preparação em até ${product.preparationDays} dias`}` : product.fulfillmentMode === "ready_to_ship" ? "Disponibilidade a confirmar com o fabricante" : "Disponibilidade confirmada após consulta"}</p>}
+            {!product.demo && buyer?.user && buyer.authorized && <FavoriteButton productId={product.id} slug={product.slug} initialFavorite={Boolean(favoriteResult?.data)} />}
+            <p className="product-detail-description">{product.description || "O fabricante ainda não adicionou uma descrição para este produto."}</p>
+            {product.tags.length > 0 && <div className="product-tags" aria-label="Características">{product.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
+            {!product.demo && product.listingType === "digital" ? product.digitalAsset
+              ? <DigitalAssetPurchaseForm productId={product.id} slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} personalPriceBrl={product.digitalAsset.personalPriceBrl} commercialPriceBrl={product.digitalAsset.commercialPriceBrl} />
+              : <div className="product-detail-note"><strong>Arquivo digital</strong><p>As licenças estão temporariamente indisponíveis.</p></div>
+              : !product.demo && product.priceMode === "fixed" ? <><ProductCartForm slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} result={query.carrinho} stockQuantity={product.stockQuantity} /><ProductPurchaseRequestForm slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} result={query.compra} stockQuantity={product.stockQuantity} /></> : !product.demo && (product.priceMode === "quote" || product.priceMode === "from") ? <ProductQuoteRequestForm slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} result={query.orcamento} /> : <div className="product-detail-note"><strong>Compra</strong><p>Os produtos demonstrativos não aceitam pedidos.</p></div>}
+            {!product.demo && product.listingType === "digital" && <DigitalAssetReportForm productId={product.id} slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} />}
+          </section>
+        </div>
+        {product.digitalAsset?.previewUrl && <div className="product-model-preview"><p className="account-kicker">PRÉVIA INTERATIVA · ARQUIVO GLB</p><ModelViewer buyerId={null} today={new Date().toISOString().slice(0, 10)} previewUrl={product.digitalAsset.previewUrl} readOnly /></div>}
+        {profileResult && <ProductPrintProfiles error={Boolean(profileResult.error)} profiles={(profileResult.data ?? []).map((profile) => ({
+          id: profile.id, name: profile.profile_name, type: profile.profile_type,
+          scope: profile.sharing_scope as "community" | "official", printer: profile.printer_snapshot,
+          material: profile.material_snapshot, nozzle: profile.nozzle_snapshot, layerHeight: profile.layer_height_mm,
+          infill: profile.infill_percent, walls: profile.wall_count, supports: profile.supports,
+          orientation: profile.orientation, scale: profile.scale_percent, quantity: profile.quantity,
+          hours: profile.print_hours, grams: profile.material_grams, colors: readPrintProfileColors(profile.material_by_color),
+        }))} />}
+      </main>
+      <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Sua ideia vira realidade.</p><span>© 2026 ViraPeça 3D</span></div></footer>
+    </>
+  );
+}

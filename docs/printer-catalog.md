@@ -1,0 +1,7 @@
+# Catálogo de impressoras
+
+A rota `/catalogos` consulta modelos mestres publicados na tabela `printer_models`; se o Supabase não estiver configurado ou não houver registros publicados, mostra um registro local de referência para a **Bambu Lab A1 mini Combo com AMS lite**. O volume útil (180 × 180 × 180 mm), filamento de 1,75 mm, limites de temperatura, velocidade máxima e potência máxima foram transcritos do [Quick Start Guide oficial](https://cdn1.bambulab.com/documentation/Quick%20Start%20Guide%20for%20A1%20mini%20Combo.pdf).
+
+A potência nominal máxima (150 W) fica separada da potência média medida. O catálogo deixa a média como “não medida”, pois a ficha não publica uma medição para as condições reais de uso. A ficha consultada também não especifica se a variante exige ou possui câmara fechada, então esse campo fica desconhecido.
+
+Administradores cadastram e revisam modelos mestres em `/admin/catalogos/impressoras`. Só é possível publicar quando há uma fonte HTTPS e data de conferência; a interface preserva as informações ausentes como desconhecidas e permite notas técnicas estruturadas em JSON. O registro local ainda é somente leitura e não é importado automaticamente para o banco. Makers vinculam equipamentos a modelos publicados, registram modelos particulares ou enviam uma sugestão para a fila de revisão administrativa. Aprovações criam ou associam registros sem publicar dados técnicos automaticamente.

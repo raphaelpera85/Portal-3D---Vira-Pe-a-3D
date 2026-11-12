@@ -1,0 +1,39 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getUserWithRole } from "@/lib/auth-role.server";
+import { validateCalculationToSave } from "@/lib/saved-calculation";
+
+export type SaveCalculationState = { message: string; success: boolean };
+
+export async function saveMakerCalculation(_previous: SaveCalculationState, formData: FormData): Promise<SaveCalculationState> {
+  const validated = validateCalculationToSave(formData.get("title"), formData.get("snapshot"));
+  if (!validated.calculation) return { message: validated.error ?? "Confira os dados do cálculo.", success: false };
+
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) return { message: "Entre em uma conta de fabricante aprovada para salvar cálculos.", success: false };
+  const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
+  if (!store) return { message: "Não foi possível localizar a loja do fabricante.", success: false };
+
+  const { error } = await actor.supabase.from("maker_cost_calculations").insert({
+    store_id: store.id,
+    title: validated.calculation.title,
+    input_snapshot: { input: validated.calculation.input, channels: validated.calculation.channels },
+    result_snapshot: validated.calculation.result,
+  });
+  if (error) return { message: "Não foi possível salvar. Confira se a migração do histórico está aplicada.", success: false };
+
+  revalidatePath("/calculadora");
+  return { message: "Cálculo salvo no histórico da loja.", success: true };
+}
+
+export async function deleteMakerCalculation(formData: FormData): Promise<void> {
+  const id = formData.get("calculationId");
+  if (typeof id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return;
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) return;
+  const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
+  if (!store) return;
+  const { error } = await actor.supabase.from("maker_cost_calculations").delete().eq("id", id).eq("store_id", store.id);
+  if (!error) revalidatePath("/calculadora");
+}
