@@ -79,12 +79,14 @@ export function isMercadoPagoOrderForPayment(value: unknown, expected: {
   if (order.id !== expected.id || order.external_reference !== expected.paymentId || String(order.user_id) !== expected.sellerId
     || order.currency !== "BRL" || mercadoPagoAmountToCents(order.total_amount) !== expected.totalCents
     || (order.marketplace_fee !== undefined && feeCents !== expected.marketplaceFeeCents)) return false;
-  if (order.status === "processed" && (mercadoPagoAmountToCents(order.total_paid_amount) ?? 0) < expected.totalCents) return false;
+  if (order.status === "processed" && !["refunded", "partially_refunded"].includes(String(order.status_detail))
+    && (mercadoPagoAmountToCents(order.total_paid_amount) ?? 0) < expected.totalCents) return false;
   return true;
 }
 
 export function mapMercadoPagoOrderStatus(status: string, detail = ""): "paid" | "pending" | "failed" | "expired" | "cancelled" | "refunded" | "partially_refunded" | "charged_back" | null {
   if (status === "charged_back") return "charged_back";
+  if (status === "processed" && detail === "refunded") return "refunded";
   if (status === "processed" && detail === "partially_refunded") return "partially_refunded";
   if (status === "processed") return "paid";
   if (["created", "processing", "action_required"].includes(status)) return "pending";

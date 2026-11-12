@@ -47,6 +47,7 @@ describe("Mercado Pago payment helpers", () => {
     expect(mapMercadoPagoOrderStatus("failed")).toBe("failed");
     expect(mapMercadoPagoOrderStatus("canceled")).toBe("cancelled");
     expect(mapMercadoPagoOrderStatus("refunded")).toBe("refunded");
+    expect(mapMercadoPagoOrderStatus("processed", "refunded")).toBe("refunded");
     expect(mapMercadoPagoOrderStatus("processed", "partially_refunded")).toBe("partially_refunded");
     expect(mapMercadoPagoOrderStatus("charged_back", "in_process")).toBe("charged_back");
     expect(mapMercadoPagoOrderStatus("charged_back", "settled")).toBe("charged_back");
@@ -59,6 +60,8 @@ describe("Mercado Pago payment helpers", () => {
     const expected = { id: "ord-1", paymentId: "payment-1", sellerId: "seller-1", totalCents: 10_000, marketplaceFeeCents: 1_000 };
     const order = { id: "ord-1", external_reference: "payment-1", user_id: "seller-1", currency: "BRL", total_amount: "100.00", marketplace_fee: "10.00", total_paid_amount: "100.00", status: "processed" };
     expect(isMercadoPagoOrderForPayment(order, expected)).toBe(true);
+    expect(isMercadoPagoOrderForPayment({ ...order, total_paid_amount: "80.00", status_detail: "partially_refunded" }, expected)).toBe(true);
+    expect(isMercadoPagoOrderForPayment({ ...order, total_paid_amount: "0.00", status_detail: "refunded" }, expected)).toBe(true);
     expect(isMercadoPagoOrderForPayment({ ...order, user_id: "other-seller" }, expected)).toBe(false);
     expect(isMercadoPagoOrderForPayment({ ...order, total_amount: "100.01" }, expected)).toBe(false);
     expect(isMercadoPagoOrderForPayment({ ...order, total_paid_amount: "99.99" }, expected)).toBe(false);

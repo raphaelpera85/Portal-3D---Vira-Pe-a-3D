@@ -20,6 +20,9 @@ export async function downloadDigitalAssetAction(formData: FormData): Promise<vo
   ]);
   const admin = createSupabaseAdminClient();
   if (!request || !request.license_type || !payment || !admin) redirect("/orcamentos?resultado=download-erro");
+  const { data: refund } = await admin.from("seller_order_refunds").select("id")
+    .eq("payment_id", payment.id).in("status", ["pending", "processed"]).limit(1).maybeSingle();
+  if (refund) redirect("/orcamentos?resultado=download-erro");
   const { data: asset } = await admin.from("digital_assets").select("object_path, file_name")
     .eq("product_id", request.product_id).maybeSingle();
   if (!asset) redirect("/orcamentos?resultado=download-erro");
