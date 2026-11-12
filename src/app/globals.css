@@ -1059,6 +1059,27 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .technical-panel { padding: 19px 16px; }
   .technical-facts > div { padding: 9px 8px; }
 }
+@media (max-width: 800px) {
+  .header-maker { display: none; }
+  .viewer-page { padding-bottom: 45px; }
+  .viewer-page-intro { min-width: 0; gap: 10px; padding-block: 21px 14px; }
+  .viewer-page-intro p { font-size: 8px; text-align: right; }
+  .viewer-layout { grid-template-columns: minmax(0, 1fr); }
+  .viewer-layout:not(.viewer-readonly) { min-height: 0; }
+  .viewer-stage-wrap { border-right: 0; }
+  .viewer-stage-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-inline: 10px; }
+  .viewer-upload-button { min-height: 34px; padding-inline: 9px; font-size: 10px; }
+  .viewer-file-label { grid-column: 1 / -1; max-width: 100%; font-size: 9px; }
+  .viewer-stage-actions { gap: 1px; }
+  .viewer-icon-button { width: 29px; height: 31px; }
+  .viewer-stage { min-width: 0; min-height: clamp(300px, 55svh, 430px); }
+  .viewer-toolbar { display: grid; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding: 8px; }
+  .viewer-view-button { min-width: 0; min-height: 36px; padding-inline: 3px; font-size: 9px; }
+  .viewer-hint { grid-column: 1 / -1; width: auto; margin: 3px 0 0; text-align: center; }
+  .viewer-inspector { min-width: 0; padding: 22px 17px 20px; border-top: 1px solid var(--line); }
+  .inspector-heading h1 { font-size: 27px; }
+  .viewer-page-foot { flex-direction: column; gap: 5px; }
+}
 @media (max-width: 650px) {
   .homepage-banners, .admin-banner-form, .printer-model-form { grid-template-columns: 1fr; }
   .printer-model-json { grid-column: auto; }
@@ -1153,29 +1174,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .phase-note { text-align: left; line-height: 1.6; }
   .footer-inner { min-height: 100px; flex-wrap: wrap; justify-content: space-between; padding-block: 20px; }
   .footer-inner p { display: none; }
-  .viewer-page { padding-bottom: 45px; }
-  .viewer-page-intro { min-width: 0; gap: 10px; }
-  .viewer-page-intro p { text-align: right; }
-  .viewer-page-intro { padding-block: 21px 14px; }
-  .viewer-page-intro p { font-size: 8px; }
-  .viewer-layout { grid-template-columns: minmax(0, 1fr); }
-  .viewer-layout:not(.viewer-readonly) { min-height: 0; }
-  .viewer-stage-wrap { border-right: 0; }
-  .viewer-stage-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-inline: 10px; }
-  .viewer-upload-button { min-height: 34px; padding-inline: 9px; font-size: 10px; }
-  .viewer-file-label { grid-column: 1 / -1; max-width: 100%; font-size: 9px; }
-  .viewer-stage-actions { gap: 1px; }
-  .viewer-icon-button { width: 29px; height: 31px; }
-  .viewer-stage { min-width: 0; min-height: clamp(300px, 55svh, 430px); }
-  .viewer-hint { flex-basis: 100%; margin-left: 0; text-align: center; }
-  .viewer-toolbar { display: grid; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding: 8px; }
-  .viewer-view-button { min-width: 0; min-height: 36px; padding-inline: 3px; font-size: 9px; }
-  .viewer-hint { grid-column: 1 / -1; width: auto; margin: 3px 0 0; text-align: center; }
-  .viewer-inspector { min-width: 0; padding: 22px 17px 20px; border-top: 1px solid var(--line); }
-  .inspector-heading h1 { font-size: 27px; }
-  .viewer-page-foot { flex-direction: column; gap: 5px; }
 }
-@media (max-width: 680px) { .header-maker { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
