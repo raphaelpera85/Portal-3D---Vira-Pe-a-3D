@@ -21,7 +21,7 @@ import { formatBrl, formatBrlTotal } from "@/lib/money";
 import { getCustomPrintEventLabel } from "@/lib/custom-print-events";
 import { readPrintProfileColors } from "@/lib/print-profile-colors";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { startMercadoPagoConnect } from "./payment-actions";
+import { disconnectMercadoPago, startMercadoPagoConnect } from "./payment-actions";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Painel do fabricante | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -98,10 +98,16 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
               {resultado === "mercado-pago-conectado" && <p className="auth-notice is-success" role="status">Conta Mercado Pago vinculada para pagamentos de pedidos aceitos.</p>}
               {resultado === "mercado-pago-configurar" && <p className="auth-notice is-error" role="alert">A vinculação depende das credenciais e da migração 023 configuradas pelo administrador.</p>}
               {resultado === "mercado-pago-erro" && <p className="auth-notice is-error" role="alert">Não foi possível vincular a conta. Tente novamente ou confira as configurações do Mercado Pago.</p>}
+              {resultado === "mercado-pago-desconectado" && <p className="auth-notice is-success" role="status">Os tokens foram removidos do ViraPeça. Para revogar a autorização, remova o ViraPeça também nas configurações de aplicativos autorizados do Mercado Pago.</p>}
+              {resultado === "mercado-pago-ja-desconectado" && <p className="auth-notice" role="status">Esta loja já estava desconectada.</p>}
+              {resultado === "mercado-pago-pagamentos-pendentes" && <p className="auth-notice is-error" role="alert">Conclua ou cancele os pagamentos pendentes antes de desconectar a conta.</p>}
+              {resultado === "mercado-pago-reembolsos-pendentes" && <p className="auth-notice is-error" role="alert">Aguarde a confirmação dos reembolsos antes de desconectar a conta.</p>}
+              {resultado === "mercado-pago-desconectar-erro" && <p className="auth-notice is-error" role="alert">Não foi possível desconectar a conta. Atualize o painel e tente novamente.</p>}
               {paymentConnection.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar a conexão. Confira a migração 023 e as credenciais do servidor.</p> : paymentConnection.data
                 ? <p>Conta vinculada desde {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(paymentConnection.data.connected_at))}.</p>
                 : <p>Vincule a conta que receberá os pagamentos da sua loja. O ViraPeça usa essa autorização somente no servidor.</p>}
               <form action={startMercadoPagoConnect}><button className="button button-secondary" type="submit">{paymentConnection.data ? "Reconectar Mercado Pago" : "Conectar Mercado Pago"}</button></form>
+              {paymentConnection.data && <form action={disconnectMercadoPago} className="auth-form"><input type="hidden" name="storeId" value={store.id} /><label><input type="checkbox" name="confirmDisconnect" value="yes" required /> Confirmo que quero remover do ViraPeça os tokens desta conta.</label><button className="button button-secondary" type="submit">Desconectar Mercado Pago</button><p className="quote-small-note">A desconexão bloqueia novos pagamentos. A autorização concedida ao ViraPeça deve ser revogada também nas configurações da sua conta Mercado Pago. Para administrar reembolsos futuros, será necessário conectar a conta novamente.</p></form>}
             </section>
             {resultado === "equipamento-salvo" && <p className="auth-notice is-success" role="status">Equipamento salvo.</p>}
             {resultado === "manutencao-salva" && <p className="auth-notice is-success" role="status">Registro de manutenção salvo.</p>}
