@@ -22,6 +22,9 @@ describe("getIntegrationHealth", () => {
       MP_TOKEN_ENCRYPTION_KEY: "a".repeat(64),
       MP_WEBHOOK_SECRET: "webhook-secret",
       MP_MARKETPLACE_FEE_PERCENT: "12.5",
+      ME_CLIENT_ID: "me-client-id",
+      ME_CLIENT_SECRET: "me-client-secret",
+      ME_TOKEN_ENCRYPTION_KEY: "b".repeat(64),
     });
 
     expect(result.every((item) => item.status === "configured")).toBe(true);
@@ -39,6 +42,9 @@ describe("getIntegrationHealth", () => {
       MP_TOKEN_ENCRYPTION_KEY: "a".repeat(64),
       MP_WEBHOOK_SECRET: "webhook-secret",
       MP_MARKETPLACE_FEE_PERCENT: "0",
+      ME_CLIENT_ID: "me-client-id",
+      ME_CLIENT_SECRET: "me-client-secret",
+      ME_TOKEN_ENCRYPTION_KEY: "b".repeat(64),
     }).map((item) => [item.id, item]));
 
     expect(result.supabase.status).toBe("configured");
@@ -62,5 +68,6 @@ describe("getIntegrationHealth", () => {
     expect(result.whatsapp.status).toBe("missing");
     expect(result.mercadoPago.status).toBe("missing");
     expect(result.googleVision.status).toBe("missing");
+    expect(result.melhorEnvio.status).toBe("missing");
   });
 });

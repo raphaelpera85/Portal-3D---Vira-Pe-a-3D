@@ -1,7 +1,8 @@
 "use server";
 
 import { after } from "next/server";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
@@ -14,11 +15,91 @@ import { validatePrintProfile } from "@/lib/print-profiles";
 import { validatePrinterModelSuggestion } from "@/lib/printer-model-suggestion";
 import { validateShipmentTracking, validateShippingOriginPostalCode, validateShippingQuote } from "@/lib/shipping-quote";
 import { validateDigitalAsset } from "@/lib/digital-assets";
+import { calculateMelhorEnvioRates } from "@/lib/melhor-envio.server";
+import { getSiteUrl } from "@/lib/site-url";
 
 export type MakerProductState = { message: string; success: boolean; productId?: string; personalPriceBrl?: number };
 export type StoreNotificationContactState = { message: string; success: boolean };
 export type CustomPrintFileLinksState = { message: string; links: { name: string; url: string }[] };
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const melhorEnvioCallbackPath = "/api/shipping/melhor-envio/callback";
+
+export async function startMelhorEnvioConnect(): Promise<void> {
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
+  const clientId = process.env.ME_CLIENT_ID;
+  const siteUrl = getSiteUrl();
+  if (!store || !clientId || !process.env.ME_CLIENT_SECRET || !process.env.ME_TOKEN_ENCRYPTION_KEY || !siteUrl || !createSupabaseAdminClient()) {
+    redirect("/painel/maker?resultado=melhor-envio-configurar#frete");
+  }
+  const state = randomBytes(32).toString("base64url");
+  const cookieStore = await cookies();
+  cookieStore.set("me_oauth_state", `${actor.user.id}.${state}`, {
+    httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: melhorEnvioCallbackPath, maxAge: 600,
+  });
+  const authorizationUrl = new URL(`${process.env.MELHOR_ENVIO_SANDBOX === "true" ? "https://sandbox.melhorenvio.com.br" : "https://melhorenvio.com.br"}/oauth/authorize`);
+  authorizationUrl.searchParams.set("client_id", clientId);
+  authorizationUrl.searchParams.set("redirect_uri", new URL(melhorEnvioCallbackPath, siteUrl).toString());
+  authorizationUrl.searchParams.set("response_type", "code");
+  authorizationUrl.searchParams.set("state", state);
+  authorizationUrl.searchParams.set("scope", "shipping-calculate");
+  redirect(authorizationUrl.toString());
+}
+
+export async function calculateAndOfferSellerOrderShippingQuote(formData: FormData): Promise<void> {
+  const orderId = formData.get("orderId");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect("/painel/maker?resultado=frete-erro#pedidos");
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/painel/maker?resultado=melhor-envio-configurar#frete");
+  const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
+  const { data: order } = store ? await admin.from("seller_purchase_orders")
+    .select("id, store_id, status, shipping_quote_status, delivery_postal_code")
+    .eq("id", orderId).eq("store_id", store.id).maybeSingle() : { data: null };
+  if (!store || !order || order.status !== "accepted" || !["awaiting_quote", "declined"].includes(order.shipping_quote_status)) {
+    redirect("/painel/maker?resultado=frete-erro#pedidos");
+  }
+  const [{ data: origin }, { data: items, error: itemError }] = await Promise.all([
+    admin.from("store_shipping_origins").select("postal_code").eq("store_id", store.id).maybeSingle(),
+    admin.from("seller_purchase_order_items").select("product_id, unit_price_brl, quantity").eq("order_id", orderId),
+  ]);
+  if (!origin || !/^\d{8}$/.test(order.delivery_postal_code ?? "") || itemError || !items?.length) {
+    redirect("/painel/maker?resultado=frete-pacote-erro#pedidos");
+  }
+  const { data: products, error: productError } = await admin.from("marketplace_products")
+    .select("id, package_weight_g, package_length_cm, package_width_cm, package_height_cm")
+    .eq("store_id", store.id).in("id", items.map((item) => item.product_id));
+  if (productError || products?.length !== items.length || products.some((product) =>
+    !product.package_weight_g || !product.package_length_cm || !product.package_width_cm || !product.package_height_cm)) {
+    redirect("/painel/maker?resultado=frete-pacote-erro#pedidos");
+  }
+  const byId = new Map(products.map((product) => [product.id, product]));
+  let rates;
+  try {
+    rates = await calculateMelhorEnvioRates(store.id, origin.postal_code, order.delivery_postal_code, items.map((item) => {
+      const product = byId.get(item.product_id)!;
+      return {
+        id: item.product_id, width: Number(product.package_width_cm), height: Number(product.package_height_cm),
+        length: Number(product.package_length_cm), weight: Number(product.package_weight_g) / 1000,
+        insurance_value: Number(item.unit_price_brl), quantity: item.quantity,
+      };
+    }));
+  } catch {
+    redirect("/painel/maker?resultado=melhor-envio-erro#frete");
+  }
+  if (!rates.length) redirect("/painel/maker?resultado=frete-sem-opcoes#pedidos");
+  const cheapest = rates[0];
+  const { error } = await actor.supabase.rpc("set_seller_order_shipping_quote", {
+    p_order_id: orderId, p_carrier: "melhor_envio", p_service: cheapest.name,
+    p_shipping_cents: Math.round(cheapest.price * 100), p_delivery_days: cheapest.deliveryDays,
+  });
+  if (error) redirect("/painel/maker?resultado=frete-erro#pedidos");
+  revalidatePath("/painel/maker");
+  revalidatePath("/orcamentos");
+  redirect("/painel/maker?resultado=frete-ofertado#pedidos");
+}
 
 export async function createProductDraft(_previous: MakerProductState, formData: FormData): Promise<MakerProductState> {
   const product = validateProductDraft({

@@ -77,6 +77,11 @@ export function getIntegrationHealth(env: Environment): IntegrationHealthItem[] 
         .concat(present(env, "MP_TOKEN_ENCRYPTION_KEY") && /^[a-f0-9]{64}$/i.test(env.MP_TOKEN_ENCRYPTION_KEY!.trim()) ? [] : ["MP_TOKEN_ENCRYPTION_KEY"])
         .concat(validFee ? [] : ["MP_MARKETPLACE_FEE_PERCENT"]),
     },
+    {
+      id: "melhorEnvio", title: "Melhor Envio", description: "OAuth das lojas e cotação automática de frete.", setupHref: "https://docs.melhorenvio.com.br/reference/fluxo-de-autoriza%C3%A7%C3%A3o",
+      missing: ["ME_CLIENT_ID", "ME_CLIENT_SECRET"].filter((key) => !present(env, key))
+        .concat(present(env, "ME_TOKEN_ENCRYPTION_KEY") && /^[a-f0-9]{64}$/i.test(env.ME_TOKEN_ENCRYPTION_KEY!.trim()) ? [] : ["ME_TOKEN_ENCRYPTION_KEY"]),
+    },
   ];
 
   return checks.map(({ missing, ...check }) => ({ ...check, status: missing.length ? "missing" : "configured", missingVariables: missing }));

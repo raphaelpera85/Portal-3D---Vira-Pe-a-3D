@@ -25,7 +25,10 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Implementar cotação manual de frete por loja para pedidos do carrinho e impressão personalizada, aceite do comprador, inclusão no checkout, rastreio manual e confirmação de recebimento.
 - [x] Coletar e validar peso e dimensões externas da embalagem em anúncios físicos para preparar cotações automáticas.
 - [x] Coletar CEP de origem por loja em registro privado protegido por RLS do proprietário.
-- [ ] Integrar provedor para cotações automáticas, compra de etiquetas e atualização automática de rastreio.
+- [x] Integrar OAuth Melhor Envio por loja, cifrar tokens e oferecer ao comprador a tarifa mais barata em pedidos do carrinho.
+- [ ] Configurar e validar os aplicativos Melhor Envio Sandbox e Produção.
+- [ ] Comprar etiqueta após confirmação explícita do vendedor; a operação consome saldo da carteira do vendedor.
+- [ ] Sincronizar rastreamento/status da transportadora; impressão personalizada permanece em cotação manual.
 
 ## Bloqueios de produção
 
@@ -33,7 +36,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - Cada vendedor precisa autorizar OAuth e atender ao nível de identificação solicitado pelo provedor.
 - Definir a comissão do ViraPeça antes de emitir preferências. Nenhuma taxa é presumida no código.
 - Testar Pix/cartão e notificações com contas sandbox; não liberar produção até confirmar conciliação e política de reembolso.
-- Escolher provedor de frete e cadastrar credenciais/contrato para cotar e comprar etiquetas.
+- Configurar as credenciais Melhor Envio antes de habilitar cotações ao vivo no ambiente publicado.
 
 ## Limites verificados
 
@@ -41,9 +44,9 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 
 - A documentação do Mercado Pago informa que a comissão do marketplace é aplicada após a taxa do Mercado Pago e que o reembolso pode exigir saldo disponível do vendedor; a plataforma não consegue garantir sozinha o reembolso integral nesse cenário.
 - O checkout online atende pedidos do carrinho, solicitações diretas de compra e propostas de impressão aceitos, sempre por loja.
-- Para pedidos de carrinho, o checkout inclui o frete manual cotado pela loja e aceito pelo comprador; a comissão é calculada somente sobre os produtos. A cotação não usa tarifas ao vivo e não emite etiqueta.
+- Para pedidos de carrinho, a loja pode consultar tarifas da conta Melhor Envio e oferecer a menor; o comprador aceita antes do checkout. A comissão continua calculada somente sobre os produtos. A cotação não emite etiqueta.
 - Cupons são pagos pelos vendedores, rateados pelo valor dos produtos de cada loja. A comissão incide sobre o subtotal do vendedor após o desconto; frete não entra na base da comissão. Os campos de embalagem agora guardam peso e dimensões externas, mas ainda não consultam tarifas de transportadoras.
-- O CEP de origem fica fora da vitrine pública e só pode ser lido ou alterado pelo dono da loja; ele prepara a cotação sem divulgar o endereço do fabricante.
+- O CEP de origem fica fora da vitrine pública e só pode ser lido ou alterado pelo dono da loja. Os tokens Melhor Envio são cifrados no servidor e a tabela não permite leitura por usuários nem anônimos.
 - Impressões personalizadas copiam o endereço salvo somente após o comprador escolher uma proposta; RLS libera o snapshot apenas ao comprador, à loja vencedora e à administração. A cotação aceita soma ao checkout sem aumentar a base da comissão; o rastreio só pode ser enviado após pagamento confirmado e produção concluída.
 - Estoque contado de produtos é reservado atomicamente ao iniciar o checkout de carrinho ou compra direta, confirmado como vendido apenas pelo webhook e devolvido se o provedor rejeitar, cancelar ou expirar a order. Serviços de impressão não reservam estoque de produto; a produção só pode começar após o webhook confirmar o pagamento. Orders do Mercado Pago expiram em um dia.
 - O cron diário da Vercel também reconcilia até oito reembolsos pendentes com mais de cinco minutos; itens inconclusivos permanecem pendentes para a próxima execução e usam a mesma chave idempotente.
