@@ -12,6 +12,7 @@ export function summarizeSellerPayments(payments: SellerPaymentSummaryInput[]) {
     beforeProviderFeesCents: paidTotalCents - marketplaceFeeCents,
     refundedCount: statusCount("refunded"),
     partiallyRefundedCount: statusCount("partially_refunded"),
+    chargedBackCount: statusCount("charged_back"),
     pendingCount: statusCount("pending") + statusCount("creating"),
   };
 }

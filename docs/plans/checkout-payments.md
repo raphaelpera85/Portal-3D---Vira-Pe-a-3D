@@ -14,6 +14,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [ ] Implementar desconexão e revogação da autorização do vendedor.
 - [x] Implementar refresh token, Checkout Pro para pedidos de carrinho, compras diretas e propostas de impressão aceitos, taxa de marketplace configurável e idempotência.
 - [x] Implementar webhook assinado, consulta server-to-server e transição auditável do pagamento.
+- [x] Registrar o status de contestação quando a order consultada no webhook retorna `charged_back`, bloquear nova cobrança da mesma origem e exibir o caso nos painéis.
 - [ ] Implementar cancelamentos, estornos, reembolsos e disputas respeitando limitações do split 1:1.
 - [ ] Adicionar testes de integração com contas de teste e validar as migrations no Supabase conectado.
 - [x] Implementar cotação manual de frete por loja, aceite do comprador, inclusão no checkout, rastreio manual e confirmação de recebimento.
@@ -37,3 +38,4 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - Estoque contado de produtos é reservado atomicamente ao iniciar o checkout de carrinho ou compra direta, confirmado como vendido apenas pelo webhook e devolvido se o provedor rejeitar, cancelar ou expirar a order. Serviços de impressão não reservam estoque de produto; a produção só pode começar após o webhook confirmar o pagamento. Orders do Mercado Pago expiram em um dia.
 - Reembolsos iniciados pelo painel, disputas, conciliação financeira, frete automatizado e validação com contas sandbox ainda não estão concluídos.
 - O webhook atualiza o estado do pagamento após validar a assinatura e consultar a order no Mercado Pago. A página de retorno não confirma pagamento.
+- A contestação é registrada somente quando o webhook de orders leva a API da order a retornar `charged_back`; o fluxo não recebe eventos do tópico separado `chargebacks`, envia evidências ou administra prazos e decisões do caso.

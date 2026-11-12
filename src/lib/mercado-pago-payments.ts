@@ -83,7 +83,8 @@ export function isMercadoPagoOrderForPayment(value: unknown, expected: {
   return true;
 }
 
-export function mapMercadoPagoOrderStatus(status: string, detail = ""): "paid" | "pending" | "failed" | "expired" | "cancelled" | "refunded" | "partially_refunded" | null {
+export function mapMercadoPagoOrderStatus(status: string, detail = ""): "paid" | "pending" | "failed" | "expired" | "cancelled" | "refunded" | "partially_refunded" | "charged_back" | null {
+  if (status === "charged_back") return "charged_back";
   if (status === "processed" && detail === "partially_refunded") return "partially_refunded";
   if (status === "processed") return "paid";
   if (["created", "processing", "action_required"].includes(status)) return "pending";

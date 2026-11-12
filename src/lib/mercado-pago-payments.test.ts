@@ -48,6 +48,9 @@ describe("Mercado Pago payment helpers", () => {
     expect(mapMercadoPagoOrderStatus("canceled")).toBe("cancelled");
     expect(mapMercadoPagoOrderStatus("refunded")).toBe("refunded");
     expect(mapMercadoPagoOrderStatus("processed", "partially_refunded")).toBe("partially_refunded");
+    expect(mapMercadoPagoOrderStatus("charged_back", "in_process")).toBe("charged_back");
+    expect(mapMercadoPagoOrderStatus("charged_back", "settled")).toBe("charged_back");
+    expect(mapMercadoPagoOrderStatus("charged_back", "reimbursed")).toBe("charged_back");
     expect(mapMercadoPagoOrderStatus("expired")).toBe("expired");
     expect(mapMercadoPagoOrderStatus("unknown_status")).toBeNull();
   });

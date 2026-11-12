@@ -34,4 +34,6 @@ O fabricante atualiza estoque por uma função que confere papel, loja e proprie
 
 Tokens OAuth do Mercado Pago ficam criptografados com AES-256-GCM em tabela sem acesso a `anon` ou `authenticated`. A comissão, o total e o idempotency key são persistidos antes da chamada externa. A ação de pagamento valida que o comprador é dono do pedido aceito e usa o access token da loja; o webhook exige assinatura HMAC válida e confere referência, vendedor, moeda e valores contra a order consultada server-to-server. A tabela de pagamentos é legível somente ao comprador e ao fabricante participantes. O painel ainda não inicia reembolsos nem gerencia disputas.
 
+Quando a order verificada retorna `charged_back`, o webhook grava a contestação sem liberar estoque nem autorizar nova cobrança para a mesma origem. A atualização posterior do detalhe do caso é mantida no status do provedor. O painel sinaliza o status e orienta as partes a consultar o Mercado Pago; evidências e decisões ainda precisam ser tratadas no painel do provedor.
+
 O extrato financeiro exige papel `maker`, resolve a loja do usuário autenticado e filtra os pagamentos por `store_id`; além disso, a tabela mantém RLS para participantes. Não exibe dados do comprador nem trata o total menos a comissão como repasse efetivo: tarifas, saldo e liquidação permanecem no Mercado Pago.

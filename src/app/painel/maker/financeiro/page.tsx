@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Financeiro do fabricante | ViraPeça
 
 const statusLabels: Record<string, string> = {
   creating: "Preparando checkout", pending: "Aguardando pagamento", paid: "Pago",
-  partially_refunded: "Reembolso parcial", refunded: "Reembolsado", failed: "Falhou",
+  partially_refunded: "Reembolso parcial", refunded: "Reembolsado", charged_back: "Contestado", failed: "Falhou",
   expired: "Expirado", cancelled: "Cancelado",
 };
 
@@ -22,7 +22,7 @@ export default async function MakerFinancePage() {
   if (!store) redirect("/painel/maker");
 
   const { data: payments, error } = await actor.supabase.from("seller_order_payments")
-    .select("id, order_id, purchase_request_id, custom_print_request_id, total_cents, marketplace_fee_cents, status, created_at")
+    .select("id, order_id, purchase_request_id, custom_print_request_id, total_cents, marketplace_fee_cents, status, provider_status, created_at")
     .eq("store_id", store.id).order("created_at", { ascending: false }).limit(500);
   const rows = payments ?? [];
   const summary = summarizeSellerPayments(rows);
@@ -40,14 +40,14 @@ export default async function MakerFinancePage() {
             <article><span>Comissão ViraPeça</span><strong>{formatBrl(summary.marketplaceFeeCents / 100)}</strong></article>
             <article><span>Após comissão da plataforma</span><strong>{formatBrl(summary.beforeProviderFeesCents / 100)}</strong></article>
           </section>
-          <p className="seller-finance-note">Os totais acima incluem apenas pagamentos no status “Pago”. O valor após comissão ainda não desconta as tarifas do Mercado Pago. Reembolsos parciais e totais aparecem no extrato sem serem somados como recebimento confirmado.</p>
+          <p className="seller-finance-note">Os totais acima incluem apenas pagamentos no status “Pago”. O valor após comissão ainda não desconta as tarifas do Mercado Pago. Reembolsos e contestações aparecem no extrato sem serem somados como recebimento confirmado.</p>
           <section className="account-card maker-products-card seller-finance-ledger">
             <span className="account-kicker">MOVIMENTAÇÕES</span><h2>Pagamentos recentes</h2>
-            {summary.pendingCount + summary.partiallyRefundedCount + summary.refundedCount > 0 && <p className="quote-small-note">Aguardando: {summary.pendingCount} · reembolsos parciais: {summary.partiallyRefundedCount} · reembolsados: {summary.refundedCount}</p>}
+            {summary.pendingCount + summary.partiallyRefundedCount + summary.refundedCount + summary.chargedBackCount > 0 && <p className="quote-small-note">Aguardando: {summary.pendingCount} · reembolsos parciais: {summary.partiallyRefundedCount} · reembolsados: {summary.refundedCount} · contestados: {summary.chargedBackCount}</p>}
             {rows.length === 0 ? <p>Nenhum pagamento registrado para esta loja.</p> : <div className="seller-finance-table-wrap"><table className="seller-finance-table"><caption className="sr-only">Últimos 500 pagamentos da loja</caption><thead><tr><th scope="col">Data</th><th scope="col">Origem</th><th scope="col">Status</th><th scope="col">Valor cobrado</th><th scope="col">Comissão</th><th scope="col">Após comissão</th></tr></thead><tbody>{rows.map((payment) => {
               const source = payment.custom_print_request_id ? "Impressão personalizada" : payment.purchase_request_id ? "Compra direta ou arquivo digital" : "Pedido do carrinho";
               const status = statusLabels[payment.status] ?? "Status desconhecido";
-              return <tr key={payment.id}><td><time dateTime={payment.created_at}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(payment.created_at))}</time></td><td>{source}</td><td><span className={`quote-status status-${payment.status}`}>{status}</span></td><td>{formatBrl(Number(payment.total_cents) / 100)}</td><td>{formatBrl(Number(payment.marketplace_fee_cents) / 100)}</td><td>{formatBrl((Number(payment.total_cents) - Number(payment.marketplace_fee_cents)) / 100)}</td></tr>;
+              return <tr key={payment.id}><td><time dateTime={payment.created_at}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(payment.created_at))}</time></td><td>{source}</td><td><span className={`quote-status status-${payment.status}`}>{status}</span>{payment.status === "charged_back" && payment.provider_status && <small className="quote-small-note">Mercado Pago: {payment.provider_status.split(":").at(-1)}</small>}</td><td>{formatBrl(Number(payment.total_cents) / 100)}</td><td>{formatBrl(Number(payment.marketplace_fee_cents) / 100)}</td><td>{formatBrl((Number(payment.total_cents) - Number(payment.marketplace_fee_cents)) / 100)}</td></tr>;
             })}</tbody></table></div>}
             <p className="seller-finance-note">A coluna “Após comissão” não representa repasse líquido nem saldo disponível. O Mercado Pago processa o split e apresenta as tarifas, disponibilidade e extratos da conta conectada.</p>
           </section>
