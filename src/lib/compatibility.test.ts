@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter } from "./compatibility";
+import { evaluateCompatibility, evaluateMaterialCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter } from "./compatibility";
 
 const printer: CatalogPrinter = {
   id: "printer", name: "A1 mini", technology: "FDM", buildVolumeMm: { x: 180, y: 180, z: 180 },
@@ -18,6 +18,13 @@ const nozzle: CatalogNozzle = {
 };
 
 describe("evaluateCompatibility", () => {
+  it("evaluates material and printer compatibility without claiming a nozzle check", () => {
+    const result = evaluateMaterialCompatibility(printer, material);
+
+    expect(result.status).toBe("compatible");
+    expect(result.checks.some(({ key }) => key.startsWith("nozzle"))).toBe(false);
+  });
+
   it("confirms a sourced setup when its material, nozzle, and dimensions meet known limits", () => {
     expect(evaluateCompatibility(printer, material, nozzle, { partDimensionsMm: { x: 100, y: 100, z: 100 } }).status).toBe("compatible");
   });

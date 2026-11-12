@@ -5,6 +5,8 @@ import Link from "next/link";
 import { CirclePlus, Calculator, Trash2 } from "lucide-react";
 import { calculatePrintPrice, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "@/lib/pricing";
 import { deriveEquipmentRates, type EquipmentRateInput } from "@/lib/printer-equipment";
+import { evaluateMaterialCompatibility, type CatalogPrinter } from "@/lib/compatibility";
+import type { MaterialEntry } from "@/lib/technical-catalog";
 import { deleteMakerCalculation, saveMakerCalculation } from "@/app/calculadora/actions";
 import { SlicerImageImporter } from "@/components/slicer-image-importer";
 import type { parseSlicerOcrTexts } from "@/lib/slicer-ocr";
@@ -13,10 +15,10 @@ type FormFields = Record<keyof Omit<PrintCostInput, "additionalCosts" | "product
 type ChannelFields = Omit<SalesChannel, "feePercent" | "fixedFee"> & { feePercent: string; fixedFee: string };
 type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
-type CalculatorEquipment = EquipmentRateInput & { id: string; label: string };
+type CalculatorEquipment = EquipmentRateInput & { id: string; label: string; catalogPrinter?: CatalogPrinter | null };
 type CalculatorProduct = { id: string; name: string; slug: string; published: boolean };
 type CalculatorProfile = { id: string; name: string };
-type CalculatorMaterial = { id: string; name: string; brand: string; family: string; process: "filament" | "resin" };
+type CalculatorMaterial = MaterialEntry;
 type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; snapshot: string };
 
 const initialFields: FormFields = {
@@ -37,6 +39,31 @@ const money = (cents: number | null | undefined) => cents == null
   : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 const numberValue = (value: string) => value.trim() === "" ? 0 : Number(value.replace(",", "."));
 const materialLabel = (material?: CalculatorMaterial) => material ? `${material.brand} · ${material.name} (${material.family})` : "";
+const compatibilityText = { compatible: "Compatível", conditional: "Compatível com condições", incompatible: "Incompatível", unverified: "Não verificado" };
+
+function MaterialCompatibilityNote({ equipmentId, materialName, equipment, materials }: {
+  equipmentId: string; materialName: string; equipment: CalculatorEquipment[]; materials: CalculatorMaterial[];
+}) {
+  if (!equipmentId) return null;
+  const selectedEquipment = equipment.find((item) => item.id === equipmentId);
+  if (!selectedEquipment) return null;
+  const material = materials.find((item) => materialLabel(item) === materialName);
+  const evaluation = selectedEquipment.catalogPrinter && material
+    ? evaluateMaterialCompatibility(selectedEquipment.catalogPrinter, material)
+    : null;
+  const status = evaluation?.status ?? "unverified";
+  const message = !material
+    ? "Selecione um material do catálogo para conferir os dados técnicos; materiais informados manualmente não são verificados."
+    : !selectedEquipment.catalogPrinter
+      ? "Este equipamento não está vinculado a um modelo publicado no catálogo."
+      : null;
+
+  return <div className={`calculator-compatibility is-${status}`} role="status">
+    <strong>Material e impressora: {compatibilityText[status]}</strong>
+    <small>A avaliação não inclui o bico instalado.</small>
+    {message ? <p>{message}</p> : <ul>{evaluation?.checks.map((check) => <li key={check.key}>{check.label}: {check.detail}</li>)}</ul>}
+  </div>;
+}
 
 function CostField({ label, suffix, hint, value, onChange, step = "any", min = 0, max, idSuffix = "" }: {
   label: string; suffix?: string; hint?: string; value: string; onChange: (value: string) => void; step?: string; min?: number; max?: number; idSuffix?: string;
@@ -237,6 +264,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
           <section className="price-card">
             <div className="price-card-heading"><span className="price-step">02</span><div><h2>Máquina e energia</h2><p>Use horas, potência e custos medidos para a execução completa do lote. O tempo da impressora é contado uma vez.</p></div></div>
             {equipment.length > 0 && <label className="equipment-calculator-select">Equipamento cadastrado<select value={selectedEquipmentId} onChange={(event) => selectEquipment(event.target.value)}><option value="">Sem equipamento (manter campos manuais)</option>{equipment.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select><small>Selecionar preenche dados conhecidos; o equipamento fica vinculado ao salvar e os campos continuam editáveis.</small></label>}
+            <MaterialCompatibilityNote equipmentId={selectedEquipmentId} materialName={fields.material} equipment={equipment} materials={materials} />
             <div className="price-fields-grid">
               <CostField label="Tempo de impressão" suffix="horas" value={fields.printHours} onChange={(value) => updateField("printHours", value)} />
               <CostField label="Potência média" suffix="W" hint="Use a média medida, não a potência nominal." value={fields.averagePowerWatts} onChange={(value) => updateField("averagePowerWatts", value)} />
@@ -259,6 +287,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
                 <CostField label="Quantidade por produto final" suffix="un." step="1" max={MAX_BATCH_QUANTITY} value={component.piecesPerProduct} onChange={(value) => updateProductionComponent(component.id, "piecesPerProduct", value)} idSuffix={component.id} />
               </div>
               {equipment.length > 0 && <label className="equipment-calculator-select production-equipment-select">Equipamento cadastrado para este componente<select value={component.equipmentId} onChange={(event) => selectComponentEquipment(component.id, event.target.value)}><option value="">Informar custos manualmente</option>{equipment.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select><small>Preenche a impressora, potência, tarifa e depreciação conhecidos; os campos permanecem editáveis.</small></label>}
+              <MaterialCompatibilityNote equipmentId={component.equipmentId} materialName={component.material} equipment={equipment} materials={materials} />
               <div className="price-fields-grid production-component-costs">
                 <CostField label="Material consumido no componente" suffix="g" value={component.filamentGrams} onChange={(value) => updateProductionComponent(component.id, "filamentGrams", value)} idSuffix={component.id} />
                 <CostField label="Preço do material" suffix="R$/kg" hint="Informe seu preço de compra." value={component.filamentPricePerKg} onChange={(value) => updateProductionComponent(component.id, "filamentPricePerKg", value)} idSuffix={component.id} />

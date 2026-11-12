@@ -68,7 +68,7 @@ function overallStatus(checks: CompatibilityCheck[]): CompatibilityStatus {
 export function evaluateCompatibility(
   printer: CatalogPrinter,
   material: CatalogMaterial,
-  nozzle: CatalogNozzle,
+  nozzle?: CatalogNozzle,
   options: CompatibilityOptions = {},
 ) {
   const checks: CompatibilityCheck[] = [];
@@ -97,7 +97,7 @@ export function evaluateCompatibility(
     }
   }
 
-  if (material.process === "filament") {
+  if (material.process === "filament" && nozzle) {
     const nozzleFit = nozzle.printerCompatibility?.[printer.id];
     if (nozzleFit == null || nozzleFit === "unverified") {
       add("nozzle-fit", "Encaixe do bico", "unverified", "O encaixe deste bico ainda não foi confirmado para a impressora.");
@@ -122,7 +122,7 @@ export function evaluateCompatibility(
     } else {
       add("hotend-temperature", "Temperatura do hotend", "compatible", `Até ${printer.maxNozzleTemperatureC} °C; mínimo recomendado de ${material.nozzleTemperatureC.min} °C.`);
     }
-    if (nozzle.maxTemperatureC != null && material.nozzleTemperatureC.min > nozzle.maxTemperatureC) {
+    if (nozzle?.maxTemperatureC != null && material.nozzleTemperatureC.min > nozzle.maxTemperatureC) {
       add("nozzle-temperature", "Temperatura do bico", "incompatible", "O limite deste bico está abaixo da faixa mínima do material.");
     }
   }
@@ -144,7 +144,7 @@ export function evaluateCompatibility(
     else if (printer.enclosure == null) add("enclosure", "Câmara fechada", "unverified", "O catálogo não confirma se há câmara fechada.");
   }
 
-  if (material.process === "filament" && material.abrasive === true) {
+  if (material.process === "filament" && material.abrasive === true && nozzle) {
     if (nozzle.abrasionResistant === false) add("abrasion", "Resistência à abrasão", "conditional", "Troque por um bico resistente à abrasão antes de imprimir este material.");
     else if (nozzle.abrasionResistant == null) add("abrasion", "Resistência à abrasão", "unverified", "A resistência deste bico à abrasão não foi informada.");
   }
@@ -181,4 +181,8 @@ export function evaluateCompatibility(
   }
 
   return { status: overallStatus(checks), checks };
+}
+
+export function evaluateMaterialCompatibility(printer: CatalogPrinter, material: CatalogMaterial) {
+  return evaluateCompatibility(printer, material);
 }

@@ -73,7 +73,7 @@ flowchart LR
 
 1. Validar os fluxos do portal contra o esquema Supabase aplicado e executar compras de teste ponta a ponta.
 2. Importar no banco as referências técnicas locais depois de rever as fontes.
-3. Ligar históricos de manutenção a materiais/produtos; a calculadora usa o catálogo técnico para identificar filamentos e resinas, mantém o preço de compra informado pelo fabricante e sugere a taxa média de manutenção por hora a partir dos custos registrados e horas acumuladas da impressora.
+3. Ligar históricos de manutenção a materiais/produtos; a calculadora identifica filamentos e resinas pelo catálogo e avalia as condições técnicas do material para o modelo de impressora vinculado. O preço de compra continua informado pelo fabricante, e a manutenção usa a média dos custos registrados por hora acumulada.
 4. Implementar preço e estoque específicos por combinação de variações, preservando reservas e cancelamentos de pagamento.
 5. Integrar um provedor de frete para cotações e etiquetas depois de definir fornecedor e credenciais.
 6. Validar pagamentos sandbox antes de qualquer cobrança real e completar conciliação financeira, relatórios administrativos e auditoria.

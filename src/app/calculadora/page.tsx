@@ -19,7 +19,7 @@ export default async function CalculatorPage() {
   const [actor, catalog] = await Promise.all([getUserWithRole("maker"), loadTechnicalCatalog()]);
   const canUseOcr = Boolean(actor.supabase && actor.user && actor.authorized);
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
-  let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string }> = [];
+  let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string; catalogPrinterId: string | null }> = [];
   let products: Array<{ id: string; name: string; slug: string; published: boolean }> = [];
   let profiles: Array<{ id: string; name: string }> = [];
   let equipmentNotice: string | null = null;
@@ -34,7 +34,7 @@ export default async function CalculatorPage() {
       canSaveCalculations = true;
       const [{ data, error }, history, productResult, profileResult] = await Promise.all([
         actor.supabase.from("maker_printers")
-          .select("id, manufacturer_snapshot, model_snapshot, nickname, purchase_price_brl, residual_value_brl, useful_life_hours, accumulated_hours, measured_average_power_w, energy_tariff_per_kwh")
+          .select("id, catalog_model_id, manufacturer_snapshot, model_snapshot, nickname, purchase_price_brl, residual_value_brl, useful_life_hours, accumulated_hours, measured_average_power_w, energy_tariff_per_kwh")
           .eq("store_id", store.id).neq("operational_status", "inactive").order("nickname"),
         actor.supabase.from("maker_cost_calculations").select("id, title, input_snapshot, product_id, printer_id, profile_id, created_at")
           .eq("store_id", store.id).order("created_at", { ascending: false }).limit(20),
@@ -64,7 +64,7 @@ export default async function CalculatorPage() {
         purchasePriceBrl: printer.purchase_price_brl, residualValueBrl: printer.residual_value_brl,
         usefulLifeHours: printer.useful_life_hours, averagePowerWatts: printer.measured_average_power_w,
         energyTariffPerKwh: printer.energy_tariff_per_kwh, maintenanceCostBrl: maintenanceCosts.get(printer.id) ?? null,
-        accumulatedHours: printer.accumulated_hours,
+        accumulatedHours: printer.accumulated_hours, catalogPrinterId: printer.catalog_model_id,
       }));
       products = (productResult.data ?? []).map((product) => ({ id: product.id, name: product.name, slug: product.slug, published: product.catalog_status === "published" }));
       profiles = (profileResult.data ?? []).map((profile) => ({ id: profile.id, name: profile.profile_name }));
@@ -97,7 +97,7 @@ export default async function CalculatorPage() {
       <SiteHeader />
       <main className="calculator-page">
         <div className="calculator-page-back shell"><Link className="viewer-back-link" href="/">← Voltar para o início</Link><span>FERRAMENTA PARA MAKERS</span></div>
-        <PriceCalculator equipment={equipment} products={products} profiles={profiles} materials={catalog.materials.map(({ id, name, brand, family, process }) => ({ id, name, brand, family, process }))} materialNotice={catalog.error} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} />
+        <PriceCalculator equipment={equipment.map((item) => ({ ...item, catalogPrinter: catalog.printers.find((printer) => printer.id === item.catalogPrinterId) ?? null }))} products={products} profiles={profiles} materials={catalog.materials} materialNotice={catalog.error} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} />
       </main>
       <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Custos claros para produzir com confiança.</p><span>© 2026 ViraPeça 3D</span></div></footer>
     </>
