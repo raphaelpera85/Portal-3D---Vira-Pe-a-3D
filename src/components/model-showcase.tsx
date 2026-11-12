@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { modelShowcaseCategories, type ShowcaseModel } from "@/lib/model-showcase";
+import visualIndex from "@/lib/model-showcase-visual-index.json";
 import { CatalogImageSearch } from "@/components/catalog-image-search";
 
 function galleryUrl(query: string, category: string, page = 1) {
@@ -38,7 +39,7 @@ export function ModelShowcase({ models, query, category, page, pages }: { models
         {modelShowcaseCategories.map((item) => <Link className={`category-chip${category === item.slug ? " is-active" : ""}`} aria-current={category === item.slug ? "page" : undefined} href={galleryUrl(query, item.slug)} key={item.slug}>{item.name}</Link>)}
       </nav>
       <form className="search-field" action="/modelos" method="get"><label className="sr-only" htmlFor="model-gallery-search">Buscar modelos por nome ou tag</label><input id="model-gallery-search" type="search" name="q" maxLength={100} defaultValue={query} placeholder="Nome, animal, tema ou tag" />{category && <input type="hidden" name="categoria" value={category} />}<button type="submit">Buscar</button></form>
-      <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={category} redirectPath="/modelos" />
+      <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={category} redirectPath="/modelos" visualIndex={visualIndex} />
     </div>
     <p className="catalog-disclaimer">Abra um modelo para girar a prévia 3D e baixar o arquivo 3MF original.</p>
     <ModelCards models={models} />
