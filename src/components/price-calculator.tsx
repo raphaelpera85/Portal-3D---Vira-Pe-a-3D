@@ -15,6 +15,7 @@ import { SlicerImageImporter } from "@/components/slicer-image-importer";
 import { ThreeMfSlicerImporter } from "@/components/three-mf-slicer-importer";
 import type { parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 import { mapThreeMfPlateToSlicerMetrics, type SavedSlicerMetrics } from "@/lib/saved-calculation";
+import { mapPrintProfileToCalculator } from "@/lib/calculator-profile";
 import type { ThreeMfSlicePlate } from "@/lib/model-file";
 
 type FormFields = Record<keyof Omit<PrintCostInput, "additionalCosts" | "productionComponents" | "filamentCosts" | "pricingMode">, string>;
@@ -23,7 +24,7 @@ type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
 type CalculatorEquipment = EquipmentRateInput & { id: string; label: string; catalogPrinter?: CatalogPrinter | null };
 type CalculatorProduct = { id: string; name: string; slug: string; published: boolean };
-type CalculatorProfile = { id: string; name: string };
+type CalculatorProfile = { id: string; name: string; productId: string; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null };
 type CalculatorMaterial = MaterialEntry;
 type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; snapshot: string };
 
@@ -100,6 +101,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [profileApplyNotice, setProfileApplyNotice] = useState("");
   const [slicerMetrics, setSlicerMetrics] = useState<SavedSlicerMetrics | null>(null);
   const [saveState, saveAction, saving] = useActionState(saveMakerCalculation, { message: "", success: false });
   const parsedChannels: SalesChannel[] = channels.map((channel) => ({
@@ -222,6 +224,27 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       ...(rates.depreciationPerHour == null ? {} : { depreciationPerHour: String(rates.depreciationPerHour) }),
       maintenancePerHour: rates.maintenancePerHour == null ? "" : String(rates.maintenancePerHour),
     }));
+  }
+
+  function applySelectedProfile() {
+    const profile = profiles.find((item) => item.id === selectedProfileId);
+    if (!profile) return;
+    if ((fields.material.trim() !== "" || fields.filamentGrams !== "" || fields.printHours !== "" || slicerMetrics?.filaments.length) && !window.confirm("Aplicar este perfil substituirá o material, o peso, o tempo e a composição por cor informados. Os preços por kg das cores correspondentes serão mantidos. Continuar?")) return;
+    const values = mapPrintProfileToCalculator(profile, numberValue(fields.batchQuantity), slicerMetrics?.filaments);
+    if (!values) {
+      setProfileApplyNotice("A quantidade do lote ou o consumo escalado deste perfil excede os limites aceitos pela calculadora.");
+      return;
+    }
+    setFields((current) => ({
+      ...current,
+      material: values.material || current.material,
+      filamentGrams: values.filamentGrams === null ? current.filamentGrams : String(values.filamentGrams),
+      printHours: values.printHours === null ? current.printHours : String(values.printHours),
+    }));
+    setSlicerMetrics(values.slicerMetrics);
+    setSelectedProductId(profile.productId);
+    if (profile.equipmentId && equipment.some((item) => item.id === profile.equipmentId)) selectEquipment(profile.equipmentId);
+    setProfileApplyNotice(`Consumo aplicado para ${Math.max(1, Math.ceil(numberValue(fields.batchQuantity) / profile.quantity))} execução(ões) do perfil. Confira os preços por kg antes de calcular.`);
   }
 
   function applyOcr(extraction: ReturnType<typeof parseSlicerOcrTexts>): boolean | null {
@@ -503,7 +526,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             {productNotice && <p className="auth-notice is-error" role="status">{productNotice}</p>}
             {products.length > 0 && <label htmlFor="calculation-product">Vincular a um produto<select id="calculation-product" name="productSelector" value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)}><option value="">Sem vínculo com produto</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}{product.published ? " · publicado" : " · rascunho"}</option>)}</select><small>Somente produtos desta loja aparecem nesta lista.</small></label>}
             {profileNotice && <p className="auth-notice is-error" role="status">{profileNotice}</p>}
-            {profiles.length > 0 && <label htmlFor="calculation-profile">Vincular a um perfil de impressão<select id="calculation-profile" name="profileSelector" value={selectedProfileId} onChange={(event) => setSelectedProfileId(event.target.value)}><option value="">Sem vínculo com perfil</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select><small>Somente perfis da sua loja aparecem nesta lista.</small></label>}
+            {profiles.length > 0 && <div className="calculator-profile-apply"><label htmlFor="calculation-profile">Perfil de impressão<select id="calculation-profile" name="profileSelector" value={selectedProfileId} onChange={(event) => { setSelectedProfileId(event.target.value); setProfileApplyNotice(""); }}><option value="">Sem vínculo com perfil</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select><small>Escolha um perfil e aplique o consumo previsto para o lote.</small></label><button className="button button-secondary" type="button" onClick={applySelectedProfile} disabled={!selectedProfileId}>Aplicar consumo</button>{profileApplyNotice && <p className="price-profile-apply-note" role="status">{profileApplyNotice}</p>}</div>}
             <input type="hidden" name="productId" value={selectedProductId} />
             <input type="hidden" name="printerId" value={selectedEquipmentId} />
             <input type="hidden" name="profileId" value={selectedProfileId} />
@@ -512,7 +535,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             {saveState.message && <p className={saveState.success ? "auth-notice is-success" : "auth-notice is-error"} role="status">{saveState.message}</p>}
           </form>
           {savedCalculationsError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar o histórico. Confira as migrações da calculadora e dos vínculos com produtos, equipamentos e perfis.</p> : savedCalculations.length === 0 ? <p className="price-history-empty">Os cálculos salvos aparecerão aqui.</p> : <div className="price-history-list">{savedCalculations.map((saved) => <article className="price-history-item" key={saved.id}>
-            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}{saved.printerName && <span>Equipamento: {saved.printerName}</span>}{saved.profileName && <span>Perfil: {saved.profileName}</span>}{saved.slicer && <><span>Fatiador · {saved.slicer.slicer} · modelo {metric(saved.slicer.modelGrams, "g")} · suportes {metric(saved.slicer.supportGrams, "g")} · purga {metric(saved.slicer.purgeGrams, "g")} · torre {metric(saved.slicer.wipeTowerGrams, "g")} · tempo {metric(saved.slicer.printHours, "h")}</span>{saved.slicer.filaments.length > 0 && <details><summary>Consumo por filamento ({saved.slicer.filaments.length})</summary><ul>{saved.slicer.filaments.map((filament) => <li key={filament.index}>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""} · {metric(filament.grams, "g")}</li>)}</ul></details>}{saved.slicer.conflicts.length > 0 && <span>Campos com conflito ignorados: {saved.slicer.conflicts.join(", ")}</span>}</>}</div>
+            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}{saved.printerName && <span>Equipamento: {saved.printerName}</span>}{saved.profileName && <span>Perfil: {saved.profileName}</span>}{saved.slicer && <><span>Origem dos dados · {saved.slicer.slicer} · modelo {metric(saved.slicer.modelGrams, "g")} · suportes {metric(saved.slicer.supportGrams, "g")} · purga {metric(saved.slicer.purgeGrams, "g")} · torre {metric(saved.slicer.wipeTowerGrams, "g")} · tempo {metric(saved.slicer.printHours, "h")}</span>{saved.slicer.filaments.length > 0 && <details><summary>Consumo por filamento ({saved.slicer.filaments.length})</summary><ul>{saved.slicer.filaments.map((filament) => <li key={filament.index}>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""} · {metric(filament.grams, "g")}</li>)}</ul></details>}{saved.slicer.conflicts.length > 0 && <span>Campos com conflito ignorados: {saved.slicer.conflicts.join(", ")}</span>}</>}</div>
             <div className="price-history-actions"><button className="button button-secondary" type="button" onClick={() => duplicateCalculation(saved.snapshot, saved.title, saved.productId, saved.printerId, saved.profileId)}>Abrir como cópia</button><form action={deleteMakerCalculation} onSubmit={(event) => { if (!window.confirm(`Excluir “${saved.title}” do histórico?`)) event.preventDefault(); }}><input type="hidden" name="calculationId" value={saved.id} /><button className="price-history-delete" type="submit">Excluir</button></form></div>
           </article>)}</div>}
         </> : <div className="price-history-locked"><p>Entre com uma conta de fabricante e loja aprovada para manter um histórico privado dos seus custos.</p><Link className="button button-secondary" href="/conta">Acessar conta</Link></div>}

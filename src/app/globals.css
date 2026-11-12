@@ -1063,6 +1063,12 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .price-save-form label input, .price-save-form label select { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); color: var(--ink); font: inherit; font-size: 11px; }
 .price-save-form label input:focus-visible, .price-save-form label select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .price-save-form label small { color: var(--muted); font-size: 9px; font-weight: 400; }
+.calculator-profile-apply { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.calculator-profile-apply label { display: grid; gap: 6px; color: var(--muted-strong); font-size: 9px; font-weight: 700; }
+.calculator-profile-apply select { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); color: var(--ink); font: inherit; font-size: 11px; }
+.calculator-profile-apply select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.calculator-profile-apply label small, .price-profile-apply-note { color: var(--muted); font-size: 9px; font-weight: 400; }
+.price-profile-apply-note { grid-column: 1 / -1; margin: 0; }
 .price-save-form .auth-notice { grid-column: 1 / -1; margin: 0; }
 .price-save-form button:disabled { cursor: not-allowed; opacity: .55; }
 .price-history-locked { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
@@ -1252,7 +1258,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .price-layout { grid-template-columns: minmax(0, 1fr); }
   .price-results { position: static; }
   .price-history { padding: 17px 15px; }
-  .price-save-form { grid-template-columns: 1fr; }
+  .price-save-form, .calculator-profile-apply { grid-template-columns: 1fr; }
   .price-history-item { align-items: flex-start; flex-direction: column; }
   .price-ocr-result dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .price-fields-grid { gap: 13px 10px; }
