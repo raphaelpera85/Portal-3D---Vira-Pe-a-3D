@@ -7,7 +7,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => value !==
 const validNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
 const optionalUuid = (value: unknown) => value == null || value === "" ? null : typeof value === "string" && uuidPattern.test(value) ? value : undefined;
 
-export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknown, rawProductId?: unknown, rawPrinterId?: unknown) {
+export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknown, rawProductId?: unknown, rawPrinterId?: unknown, rawProfileId?: unknown) {
   if (typeof rawTitle !== "string" || rawTitle.trim().length < 2 || rawTitle.trim().length > 80) {
     return { calculation: null, error: "Informe um nome de 2 a 80 caracteres." };
   }
@@ -16,7 +16,8 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   }
   const productId = optionalUuid(rawProductId);
   const printerId = optionalUuid(rawPrinterId);
-  if (productId === undefined || printerId === undefined) return { calculation: null, error: "O produto ou equipamento vinculado é inválido." };
+  const profileId = optionalUuid(rawProfileId);
+  if (productId === undefined || printerId === undefined || profileId === undefined) return { calculation: null, error: "O produto, equipamento ou perfil vinculado é inválido." };
 
   let parsed: unknown;
   try { parsed = JSON.parse(rawSnapshot); } catch { return { calculation: null, error: "Os dados do cálculo são inválidos." }; }
@@ -73,7 +74,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
 
   return {
     calculation: {
-      title: rawTitle.trim(), productId, printerId, input: safeInput, channels: safeChannels,
+      title: rawTitle.trim(), productId, printerId, profileId, input: safeInput, channels: safeChannels,
       result: { breakdown: result.breakdown, unitCostCents: result.unitCostCents, channels: result.channels },
     },
     error: null,

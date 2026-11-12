@@ -20,26 +20,31 @@ export default async function CalculatorPage() {
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
   let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null }> = [];
   let products: Array<{ id: string; name: string; slug: string; published: boolean }> = [];
+  let profiles: Array<{ id: string; name: string }> = [];
   let equipmentNotice: string | null = null;
   let productNotice: string | null = null;
+  let profileNotice: string | null = null;
   let canSaveCalculations = false;
-  let savedCalculations: Array<{ id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; snapshot: string }> = [];
+  let savedCalculations: Array<{ id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; snapshot: string }> = [];
   let savedCalculationsError = false;
   if (actor.supabase && actor.user && actor.authorized) {
     const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
     if (store) {
       canSaveCalculations = true;
-      const [{ data, error }, history, productResult] = await Promise.all([
+      const [{ data, error }, history, productResult, profileResult] = await Promise.all([
         actor.supabase.from("maker_printers")
           .select("id, manufacturer_snapshot, model_snapshot, nickname, purchase_price_brl, residual_value_brl, useful_life_hours, measured_average_power_w, energy_tariff_per_kwh")
           .eq("store_id", store.id).neq("operational_status", "inactive").order("nickname"),
-        actor.supabase.from("maker_cost_calculations").select("id, title, input_snapshot, product_id, printer_id, created_at")
+        actor.supabase.from("maker_cost_calculations").select("id, title, input_snapshot, product_id, printer_id, profile_id, created_at")
           .eq("store_id", store.id).order("created_at", { ascending: false }).limit(20),
         actor.supabase.from("marketplace_products").select("id, name, slug, catalog_status")
           .eq("store_id", store.id).order("name"),
+        actor.supabase.from("maker_print_profiles").select("id, profile_name")
+          .eq("store_id", store.id).order("profile_name"),
       ]);
       if (error) equipmentNotice = "Não foi possível carregar seus equipamentos. A calculadora manual continua disponível.";
       if (productResult.error) productNotice = "Não foi possível carregar os produtos desta loja para vinculá-los ao cálculo.";
+      if (profileResult.error) profileNotice = "Não foi possível carregar os perfis desta loja para vinculá-los ao cálculo.";
       equipment = (data ?? []).map((printer) => ({
         id: printer.id, label: `${printer.nickname} · ${printer.manufacturer_snapshot} ${printer.model_snapshot}`,
         purchasePriceBrl: printer.purchase_price_brl, residualValueBrl: printer.residual_value_brl,
@@ -47,12 +52,14 @@ export default async function CalculatorPage() {
         energyTariffPerKwh: printer.energy_tariff_per_kwh,
       }));
       products = (productResult.data ?? []).map((product) => ({ id: product.id, name: product.name, slug: product.slug, published: product.catalog_status === "published" }));
+      profiles = (profileResult.data ?? []).map((profile) => ({ id: profile.id, name: profile.profile_name }));
       savedCalculationsError = Boolean(history.error);
       savedCalculations = (history.data ?? []).flatMap((row) => {
-        const validated = validateCalculationToSave(row.title, JSON.stringify(row.input_snapshot), row.product_id, row.printer_id);
+        const validated = validateCalculationToSave(row.title, JSON.stringify(row.input_snapshot), row.product_id, row.printer_id, row.profile_id);
         if (!validated.calculation) return [];
         const linkedProduct = products.find((product) => product.id === validated.calculation.productId);
         const linkedPrinter = equipment.find((item) => item.id === validated.calculation.printerId);
+        const linkedProfile = profiles.find((item) => item.id === validated.calculation.profileId);
         return [{
           id: row.id, title: row.title, createdAt: row.created_at,
           totalCostCents: validated.calculation.result.breakdown.totalCostCents,
@@ -63,6 +70,8 @@ export default async function CalculatorPage() {
           productUrl: linkedProduct?.published ? `/produtos/${linkedProduct.slug}` : null,
           printerId: validated.calculation.printerId,
           printerName: linkedPrinter?.label ?? null,
+          profileId: validated.calculation.profileId,
+          profileName: linkedProfile?.name ?? null,
           snapshot: JSON.stringify({ input: validated.calculation.input, channels: validated.calculation.channels }),
         }];
       });
@@ -73,7 +82,7 @@ export default async function CalculatorPage() {
       <SiteHeader />
       <main className="calculator-page">
         <div className="calculator-page-back shell"><Link className="viewer-back-link" href="/">← Voltar para o início</Link><span>FERRAMENTA PARA MAKERS</span></div>
-        <PriceCalculator equipment={equipment} products={products} equipmentNotice={equipmentNotice} productNotice={productNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} />
+        <PriceCalculator equipment={equipment} products={products} profiles={profiles} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} />
       </main>
       <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Custos claros para produzir com confiança.</p><span>© 2026 ViraPeça 3D</span></div></footer>
     </>

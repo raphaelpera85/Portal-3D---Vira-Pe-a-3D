@@ -24,9 +24,11 @@ describe("validateCalculationToSave", () => {
   it("keeps optional product and equipment associations and rejects malformed IDs", () => {
     const productId = "89abcdef-1234-4123-8123-123456789abc";
     const printerId = "76543210-abcd-4123-8123-abcdef123456";
-    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), productId, printerId).calculation).toMatchObject({ productId, printerId });
+    const profileId = "76543210-abcd-4123-8123-abcdef123456";
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), productId, printerId, profileId).calculation).toMatchObject({ productId, printerId, profileId });
     expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), "not-a-uuid").calculation).toBeNull();
     expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), null, "not-a-uuid").calculation).toBeNull();
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), null, null, "not-a-uuid").calculation).toBeNull();
     expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot)).calculation?.productId).toBeNull();
   });
 

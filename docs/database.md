@@ -50,6 +50,8 @@ A migração `202611110037_link_cost_calculations_to_products.sql` permite assoc
 
 A migração `202611110038_link_cost_calculations_to_equipment.sql` associa opcionalmente o equipamento principal selecionado ao cálculo. A loja do equipamento é conferida na Server Action e na política RLS; se o registro do equipamento for removido, o snapshot de custos continua preservado.
 
+A migração `202611110039_link_cost_calculations_to_profiles.sql` associa opcionalmente um perfil de impressão da mesma loja ao cálculo. A Server Action e a política RLS validam o dono; ao remover o perfil, a referência fica nula e o snapshot de custos permanece.
+
 O limite diário do OCR está em `supabase/migrations/202611110014_slicer_ocr_quota.sql`. Uma função atômica registra até 30 imagens por fabricante/dia UTC, permite até três por chamada e remove metadados de uso com mais de 30 dias do próprio usuário; nenhum arquivo de imagem é persistido por essa integração.
 
 Consignações estão em `supabase/migrations/202611110015_maker_consignment.sql`. Cada lote registra estabelecimento, produto e snapshots de custo, preço e comissão; movimentações append-only registram entrega, venda, devolução e perda. Funções `SECURITY DEFINER` conferem o dono da loja e bloqueiam saídas acima do saldo em uma transação com lock do lote. Consultas são privadas ao fabricante. Os valores a receber e o resultado são estimativas; não há integração com pagamentos nem conciliação de repasses.
