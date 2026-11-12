@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeMelhorEnvioRates, validateMelhorEnvioShipment } from "./melhor-envio";
 
-function makeInvoiceKey(model: "55" | "65") {
-  const base = `35261112345678000199${model}001000000001100000001`;
-  const sum = [...base].reverse().reduce((total, digit, index) => total + Number(digit) * (index % 8 + 2), 0);
-  const remainder = sum % 11;
-  return `${base}${remainder < 2 ? 0 : 11 - remainder}`;
-}
-
 const shipmentFields = {
   recipientPhone: "(11) 91234-5678",
   recipientDocument: "529.982.247-25",
@@ -39,13 +32,13 @@ describe("normalizeMelhorEnvioRates", () => {
 
 describe("validateMelhorEnvioShipment", () => {
   it("accepts a valid model 55 invoice key and normalizes buyer and package data", () => {
-    expect(validateMelhorEnvioShipment({ ...shipmentFields, invoiceKey: makeInvoiceKey("55") })).toEqual({
-      invoiceKey: makeInvoiceKey("55"), recipientPhone: "11912345678", recipientDocument: "52998224725",
+    expect(validateMelhorEnvioShipment({ ...shipmentFields, invoiceKey: "35261112345678000199550010000000011000000012" })).toEqual({
+      invoiceKey: "35261112345678000199550010000000011000000012", recipientPhone: "11912345678", recipientDocument: "52998224725",
       widthCm: 10, heightCm: 12, lengthCm: 15, weightKg: 0.5,
     });
   });
 
   it("rejects an NFC-e model 65 key even when its check digit is valid", () => {
-    expect(validateMelhorEnvioShipment({ ...shipmentFields, invoiceKey: makeInvoiceKey("65") })).toBeNull();
+    expect(validateMelhorEnvioShipment({ ...shipmentFields, invoiceKey: "35261112345678000199650010000000011000000015" })).toBeNull();
   });
 });
