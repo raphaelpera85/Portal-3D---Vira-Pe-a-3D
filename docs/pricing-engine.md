@@ -10,7 +10,7 @@ A rota `/calculadora` calcula um lote por vez no navegador. O cálculo manual fu
 - Tempo de impressão, potência média medida e tarifa por kWh.
 - Custo operacional da máquina, depreciação e manutenção por hora.
 - Tempo e valor da mão de obra, custos fixos rateados, componentes e reserva para falhas.
-- Método de precificação: margem sobre preço de venda ou markup sobre custo unitário; taxas percentuais e fixas informadas por canal.
+- Método de precificação: margem sobre preço de venda ou markup sobre custo unitário; taxas percentuais e fixas informadas por canal. O preço calculado no canal de consignação pode iniciar o registro de um lote no controle comercial.
 
 ## Cálculo
 
@@ -28,7 +28,7 @@ No modo de margem, o preço por canal é o menor valor em centavos em que o lucr
 - Equipamentos do maker podem preencher potência média medida, tarifa informada e depreciação por hora quando preço, valor residual e vida útil estão cadastrados. A manutenção sugere a média histórica (`soma dos custos registrados ÷ horas acumuladas`) quando há registros e horas positivas; sem dados suficientes, o campo fica em branco para preenchimento manual. A taxa sugerida pode ser ajustada.
 - Quando o equipamento está vinculado a um modelo publicado, a calculadora mostra a avaliação cadastrada para processo, família do material, diâmetro do filamento, hotend, mesa e câmara fechada. Materiais manuais e modelos sem vínculo aparecem como não verificados; esta avaliação não confere o bico instalado.
 - O OCR inicial reconhece rótulos comuns para consumo total, modelo, suportes, comprimento, tempo, trocas, materiais e linhas por filamento/cor quando legíveis. Não garante suporte a todas as versões/localizações dos slicers, perfis ou custos com moeda ambígua. Divergências ficam sem preenchimento.
-- Os componentes podem ter materiais do catálogo ou descrições manuais, impressoras diferentes e preços de compra próprios; esses dados são preservados nos snapshots do histórico. Ainda não há associação desses componentes com arquivos 3D enviados, perfis ou bicos. O controle de consignação é independente das vendas e dos pedidos do marketplace.
+- Os componentes podem ter materiais do catálogo ou descrições manuais, impressoras diferentes e preços de compra próprios; esses dados são preservados nos snapshots do histórico. Ainda não há associação desses componentes com arquivos 3D enviados, perfis ou bicos. O registro de consignação aceita comissão percentual e taxa fixa por unidade vendida; o vínculo criado pela calculadora não lança vendas automaticamente.
 - O resultado é uma estimativa baseada nos dados informados e não substitui a validação de custos reais do fabricante.
 - Cálculos salvos antigos sem `pricingMode` continuam sendo lidos como margem sobre o preço. Novos snapshots registram o modo e o percentual de markup quando esse método é escolhido.
 

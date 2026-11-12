@@ -447,10 +447,11 @@ export async function createMakerConsignmentItem(formData: FormData): Promise<vo
     if (!product) redirect("/painel/maker?resultado=consignacao-erro#consignacoes");
     productName = product.name;
   }
-  const { error } = await actor.supabase.rpc("create_maker_consignment_item", {
+  const { error } = await actor.supabase.rpc("create_maker_consignment_item_with_fees", {
     p_establishment: item.establishment, p_product_name: productName, p_quantity: item.quantity,
     p_unit_cost_brl: item.unitCostBrl, p_sale_price_brl: item.salePriceBrl,
-    p_commission_percent: item.commissionPercent, p_product_id: item.productId,
+    p_commission_percent: item.commissionPercent, p_commission_fixed_fee_brl: item.commissionFixedFeeBrl,
+    p_product_id: item.productId,
   });
   if (error) redirect("/painel/maker?resultado=consignacao-erro#consignacoes");
   revalidatePath("/painel/maker");

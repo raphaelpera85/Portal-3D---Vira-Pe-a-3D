@@ -1,12 +1,6 @@
 import Link from "next/link";
-import type { ShowcaseModel } from "@/lib/model-showcase";
+import { modelShowcaseCategories, type ShowcaseModel } from "@/lib/model-showcase";
 import { CatalogImageSearch } from "@/components/catalog-image-search";
-
-const categories = [
-  { name: "Suporte para Óculos", slug: "suporte-para-oculos" },
-  { name: "Chaveiros", slug: "chaveiros" },
-  { name: "Infantil", slug: "infantil" },
-];
 
 function galleryUrl(query: string, category: string, page = 1) {
   const params = new URLSearchParams();
@@ -41,7 +35,7 @@ export function ModelShowcase({ models, query, category, page, pages }: { models
     <div className="model-gallery-controls">
       <nav className="category-list" aria-label="Filtrar modelos por categoria">
         <Link className={`category-chip${!category ? " is-active" : ""}`} aria-current={!category ? "page" : undefined} href={galleryUrl(query, "")}>Todos</Link>
-        {categories.map((item) => <Link className={`category-chip${category === item.slug ? " is-active" : ""}`} aria-current={category === item.slug ? "page" : undefined} href={galleryUrl(query, item.slug)} key={item.slug}>{item.name}</Link>)}
+        {modelShowcaseCategories.map((item) => <Link className={`category-chip${category === item.slug ? " is-active" : ""}`} aria-current={category === item.slug ? "page" : undefined} href={galleryUrl(query, item.slug)} key={item.slug}>{item.name}</Link>)}
       </nav>
       <form className="search-field" action="/modelos" method="get"><label className="sr-only" htmlFor="model-gallery-search">Buscar modelos por nome ou tag</label><input id="model-gallery-search" type="search" name="q" maxLength={100} defaultValue={query} placeholder="Nome, animal, tema ou tag" />{category && <input type="hidden" name="categoria" value={category} />}<button type="submit">Buscar</button></form>
       <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={category} redirectPath="/modelos" />

@@ -9,6 +9,8 @@ import { deriveEquipmentRates, type EquipmentRateInput } from "@/lib/printer-equ
 import { evaluateMaterialCompatibility, type CatalogPrinter } from "@/lib/compatibility";
 import type { MaterialEntry } from "@/lib/technical-catalog";
 import { deleteMakerCalculation, saveMakerCalculation } from "@/app/calculadora/actions";
+import { createMakerConsignmentItem } from "@/app/painel/maker/actions";
+import { MAX_CONSIGNMENT_QUANTITY } from "@/lib/consignment";
 import { SlicerImageImporter } from "@/components/slicer-image-importer";
 import type { parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 
@@ -137,6 +139,14 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   };
   const result = useMemo(() => calculatePrintPrice(input, parsedChannels), [fields, extras, productionComponents, channels, pricingMode]);
   const hasProductionCost = Boolean(result.breakdown?.totalCostCents);
+  const consignmentChannel = parsedChannels.find((channel) => channel.id === "consignacao");
+  const consignmentChannelInput = channels.find((channel) => channel.id === "consignacao");
+  const consignmentPrice = result.channels.find((channel) => channel.id === "consignacao");
+  const consignmentProduct = products.find((product) => product.id === selectedProductId && product.published);
+  const consignmentQuantity = numberValue(fields.batchQuantity);
+  const canRegisterConsignment = canSaveCalculations && result.errors.length === 0 && hasProductionCost
+    && consignmentQuantity <= MAX_CONSIGNMENT_QUANTITY && Boolean(consignmentChannelInput?.feePercent !== "")
+    && Boolean(consignmentChannelInput?.fixedFee !== "") && consignmentPrice?.priceCents != null && result.unitCostCents != null;
   const hasCurrentValues = Object.entries(fields).some(([key, value]) => value !== "" && key !== "batchQuantity" && key !== "batchFixedCost") || extras.length > 0
     || productionComponents.length > 0
     || channels.some((channel) => channel.feePercent !== "" || channel.fixedFee !== "" || !initialChannels.some((initial) => initial.id === channel.id && initial.name === channel.name))
@@ -390,6 +400,20 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             })}
           </div>
           <p className="price-disclaimer">Estimativa manual: não inclui impostos, frete, tarifas não informadas ou custos de produção não preenchidos.</p>
+          {canRegisterConsignment && consignmentChannel && consignmentPrice?.priceCents != null && result.unitCostCents != null && <form action={createMakerConsignmentItem} className="consignment-create-form calculator-consignment-form">
+            <div><p className="eyebrow">PRÓXIMO PASSO</p><h3>Registrar preço em consignação</h3><p>Usa o custo, a comissão e o preço calculado deste canal. A venda e o repasse continuam sendo registrados manualmente.</p></div>
+            <input type="hidden" name="productId" value={consignmentProduct?.id ?? ""} />
+            <input type="hidden" name="quantity" value={consignmentQuantity} />
+            <input type="hidden" name="unitCostBrl" value={(result.unitCostCents / 100).toFixed(2)} />
+            <input type="hidden" name="salePriceBrl" value={(consignmentPrice.priceCents / 100).toFixed(2)} />
+            <input type="hidden" name="commissionPercent" value={consignmentChannel.feePercent} />
+            <input type="hidden" name="commissionFixedFeeBrl" value={consignmentChannel.fixedFee.toFixed(2)} />
+            <div className="consignment-form-grid"><label>Estabelecimento<input name="establishment" minLength={2} maxLength={120} required placeholder="Ex.: Loja do Centro" /></label>
+            <label>Produto<input name="productName" minLength={2} maxLength={200} defaultValue={consignmentProduct?.name ?? (calculationTitle.trim() || fields.material.trim() || "Produto calculado")} required /></label></div>
+            <p className="calculator-consignment-price">Lote de {consignmentQuantity} · custo {money(result.unitCostCents)} por peça · venda {money(consignmentPrice.priceCents)} · comissão {consignmentChannel.feePercent}% + {money(Math.round(consignmentChannel.fixedFee * 100))}</p>
+            <button className="button button-secondary" type="submit">Criar lote em consignação</button>
+          </form>}
+          {canSaveCalculations && result.errors.length === 0 && hasProductionCost && consignmentQuantity > MAX_CONSIGNMENT_QUANTITY && <p className="auth-notice" role="status">O controle de consignação aceita lotes de até {MAX_CONSIGNMENT_QUANTITY.toLocaleString("pt-BR")} peças.</p>}
           <div className="price-export-actions">
             <button className="button button-secondary" type="button" disabled={!canExport} onClick={() => window.print()}>Salvar relatório em PDF</button>
             <button className="button button-secondary" type="button" disabled={!canExport} onClick={downloadCsv}>Baixar CSV</button>

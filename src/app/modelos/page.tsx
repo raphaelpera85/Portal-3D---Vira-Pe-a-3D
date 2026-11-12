@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { ModelShowcase } from "@/components/model-showcase";
-import { filterModelShowcase, modelShowcase } from "@/lib/model-showcase";
+import { filterModelShowcase, modelShowcase, modelShowcaseCategories } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default async function ModelsPage({ searchParams }: { searchParams: Promise<{ q?: string; categoria?: string; pagina?: string }> }) {
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
-  const allowedCategories = new Set(["suporte-para-oculos", "chaveiros", "infantil"]);
+  const allowedCategories = new Set<string>(modelShowcaseCategories.map(({ slug }) => slug));
   const category = typeof params.categoria === "string" && allowedCategories.has(params.categoria) ? params.categoria : "";
   const filtered = filterModelShowcase(modelShowcase, query, category);
   const pages = Math.ceil(filtered.length / 24);

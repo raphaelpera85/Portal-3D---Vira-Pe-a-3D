@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { filterModelShowcase, getShowcaseModel, modelShowcase, type ShowcaseModel } from "./model-showcase";
+import { filterModelShowcase, getModelAssetUrl, getShowcaseModel, modelShowcase, modelShowcaseCategories, type ShowcaseModel } from "./model-showcase";
 
 const models: ShowcaseModel[] = [
   { id: "owl", name: "Coruja descanso", category: "Suporte para Óculos", categorySlug: "suporte-para-oculos", image: "/modelos/coruja.png", filePath: "models/owl.3mf", tags: ["suporte", "óculos", "coruja"] },
@@ -10,17 +10,27 @@ const models: ShowcaseModel[] = [
 
 describe("filterModelShowcase", () => {
   it("keeps all included previews backed by image files in the three requested categories", () => {
-    expect(modelShowcase).toHaveLength(76);
-    expect(Object.fromEntries(["suporte-para-oculos", "chaveiros", "infantil"].map((slug) => [slug, modelShowcase.filter((model) => model.categorySlug === slug).length])))
-      .toEqual({ "suporte-para-oculos": 8, chaveiros: 61, infantil: 7 });
+    expect(modelShowcase).toHaveLength(94);
+    expect(Object.fromEntries(modelShowcaseCategories.map(({ slug }) => [slug, modelShowcase.filter((model) => model.categorySlug === slug).length])))
+      .toEqual({ "suporte-para-oculos": 8, chaveiros: 60, infantil: 7, "jogos-de-mesa": 3, diversos: 4, natal: 7, "acessorios-para-impressora-3d": 5 });
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), "public", model.image.slice(1))))).toBe(true);
-    expect(modelShowcase.every((model) => /^models\/[a-f0-9]{64}\.3mf$/.test(model.filePath))).toBe(true);
-    expect(new Set(modelShowcase.map((model) => model.filePath)).size).toBe(74);
+    expect(modelShowcase.every((model) => /^models\/[a-z0-9]+(?:-[a-z0-9]+)*\.3mf$/.test(model.filePath))).toBe(true);
+    expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), model.filePath)))).toBe(true);
+    expect(new Set(modelShowcase.map((model) => model.filePath)).size).toBe(94);
   });
 
   it("opens a model by id and returns no model for unknown ids", () => {
     expect(getShowcaseModel(modelShowcase[0].id)).toBe(modelShowcase[0]);
     expect(getShowcaseModel("missing-model")).toBeNull();
+    expect(modelShowcase.find(({ name }) => name === "Batman"))
+      .toMatchObject({ name: "Batman", tags: ["chaveiro", "batman", "dc", "homem-morcego"] });
+  });
+
+  it("builds safe public GitHub URLs for model previews and downloads", () => {
+    expect(getModelAssetUrl("models/batman.3mf"))
+      .toBe("https://raw.githubusercontent.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/main/models/batman.3mf");
+    expect(getModelAssetUrl("models/../../.env")).toBeNull();
+    expect(getModelAssetUrl("https://attacker.example/model.3mf")).toBeNull();
   });
 
   it("matches accent-insensitive names and tags within the selected category", () => {

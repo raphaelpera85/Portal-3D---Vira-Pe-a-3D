@@ -5,8 +5,8 @@ describe("consignment validation and reporting", () => {
   it("normalizes Brazilian money and validates a consignment item", () => {
     expect(validateConsignmentInput({
       establishment: " Loja Central ", productName: "Suporte", productId: "",
-      quantity: "10", unitCostBrl: "12,50", salePriceBrl: "42.90", commissionPercent: "15",
-    })).toEqual({ establishment: "Loja Central", productName: "Suporte", productId: null, quantity: 10, unitCostBrl: 12.5, salePriceBrl: 42.9, commissionPercent: 15 });
+      quantity: "10", unitCostBrl: "12,50", salePriceBrl: "42.90", commissionPercent: "15", commissionFixedFeeBrl: "1,25",
+    })).toEqual({ establishment: "Loja Central", productName: "Suporte", productId: null, quantity: 10, unitCostBrl: 12.5, salePriceBrl: 42.9, commissionPercent: 15, commissionFixedFeeBrl: 1.25 });
   });
 
   it("allows a published store product to supply the saved product name", () => {
@@ -30,5 +30,15 @@ describe("consignment validation and reporting", () => {
       { movementType: "lost", quantity: 1 },
     ]);
     expect(report).toEqual({ delivered: 10, sold: 4, returned: 1, lost: 1, inStock: 4, grossSalesCents: 17_000, commissionCents: 1_700, receivableCents: 15_300, estimatedResultCents: 9_300 });
+  });
+
+  it("subtracts percentage and fixed per-sale fees from consignment receivables", () => {
+    const report = summarizeConsignment({ unitCostBrl: 12, salePriceBrl: 42.5, commissionPercent: 10, commissionFixedFeeBrl: 1.25 }, [
+      { movementType: "delivered", quantity: 3 },
+      { movementType: "sold", quantity: 2 },
+    ]);
+    expect(report.commissionCents).toBe(1100);
+    expect(report.receivableCents).toBe(7400);
+    expect(report.estimatedResultCents).toBe(5000);
   });
 });

@@ -9,6 +9,7 @@ type ConsignmentItem = {
   unit_cost_brl: number | string;
   sale_price_brl: number | string;
   commission_percent: number | string;
+  commission_fixed_fee_brl: number | string;
   created_at: string;
   movements: Array<{ id: string; movement_type: ConsignmentMovement["movementType"]; quantity: number; notes: string; created_at: string }>;
 };
@@ -24,7 +25,7 @@ export function MakerConsignmentManager({ items, products, error }: {
   const summarized = items.map((item) => ({
     item,
     report: summarizeConsignment({
-      unitCostBrl: Number(item.unit_cost_brl), salePriceBrl: Number(item.sale_price_brl), commissionPercent: Number(item.commission_percent),
+      unitCostBrl: Number(item.unit_cost_brl), salePriceBrl: Number(item.sale_price_brl), commissionPercent: Number(item.commission_percent), commissionFixedFeeBrl: Number(item.commission_fixed_fee_brl),
     }, item.movements.map(({ movement_type, quantity }) => ({ movementType: movement_type, quantity }))),
   }));
   const establishments = [...new Set(items.map((item) => item.establishment))].map((name) => ({
@@ -67,6 +68,7 @@ export function MakerConsignmentManager({ items, products, error }: {
         <label>Custo por peça<input name="unitCostBrl" type="number" min="0" max="1000000" step="0.01" inputMode="decimal" required /></label>
         <label>Preço de venda por peça<input name="salePriceBrl" type="number" min="0.01" max="1000000" step="0.01" inputMode="decimal" required /></label>
         <label>Comissão do estabelecimento<input name="commissionPercent" type="number" min="0" max="100" step="0.01" defaultValue="0" required /></label>
+        <label>Taxa fixa por venda<input name="commissionFixedFeeBrl" type="number" min="0" max="1000000" step="0.01" inputMode="decimal" defaultValue="0" required /></label>
       </div>
       <button className="button button-primary" type="submit">Registrar entrega</button>
     </form>
@@ -79,7 +81,7 @@ export function MakerConsignmentManager({ items, products, error }: {
           <div><dt>Devolvidas</dt><dd>{report.returned}</dd></div>
           <div><dt>Perdidas</dt><dd>{report.lost}</dd></div>
           <div><dt>Preço unitário</dt><dd>{formatBrl(item.sale_price_brl)}</dd></div>
-          <div><dt>Comissão</dt><dd>{Number(item.commission_percent).toLocaleString("pt-BR")}%</dd></div>
+          <div><dt>Comissão</dt><dd>{Number(item.commission_percent).toLocaleString("pt-BR")}% + {formatBrl(item.commission_fixed_fee_brl)} por venda</dd></div>
           <div><dt>A receber</dt><dd>{money(report.receivableCents)}</dd></div>
           <div><dt>Resultado estimado</dt><dd>{money(report.estimatedResultCents)}</dd></div>
         </dl>

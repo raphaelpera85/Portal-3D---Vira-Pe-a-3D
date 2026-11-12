@@ -3,17 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ModelViewer } from "@/components/model-viewer";
 import { SiteHeader } from "@/components/site-header";
-import { getShowcaseModel } from "@/lib/model-showcase";
+import { getModelAssetUrl, getShowcaseModel } from "@/lib/model-showcase";
 
 type ModelPageProps = { params: Promise<{ id: string }> };
-
-function modelAssetUrl(filePath: string, downloadName?: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!baseUrl || !/^models\/[a-f0-9]{64}\.3mf$/.test(filePath)) return null;
-  const path = filePath.split("/").map(encodeURIComponent).join("/");
-  const url = `${baseUrl.replace(/\/+$/, "")}/storage/v1/object/public/catalog-models/${path}`;
-  return downloadName ? `${url}?download=${encodeURIComponent(downloadName)}` : url;
-}
 
 export async function generateMetadata({ params }: ModelPageProps): Promise<Metadata> {
   const { id } = await params;
@@ -25,8 +17,8 @@ export default async function ModelPage({ params }: ModelPageProps) {
   const { id } = await params;
   const model = getShowcaseModel(id);
   if (!model) notFound();
-  const previewUrl = modelAssetUrl(model.filePath);
-  const downloadUrl = modelAssetUrl(model.filePath, `${model.name}.3mf`);
+  const previewUrl = getModelAssetUrl(model.filePath);
+  const downloadUrl = previewUrl;
 
   return <>
     <SiteHeader />

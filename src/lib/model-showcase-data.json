@@ -9,7 +9,7 @@
       "óculos",
       "capivara"
     ],
-    "filePath": "models/10500cfceb66facc4f3db58b446b369f128ae5d733e42dd5288ae85c86bfdcb0.3mf"
+    "filePath": "models/capivara-final.3mf"
   },
   {
     "id": "ed02512a7e12",
@@ -21,7 +21,7 @@
       "óculos",
       "cat"
     ],
-    "filePath": "models/d3faa2534b71109e9fd4ac84c7d71fe60bb54cd59b6e9f81b99cda33dc01b524.3mf"
+    "filePath": "models/cat.3mf"
   },
   {
     "id": "2a2e5f6c6d90",
@@ -35,7 +35,7 @@
       "descanso",
       "oculos"
     ],
-    "filePath": "models/16309b6be465d64fc5338fcdf65126aded2adc92b44475a390c6584cca172dd0.3mf"
+    "filePath": "models/coruja-descanso-oculos.3mf"
   },
   {
     "id": "803903c6b264",
@@ -48,7 +48,7 @@
       "improved",
       "cat"
     ],
-    "filePath": "models/21e9f4d5dc45e489701c6bdf99c93e421230227002ed7f1c43b4f5cf6f64edf0.3mf"
+    "filePath": "models/improved-cat-glasses-holder.3mf"
   },
   {
     "id": "882ecc1d8c46",
@@ -60,7 +60,7 @@
       "óculos",
       "piggy"
     ],
-    "filePath": "models/914e5138729df5310672e1f979f6a193f2ea499a8091c39defb853997a7759e2.3mf"
+    "filePath": "models/piggy-v1.3mf"
   },
   {
     "id": "5dc254fbe95d",
@@ -72,7 +72,7 @@
       "óculos",
       "pika"
     ],
-    "filePath": "models/6f9d936460bc12d45c15d73db5d22eefe7f60b3495e68827cfab64863cfe78cc.3mf"
+    "filePath": "models/pika-final.3mf"
   },
   {
     "id": "c49b6124e601",
@@ -85,7 +85,7 @@
       "unnecessary",
       "frenchy"
     ],
-    "filePath": "models/88cb04db1eca8af925e2f8e87e1d5cee11f04f5cc2446b84776da3f4b0959e2e.3mf"
+    "filePath": "models/the-unnecessary-frenchy-glasses-holder.3mf"
   },
   {
     "id": "9e269939a2fd",
@@ -96,97 +96,7 @@
     "tags": [
       "óculos"
     ],
-    "filePath": "models/0070eccce59179db2c91f310e3d912edd17adb77d4626c09ddcfa79a5a869867.3mf"
-  },
-  {
-    "id": "0abb3bfe4329",
-    "name": "CHAINSAWMAN V2",
-    "category": "Infantil",
-    "categorySlug": "infantil",
-    "image": "/modelos/0abb3bfe4329.png",
-    "tags": [
-      "infantil",
-      "chainsawman"
-    ],
-    "filePath": "models/248e34c5fb53a226e0f3ca579d970d2146fa458c2573e5b5182dcd1d55200428.3mf"
-  },
-  {
-    "id": "cf75cd6ec89b",
-    "name": "DEADPOOL A1 MINI V3",
-    "category": "Infantil",
-    "categorySlug": "infantil",
-    "image": "/modelos/cf75cd6ec89b.png",
-    "tags": [
-      "infantil",
-      "deadpool"
-    ],
-    "filePath": "models/16804aa30cf3a23c08ec5c9470c09d92ab5c57ce0fcf95390f4d85cc66305bb6.3mf"
-  },
-  {
-    "id": "3aae3a040ee3",
-    "name": "Green goblin - V1 - AMS",
-    "category": "Infantil",
-    "categorySlug": "infantil",
-    "image": "/modelos/3aae3a040ee3.png",
-    "tags": [
-      "infantil",
-      "green",
-      "goblin"
-    ],
-    "filePath": "models/451aa4eeab1603c2377d8de02322d1552430562c6e949bb6ae167652a7f7db7a.3mf"
-  },
-  {
-    "id": "478552387b6d",
-    "name": "naruto4",
-    "category": "Infantil",
-    "categorySlug": "infantil",
-    "image": "/modelos/478552387b6d.png",
-    "tags": [
-      "infantil",
-      "naruto4"
-    ],
-    "filePath": "models/af1ad7b7c44929864c1be810bbe342e411c38779d65535939f1b9fba51400809.3mf"
-  },
-  {
-    "id": "6a3b29dd7fd9",
-    "name": "Proto 9 Goku Origin",
-    "category": "Infantil",
-    "categorySlug": "infantil",
-    "image": "/modelos/6a3b29dd7fd9.png",
-    "tags": [
-      "infantil",
-      "proto",
-      "goku",
-      "origin"
-    ],
-    "filePath": "models/5429cec63b591166db013f5e2c0150a7ac27eb179742890749aebdf4feedf12c.3mf"
-  },
-  {
-    "id": "4bd267727913",
-    "name": "spider man - dummy 13 -V1(4 Plates)",
-    "category": "Infantil",
-    "categorySlug": "infantil",
-    "image": "/modelos/4bd267727913.png",
-    "tags": [
-      "infantil",
-      "spider",
-      "man",
-      "dummy",
-      "plates"
-    ],
-    "filePath": "models/35cd57d6b484e518debdc5353c04474fdeca875e15cef4430008df66eaa238bc.3mf"
-  },
-  {
-    "id": "3e82b106534a",
-    "name": "Zoro",
-    "category": "Infantil",
-    "categorySlug": "infantil",
-    "image": "/modelos/3e82b106534a.png",
-    "tags": [
-      "infantil",
-      "zoro"
-    ],
-    "filePath": "models/1c162a1145e9ff300f5f03e7e485dfe8868e955b7e19437e809cbf00ef447f86.3mf"
+    "filePath": "models/v8.3mf"
   },
   {
     "id": "70bda315e46e",
@@ -200,7 +110,178 @@
       "dc",
       "homem-morcego"
     ],
-    "filePath": "models/2569eac8db885e1e3d76095344cb77d62e5538a71983057772cfec4464b2ca77.3mf"
+    "filePath": "models/batman.3mf"
+  },
+  {
+    "id": "d0a11ead551b",
+    "name": "3 color criceto v2",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/d0a11ead551b.png",
+    "tags": [
+      "chaveiro",
+      "criceto"
+    ],
+    "filePath": "models/3-color-criceto-v2.3mf"
+  },
+  {
+    "id": "254940e7f223",
+    "name": "3Deep Flexi Pug Keychain (AMS)",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/254940e7f223.png",
+    "tags": [
+      "chaveiro",
+      "3deep",
+      "flexi",
+      "pug"
+    ],
+    "filePath": "models/3deep-flexi-pug-keychain-ams-254940e7f223.3mf"
+  },
+  {
+    "id": "842b11790cac",
+    "name": "3Deep Flexi Pug Keychain (AMS)",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/842b11790cac-source.png",
+    "tags": [
+      "chaveiro",
+      "3deep",
+      "flexi",
+      "pug"
+    ],
+    "filePath": "models/3deep-flexi-pug-keychain-ams-842b11790cac.3mf"
+  },
+  {
+    "id": "6b7fd218dc9d",
+    "name": "bas key 1",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/6b7fd218dc9d.png",
+    "tags": [
+      "chaveiro",
+      "bas"
+    ],
+    "filePath": "models/bas-key-1.3mf"
+  },
+  {
+    "id": "5e61567440ea",
+    "name": "Beagle Brown White",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/5e61567440ea.png",
+    "tags": [
+      "chaveiro",
+      "beagle",
+      "brown",
+      "white"
+    ],
+    "filePath": "models/beagle-brown-white.3mf"
+  },
+  {
+    "id": "ffcd1251d90c",
+    "name": "Beagle Tricolor",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/ffcd1251d90c.png",
+    "tags": [
+      "chaveiro",
+      "beagle",
+      "tricolor"
+    ],
+    "filePath": "models/beagle-tricolor.3mf"
+  },
+  {
+    "id": "917ef3dc290d",
+    "name": "Black Pug",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/917ef3dc290d.png",
+    "tags": [
+      "chaveiro",
+      "black",
+      "pug"
+    ],
+    "filePath": "models/black-pug.3mf"
+  },
+  {
+    "id": "a08d58a5f11e",
+    "name": "Border Collie",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/a08d58a5f11e.png",
+    "tags": [
+      "chaveiro",
+      "border",
+      "collie"
+    ],
+    "filePath": "models/border-collie.3mf"
+  },
+  {
+    "id": "9be8503eefde",
+    "name": "Border Collie Tricolor",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/9be8503eefde.png",
+    "tags": [
+      "chaveiro",
+      "border",
+      "collie",
+      "tricolor"
+    ],
+    "filePath": "models/border-collie-tricolor.3mf"
+  },
+  {
+    "id": "d12cc7160bc2",
+    "name": "bulldog franc ams",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/d12cc7160bc2.png",
+    "tags": [
+      "chaveiro",
+      "bulldog",
+      "franc"
+    ],
+    "filePath": "models/bulldog-franc-ams.3mf"
+  },
+  {
+    "id": "e752bde69af8",
+    "name": "cat black",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/e752bde69af8.png",
+    "tags": [
+      "chaveiro",
+      "cat",
+      "black"
+    ],
+    "filePath": "models/cat-black.3mf"
+  },
+  {
+    "id": "cb706de3adc8",
+    "name": "cat gray",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/cb706de3adc8.png",
+    "tags": [
+      "chaveiro",
+      "cat",
+      "gray"
+    ],
+    "filePath": "models/cat-gray.3mf"
+  },
+  {
+    "id": "bcde0a3aca26",
+    "name": "cat white",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/bcde0a3aca26.png",
+    "tags": [
+      "chaveiro",
+      "cat",
+      "white"
+    ],
+    "filePath": "models/cat-white.3mf"
   },
   {
     "id": "e454ea0dcb3e",
@@ -213,7 +294,7 @@
       "charmander",
       "cats3dstudio"
     ],
-    "filePath": "models/4602634886491e0ad866d2d6e861326424801a9b2cccc76799e97fedc6103a68.3mf"
+    "filePath": "models/charmander-final-cats3dstudio.3mf"
   },
   {
     "id": "5e87c684e2b9",
@@ -228,7 +309,19 @@
       "man",
       "articulated"
     ],
-    "filePath": "models/7b603224d1e52b44e2ede31dae1c388f99201a0c03d536164fc4a919c6c33087.3mf"
+    "filePath": "models/chibi-spider-man-articulated.3mf"
+  },
+  {
+    "id": "3da01bc3192f",
+    "name": "chihuahua",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/3da01bc3192f.png",
+    "tags": [
+      "chaveiro",
+      "chihuahua"
+    ],
+    "filePath": "models/chihuahua.3mf"
   },
   {
     "id": "093ac9295cdf",
@@ -241,7 +334,7 @@
       "christmas",
       "olaf"
     ],
-    "filePath": "models/b6cb9b0a320ffd576b4ba4c2756549aecc682fc22114d3559e669f8d63a795eb.3mf"
+    "filePath": "models/christmas-olaf-keychain-print.3mf"
   },
   {
     "id": "989b32ec6500",
@@ -255,7 +348,7 @@
       "articulated",
       "units"
     ],
-    "filePath": "models/5e35f7a3e3774fa1d1f2607392382e3f13c87eb60a84ab17252f4521c5572aea.3mf"
+    "filePath": "models/creeper-articulated-16-units.3mf"
   },
   {
     "id": "1e901dba6ff3",
@@ -267,7 +360,7 @@
       "chaveiro",
       "eevee"
     ],
-    "filePath": "models/6bbd04d05a4e5e291e430493662597d44a625995005f77f5dcddc9ab803f8a2e.3mf"
+    "filePath": "models/eevee-keychain.3mf"
   },
   {
     "id": "44063047fa39",
@@ -280,7 +373,34 @@
       "flexi",
       "garfield"
     ],
-    "filePath": "models/a31c59afdd0b57a6e717796592cf65a450bbed5a4174dfe26b090215f01ffe77.3mf"
+    "filePath": "models/flexi-garfield-makerworld.3mf"
+  },
+  {
+    "id": "b593314ca05c",
+    "name": "French Bulldog",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/b593314ca05c.png",
+    "tags": [
+      "chaveiro",
+      "french",
+      "bulldog"
+    ],
+    "filePath": "models/french-bulldog.3mf"
+  },
+  {
+    "id": "2efa9477c8b0",
+    "name": "French Bulldog Black",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/2efa9477c8b0.png",
+    "tags": [
+      "chaveiro",
+      "french",
+      "bulldog",
+      "black"
+    ],
+    "filePath": "models/french-bulldog-black.3mf"
   },
   {
     "id": "54a04395187c",
@@ -293,7 +413,7 @@
       "goku",
       "ssj"
     ],
-    "filePath": "models/e9c1503fb1dac5ab16010fb0fce83b9e8bb7f9844742d245e2ea534a3f5ce209.3mf"
+    "filePath": "models/goku-ssj.3mf"
   },
   {
     "id": "ad6aa008e1bc",
@@ -307,7 +427,7 @@
       "kitty",
       "kakashi"
     ],
-    "filePath": "models/5ca23bed54ad2b140c8a8a853fda150742b8e2f373406b62544ec8c1dc2b057e.3mf"
+    "filePath": "models/hello-kitty-kakashi.3mf"
   },
   {
     "id": "27f391c3f155",
@@ -321,7 +441,7 @@
       "kitty",
       "link"
     ],
-    "filePath": "models/be89c62b6e6a22bb8ef77c155413ff38bec0cb313c51b6b29d231ad4d44efcb7.3mf"
+    "filePath": "models/hello-kitty-link.3mf"
   },
   {
     "id": "829bf0aea8ab",
@@ -335,7 +455,7 @@
       "kitty",
       "mummy"
     ],
-    "filePath": "models/a3dba445117e5a1c101dee3561eb801bb9c78f7128a301b23d498671fda05ba4.3mf"
+    "filePath": "models/hello-kitty-mummy.3mf"
   },
   {
     "id": "c8460b4d7bf4",
@@ -349,7 +469,7 @@
       "kitty",
       "pennywise"
     ],
-    "filePath": "models/da45bcb99078c4a9d0a0b124039a76471c306100f08de3745833c48ce570d495.3mf"
+    "filePath": "models/hello-kitty-pennywise.3mf"
   },
   {
     "id": "d4b1e591b759",
@@ -363,7 +483,7 @@
       "kitty",
       "pooh"
     ],
-    "filePath": "models/12d9575256b81bfe2a14f7ea18fc2e4225a87a67c1de28848d219ed55a667e48.3mf"
+    "filePath": "models/hello-kitty-pooh.3mf"
   },
   {
     "id": "3b4f94aacea2",
@@ -377,7 +497,7 @@
       "kitty",
       "supergirl"
     ],
-    "filePath": "models/575e8f22e8a702891f09c0ff960f9a08dcd749d3cc1d4303cf323c30f99aabcd.3mf"
+    "filePath": "models/hello-kitty-supergirl.3mf"
   },
   {
     "id": "a6c156358457",
@@ -391,7 +511,7 @@
       "kitty",
       "vampire"
     ],
-    "filePath": "models/632215ce90e6156bf74d29e4f8a7494b5e1e97cf04eb8cec007c402550084eac.3mf"
+    "filePath": "models/hello-kitty-vampire.3mf"
   },
   {
     "id": "7d5f8fa629e2",
@@ -403,7 +523,19 @@
       "chaveiro",
       "jesus"
     ],
-    "filePath": "models/259023fed82d8444265e0fe79d0f23c94a2662adb40576ae4e36c2422a7228d0.3mf"
+    "filePath": "models/jesus-makerworld.3mf"
+  },
+  {
+    "id": "a5836bded0cd",
+    "name": "korgi ams",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/a5836bded0cd.png",
+    "tags": [
+      "chaveiro",
+      "korgi"
+    ],
+    "filePath": "models/korgi-ams.3mf"
   },
   {
     "id": "d24712782c7e",
@@ -415,7 +547,7 @@
       "chaveiro",
       "kuraaaaa"
     ],
-    "filePath": "models/6003de50b3d1fa38360d631bde6a61cb882680ac462b4ed1c08578c493f9dc27.3mf"
+    "filePath": "models/kuraaaaa.3mf"
   },
   {
     "id": "b36c47c76307",
@@ -429,7 +561,7 @@
       "flexy",
       "def"
     ],
-    "filePath": "models/b4c1ad36124d282d40bb87124b487d7a58af218f031b4132849b2ce3f308eb6d.3mf"
+    "filePath": "models/mew-flexy-def.3mf"
   },
   {
     "id": "faa89d687c46",
@@ -441,7 +573,7 @@
       "chaveiro",
       "mickey"
     ],
-    "filePath": "models/22e1dd346f9f025232fd9ad6c084d96e98a991bd1ec7bc2d04a56d6e1a34ee2a.3mf"
+    "filePath": "models/mickey-v2-final.3mf"
   },
   {
     "id": "8f09afcbb9d2",
@@ -453,7 +585,7 @@
       "chaveiro",
       "fox"
     ],
-    "filePath": "models/b912cfbdfc8e4ee5d9f4d27bc3efe07a98359b3c2dcbf2e7dfe2cb368f813c2e.3mf"
+    "filePath": "models/mini-fox-keychain.3mf"
   },
   {
     "id": "b9c0c8ed6a7e",
@@ -466,7 +598,7 @@
       "minie",
       "keychainv3"
     ],
-    "filePath": "models/65bd7a155d8c7d9931087a4118f37f54bc98e825a0e0ffc9412d9a53b427945b.3mf"
+    "filePath": "models/minie-keychainv3-print.3mf"
   },
   {
     "id": "0bccdaa474e9",
@@ -478,7 +610,7 @@
       "chaveiro",
       "creeper"
     ],
-    "filePath": "models/e6e29663f25c4283e2839c0bc1ba0212249847dd8a0921f7a363a59bb53c3abf.3mf"
+    "filePath": "models/mr-creeper-cats3d-studio.3mf"
   },
   {
     "id": "49b103dbdaa6",
@@ -491,7 +623,7 @@
       "new",
       "stitch"
     ],
-    "filePath": "models/bf27dc66152a2b6b3b1966175d2e3bee0f0a339ceb5fbebab6eed1bfed01e454.3mf"
+    "filePath": "models/new-stitch-keychain-print.3mf"
   },
   {
     "id": "b50df79a0102",
@@ -506,328 +638,7 @@
       "christmas",
       "40mm"
     ],
-    "filePath": "models/bf5a2151a29d7f8341fa8f20c4ae0ddc1dbab36b0b2fa597342f9822ae292821.3mf"
-  },
-  {
-    "id": "8147317fdda3",
-    "name": "paw patrol marshall",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/8147317fdda3.png",
-    "tags": [
-      "chaveiro",
-      "paw",
-      "patrol",
-      "marshall"
-    ],
-    "filePath": "models/2859a7ce346b2372d323875f7b5bf0bb598a9936b6977446564ca6fbc37e31de.3mf"
-  },
-  {
-    "id": "b624126a9ca9",
-    "name": "pikachu more resistant",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/b624126a9ca9.png",
-    "tags": [
-      "chaveiro",
-      "pikachu",
-      "resistant"
-    ],
-    "filePath": "models/5420a8dcd9ff5f0004f226008f199f3228e2d10af9c839293a5995d1131a7b6f.3mf"
-  },
-  {
-    "id": "9e7d90340063",
-    "name": "Spidy",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/9e7d90340063.png",
-    "tags": [
-      "chaveiro",
-      "spidy"
-    ],
-    "filePath": "models/816e03a10dcec0f30f2f8a92776bbf3a99b69f2b4110d21e51bb723c44bca4dd.3mf"
-  },
-  {
-    "id": "b5bb8102324d",
-    "name": "strongergroot keychain print",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/b5bb8102324d.png",
-    "tags": [
-      "chaveiro",
-      "strongergroot"
-    ],
-    "filePath": "models/5461254dba10f9ef0e1a8835fd10070c244c66aadfdfdb28bfc66c405492ee27.3mf"
-  },
-  {
-    "id": "3268b58700f4",
-    "name": "superman",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/3268b58700f4.png",
-    "tags": [
-      "chaveiro",
-      "superman"
-    ],
-    "filePath": "models/6dd0ce2a8a3a09e384fd18caf97e191912e3631f84d5de4b5f642d2b1a6027bf.3mf"
-  },
-  {
-    "id": "8795b4b84b8a",
-    "name": "Vegeta",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/8795b4b84b8a.png",
-    "tags": [
-      "chaveiro",
-      "vegeta"
-    ],
-    "filePath": "models/34f69103b69e8a8a5e78b246c3bb40508441a5f27076b35d84971ae08c070c35.3mf"
-  },
-  {
-    "id": "0a48e107a782",
-    "name": "Venom keychain print",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/0a48e107a782.png",
-    "tags": [
-      "chaveiro",
-      "venom"
-    ],
-    "filePath": "models/a92920a3c7b19bff344b621fb29ae376dde358115312c36fe0a24e1232f73d68.3mf"
-  },
-  {
-    "id": "ed9ebff12064",
-    "name": "Wiggle Wiggle Articulated Squirtle",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/ed9ebff12064.png",
-    "tags": [
-      "chaveiro",
-      "wiggle",
-      "articulated",
-      "squirtle"
-    ],
-    "filePath": "models/79980949821638662ce9bf9e6a97401c3d8d3ba706fc81115cefaf5de0246ca8.3mf"
-  },
-  {
-    "id": "33be14321369",
-    "name": "Zuma",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/33be14321369.png",
-    "tags": [
-      "chaveiro",
-      "zuma"
-    ],
-    "filePath": "models/1edc7feaf768b8b81420c6fa199a0820e6d9df56022c6764d591d23594ff2db6.3mf"
-  },
-  {
-    "id": "d0a11ead551b",
-    "name": "3 color criceto v2",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/d0a11ead551b.png",
-    "tags": [
-      "chaveiro",
-      "criceto"
-    ],
-    "filePath": "models/94ea3f637749f738429a283ffc2b20bf4e4703789a9cb6549b6c24112abe0df5.3mf"
-  },
-  {
-    "id": "254940e7f223",
-    "name": "3Deep Flexi Pug Keychain (AMS)",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/254940e7f223.png",
-    "tags": [
-      "chaveiro",
-      "3deep",
-      "flexi",
-      "pug"
-    ],
-    "filePath": "models/c2a3cd0c982dd56ba54a053f0294c356ad21d714f3def7cfaa5045446ad82508.3mf"
-  },
-  {
-    "id": "6b7fd218dc9d",
-    "name": "bas key 1",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/6b7fd218dc9d.png",
-    "tags": [
-      "chaveiro",
-      "bas"
-    ],
-    "filePath": "models/d0e62b23782690d2f5ebc89b80560468058356a47afbb4905ec19ef07f5c6fef.3mf"
-  },
-  {
-    "id": "5e61567440ea",
-    "name": "Beagle Brown White",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/5e61567440ea.png",
-    "tags": [
-      "chaveiro",
-      "beagle",
-      "brown",
-      "white"
-    ],
-    "filePath": "models/63660945489ef8b66073d6b5f7f29fb6341d5bf11684234e2f31f667856d60ef.3mf"
-  },
-  {
-    "id": "ffcd1251d90c",
-    "name": "Beagle Tricolor",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/ffcd1251d90c.png",
-    "tags": [
-      "chaveiro",
-      "beagle",
-      "tricolor"
-    ],
-    "filePath": "models/04c026a79597678abd6f47645cc270935b70b93df2b5fae73384c1d44f828df8.3mf"
-  },
-  {
-    "id": "917ef3dc290d",
-    "name": "Black Pug",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/917ef3dc290d.png",
-    "tags": [
-      "chaveiro",
-      "black",
-      "pug"
-    ],
-    "filePath": "models/d22e852087962ef72e03ea20f96a22506e4784afb38c7f3cf33477badd2edf99.3mf"
-  },
-  {
-    "id": "9be8503eefde",
-    "name": "Border Collie Tricolor",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/9be8503eefde.png",
-    "tags": [
-      "chaveiro",
-      "border",
-      "collie",
-      "tricolor"
-    ],
-    "filePath": "models/1b74555d7a791c7bc55014ff12775a07297be1c2aa97203c3906fe8e40cbe8bb.3mf"
-  },
-  {
-    "id": "a08d58a5f11e",
-    "name": "Border Collie",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/a08d58a5f11e.png",
-    "tags": [
-      "chaveiro",
-      "border",
-      "collie"
-    ],
-    "filePath": "models/e74ad565610036750758dd4251e3a5279efa1fa854d37346b26a6bb8ad8c3f80.3mf"
-  },
-  {
-    "id": "d12cc7160bc2",
-    "name": "bulldog franc ams",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/d12cc7160bc2.png",
-    "tags": [
-      "chaveiro",
-      "bulldog",
-      "franc"
-    ],
-    "filePath": "models/01a8a8ead08be3291aaba747bc7c7e85929b82d81fe998b5b362b4602a90307b.3mf"
-  },
-  {
-    "id": "e752bde69af8",
-    "name": "cat black",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/e752bde69af8.png",
-    "tags": [
-      "chaveiro",
-      "cat",
-      "black"
-    ],
-    "filePath": "models/544e10031a7954733958d28dbfcc4401aa4921b89ba8ff7a740c70217fb6848c.3mf"
-  },
-  {
-    "id": "cb706de3adc8",
-    "name": "cat gray",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/cb706de3adc8.png",
-    "tags": [
-      "chaveiro",
-      "cat",
-      "gray"
-    ],
-    "filePath": "models/9a028a38bf80fdedeeafccef36740ec7e0705ba60a6571f64e2a289f472a8da7.3mf"
-  },
-  {
-    "id": "bcde0a3aca26",
-    "name": "cat white",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/bcde0a3aca26.png",
-    "tags": [
-      "chaveiro",
-      "cat",
-      "white"
-    ],
-    "filePath": "models/2a8a2835be55fb2ffc3c52e312b231ee3005e750e74886da0636896543e6ed60.3mf"
-  },
-  {
-    "id": "3da01bc3192f",
-    "name": "chihuahua",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/3da01bc3192f.png",
-    "tags": [
-      "chaveiro",
-      "chihuahua"
-    ],
-    "filePath": "models/667bc331ef877ef4395e85a6af4727d837d95de28fe917c6ac64d4ae553bd417.3mf"
-  },
-  {
-    "id": "2efa9477c8b0",
-    "name": "French Bulldog Black",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/2efa9477c8b0.png",
-    "tags": [
-      "chaveiro",
-      "french",
-      "bulldog",
-      "black"
-    ],
-    "filePath": "models/6433f368429acaf6d0f34662db7edd8d688a68d66edffd5df56706596e3159bf.3mf"
-  },
-  {
-    "id": "b593314ca05c",
-    "name": "French Bulldog",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/b593314ca05c.png",
-    "tags": [
-      "chaveiro",
-      "french",
-      "bulldog"
-    ],
-    "filePath": "models/0ac408c353d7658d06753ab8e75f258c66d814e1270fc543ccda01d04525b7bc.3mf"
-  },
-  {
-    "id": "a5836bded0cd",
-    "name": "korgi ams",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/a5836bded0cd.png",
-    "tags": [
-      "chaveiro",
-      "korgi"
-    ],
-    "filePath": "models/4024c84497534e0234a69b900ab621396dbc432761dec5091dd54f99c860ae58.3mf"
+    "filePath": "models/one-piece-christmas-40mm-4farben.3mf"
   },
   {
     "id": "a0988396307f",
@@ -841,7 +652,7 @@
       "white",
       "cat"
     ],
-    "filePath": "models/5d219b0f2f82a1629db8853d4db9acf0bec7376e0367364c3951fc9e5db88302.3mf"
+    "filePath": "models/orange-white-cat.3mf"
   },
   {
     "id": "2b3b8197b828",
@@ -853,7 +664,7 @@
       "chaveiro",
       "panda"
     ],
-    "filePath": "models/308ecf90a054ab94d9173d6b18b4fbf90dd82509aefd493c7afb101277927ef3.3mf"
+    "filePath": "models/panda-ams.3mf"
   },
   {
     "id": "977324b2988d",
@@ -865,7 +676,34 @@
       "chaveiro",
       "past"
     ],
-    "filePath": "models/b342ccaaad1d10a0a3ebcaed4d6c848fa32734879eaf6c3087139473330ce082.3mf"
+    "filePath": "models/past.3mf"
+  },
+  {
+    "id": "8147317fdda3",
+    "name": "paw patrol marshall",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/8147317fdda3.png",
+    "tags": [
+      "chaveiro",
+      "paw",
+      "patrol",
+      "marshall"
+    ],
+    "filePath": "models/paw-patrol-marshall.3mf"
+  },
+  {
+    "id": "b624126a9ca9",
+    "name": "pikachu more resistant",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/b624126a9ca9.png",
+    "tags": [
+      "chaveiro",
+      "pikachu",
+      "resistant"
+    ],
+    "filePath": "models/pikachu-more-resistant.3mf"
   },
   {
     "id": "6ad21ca46a99",
@@ -877,7 +715,7 @@
       "chaveiro",
       "pug"
     ],
-    "filePath": "models/56e67971f6d7a3361ef8577f30c3130be3a2e7307ed906ce26d6426e2092398c.3mf"
+    "filePath": "models/pug.3mf"
   },
   {
     "id": "2331df662d5c",
@@ -890,7 +728,7 @@
       "shih",
       "tzu"
     ],
-    "filePath": "models/0fff80ff2ee6a9204f0b34bdbb020b3d27c6fd4f9b16260b15b8d3879b844f45.3mf"
+    "filePath": "models/shih-tzu.3mf"
   },
   {
     "id": "c2eb6b6e518f",
@@ -902,7 +740,81 @@
       "chaveiro",
       "spanis"
     ],
-    "filePath": "models/889f75e991f1debae55208f9a7a987c14ba559695da66730e1ea3c05f6fbde09.3mf"
+    "filePath": "models/spanis-ams.3mf"
+  },
+  {
+    "id": "9e7d90340063",
+    "name": "Spidy",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/9e7d90340063.png",
+    "tags": [
+      "chaveiro",
+      "spidy"
+    ],
+    "filePath": "models/spidy.3mf"
+  },
+  {
+    "id": "b5bb8102324d",
+    "name": "strongergroot keychain print",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/b5bb8102324d.png",
+    "tags": [
+      "chaveiro",
+      "strongergroot"
+    ],
+    "filePath": "models/strongergroot-keychain-print.3mf"
+  },
+  {
+    "id": "3268b58700f4",
+    "name": "superman",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/3268b58700f4.png",
+    "tags": [
+      "chaveiro",
+      "superman"
+    ],
+    "filePath": "models/superman.3mf"
+  },
+  {
+    "id": "8795b4b84b8a",
+    "name": "Vegeta",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/8795b4b84b8a.png",
+    "tags": [
+      "chaveiro",
+      "vegeta"
+    ],
+    "filePath": "models/vegeta.3mf"
+  },
+  {
+    "id": "0a48e107a782",
+    "name": "Venom keychain print",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/0a48e107a782.png",
+    "tags": [
+      "chaveiro",
+      "venom"
+    ],
+    "filePath": "models/venom-keychain-print.3mf"
+  },
+  {
+    "id": "ed9ebff12064",
+    "name": "Wiggle Wiggle Articulated Squirtle",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/ed9ebff12064.png",
+    "tags": [
+      "chaveiro",
+      "wiggle",
+      "articulated",
+      "squirtle"
+    ],
+    "filePath": "models/wiggle-wiggle-articulated-squirtle.3mf"
   },
   {
     "id": "62c0b4672073",
@@ -914,7 +826,7 @@
       "chaveiro",
       "wolf"
     ],
-    "filePath": "models/2a02cd3563746926a24b2ea3575306bade514aac653057360c54da9978794ffa.3mf"
+    "filePath": "models/wolf-v1-ams.3mf"
   },
   {
     "id": "08c4d5f6a257",
@@ -927,7 +839,7 @@
       "wolf",
       "mono"
     ],
-    "filePath": "models/7c198cfa389e1e53ebdb1c49729f38e39e51e405f5ea4e93a98d33e65b15a7e3.3mf"
+    "filePath": "models/wolf-v2-mono-ams.3mf"
   },
   {
     "id": "8d0a92160a0b",
@@ -941,7 +853,7 @@
       "black",
       "tan"
     ],
-    "filePath": "models/de15e067364ed7707e4364eb841162337fdd4c65d4638ab285adfac01f64e139.3mf"
+    "filePath": "models/york-black-and-tan.3mf"
   },
   {
     "id": "d4211589e816",
@@ -954,6 +866,399 @@
       "york",
       "silver"
     ],
-    "filePath": "models/20699776844fdbfcdc91ba44bfcae9885beecc1341a31f332c40b4ac070fc113.3mf"
+    "filePath": "models/york-silver.3mf"
+  },
+  {
+    "id": "33be14321369",
+    "name": "Zuma",
+    "category": "Chaveiros",
+    "categorySlug": "chaveiros",
+    "image": "/modelos/33be14321369.png",
+    "tags": [
+      "chaveiro",
+      "zuma"
+    ],
+    "filePath": "models/zuma.3mf"
+  },
+  {
+    "id": "0abb3bfe4329",
+    "name": "CHAINSAWMAN V2",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/0abb3bfe4329.png",
+    "tags": [
+      "infantil",
+      "chainsawman"
+    ],
+    "filePath": "models/chainsawman-v2.3mf"
+  },
+  {
+    "id": "cf75cd6ec89b",
+    "name": "DEADPOOL A1 MINI V3",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/cf75cd6ec89b.png",
+    "tags": [
+      "infantil",
+      "deadpool"
+    ],
+    "filePath": "models/deadpool-a1-mini-v3.3mf"
+  },
+  {
+    "id": "3aae3a040ee3",
+    "name": "Green goblin - V1 - AMS",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/3aae3a040ee3.png",
+    "tags": [
+      "infantil",
+      "green",
+      "goblin"
+    ],
+    "filePath": "models/green-goblin-v1-ams.3mf"
+  },
+  {
+    "id": "478552387b6d",
+    "name": "naruto4",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/478552387b6d.png",
+    "tags": [
+      "infantil",
+      "naruto4"
+    ],
+    "filePath": "models/naruto4.3mf"
+  },
+  {
+    "id": "6a3b29dd7fd9",
+    "name": "Proto 9 Goku Origin",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/6a3b29dd7fd9.png",
+    "tags": [
+      "infantil",
+      "proto",
+      "goku",
+      "origin"
+    ],
+    "filePath": "models/proto-9-goku-origin.3mf"
+  },
+  {
+    "id": "4bd267727913",
+    "name": "spider man - dummy 13 -V1(4 Plates)",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/4bd267727913.png",
+    "tags": [
+      "infantil",
+      "spider",
+      "man",
+      "dummy",
+      "plates"
+    ],
+    "filePath": "models/spider-man-dummy-13-v1-4-plates.3mf"
+  },
+  {
+    "id": "3e82b106534a",
+    "name": "Zoro",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/3e82b106534a.png",
+    "tags": [
+      "infantil",
+      "zoro"
+    ],
+    "filePath": "models/zoro.3mf"
+  },
+  {
+    "id": "ab27e2313f95",
+    "name": "Card Holder Munchkin",
+    "category": "Jogos de mesa",
+    "categorySlug": "jogos-de-mesa",
+    "image": "/modelos/ab27e2313f95.png",
+    "filePath": "models/card-holder-munchkin.3mf",
+    "tags": [
+      "jogos",
+      "mesa",
+      "rpg",
+      "card",
+      "holder",
+      "munchkin"
+    ]
+  },
+  {
+    "id": "be590ae9bdcb",
+    "name": "No Logo Latch Box",
+    "category": "Jogos de mesa",
+    "categorySlug": "jogos-de-mesa",
+    "image": "/modelos/be590ae9bdcb.png",
+    "filePath": "models/no-logo-latch-box.3mf",
+    "tags": [
+      "jogos",
+      "mesa",
+      "rpg",
+      "logo",
+      "latch",
+      "box"
+    ]
+  },
+  {
+    "id": "e65dd2ea7ab5",
+    "name": "Ring Toss Drinking Game",
+    "category": "Jogos de mesa",
+    "categorySlug": "jogos-de-mesa",
+    "image": "/modelos/e65dd2ea7ab5.png",
+    "filePath": "models/ring-toss-drinking-game.3mf",
+    "tags": [
+      "jogos",
+      "mesa",
+      "rpg",
+      "ring",
+      "toss",
+      "drinking",
+      "game"
+    ]
+  },
+  {
+    "id": "833745c6214a",
+    "name": "Cigarette Pack",
+    "category": "Diversos",
+    "categorySlug": "diversos",
+    "image": "/modelos/833745c6214a.png",
+    "filePath": "models/cigarette-pack.3mf",
+    "tags": [
+      "diversos",
+      "utilidades",
+      "cigarette",
+      "pack"
+    ]
+  },
+  {
+    "id": "bd83f3b57fb1",
+    "name": "Expositor de Chaveiros",
+    "category": "Diversos",
+    "categorySlug": "diversos",
+    "image": "/modelos/bd83f3b57fb1.png",
+    "filePath": "models/expositor-de-chaveiros.3mf",
+    "tags": [
+      "diversos",
+      "utilidades",
+      "expositor",
+      "chaveiros"
+    ]
+  },
+  {
+    "id": "f34db3481b9b",
+    "name": "Gabinete Aberto",
+    "category": "Diversos",
+    "categorySlug": "diversos",
+    "image": "/modelos/f34db3481b9b.png",
+    "filePath": "models/gabinete-aberto.3mf",
+    "tags": [
+      "diversos",
+      "utilidades",
+      "gabinete",
+      "aberto"
+    ]
+  },
+  {
+    "id": "f32091615424",
+    "name": "Tabakbox Carbon Fiber",
+    "category": "Diversos",
+    "categorySlug": "diversos",
+    "image": "/modelos/f32091615424.png",
+    "filePath": "models/tabakbox-carbon-fiber.3mf",
+    "tags": [
+      "diversos",
+      "utilidades",
+      "tabakbox",
+      "carbon",
+      "fiber"
+    ]
+  },
+  {
+    "id": "34037d433f53",
+    "name": "Full AMS 37 mm",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/34037d433f53.png",
+    "filePath": "models/full-ams-37-mm.3mf",
+    "tags": [
+      "natal",
+      "decoração",
+      "presépio",
+      "full",
+      "ams"
+    ]
+  },
+  {
+    "id": "e71e80bc5783",
+    "name": "Grinch Wall Mount",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/e71e80bc5783.png",
+    "filePath": "models/grinch-wall-mount.3mf",
+    "tags": [
+      "natal",
+      "decoração",
+      "presépio",
+      "grinch",
+      "wall",
+      "mount"
+    ]
+  },
+  {
+    "id": "507cd31098b3",
+    "name": "Krippe",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/507cd31098b3.png",
+    "filePath": "models/krippe.3mf",
+    "tags": [
+      "natal",
+      "decoração",
+      "presépio",
+      "krippe"
+    ]
+  },
+  {
+    "id": "6aed9b23e791",
+    "name": "Minimalist Nativity Scene",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/6aed9b23e791.png",
+    "filePath": "models/minimalist-nativity-scene.3mf",
+    "tags": [
+      "natal",
+      "decoração",
+      "presépio",
+      "minimalist",
+      "nativity",
+      "scene"
+    ]
+  },
+  {
+    "id": "d39d7abaaceb",
+    "name": "Our Lady Candle Holder",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/d39d7abaaceb.png",
+    "filePath": "models/our-lady-candle-holder.3mf",
+    "tags": [
+      "natal",
+      "decoração",
+      "presépio",
+      "our",
+      "lady",
+      "candle",
+      "holder"
+    ]
+  },
+  {
+    "id": "ca07717166b7",
+    "name": "Presépio Exclusivo",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/ca07717166b7.png",
+    "filePath": "models/presepio-exclusivo.3mf",
+    "tags": [
+      "natal",
+      "decoração",
+      "presépio",
+      "presepio",
+      "exclusivo"
+    ]
+  },
+  {
+    "id": "dc8bbb25b0a4",
+    "name": "Virgen Maria Chibi",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/dc8bbb25b0a4.png",
+    "filePath": "models/virgen-maria-chibi.3mf",
+    "tags": [
+      "natal",
+      "decoração",
+      "presépio",
+      "virgen",
+      "maria",
+      "chibi"
+    ]
+  },
+  {
+    "id": "45b8ccabf225",
+    "name": "Drybox Single V3",
+    "category": "Acessórios para Impressoras 3D",
+    "categorySlug": "acessorios-para-impressora-3d",
+    "image": "/modelos/45b8ccabf225.png",
+    "filePath": "models/drybox-single-v3.3mf",
+    "tags": [
+      "impressora 3d",
+      "acessórios",
+      "ferramentas",
+      "drybox",
+      "single"
+    ]
+  },
+  {
+    "id": "afb5a4275e05",
+    "name": "Kobra X Anti-Wobble Spulenaufsatz V2",
+    "category": "Acessórios para Impressoras 3D",
+    "categorySlug": "acessorios-para-impressora-3d",
+    "image": "/modelos/afb5a4275e05.png",
+    "filePath": "models/kobra-x-anti-wobble-spulenaufsatz-v2.3mf",
+    "tags": [
+      "impressora 3d",
+      "acessórios",
+      "ferramentas",
+      "kobra",
+      "anti",
+      "wobble",
+      "spulenaufsatz"
+    ]
+  },
+  {
+    "id": "b834166de4c9",
+    "name": "One Colour",
+    "category": "Acessórios para Impressoras 3D",
+    "categorySlug": "acessorios-para-impressora-3d",
+    "image": "/modelos/b834166de4c9.png",
+    "filePath": "models/one-colour.3mf",
+    "tags": [
+      "impressora 3d",
+      "acessórios",
+      "ferramentas",
+      "one",
+      "colour"
+    ]
+  },
+  {
+    "id": "64a0f86f6baa",
+    "name": "Painted",
+    "category": "Acessórios para Impressoras 3D",
+    "categorySlug": "acessorios-para-impressora-3d",
+    "image": "/modelos/64a0f86f6baa.png",
+    "filePath": "models/painted.3mf",
+    "tags": [
+      "impressora 3d",
+      "acessórios",
+      "ferramentas",
+      "painted"
+    ]
+  },
+  {
+    "id": "30788cf83a54",
+    "name": "Two Colours",
+    "category": "Acessórios para Impressoras 3D",
+    "categorySlug": "acessorios-para-impressora-3d",
+    "image": "/modelos/30788cf83a54.png",
+    "filePath": "models/two-colours.3mf",
+    "tags": [
+      "impressora 3d",
+      "acessórios",
+      "ferramentas",
+      "two",
+      "colours"
+    ]
   }
 ]

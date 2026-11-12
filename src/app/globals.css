@@ -571,6 +571,11 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .consignment-report dd, .consignment-item-stats dd { overflow-wrap: anywhere; margin: 0; color: var(--ink); font-size: 11px; font-weight: 700; }
 .consignment-create-form { display: grid; gap: 12px; margin: 19px 0; padding: 17px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
 .consignment-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.calculator-consignment-form { margin-top: 18px; }
+.calculator-consignment-form > div:first-child { display: grid; gap: 4px; }
+.calculator-consignment-form > div:first-child .eyebrow, .calculator-consignment-form > div:first-child h3, .calculator-consignment-form > div:first-child p { margin: 0; }
+.calculator-consignment-form > div:first-child p:last-child, .calculator-consignment-price { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.calculator-consignment-form .consignment-form-grid { grid-template-columns: 1fr; }
 .consignment-form-grid label, .consignment-movement-form label { display: grid; gap: 5px; min-width: 0; color: var(--muted-strong); font-size: 10px; font-weight: 700; }
 .consignment-form-grid input, .consignment-form-grid select, .consignment-movement-form input, .consignment-movement-form select { width: 100%; min-width: 0; min-height: 38px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); color: var(--ink); font: inherit; font-size: 11px; }
 .consignment-create-form > .button, .consignment-movement-form .button { justify-self: start; min-height: 38px; padding-inline: 13px; font-size: 10px; }
