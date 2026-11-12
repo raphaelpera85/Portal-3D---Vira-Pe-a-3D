@@ -412,6 +412,10 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .maker-notification-actions .button, .quote-delivery-status .button { min-height: 34px; padding-inline: 10px; font-size: 10px; }
 .quote-delivery-status { display: grid; gap: 7px; margin-top: 13px; }
 .quote-delivery-status > div { justify-content: flex-start; }
+.custom-print-timeline { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.custom-print-timeline li { display: grid; grid-template-columns: minmax(120px, auto) 1fr; gap: 2px 10px; align-items: baseline; }
+.custom-print-timeline time, .custom-print-timeline small { color: var(--muted); font-size: 10px; }
+.custom-print-timeline small { grid-column: 2; }
  .account-links { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
 .maker-application-card { max-width: 900px; margin: 22px auto 0; }
 .maker-location-fields { display: grid; grid-template-columns: 1fr 100px; gap: 14px; }

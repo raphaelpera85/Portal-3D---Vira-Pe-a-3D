@@ -7,6 +7,7 @@ import { startSellerOrderPayment } from "./payment-actions";
 import { downloadDigitalAssetAction } from "./digital-actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { formatBrl, formatBrlTotal } from "@/lib/money";
+import { getCustomPrintEventLabel } from "@/lib/custom-print-events";
 import { isMercadoPagoCheckoutUrl } from "@/lib/mercado-pago-payments";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +46,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
     actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, shipping_shipped_at, shipping_delivered_at, completed_at, items:seller_purchase_order_items(product_name, unit_price_brl, quantity), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at), events:seller_purchase_order_events(id, event_type, description, created_at)")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
-    actor.supabase.from("custom_print_requests").select("id, upload_id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, winning_store_id, production_started_at, production_completed_at, created_at, offers:custom_print_offers(id, store_name, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at)")
+    actor.supabase.from("custom_print_requests").select("id, upload_id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, winning_store_id, production_started_at, production_completed_at, created_at, offers:custom_print_offers(id, store_name, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at), targets:custom_print_request_targets(id, store:stores(name), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at))")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
   ]);
   const { data, error } = requestResult;
@@ -62,6 +63,10 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
         {customRequests.map((request) => {
           const payment = [...(request.payments ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
           const acceptedOffer = request.offers?.find((offer) => offer.status === "accepted");
+          const eventHistory = (request.targets ?? []).flatMap((target) => {
+            const store = Array.isArray(target.store) ? target.store[0] : target.store;
+            return (target.events ?? []).map((event) => ({ ...event, storeName: store?.name ?? "Loja" }));
+          }).sort((a, b) => a.created_at.localeCompare(b.created_at));
           const paymentLocked = ["creating", "pending", "paid", "partially_refunded"].includes(payment?.status ?? "");
           return <article className="account-card quote-card" key={request.id}>
           <div className="quote-card-heading"><div><span className="account-kicker">IMPRESSÃO PERSONALIZADA · {request.material_snapshot}</span><h2>{request.model_name}</h2></div><span className={`quote-status status-${request.status}`}>{({ pending: "Buscando propostas", offered: "Propostas recebidas", accepted: "Proposta escolhida", in_production: "Em produção", completed: "Impressão concluída", declined: "Sem propostas compatíveis", cancelled: "Cancelada" } as Record<string, string>)[request.status] ?? request.status}</span></div>
@@ -88,6 +93,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
           </>}
           {request.status === "in_production" && <p className="quote-small-note">O fabricante iniciou a produção em {dateLabel(request.production_started_at)}.</p>}
           {request.status === "completed" && <p className="quote-small-note">O fabricante marcou a impressão como concluída em {dateLabel(request.production_completed_at)}. O envio e o frete seguem combinados com a loja.</p>}
+          {eventHistory.length > 0 && <div className="quote-delivery-status"><strong>Histórico da solicitação</strong><ol className="custom-print-timeline">{eventHistory.map((event) => <li key={event.id}><time dateTime={event.created_at}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(event.created_at))}</time><span>{getCustomPrintEventLabel(event.event_type)}{event.event_type === "proposal_sent" ? ` · ${formatBrl(Number(event.event_data?.total_brl))} · ${event.event_data?.lead_days} dias` : ""}</span><small>{event.actor_user_id === actor.user.id ? `Você · ${event.storeName}` : event.storeName}</small></li>)}</ol></div>}
           </article>;
         })}
         {orders.map((order) => {

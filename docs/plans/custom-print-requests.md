@@ -23,6 +23,7 @@ Criar tabelas próprias para solicitações personalizadas, lojas compatíveis e
 - Validação e testes em `src/lib/custom-print-request.ts` e `src/lib/custom-print-request.test.ts`.
 - Formulário e ação no visualizador/biblioteca privada; listagem, comparação, proposta, aceite e cancelamento em `/orcamentos` e `/painel/maker`.
 - Links temporários para os arquivos do modelo apenas aos fabricantes atribuídos, com checagem no servidor.
+- Linha do tempo de convites, propostas, decisões e produção, com RLS limitado aos participantes da solicitação.
 - Documentação de arquitetura e implantação.
 
 ## Premissas e limites
