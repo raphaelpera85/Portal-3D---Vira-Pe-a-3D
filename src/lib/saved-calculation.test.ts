@@ -21,6 +21,21 @@ describe("validateCalculationToSave", () => {
     expect(result.calculation?.result.channels[0].priceCents).toBeGreaterThan(0);
   });
 
+  it("preserves the selected catalog material in the saved snapshot", () => {
+    const material = "Bambu Lab · PLA Basic (PLA)";
+    const result = validateCalculationToSave("Suporte de mesa", JSON.stringify({
+      ...snapshot,
+      input: { ...snapshot.input, material },
+    }));
+
+    expect(result.error).toBeNull();
+    expect(result.calculation?.input.material).toBe(material);
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify({
+      ...snapshot,
+      input: { ...snapshot.input, material: 5 },
+    })).calculation).toBeNull();
+  });
+
   it("keeps optional product and equipment associations and rejects malformed IDs", () => {
     const productId = "89abcdef-1234-4123-8123-123456789abc";
     const printerId = "76543210-abcd-4123-8123-abcdef123456";

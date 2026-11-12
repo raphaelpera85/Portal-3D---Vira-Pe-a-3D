@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { validateCalculationToSave } from "@/lib/saved-calculation";
+import { loadTechnicalCatalog } from "@/lib/technical-catalog.server";
 
 export const metadata: Metadata = {
   title: "Calculadora de impressão 3D | ViraPeça 3D",
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function CalculatorPage() {
-  const actor = await getUserWithRole("maker");
+  const [actor, catalog] = await Promise.all([getUserWithRole("maker"), loadTechnicalCatalog()]);
   const canUseOcr = Boolean(actor.supabase && actor.user && actor.authorized);
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
   let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string }> = [];
@@ -96,7 +97,7 @@ export default async function CalculatorPage() {
       <SiteHeader />
       <main className="calculator-page">
         <div className="calculator-page-back shell"><Link className="viewer-back-link" href="/">← Voltar para o início</Link><span>FERRAMENTA PARA MAKERS</span></div>
-        <PriceCalculator equipment={equipment} products={products} profiles={profiles} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} />
+        <PriceCalculator equipment={equipment} products={products} profiles={profiles} materials={catalog.materials.map(({ id, name, brand, family, process }) => ({ id, name, brand, family, process }))} materialNotice={catalog.error} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} />
       </main>
       <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Custos claros para produzir com confiança.</p><span>© 2026 ViraPeça 3D</span></div></footer>
     </>

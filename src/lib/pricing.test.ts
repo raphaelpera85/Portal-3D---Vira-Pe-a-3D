@@ -121,6 +121,19 @@ describe("calculatePrintPrice", () => {
     expect(result.unitCostCents).toBe(5_240);
   });
 
+  it("accepts a full catalog label for a component material", () => {
+    const result = calculatePrintPrice({
+      ...sample,
+      productionComponents: [{
+        name: "Tampa", material: "Material catalogado com nome extenso ".repeat(3), printer: "Impressora A", piecesPerProduct: 1,
+        filamentGrams: 0, filamentPricePerKg: 0, printHours: 0, averagePowerWatts: 0, energyPricePerKwh: 0,
+        machineCostPerHour: 0, depreciationPerHour: 0, maintenancePerHour: 0, laborMinutes: 0, laborRatePerHour: 0,
+      }],
+    }, []);
+
+    expect(result.errors).toEqual([]);
+  });
+
   it("rejects negative values and a margin that leaves no room for channel fees", () => {
     expect(calculatePrintPrice({ ...sample, laborMinutes: -1 }, []).errors).toContain("Os custos e quantidades não podem ser negativos.");
     expect(calculatePrintPrice({ ...sample, targetMarginPercent: 90 }, [

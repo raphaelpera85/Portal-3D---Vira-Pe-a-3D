@@ -851,6 +851,9 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .price-card-heading p { max-width: 600px; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
 .price-fields-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 18px; }
 .price-field { display: grid; align-content: start; gap: 6px; color: var(--muted-strong); font-size: 10px; font-weight: 700; }
+.price-field select { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--ink); font-size: 12px; }
+.price-field select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.price-field > input[type="text"] { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--ink); font-size: 12px; }
 .price-input-wrap, .price-channel-input { display: flex; min-height: 40px; align-items: center; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); }
 .price-input-wrap:focus-within, .price-channel-input:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; }
 .price-input-wrap input, .price-channel-input input, .extra-cost-row input, .price-channel-row > label > input { width: 100%; min-width: 0; min-height: 38px; padding: 0 10px; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 12px; }

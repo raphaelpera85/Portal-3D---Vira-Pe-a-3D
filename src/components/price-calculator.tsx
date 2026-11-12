@@ -16,10 +16,11 @@ type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Reco
 type CalculatorEquipment = EquipmentRateInput & { id: string; label: string };
 type CalculatorProduct = { id: string; name: string; slug: string; published: boolean };
 type CalculatorProfile = { id: string; name: string };
+type CalculatorMaterial = { id: string; name: string; brand: string; family: string; process: "filament" | "resin" };
 type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; snapshot: string };
 
 const initialFields: FormFields = {
-  batchQuantity: "1", batchFixedCost: "", filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "",
+  batchQuantity: "1", batchFixedCost: "", material: "", filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "",
   energyPricePerKwh: "", machineCostPerHour: "", depreciationPerHour: "",
   maintenancePerHour: "", laborMinutes: "", laborRatePerHour: "", overheadPerUnit: "",
   failureReservePercent: "", targetMarginPercent: "",
@@ -35,6 +36,7 @@ const money = (cents: number | null | undefined) => cents == null
   ? "—"
   : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 const numberValue = (value: string) => value.trim() === "" ? 0 : Number(value.replace(",", "."));
+const materialLabel = (material?: CalculatorMaterial) => material ? `${material.brand} · ${material.name} (${material.family})` : "";
 
 function CostField({ label, suffix, hint, value, onChange, step = "any", min = 0, max, idSuffix = "" }: {
   label: string; suffix?: string; hint?: string; value: string; onChange: (value: string) => void; step?: string; min?: number; max?: number; idSuffix?: string;
@@ -49,9 +51,10 @@ function CostField({ label, suffix, hint, value, onChange, step = "any", min = 0
   );
 }
 
-export function PriceCalculator({ equipment = [], products = [], profiles = [], equipmentNotice = null, productNotice = null, profileNotice = null, canSaveCalculations = false, canUseOcr = false, ocrConfigured = false, savedCalculations = [], savedCalculationsError = false }: {
+export function PriceCalculator({ equipment = [], products = [], profiles = [], materials = [], materialNotice = null, equipmentNotice = null, productNotice = null, profileNotice = null, canSaveCalculations = false, canUseOcr = false, ocrConfigured = false, savedCalculations = [], savedCalculationsError = false }: {
   equipment?: CalculatorEquipment[]; equipmentNotice?: string | null; canSaveCalculations?: boolean; canUseOcr?: boolean; ocrConfigured?: boolean;
   products?: CalculatorProduct[]; productNotice?: string | null; profiles?: CalculatorProfile[]; profileNotice?: string | null;
+  materials?: CalculatorMaterial[]; materialNotice?: string | null;
   savedCalculations?: SavedCalculation[]; savedCalculationsError?: boolean;
 }) {
   const [fields, setFields] = useState(initialFields);
@@ -85,6 +88,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       laborMinutes: numberValue(component.laborMinutes),
       laborRatePerHour: numberValue(component.laborRatePerHour),
     })),
+    material: fields.material.trim(),
     filamentGrams: numberValue(fields.filamentGrams),
     filamentPricePerKg: numberValue(fields.filamentPricePerKg),
     printHours: numberValue(fields.printHours),
@@ -220,8 +224,13 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             <div className="price-card-heading"><span className="price-step">01</span><div><h2>Lote e material</h2><p>Informe quantas peças saem desta execução. Consumo e tempo do fatiador são os totais do lote, sem multiplicação automática.</p></div></div>
             <div className="price-fields-grid">
               <CostField label="Peças prontas no lote" suffix="un." step="1" max={MAX_BATCH_QUANTITY} value={fields.batchQuantity} onChange={(value) => updateField("batchQuantity", value)} />
+              {materials.length > 0 && <label className="price-field"><span>Material do catálogo técnico</span><select value={materials.find((item) => materialLabel(item) === fields.material)?.id ?? ""} onChange={(event) => updateField("material", materialLabel(materials.find((item) => item.id === event.target.value)))}>
+                <option value="">Selecionar ou informar manualmente</option>{materials.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name} ({item.family}){item.process === "resin" ? " · resina" : " · filamento"}</option>)}
+              </select></label>}
+              {materialNotice && <p className="price-field-hint" role="status">Catálogo indisponível. A identificação do material pode ser informada manualmente.</p>}
+              <label className="price-field"><span>Filamento ou resina</span><div className="price-input-wrap"><input type="text" maxLength={120} value={fields.material} onChange={(event) => updateField("material", event.target.value)} placeholder="Ex.: PLA, marca e cor" /></div></label>
               <CostField label="Material consumido no lote" suffix="g" hint="Inclua o consumo da execução completa, com suportes e purga quando disponíveis." value={fields.filamentGrams} onChange={(value) => updateField("filamentGrams", value)} />
-              <CostField label="Preço de compra" suffix="R$/kg" value={fields.filamentPricePerKg} onChange={(value) => updateField("filamentPricePerKg", value)} />
+              <CostField label="Preço de compra" suffix="R$/kg" hint="Informe seu preço de compra; o catálogo não presume um valor." value={fields.filamentPricePerKg} onChange={(value) => updateField("filamentPricePerKg", value)} />
             </div>
           </section>
 
@@ -242,14 +251,17 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
               <div className="production-component-heading"><strong>Componente de produção</strong><button type="button" aria-label={`Remover ${component.name || "componente"}`} onClick={() => setProductionComponents((current) => current.filter((item) => item.id !== component.id))}><Trash2 size={15} /></button></div>
               <div className="price-fields-grid production-component-identification">
                 <label className="price-field"><span>Arquivo ou componente</span><div className="price-input-wrap"><input type="text" maxLength={80} value={component.name} onChange={(event) => updateProductionComponent(component.id, "name", event.target.value)} placeholder="Ex.: Tampa" /></div></label>
-                <label className="price-field"><span>Material</span><div className="price-input-wrap"><input type="text" maxLength={80} value={component.material} onChange={(event) => updateProductionComponent(component.id, "material", event.target.value)} placeholder="Ex.: PETG" /></div></label>
+                {materials.length > 0 && <label className="price-field"><span>Material do catálogo técnico</span><select value={materials.find((item) => materialLabel(item) === component.material)?.id ?? ""} onChange={(event) => updateProductionComponent(component.id, "material", materialLabel(materials.find((item) => item.id === event.target.value)))}>
+                  <option value="">Selecionar material</option>{materials.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name} ({item.family}){item.process === "resin" ? " · resina" : " · filamento"}</option>)}
+                </select></label>}
+                <label className="price-field"><span>Material usado</span><input type="text" maxLength={120} value={component.material} onChange={(event) => updateProductionComponent(component.id, "material", event.target.value)} placeholder="Ex.: PETG de outra marca" /></label>
                 <label className="price-field"><span>Impressora</span><div className="price-input-wrap"><input type="text" maxLength={120} value={component.printer} onChange={(event) => updateProductionComponent(component.id, "printer", event.target.value)} placeholder="Ex.: Impressora B" /></div></label>
                 <CostField label="Quantidade por produto final" suffix="un." step="1" max={MAX_BATCH_QUANTITY} value={component.piecesPerProduct} onChange={(value) => updateProductionComponent(component.id, "piecesPerProduct", value)} idSuffix={component.id} />
               </div>
               {equipment.length > 0 && <label className="equipment-calculator-select production-equipment-select">Equipamento cadastrado para este componente<select value={component.equipmentId} onChange={(event) => selectComponentEquipment(component.id, event.target.value)}><option value="">Informar custos manualmente</option>{equipment.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select><small>Preenche a impressora, potência, tarifa e depreciação conhecidos; os campos permanecem editáveis.</small></label>}
               <div className="price-fields-grid production-component-costs">
                 <CostField label="Material consumido no componente" suffix="g" value={component.filamentGrams} onChange={(value) => updateProductionComponent(component.id, "filamentGrams", value)} idSuffix={component.id} />
-                <CostField label="Preço do material" suffix="R$/kg" value={component.filamentPricePerKg} onChange={(value) => updateProductionComponent(component.id, "filamentPricePerKg", value)} idSuffix={component.id} />
+                <CostField label="Preço do material" suffix="R$/kg" hint="Informe seu preço de compra." value={component.filamentPricePerKg} onChange={(value) => updateProductionComponent(component.id, "filamentPricePerKg", value)} idSuffix={component.id} />
                 <CostField label="Tempo total das execuções" suffix="horas" value={component.printHours} onChange={(value) => updateProductionComponent(component.id, "printHours", value)} idSuffix={component.id} />
                 <CostField label="Potência média" suffix="W" value={component.averagePowerWatts} onChange={(value) => updateProductionComponent(component.id, "averagePowerWatts", value)} idSuffix={component.id} />
                 <CostField label="Tarifa de energia" suffix="R$/kWh" value={component.energyPricePerKwh} onChange={(value) => updateProductionComponent(component.id, "energyPricePerKwh", value)} idSuffix={component.id} />

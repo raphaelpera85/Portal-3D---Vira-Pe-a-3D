@@ -22,6 +22,7 @@ export const MAX_PRODUCTION_COMPONENTS = 20;
 export type PrintCostInput = {
   batchQuantity?: number;
   batchFixedCost?: number;
+  material?: string;
   productionComponents?: ProductionComponent[];
   filamentGrams: number;
   filamentPricePerKg: number;
@@ -92,7 +93,7 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
   }
   if (components.length > MAX_PRODUCTION_COMPONENTS || components.some(({ name, material, printer, piecesPerProduct }) =>
     typeof name !== "string" || name.trim().length < 1 || name.length > 80
-      || typeof material !== "string" || material.length > 80
+    || typeof material !== "string" || material.length > 120
       || typeof printer !== "string" || printer.length > 120
       || !Number.isSafeInteger(piecesPerProduct) || piecesPerProduct < 1 || piecesPerProduct > MAX_BATCH_QUANTITY
   )) {
