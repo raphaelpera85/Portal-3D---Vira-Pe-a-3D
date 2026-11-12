@@ -9,6 +9,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 ## Fases
 
 - [x] Decidir provedor e arquitetura com base na documentação oficial.
+- [x] Exibir extrato dos 500 pagamentos mais recentes por loja, com totais pagos e comissão registrada.
 - [x] Vincular contas de vendedor com OAuth PKCE e persistência criptografada dos tokens.
 - [ ] Implementar desconexão e revogação da autorização do vendedor.
 - [x] Implementar refresh token, Checkout Pro para pedidos de carrinho, compras diretas e propostas de impressão aceitos, taxa de marketplace configurável e idempotência.
@@ -27,6 +28,8 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - Escolher provedor de frete e cadastrar credenciais/contrato para cotar e comprar etiquetas.
 
 ## Limites verificados
+
+- O extrato do fabricante não informa saldo disponível, tarifa real do provedor nem data/estado de liquidação; esses dados continuam no painel Mercado Pago.
 
 - A documentação do Mercado Pago informa que a comissão do marketplace é aplicada após a taxa do Mercado Pago e que o reembolso pode exigir saldo disponível do vendedor; a plataforma não consegue garantir sozinha o reembolso integral nesse cenário.
 - O checkout online atende pedidos do carrinho, solicitações diretas de compra e propostas de impressão aceitos, sempre por loja.

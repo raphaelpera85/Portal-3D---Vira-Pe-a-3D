@@ -466,6 +466,21 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .maker-dashboard, .admin-dashboard { min-height: calc(100vh - 160px); padding-block: 34px 90px; }
 .maker-dashboard-heading { margin-top: 46px; }
 .maker-dashboard-heading h1 { font-size: clamp(42px, 5vw, 62px); overflow-wrap: anywhere; }
+.maker-finance-link, .seller-finance-summary, .seller-finance-note { max-width: 900px; margin-inline: auto; }
+.maker-finance-link { margin-block: 16px 22px; }
+.seller-finance-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-block: 20px; }
+.seller-finance-summary article { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 17px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.seller-finance-summary span { color: var(--muted); font-size: 10px; }
+.seller-finance-summary strong { overflow-wrap: anywhere; font-size: clamp(16px, 2vw, 22px); }
+.seller-finance-note { margin-block: 12px 20px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.seller-finance-table-wrap { width: 100%; overflow-x: auto; }
+.seller-finance-table { width: 100%; min-width: 740px; border-collapse: collapse; text-align: left; }
+.seller-finance-table th, .seller-finance-table td { padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 11px; }
+.seller-finance-table th { color: var(--muted); font-size: 9px; letter-spacing: .4px; text-transform: uppercase; }
+.seller-finance-table td { color: var(--ink); }
+.seller-finance-table td time { white-space: nowrap; }
+.seller-finance-ledger { overflow: hidden; }
+@media (max-width: 680px) { .seller-finance-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .seller-finance-summary article { padding: 13px; } .seller-finance-ledger { padding-inline: 14px; } }
 .store-status-card { display: flex; gap: 14px; align-items: flex-start; max-width: 900px; margin: 0 auto 20px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .store-status-card p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
 .store-status-dot { width: 9px; height: 9px; flex: 0 0 9px; margin-top: 5px; border-radius: 50%; background: var(--muted); }
