@@ -692,7 +692,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .viewer-shell { padding-bottom: 0; }
 .viewer-topline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: 1px; }
 .viewer-topline span:first-child { display: flex; align-items: center; gap: 9px; color: var(--brand); }
-.viewer-layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; min-height: 620px; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 18px 60px var(--shadow-wash); }
+.viewer-layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; min-width: 0; min-height: 620px; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 18px 60px var(--shadow-wash); }
 .viewer-layout.viewer-readonly { grid-template-columns: 1fr; min-height: 0; }
 .viewer-readonly .viewer-stage-wrap { border-right: 0; }
 .viewer-readonly .viewer-stage { min-height: 480px; }
@@ -1130,12 +1130,12 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   .viewer-layout { grid-template-columns: 1fr; }
   .viewer-layout:not(.viewer-readonly) { min-height: 0; }
   .viewer-stage-wrap { border-right: 0; }
-  .viewer-stage-toolbar { flex-wrap: wrap; gap: 8px; padding-inline: 10px; }
+  .viewer-stage-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-inline: 10px; }
   .viewer-upload-button { min-height: 34px; padding-inline: 9px; font-size: 10px; }
-  .viewer-file-label { max-width: 96px; font-size: 8px; }
+  .viewer-file-label { grid-column: 1 / -1; max-width: 100%; font-size: 9px; }
   .viewer-stage-actions { gap: 1px; }
   .viewer-icon-button { width: 29px; height: 31px; }
-  .viewer-stage { min-height: 350px; }
+  .viewer-stage { min-width: 0; min-height: clamp(300px, 55svh, 430px); }
   .viewer-hint { flex-basis: 100%; margin-left: 0; text-align: center; }
   .viewer-toolbar { min-height: 48px; gap: 4px; padding-inline: 8px; }
   .viewer-view-button { min-height: 29px; padding-inline: 7px; font-size: 8px; }
