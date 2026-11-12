@@ -1038,6 +1038,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   .admin-banner-record-heading { align-items: flex-start; flex-direction: column; }
   .shell { width: min(calc(100% - 34px), var(--max-width)); }
   .header-inner { min-height: 66px; gap: 10px; }
+  .header-inner, .header-actions { min-width: 0; }
   .brand { font-size: 18px; }
   .main-nav { position: absolute; top: 65px; right: 0; left: 0; display: none; flex-direction: column; align-items: stretch; gap: 0; padding: 8px 17px 16px; border-bottom: 1px solid var(--line); background: var(--paper); }
   .main-nav.is-open { display: flex; }
@@ -1125,6 +1126,8 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   .footer-inner { min-height: 100px; flex-wrap: wrap; justify-content: space-between; padding-block: 20px; }
   .footer-inner p { display: none; }
   .viewer-page { padding-bottom: 45px; }
+  .viewer-page-intro { min-width: 0; gap: 10px; }
+  .viewer-page-intro p { text-align: right; }
   .viewer-page-intro { padding-block: 21px 14px; }
   .viewer-page-intro p { font-size: 8px; }
   .viewer-layout { grid-template-columns: 1fr; }
@@ -1137,13 +1140,14 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   .viewer-icon-button { width: 29px; height: 31px; }
   .viewer-stage { min-width: 0; min-height: clamp(300px, 55svh, 430px); }
   .viewer-hint { flex-basis: 100%; margin-left: 0; text-align: center; }
-  .viewer-toolbar { min-height: 48px; gap: 4px; padding-inline: 8px; }
-  .viewer-view-button { min-height: 29px; padding-inline: 7px; font-size: 8px; }
-  .viewer-hint { width: 100%; margin: 3px 0 0; text-align: center; }
-  .viewer-inspector { padding: 22px 17px 20px; border-top: 1px solid var(--line); }
+  .viewer-toolbar { display: grid; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding: 8px; }
+  .viewer-view-button { min-width: 0; min-height: 36px; padding-inline: 3px; font-size: 9px; }
+  .viewer-hint { grid-column: 1 / -1; width: auto; margin: 3px 0 0; text-align: center; }
+  .viewer-inspector { min-width: 0; padding: 22px 17px 20px; border-top: 1px solid var(--line); }
   .inspector-heading h1 { font-size: 27px; }
   .viewer-page-foot { flex-direction: column; gap: 5px; }
 }
+@media (max-width: 680px) { .header-maker { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
