@@ -20,7 +20,7 @@ export default async function CatalogPage() {
       <SiteHeader />
       <main className="technical-page">
         <div className="technical-page-back shell"><Link className="viewer-back-link" href="/">← Voltar para o início</Link><span>ESPECIFICAÇÕES COM FONTE</span></div>
-        <TechnicalCatalog printers={catalog.printers} materials={catalog.materials} nozzles={catalog.nozzles} notice={catalog.error ?? (catalog.source === "local" ? "Banco de dados não configurado. Exibindo dados locais de referência." : null)} />
+        <TechnicalCatalog printers={catalog.printers} materials={catalog.materials} nozzles={catalog.nozzles} notice={catalog.error ?? (catalog.source === "local" ? "Ainda não há registros publicados no catálogo técnico; exibimos referências locais com fonte identificada." : null)} />
       </main>
       <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Dados técnicos abertos, com origem identificada.</p><span>© 2026 ViraPeça 3D</span></div></footer>
     </>

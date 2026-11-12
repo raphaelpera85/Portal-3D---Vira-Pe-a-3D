@@ -6,4 +6,4 @@ O motor compara processo (filamento ou resina), família de material informada p
 
 Incompatibilidade prevalece no resultado geral; dados críticos ausentes produzem “não verificado”; depois vêm condições e compatibilidade. A classificação serve como triagem. Não substitui perfil validado, medição do equipamento ou avaliação de segurança.
 
-Os dados iniciais ficam em `src/lib/technical-catalog.ts`, com fonte e data de conferência em cada registro. A rota `/catalogos` não consulta banco nem armazena equipamentos particulares. Testes do motor e dos registros estão em `src/lib/compatibility.test.ts` e `src/lib/technical-catalog.test.ts`.
+As referências iniciais ficam em `src/lib/technical-catalog.ts`, com fonte e data de conferência em cada registro. `/catalogos` consulta registros publicados no Supabase; quando ainda não há nenhum, apresenta essas referências locais até a primeira curadoria. Equipamentos particulares não são armazenados por essa página. Testes do motor e dos registros estão em `src/lib/compatibility.test.ts` e `src/lib/technical-catalog.test.ts`.

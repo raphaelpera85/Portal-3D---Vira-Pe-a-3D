@@ -17,6 +17,10 @@ export async function loadTechnicalCatalog() {
   const error = [printerResult, materialResult, nozzleResult, materialLinkResult, nozzleLinkResult].find((result) => result.error)?.error;
   if (error) return { printers: [], materials: [], nozzles: [], source: "database" as const, error: "Não foi possível carregar o catálogo. Verifique se a migração técnica foi aplicada e se as tabelas estão acessíveis." };
 
+  if (![printerResult.data, materialResult.data, nozzleResult.data, materialLinkResult.data, nozzleLinkResult.data].some((data) => (data?.length ?? 0) > 0)) {
+    return { printers: localPrinters, materials: localMaterials, nozzles: localNozzles, source: "local" as const, error: null };
+  }
+
   return {
     ...mapTechnicalCatalog(printerResult.data ?? [], materialResult.data ?? [], nozzleResult.data ?? [], materialLinkResult.data ?? [], nozzleLinkResult.data ?? []),
     source: "database" as const,
