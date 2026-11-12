@@ -730,6 +730,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .digital-license-card > p { color: var(--muted); font-size: 11px; line-height: 1.65; }
 .digital-license-options { display: grid; gap: 9px; }
 .digital-license-options > label { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 5px; cursor: pointer; }
+.digital-license-options > .digital-license-option { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 5px; }
 .digital-license-options input { accent-color: var(--brand); }
 .digital-license-options span { display: grid; gap: 3px; }
 .digital-license-options strong { color: var(--ink); font-size: 12px; }

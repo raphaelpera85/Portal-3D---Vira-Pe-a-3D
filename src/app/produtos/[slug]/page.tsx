@@ -47,12 +47,40 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   const favoriteResult = buyer?.supabase && buyer.user && buyer.authorized
     ? await buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id).eq("product_id", product.id).maybeSingle()
     : null;
+  const siteUrl = getSiteUrl();
+  const productUrl = siteUrl ? new URL(`/produtos/${encodeURIComponent(product.slug)}`, siteUrl).toString() : null;
+  const availability = (stockQuantity: number | null) => stockQuantity === 0
+    ? "https://schema.org/OutOfStock"
+    : stockQuantity !== null || product.fulfillmentMode === "made_to_order" || product.listingType === "digital"
+      ? "https://schema.org/InStock"
+      : undefined;
+  const stockStatus = availability(product.stockQuantity);
+  const hasVariants = Boolean(product.variants?.length || Object.keys(product.variantOptions ?? {}).length);
+  const offers = product.listingType === "digital"
+    ? product.digitalAsset ? [
+      { name: "Uso pessoal", price: product.digitalAsset.personalPriceBrl },
+      ...(product.digitalAsset.commercialPriceBrl == null ? [] : [{ name: "Uso comercial", price: product.digitalAsset.commercialPriceBrl }]),
+    ].map((offer) => ({ "@type": "Offer", ...offer, priceCurrency: "BRL", availability: "https://schema.org/InStock", url: productUrl })) : []
+    : !hasVariants && product.priceMode === "fixed" && product.priceBrl != null
+        ? [{ "@type": "Offer", price: product.priceBrl, priceCurrency: "BRL", url: productUrl, ...(stockStatus ? { availability: stockStatus } : {}) }]
+        : [];
+  const productStructuredData = !product.demo && productUrl ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description || "O fabricante ainda não adicionou uma descrição para este produto.",
+    category: product.category,
+    url: productUrl,
+    ...(product.media.length ? { image: product.media } : {}),
+    ...(offers.length ? { offers } : {}),
+  } : null;
 
   return (
     <>
       <SiteHeader />
       <main className="product-detail shell">
         <Link className="viewer-back-link" href="/#produtos">← Voltar aos produtos</Link>
+        {productStructuredData && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productStructuredData).replace(/</g, "\\u003c") }} />}
         {query.compra === "indisponivel" && <p className="auth-notice is-error" role="alert">A licença selecionada não está disponível para compra.</p>}
         {query.denuncia === "enviada" && <p className="auth-notice is-success" role="status">Denúncia enviada à equipe para análise.</p>}
         {query.denuncia === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível registrar a denúncia.</p>}
