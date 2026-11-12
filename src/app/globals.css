@@ -1189,6 +1189,9 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .compatibility-disclaimer { display: flex; align-items: flex-start; gap: 6px; margin: 13px 0 0; color: var(--muted); font-size: 8px; line-height: 1.5; }
 .compatibility-disclaimer svg { flex: 0 0 14px; }
 .catalog-source-note { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 8px; line-height: 1.5; }
+.resin-handling-note { margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--muted); font-size: 11px; line-height: 1.55; }
+.resin-handling-note p { margin: 0; }
+.resin-handling-note p + p { margin-top: 5px; }
 .catalog-next-step { display: grid; gap: 7px; margin-top: 12px; }
 .catalog-next-step a { display: flex; align-items: center; justify-content: space-between; color: var(--brand); font-size: 9px; font-weight: 700; }
 .catalog-next-step a:hover { text-decoration: underline; text-underline-offset: 3px; }

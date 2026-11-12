@@ -42,6 +42,12 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   const printer = printers.find((item) => item.id === printerId) ?? printers[0];
   const material = materials.find((item) => item.id === materialId) ?? materials[0];
   const resinProperties = material.technicalProperties ?? {};
+  const washingMethods = Array.isArray(resinProperties.washingMethods) ? resinProperties.washingMethods.filter((value): value is string => typeof value === "string") : [];
+  const washingDurationMin = typeof resinProperties.washingDurationMinutes === "object" && resinProperties.washingDurationMinutes !== null
+    && "min" in resinProperties.washingDurationMinutes && typeof resinProperties.washingDurationMinutes.min === "number"
+    ? resinProperties.washingDurationMinutes.min : null;
+  const washingMethodLabels: Record<string, string> = { water: "água", ethanol: "etanol", IPA: "álcool isopropílico (IPA)" };
+  const postCureMinutes = typeof resinProperties.postCureMinutes === "number" ? resinProperties.postCureMinutes : null;
   const resinExposureByPrinter = Array.isArray(resinProperties.exposureByPrinter) ? resinProperties.exposureByPrinter.flatMap((value) => {
     if (!value || typeof value !== "object" || Array.isArray(value)) return [];
     const item = value as Record<string, unknown>;
@@ -128,6 +134,12 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <div><dt>Exposição das primeiras camadas</dt><dd>{rangeLabel(resinProperties.firstLayerExposureSeconds, "s") ?? "Não informada"}</dd></div>
               <div><dt>Compatibilidade</dt><dd>Consulte a verificação ao lado para o modelo selecionado</dd></div>
             </dl>}
+            {material.process === "resin" && (washingMethods.length > 0 || postCureMinutes !== null || typeof resinProperties.safetyNotes === "string" || typeof resinProperties.wasteDisposal === "string") && <div className="resin-handling-note">
+              {washingMethods.length > 0 && <p>Lavagem: {washingMethods.map((method) => washingMethodLabels[method] ?? method).join(", ")}{washingDurationMin !== null ? ` · mínimo de ${washingDurationMin} min` : ""}.</p>}
+              {postCureMinutes !== null && <p>Pós-cura: {postCureMinutes} min{typeof resinProperties.postCureWavelengthNm === "number" ? ` · ${resinProperties.postCureWavelengthNm} nm` : ""}.</p>}
+              {typeof resinProperties.safetyNotes === "string" && <p>{resinProperties.safetyNotes}</p>}
+              {typeof resinProperties.wasteDisposal === "string" && <p>Descarte: {resinProperties.wasteDisposal}</p>}
+            </div>}
             {resinExposureByPrinter.length > 0 && <div className="resin-exposure-table-wrap"><p>Configuração do fabricante por impressora</p><table className="resin-exposure-table"><thead><tr><th>Impressora</th><th>Camada</th><th>Normal</th><th>Base</th></tr></thead><tbody>{resinExposureByPrinter.map((item) => <tr key={item.printer}><th scope="row">{item.printer}</th><td>{item.layerHeightMm} mm</td><td>{item.normalExposureSeconds} s</td><td>{item.bottomExposureSeconds} s</td></tr>)}</tbody></table></div>}
             {material.colors.length > 0 && <div className="material-swatches"><span>Cores de referência</span>{material.colors.map((color) => <span className={`material-swatch${color.hex ? "" : " is-clear"}`} key={color.name} title={color.name} style={color.hex ? { "--swatch": color.hex } as React.CSSProperties : undefined} aria-label={color.name} />)}</div>}
             <SourceLinks sources={material.sources} />

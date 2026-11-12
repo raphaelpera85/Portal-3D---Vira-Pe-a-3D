@@ -13,6 +13,11 @@ describe("mapTechnicalCatalog", () => {
         wavelengthNm: { min: 365, max: 405 },
         firstLayerExposureSeconds: { min: 20, max: 40 },
         normalExposureSeconds: { min: 2.5, max: 3 },
+        washingMethods: ["water", "IPA"],
+        washingDurationMinutes: { min: 3 },
+        postCureMinutes: 3,
+        safetyNotes: "Use luvas e óculos.",
+        wasteDisposal: "Cure resíduos antes do descarte.",
         exposureByPrinter: [{ printer: "Photon P1", layerHeightMm: 0.05, normalExposureSeconds: 2, bottomExposureSeconds: 20 }],
       }, source_url: "https://example.com/resin", verified_at: "2026-11-12",
     }], [], [], []);
@@ -23,6 +28,11 @@ describe("mapTechnicalCatalog", () => {
       technicalProperties: {
         densityGPerCm3: { min: 1.05, max: 1.25 },
         wavelengthNm: { min: 365, max: 405 },
+        washingMethods: ["water", "IPA"],
+        washingDurationMinutes: { min: 3 },
+        postCureMinutes: 3,
+        safetyNotes: "Use luvas e óculos.",
+        wasteDisposal: "Cure resíduos antes do descarte.",
         exposureByPrinter: [{ printer: "Photon P1", normalExposureSeconds: 2 }],
       },
     });
