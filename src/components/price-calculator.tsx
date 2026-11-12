@@ -15,7 +15,7 @@ import { SlicerImageImporter } from "@/components/slicer-image-importer";
 import { ThreeMfSlicerImporter } from "@/components/three-mf-slicer-importer";
 import type { parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 import { mapThreeMfPlateToSlicerMetrics, type SavedSlicerMetrics } from "@/lib/saved-calculation";
-import { mapPrintProfileToCalculator } from "@/lib/calculator-profile";
+import { mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "@/lib/calculator-profile";
 import type { ThreeMfSlicePlate } from "@/lib/model-file";
 
 type FormFields = Record<keyof Omit<PrintCostInput, "additionalCosts" | "productionComponents" | "filamentCosts" | "pricingMode">, string>;
@@ -24,7 +24,7 @@ type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
 type CalculatorEquipment = EquipmentRateInput & { id: string; label: string; catalogPrinter?: CatalogPrinter | null };
 type CalculatorProduct = { id: string; name: string; slug: string; published: boolean };
-type CalculatorProfile = { id: string; name: string; productId: string; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null };
+type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics };
 type CalculatorMaterial = MaterialEntry;
 type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; snapshot: string };
 
@@ -230,7 +230,9 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     const profile = profiles.find((item) => item.id === selectedProfileId);
     if (!profile) return;
     if ((fields.material.trim() !== "" || fields.filamentGrams !== "" || fields.printHours !== "" || slicerMetrics?.filaments.length) && !window.confirm("Aplicar este perfil substituirá o material, o peso, o tempo e a composição por cor informados. Os preços por kg das cores correspondentes serão mantidos. Continuar?")) return;
-    const values = mapPrintProfileToCalculator(profile, numberValue(fields.batchQuantity), slicerMetrics?.filaments);
+    const values = profile.kind === "model" && profile.modelMetrics
+      ? mapModelPrintProfileToCalculator({ name: profile.name, materialName: profile.materialName, quantity: profile.quantity, metrics: profile.modelMetrics }, numberValue(fields.batchQuantity), slicerMetrics?.filaments)
+      : mapPrintProfileToCalculator(profile, numberValue(fields.batchQuantity), slicerMetrics?.filaments);
     if (!values) {
       setProfileApplyNotice("A quantidade do lote ou o consumo escalado deste perfil excede os limites aceitos pela calculadora.");
       return;
@@ -242,9 +244,9 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       printHours: values.printHours === null ? current.printHours : String(values.printHours),
     }));
     setSlicerMetrics(values.slicerMetrics);
-    setSelectedProductId(profile.productId);
+    if (profile.productId) setSelectedProductId(profile.productId);
     if (profile.equipmentId && equipment.some((item) => item.id === profile.equipmentId)) selectEquipment(profile.equipmentId);
-    setProfileApplyNotice(`Consumo aplicado para ${Math.max(1, Math.ceil(numberValue(fields.batchQuantity) / profile.quantity))} execução(ões) do perfil. Confira os preços por kg antes de calcular.`);
+    setProfileApplyNotice(`Consumo de “${profile.name}” aplicado para ${Math.max(1, Math.ceil(numberValue(fields.batchQuantity) / profile.quantity))} execução(ões). Confira os preços por kg antes de calcular.`);
   }
 
   function applyOcr(extraction: ReturnType<typeof parseSlicerOcrTexts>): boolean | null {
@@ -527,10 +529,10 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             {productNotice && <p className="auth-notice is-error" role="status">{productNotice}</p>}
             {products.length > 0 && <label htmlFor="calculation-product">Vincular a um produto<select id="calculation-product" name="productSelector" value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)}><option value="">Sem vínculo com produto</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}{product.published ? " · publicado" : " · rascunho"}</option>)}</select><small>Somente produtos desta loja aparecem nesta lista.</small></label>}
             {profileNotice && <p className="auth-notice is-error" role="status">{profileNotice}</p>}
-            {profiles.length > 0 && <div className="calculator-profile-apply"><label htmlFor="calculation-profile">Perfil de impressão<select id="calculation-profile" name="profileSelector" value={selectedProfileId} onChange={(event) => { setSelectedProfileId(event.target.value); setProfileApplyNotice(""); }}><option value="">Sem vínculo com perfil</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select><small>Escolha um perfil e aplique o consumo previsto para o lote.</small></label><button className="button button-secondary" type="button" onClick={applySelectedProfile} disabled={!selectedProfileId}>Aplicar consumo</button>{profileApplyNotice && <p className="price-profile-apply-note" role="status">{profileApplyNotice}</p>}</div>}
+            {profiles.length > 0 && <div className="calculator-profile-apply"><label htmlFor="calculation-profile">Perfil de impressão<select id="calculation-profile" name="profileSelector" value={selectedProfileId} onChange={(event) => { setSelectedProfileId(event.target.value); setProfileApplyNotice(""); }}><option value="">Sem vínculo com perfil</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.kind === "model" ? "Modelo 3D · " : "Loja · "}{profile.name}</option>)}</select><small>Escolha um perfil e aplique o consumo previsto para o lote.</small></label><button className="button button-secondary" type="button" onClick={applySelectedProfile} disabled={!selectedProfileId}>Aplicar consumo</button>{profileApplyNotice && <p className="price-profile-apply-note" role="status">{profileApplyNotice}</p>}</div>}
             <input type="hidden" name="productId" value={selectedProductId} />
             <input type="hidden" name="printerId" value={selectedEquipmentId} />
-            <input type="hidden" name="profileId" value={selectedProfileId} />
+            <input type="hidden" name="profileId" value={selectedProfileId.startsWith("model:") ? "" : selectedProfileId} />
             <input type="hidden" name="snapshot" value={JSON.stringify({ input, channels: parsedChannels, slicer: slicerMetrics })} />
             <button className="button button-primary" type="submit" disabled={saving || !hasProductionCost || result.errors.length > 0}>{saving ? "Salvando…" : "Salvar cálculo"}</button>
             {saveState.message && <p className={saveState.success ? "auth-notice is-success" : "auth-notice is-error"} role="status">{saveState.message}</p>}

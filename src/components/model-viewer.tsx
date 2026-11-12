@@ -24,7 +24,7 @@ const views: { name: ViewName; label: string; direction: [number, number, number
 ];
 type ViewerComponent = { id: string; name: string; visible: boolean; colors: string[] };
 
-export function ModelViewer({ buyerId, savedModels = [], materials = [], today, libraryError = false, previewUrl, modelName, readOnly = false }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: { id: string; label: string }[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean }) {
+export function ModelViewer({ buyerId, savedModels = [], materials = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: { id: string; label: string }[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -215,6 +215,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
     setBusy(true);
     setMessage("Preparando a visualização…");
     setSlicePlates([]);
+    onSlicePlatesChange?.([]);
     resourceUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     const fileUrls = new Map<string, string>();
     resourceUrlsRef.current = files.map((item) => {
@@ -324,6 +325,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
         ...(threeMfColors?.paintPaletteColors ?? []),
       ])].filter(Boolean).slice(0, 12));
       setSlicePlates(threeMfSlicePlates);
+      onSlicePlatesChange?.(threeMfSlicePlates);
       const size = bounds.getSize(new THREEAgain.Vector3());
       const grid = sceneRef.current?.getObjectByName("build-grid");
       const axes = sceneRef.current?.getObjectByName("build-axes");

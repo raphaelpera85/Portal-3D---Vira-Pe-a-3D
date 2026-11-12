@@ -293,9 +293,37 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   .model-detail-download h2 { margin: 0; font-size: 18px; }
   .model-detail-download p:not(.eyebrow) { margin: 7px 0 0; color: var(--muted-strong); font-size: 12px; }
   .model-detail-error { color: var(--danger, #b42318); }
+.model-print-profiles { display: grid; gap: 14px; margin-top: 26px; padding-top: 26px; border-top: 1px solid var(--line); }
+.model-print-profiles-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.model-print-profiles-heading .eyebrow { margin: 0 0 6px; }
+.model-print-profiles-heading h2 { margin: 0; font-size: 23px; }
+.model-print-profiles-heading p:not(.eyebrow) { max-width: 620px; margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+.model-print-profiles-heading > span { flex: 0 0 auto; padding: 6px 10px; border: 1px solid var(--line); border-radius: 20px; color: var(--muted-strong); font-size: 11px; }
+.model-print-profiles-login { margin: 0; padding: 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--muted-strong); font-size: 12px; }
+.model-print-profiles-login a { color: var(--brand); font-weight: 700; }
+.model-print-profile-list { display: grid; gap: 10px; }
+.model-print-profile-card { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+.model-print-profile-card > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; list-style: none; }
+.model-print-profile-card > summary::-webkit-details-marker { display: none; }
+.model-print-profile-card > summary > span:first-child { display: grid; gap: 4px; }
+.model-print-profile-card > summary strong { font-size: 13px; }
+.model-print-profile-card > summary small, .model-print-profile-card > summary > span:last-child { color: var(--muted); font-size: 10px; }
+.model-print-profile-new h3 { margin: 0 0 13px; font-size: 15px; }
+.model-print-profile-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.model-print-profile-form > label { display: grid; align-content: start; gap: 6px; min-width: 0; color: var(--muted-strong); font-size: 10px; font-weight: 700; }
+.model-print-profile-form input:not([type="checkbox"]), .model-print-profile-form select, .model-print-profile-form textarea { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--paper); color: var(--ink); font: inherit; }
+.model-print-profile-form textarea { resize: vertical; }
+.model-print-profile-form small { color: var(--muted); font-size: 9px; font-weight: 500; line-height: 1.5; }
+.model-print-profile-checkbox { display: flex !important; align-items: center; gap: 8px !important; }
+.model-print-profile-checkbox input { width: 16px; height: 16px; accent-color: var(--brand); }
+.model-print-profile-import, .model-print-profile-colors { grid-column: 1 / -1; }
+.model-print-profile-submit { justify-self: start; grid-column: 1 / -1; }
+.model-print-profile-delete { margin-top: 14px; padding: 0; border: 0; background: none; color: var(--danger, #b42318); font-size: 11px; font-weight: 700; cursor: pointer; }
+.model-print-profiles > .auth-notice { margin: 0; }
 .model-gallery-page { min-height: 70vh; padding-block: 38px 72px; }
 @media (max-width: 900px) { .model-gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (max-width: 640px) { .model-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .model-gallery-copy { padding: 10px; } .model-gallery-copy h3 { font-size: 13px; } .model-gallery-page { padding-top: 22px; } .model-detail-page { padding-top: 20px; } .model-detail-download { align-items: stretch; flex-direction: column; } }
+  @media (max-width: 640px) { .model-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .model-gallery-copy { padding: 10px; } .model-gallery-copy h3 { font-size: 13px; } .model-gallery-page { padding-top: 22px; } .model-detail-page { padding-top: 20px; } .model-detail-download { align-items: stretch; flex-direction: column; } .model-print-profile-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .model-print-profile-form { grid-template-columns: 1fr; } .model-print-profiles-heading { flex-direction: column; } .model-print-profile-card > summary { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 680px) { .model-gallery-controls .category-list { width: 100%; flex-wrap: wrap; overflow: visible; } .model-gallery-controls .category-chip { flex: 0 0 auto; } .model-gallery-controls > .search-field { width: 100%; } }
 @media (max-width: 390px) { .model-gallery-grid { grid-template-columns: 1fr; } }
 .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }

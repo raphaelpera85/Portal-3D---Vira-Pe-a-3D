@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapPrintProfileToCalculator } from "./calculator-profile";
+import { mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "./calculator-profile";
 
 const profile = {
   name: "PLA bicolor",
@@ -11,6 +11,17 @@ const profile = {
 };
 
 describe("mapPrintProfileToCalculator", () => {
+  it("scales saved model slicer metrics and per-color lengths into the calculator", () => {
+    expect(mapModelPrintProfileToCalculator({ name: "PLA detalhado", materialName: "PLA Basic", quantity: 2, metrics: {
+      slicer: "OrcaSlicer", modelGrams: 10, supportGrams: 2, totalGrams: 16, purgeGrams: 3, wipeTowerGrams: 1,
+      filamentGrams: 16, derivedMass: false, lengthMeters: 4.8, printHours: 1.5, filamentChanges: 1,
+      estimatedCost: null, materials: ["PLA Basic"], filaments: [{ index: 1, grams: 16, lengthMeters: 4.8, pricePerKg: null, material: "PLA Basic", color: "#336699" }], conflicts: [],
+    } }, 3)).toMatchObject({
+      material: "PLA Basic", filamentGrams: 32, printHours: 3,
+      slicerMetrics: { slicer: "OrcaSlicer", modelGrams: 20, supportGrams: 4, purgeGrams: 6, wipeTowerGrams: 2, lengthMeters: 9.6, filamentChanges: 2,
+        filaments: [{ grams: 32, lengthMeters: 9.6, color: "#336699" }] },
+    });
+  });
   it("scales profile consumption to enough plates and preserves matching filament prices", () => {
     expect(mapPrintProfileToCalculator(profile, 3, [
       { index: 1, grams: 1, lengthMeters: null, pricePerKg: 99, material: "PLA", color: "#336699" },

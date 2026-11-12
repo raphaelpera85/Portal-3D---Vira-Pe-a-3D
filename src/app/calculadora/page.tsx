@@ -7,6 +7,7 @@ import { getUserWithRole } from "@/lib/auth-role.server";
 import { validateCalculationToSave, type SavedSlicerMetrics } from "@/lib/saved-calculation";
 import { readPrintProfileColors } from "@/lib/print-profile-colors";
 import { loadTechnicalCatalog } from "@/lib/technical-catalog.server";
+import { getShowcaseModel } from "@/lib/model-showcase";
 
 export const metadata: Metadata = {
   title: "Calculadora de impressão 3D | ViraPeça 3D",
@@ -22,7 +23,7 @@ export default async function CalculatorPage() {
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
   let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string; catalogPrinterId: string | null }> = [];
   let products: Array<{ id: string; name: string; slug: string; published: boolean }> = [];
-  let profiles: Array<{ id: string; name: string; productId: string; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null }> = [];
+  let profiles: Array<{ id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics }> = [];
   let equipmentNotice: string | null = null;
   let productNotice: string | null = null;
   let profileNotice: string | null = null;
@@ -33,7 +34,7 @@ export default async function CalculatorPage() {
     const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
     if (store) {
       canSaveCalculations = true;
-      const [{ data, error }, history, productResult, profileResult] = await Promise.all([
+      const [{ data, error }, history, productResult, profileResult, modelProfileResult] = await Promise.all([
         actor.supabase.from("maker_printers")
           .select("id, catalog_model_id, manufacturer_snapshot, model_snapshot, nickname, purchase_price_brl, residual_value_brl, useful_life_hours, accumulated_hours, measured_average_power_w, energy_tariff_per_kwh")
           .eq("store_id", store.id).neq("operational_status", "inactive").order("nickname"),
@@ -43,10 +44,12 @@ export default async function CalculatorPage() {
           .eq("store_id", store.id).order("name"),
         actor.supabase.from("maker_print_profiles").select("id, product_id, profile_name, quantity, material_snapshot, print_hours, material_grams, material_by_color, maker_printer_id")
           .eq("store_id", store.id).order("profile_name"),
+        actor.supabase.from("model_print_profiles").select("id, model_slug, profile_name, quantity, material_snapshot, slicer_metrics")
+          .eq("user_id", actor.user.id).order("profile_name"),
       ]);
       if (error) equipmentNotice = "Não foi possível carregar seus equipamentos. A calculadora manual continua disponível.";
       if (productResult.error) productNotice = "Não foi possível carregar os produtos desta loja para vinculá-los ao cálculo.";
-      if (profileResult.error) profileNotice = "Não foi possível carregar os perfis desta loja para vinculá-los ao cálculo.";
+      if (profileResult.error || modelProfileResult.error) profileNotice = "Não foi possível carregar todos os perfis de impressão para vinculá-los ao cálculo.";
       const maintenanceCosts = new Map<string, number>();
       const printerIds = (data ?? []).map((printer) => printer.id);
       for (let offset = 0; printerIds.length > 0; offset += 1000) {
@@ -68,12 +71,23 @@ export default async function CalculatorPage() {
         accumulatedHours: printer.accumulated_hours, catalogPrinterId: printer.catalog_model_id,
       }));
       products = (productResult.data ?? []).map((product) => ({ id: product.id, name: product.name, slug: product.slug, published: product.catalog_status === "published" }));
-      profiles = (profileResult.data ?? []).map((profile) => ({
+      const makerProfiles = (profileResult.data ?? []).map((profile) => ({
         id: profile.id, name: profile.profile_name, productId: profile.product_id, quantity: profile.quantity,
         materialName: profile.material_snapshot, printHours: profile.print_hours == null ? null : Number(profile.print_hours),
         materialGrams: profile.material_grams == null ? null : Number(profile.material_grams),
-        materialByColor: readPrintProfileColors(profile.material_by_color), equipmentId: profile.maker_printer_id,
+        materialByColor: readPrintProfileColors(profile.material_by_color), equipmentId: profile.maker_printer_id, kind: "maker" as const,
       }));
+      const modelProfiles = (modelProfileResult.data ?? []).flatMap((profile) => {
+        const model = getShowcaseModel(profile.model_slug);
+        const metrics = profile.slicer_metrics as SavedSlicerMetrics;
+        return model && metrics && Array.isArray(metrics.filaments) ? [{
+          id: `model:${profile.id}`, name: `${model.name} · ${profile.profile_name}`, productId: null, quantity: profile.quantity,
+          materialName: profile.material_snapshot, printHours: metrics.printHours, materialGrams: metrics.filamentGrams,
+          materialByColor: metrics.filaments.flatMap((item) => item.color && item.grams != null && /^#[0-9a-f]{6}$/i.test(item.color) ? [{ color: item.color, grams: item.grams }] : []),
+          equipmentId: null, kind: "model" as const, modelMetrics: metrics,
+        }] : [];
+      });
+      profiles = [...makerProfiles, ...modelProfiles];
       savedCalculationsError = Boolean(history.error);
       savedCalculations = (history.data ?? []).flatMap((row) => {
         const validated = validateCalculationToSave(row.title, JSON.stringify(row.input_snapshot), row.product_id, row.printer_id, row.profile_id);

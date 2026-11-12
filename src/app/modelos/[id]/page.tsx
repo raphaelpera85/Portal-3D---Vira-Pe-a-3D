@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ModelViewer } from "@/components/model-viewer";
+import { ModelDetailContent } from "@/components/model-detail-content";
 import { SiteHeader } from "@/components/site-header";
 import { getModelAssetUrl, getShowcaseModel, modelShowcase } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-type ModelPageProps = { params: Promise<{ id: string }> };
+type ModelPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ perfil?: string }> };
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return modelShowcase.map(({ id }) => ({ id }));
@@ -22,12 +24,19 @@ export async function generateMetadata({ params }: ModelPageProps): Promise<Meta
   } : { title: "Modelo não encontrado | ViraPeça 3D" };
 }
 
-export default async function ModelPage({ params }: ModelPageProps) {
-  const { id } = await params;
+export default async function ModelPage({ params, searchParams }: ModelPageProps) {
+  const [{ id }, { perfil }] = await Promise.all([params, searchParams]);
   const model = getShowcaseModel(id);
   if (!model) notFound();
   const previewUrl = getModelAssetUrl(model.filePath);
   const downloadUrl = previewUrl;
+  const supabase = await createSupabaseServerClient();
+  const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+  const profileResult = supabase && auth.user ? await supabase.from("model_print_profiles")
+    .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at")
+    .eq("user_id", auth.user.id).eq("model_slug", model.id).order("created_at", { ascending: false }) : null;
+  const profiles = (profileResult?.data ?? []) as import("@/components/model-print-profile-manager").ModelPrintProfileRecord[];
+  const notice = profileResult?.error ? "erro" : ["salvo", "excluido", "erro"].includes(perfil ?? "") ? perfil! : null;
 
   return <>
     <SiteHeader />
@@ -38,7 +47,7 @@ export default async function ModelPage({ params }: ModelPageProps) {
         <h1>{model.name}</h1>
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={`/modelos?q=${encodeURIComponent(tag)}#modelos`}>{tag}</Link></li>)}</ul>
       </div>
-      {previewUrl ? <ModelViewer buyerId={null} today={new Date().toISOString().slice(0, 10)} previewUrl={previewUrl} modelName={model.name} readOnly /> : <p className="shell model-detail-error" role="alert">A conexão com o catálogo de arquivos 3D ainda não está configurada.</p>}
+      <ModelDetailContent modelId={model.id} modelName={model.name} previewUrl={previewUrl} today={new Date().toISOString().slice(0, 10)} profiles={profiles} authenticated={Boolean(auth.user)} notice={notice} />
       <section className="shell model-detail-download" aria-label="Download do modelo">
         <div><p className="eyebrow">ARQUIVO ORIGINAL</p><h2>{model.name}.3mf</h2><p>Baixe o arquivo 3MF para abrir no seu fatiador ou programa de modelagem.</p></div>
         {downloadUrl ? <a className="button button-primary" href={downloadUrl} download={`${model.name}.3mf`}>Baixar arquivo 3MF</a> : <span className="button button-primary" aria-disabled="true">Download indisponível</span>}
