@@ -28,7 +28,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Integrar OAuth Melhor Envio por loja, cifrar tokens e oferecer ao comprador a tarifa mais barata em pedidos do carrinho.
 - [ ] Configurar e validar os aplicativos Melhor Envio Sandbox e Produção.
 - [x] Criar etiqueta no carrinho Melhor Envio após pagamento do pedido; mostrar o custo e exigir confirmação antes de debitar a carteira do vendedor.
-- [x] Solicitar geração e impressão privada da etiqueta e atualizar status/rastreio via webhook com assinatura HMAC; impressão personalizada permanece em cotação manual.
+- [x] Solicitar geração e impressão privada da etiqueta e atualizar status/rastreio via webhook com assinatura HMAC; impressões personalizadas também podem consultar tarifas, salvar o pacote cotado e usar etiquetas após o pagamento e a conclusão da produção.
 - [ ] Configurar webhook e validar o fluxo de ponta a ponta com pedido e conta sandbox do Melhor Envio.
 
 ## Bloqueios de produção
