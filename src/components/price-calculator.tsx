@@ -15,7 +15,7 @@ type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
 type CalculatorEquipment = EquipmentRateInput & { id: string; label: string };
 type CalculatorProduct = { id: string; name: string; slug: string; published: boolean };
-type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; snapshot: string };
+type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; snapshot: string };
 
 const initialFields: FormFields = {
   batchQuantity: "1", batchFixedCost: "", filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "",
@@ -170,7 +170,7 @@ export function PriceCalculator({ equipment = [], products = [], equipmentNotice
     return true;
   }
 
-  function duplicateCalculation(snapshot: string, title: string, productId: string | null) {
+  function duplicateCalculation(snapshot: string, title: string, productId: string | null, printerId: string | null) {
     if (hasCurrentValues && !window.confirm("Abrir esta cópia substituirá os valores atuais da calculadora. Deseja continuar?")) return;
     try {
       const saved = JSON.parse(snapshot) as { input?: PrintCostInput; channels?: SalesChannel[] };
@@ -182,7 +182,7 @@ export function PriceCalculator({ equipment = [], products = [], equipmentNotice
       } as ProductionComponentFields)));
       setChannels(saved.channels.map((channel) => ({ ...channel, feePercent: String(channel.feePercent), fixedFee: String(channel.fixedFee) })));
       setCalculationTitle(`${title} (cópia)`.slice(0, 80));
-      setSelectedEquipmentId("");
+      setSelectedEquipmentId(printerId ?? "");
       setSelectedProductId(productId ?? "");
     } catch { /* Invalid saved data is ignored. */ }
   }
@@ -215,7 +215,7 @@ export function PriceCalculator({ equipment = [], products = [], equipmentNotice
 
           <section className="price-card">
             <div className="price-card-heading"><span className="price-step">02</span><div><h2>Máquina e energia</h2><p>Use horas, potência e custos medidos para a execução completa do lote. O tempo da impressora é contado uma vez.</p></div></div>
-            {equipment.length > 0 && <label className="equipment-calculator-select">Equipamento cadastrado<select value={selectedEquipmentId} onChange={(event) => selectEquipment(event.target.value)}><option value="">Sem equipamento (manter campos manuais)</option>{equipment.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select><small>Selecionar preenche apenas dados registrados; os campos continuam editáveis.</small></label>}
+            {equipment.length > 0 && <label className="equipment-calculator-select">Equipamento cadastrado<select value={selectedEquipmentId} onChange={(event) => selectEquipment(event.target.value)}><option value="">Sem equipamento (manter campos manuais)</option>{equipment.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select><small>Selecionar preenche dados conhecidos; o equipamento fica vinculado ao salvar e os campos continuam editáveis.</small></label>}
             <div className="price-fields-grid">
               <CostField label="Tempo de impressão" suffix="horas" value={fields.printHours} onChange={(value) => updateField("printHours", value)} />
               <CostField label="Potência média" suffix="W" hint="Use a média medida, não a potência nominal." value={fields.averagePowerWatts} onChange={(value) => updateField("averagePowerWatts", value)} />
@@ -323,13 +323,14 @@ export function PriceCalculator({ equipment = [], products = [], equipmentNotice
             {productNotice && <p className="auth-notice is-error" role="status">{productNotice}</p>}
             {products.length > 0 && <label htmlFor="calculation-product">Vincular a um produto<select id="calculation-product" name="productSelector" value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)}><option value="">Sem vínculo com produto</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}{product.published ? " · publicado" : " · rascunho"}</option>)}</select><small>Somente produtos desta loja aparecem nesta lista.</small></label>}
             <input type="hidden" name="productId" value={selectedProductId} />
+            <input type="hidden" name="printerId" value={selectedEquipmentId} />
             <input type="hidden" name="snapshot" value={JSON.stringify({ input, channels: parsedChannels })} />
             <button className="button button-primary" type="submit" disabled={saving || !hasProductionCost || result.errors.length > 0}>{saving ? "Salvando…" : "Salvar cálculo"}</button>
             {saveState.message && <p className={saveState.success ? "auth-notice is-success" : "auth-notice is-error"} role="status">{saveState.message}</p>}
           </form>
           {savedCalculationsError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar o histórico. Confira as migrações da calculadora e do vínculo com produtos.</p> : savedCalculations.length === 0 ? <p className="price-history-empty">Os cálculos salvos aparecerão aqui.</p> : <div className="price-history-list">{savedCalculations.map((saved) => <article className="price-history-item" key={saved.id}>
-            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}</div>
-            <div className="price-history-actions"><button className="button button-secondary" type="button" onClick={() => duplicateCalculation(saved.snapshot, saved.title, saved.productId)}>Abrir como cópia</button><form action={deleteMakerCalculation} onSubmit={(event) => { if (!window.confirm(`Excluir “${saved.title}” do histórico?`)) event.preventDefault(); }}><input type="hidden" name="calculationId" value={saved.id} /><button className="price-history-delete" type="submit">Excluir</button></form></div>
+            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}{saved.printerName && <span>Equipamento: {saved.printerName}</span>}</div>
+            <div className="price-history-actions"><button className="button button-secondary" type="button" onClick={() => duplicateCalculation(saved.snapshot, saved.title, saved.productId, saved.printerId)}>Abrir como cópia</button><form action={deleteMakerCalculation} onSubmit={(event) => { if (!window.confirm(`Excluir “${saved.title}” do histórico?`)) event.preventDefault(); }}><input type="hidden" name="calculationId" value={saved.id} /><button className="price-history-delete" type="submit">Excluir</button></form></div>
           </article>)}</div>}
         </> : <div className="price-history-locked"><p>Entre com uma conta de fabricante e loja aprovada para manter um histórico privado dos seus custos.</p><Link className="button button-secondary" href="/conta">Acessar conta</Link></div>}
       </section>

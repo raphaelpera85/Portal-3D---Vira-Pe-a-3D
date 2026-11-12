@@ -21,7 +21,7 @@ O preço por canal é o menor preço em centavos em que o lucro após a tarifa f
 ## Limites atuais
 
 - O histórico mostra os 20 cálculos mais recentes por loja. Os snapshots preservam entradas, canais e resultado; abrir como cópia preenche o formulário sem alterar o registro original. O servidor valida e recalcula os dados ao salvar. Registros podem ser excluídos pelo próprio fabricante.
-- O histórico pode ser vinculado a um produto da própria loja; a relação é opcional e aparece junto ao snapshot. O snapshot ainda não vincula arquivo enviado, bico, perfil ou equipamento selecionado.
+- O histórico pode ser vinculado a um produto e ao equipamento principal da própria loja; ambas as relações são opcionais e aparecem junto ao snapshot. O snapshot ainda não vincula arquivo enviado, bico ou perfil de impressão.
 - O OCR preenche peso e tempo somente depois da revisão; o histórico guarda esses valores normalizados, mas não a imagem, texto OCR completo ou a origem reconhecida.
 - Custos da execução principal e de cada componente representam os totais necessários para produzir o lote. O portal calcula a quantidade de componentes exigida (`unidades por produto × produtos no lote`) para conferência, mas não infere consumo do fatiador nem multiplica automaticamente o tempo pela quantidade de peças. Some o tempo de cada execução do componente antes de informar o total.
 - Não inclui impostos, frete, tarifa não informada nem valores que o usuário deixou de preencher.

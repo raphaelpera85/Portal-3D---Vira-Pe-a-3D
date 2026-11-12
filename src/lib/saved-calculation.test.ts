@@ -21,10 +21,12 @@ describe("validateCalculationToSave", () => {
     expect(result.calculation?.result.channels[0].priceCents).toBeGreaterThan(0);
   });
 
-  it("keeps an optional product association and rejects malformed product IDs", () => {
+  it("keeps optional product and equipment associations and rejects malformed IDs", () => {
     const productId = "89abcdef-1234-4123-8123-123456789abc";
-    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), productId).calculation?.productId).toBe(productId);
+    const printerId = "76543210-abcd-4123-8123-abcdef123456";
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), productId, printerId).calculation).toMatchObject({ productId, printerId });
     expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), "not-a-uuid").calculation).toBeNull();
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), null, "not-a-uuid").calculation).toBeNull();
     expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot)).calculation?.productId).toBeNull();
   });
 

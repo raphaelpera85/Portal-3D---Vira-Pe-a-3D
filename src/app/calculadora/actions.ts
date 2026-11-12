@@ -7,7 +7,7 @@ import { validateCalculationToSave } from "@/lib/saved-calculation";
 export type SaveCalculationState = { message: string; success: boolean };
 
 export async function saveMakerCalculation(_previous: SaveCalculationState, formData: FormData): Promise<SaveCalculationState> {
-  const validated = validateCalculationToSave(formData.get("title"), formData.get("snapshot"), formData.get("productId"));
+  const validated = validateCalculationToSave(formData.get("title"), formData.get("snapshot"), formData.get("productId"), formData.get("printerId"));
   if (!validated.calculation) return { message: validated.error ?? "Confira os dados do cálculo.", success: false };
 
   const actor = await getUserWithRole("maker");
@@ -19,15 +19,21 @@ export async function saveMakerCalculation(_previous: SaveCalculationState, form
       .eq("id", validated.calculation.productId).eq("store_id", store.id).maybeSingle();
     if (!product) return { message: "Vincule apenas um produto da sua própria loja.", success: false };
   }
+  if (validated.calculation.printerId) {
+    const { data: printer } = await actor.supabase.from("maker_printers").select("id")
+      .eq("id", validated.calculation.printerId).eq("store_id", store.id).maybeSingle();
+    if (!printer) return { message: "Vincule apenas um equipamento cadastrado na sua própria loja.", success: false };
+  }
 
   const { error } = await actor.supabase.from("maker_cost_calculations").insert({
     store_id: store.id,
     product_id: validated.calculation.productId,
+    printer_id: validated.calculation.printerId,
     title: validated.calculation.title,
     input_snapshot: { input: validated.calculation.input, channels: validated.calculation.channels },
     result_snapshot: validated.calculation.result,
   });
-  if (error) return { message: "Não foi possível salvar. Confira se as migrações do histórico e do vínculo com produtos estão aplicadas.", success: false };
+  if (error) return { message: "Não foi possível salvar. Confira se as migrações do histórico, produtos e equipamentos estão aplicadas.", success: false };
 
   revalidatePath("/calculadora");
   return { message: "Cálculo salvo no histórico da loja.", success: true };
