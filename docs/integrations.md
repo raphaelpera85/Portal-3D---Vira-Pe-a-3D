@@ -36,6 +36,8 @@ O painel financeiro permite ao fabricante solicitar reembolsos totais ou parciai
 
 O comprador pode cancelar, em `/orcamentos`, um checkout ainda não pago. A ação consulta a order com o token da loja e só chama o endpoint de cancelamento se o Mercado Pago informar `created` ou `action_required`; o pedido usa idempotência persistida e libera o estoque somente após confirmação. Se a ordem já estiver processando ou paga, o portal sincroniza o estado e não tenta cancelar a cobrança.
 
+Para impressões personalizadas, o comprador escolhe um endereço salvo depois de aceitar uma proposta. O endereço completo fica privado e só é mostrado à loja vencedora; a loja informa transportadora, serviço, preço e prazo manualmente. O comprador precisa aceitar a cotação antes do checkout. O frete é cobrado no mesmo pagamento, mas a comissão incide somente sobre a proposta de fabricação. Depois que o webhook confirmar o pagamento e a produção for concluída, a loja informa o rastreio e o comprador confirma o recebimento. Não há consulta automática de tarifas nem compra de etiquetas.
+
 ## OCR de imagens de fatiadores
 
 Para habilitar a leitura de capturas de tela, selecione um projeto no Google Cloud Console, habilite a Cloud Vision API e crie uma chave em **APIs e serviços → Credenciais**. Restrinja a chave à Cloud Vision API e armazene somente no servidor como `GOOGLE_CLOUD_VISION_API_KEY`; não use prefixo `NEXT_PUBLIC_`. A documentação oficial explica a [autenticação e as restrições de chaves](https://docs.cloud.google.com/docs/authentication/api-keys) e o [endpoint `images:annotate`](https://docs.cloud.google.com/vision/docs/request).

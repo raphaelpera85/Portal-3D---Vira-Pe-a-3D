@@ -39,9 +39,10 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
       .select("id, store_id, store_name, product_name, unit_price_brl, quantity, status, request_type, license_type")
       .eq("id", purchaseRequestId).eq("buyer_id", actor.user.id).maybeSingle()
       : await actor.supabase.from("custom_print_requests")
-        .select("id, status, winning_store_id, model_name, offer:custom_print_offers(status, store_id, total_brl)")
+        .select("id, status, winning_store_id, model_name, offer:custom_print_offers(status, store_id, total_brl), delivery:custom_print_deliveries(shipping_quote_status, shipping_service, shipping_cost_cents)")
         .eq("id", customPrintRequestId).eq("buyer_id", actor.user.id).maybeSingle();
   const orderRow = objectValue(order);
+  const customPrintDelivery = objectValue(orderRow.delivery);
   const customPrintItem = isCustomPrint ? customPrintOfferPaymentItem(order) : null;
   const licensedProductName = typeof orderRow.product_name === "string" && typeof orderRow.license_type === "string"
     ? `${orderRow.product_name} · licença ${orderRow.license_type === "commercial" ? "comercial" : "pessoal"}` : orderRow.product_name;
@@ -53,6 +54,7 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
     redirect("/orcamentos?resultado=pagamento-erro");
   }
   if (isOrder && orderRow.shipping_quote_status !== "accepted") redirect("/orcamentos?resultado=pagamento-frete");
+  if (isCustomPrint && customPrintDelivery.shipping_quote_status !== "accepted") redirect("/orcamentos?resultado=pagamento-frete");
   const items = isCustomPrint && customPrintItem ? [
     { name: customPrintItem.name, unitPrice: customPrintItem.unitCents / 100, unitCents: customPrintItem.unitCents, quantity: customPrintItem.quantity },
   ] : (Array.isArray(itemsSource) ? itemsSource : []).map((raw) => {
@@ -64,7 +66,7 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
     return { name, unitPrice, unitCents, quantity };
   });
   const subtotalCents = items.reduce((sum, item) => sum + item.unitCents * item.quantity, 0);
-  const shippingCents = isOrder ? Number(orderRow.shipping_cost_cents) : 0;
+  const shippingCents = isOrder ? Number(orderRow.shipping_cost_cents) : isCustomPrint ? Number(customPrintDelivery.shipping_cost_cents) : 0;
   const totalCents = subtotalCents + shippingCents;
   if (!Number.isSafeInteger(subtotalCents) || subtotalCents < 1 || !Number.isSafeInteger(shippingCents) || shippingCents < 0
     || !Number.isSafeInteger(totalCents) || totalCents < 1
@@ -89,7 +91,7 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
     : isDirectPurchase ? await admin.rpc("create_product_purchase_payment", {
       p_request_id: sourceId, p_buyer_id: actor.user.id, p_marketplace_fee_cents: feeCents,
     }) : await admin.rpc("create_custom_print_payment", {
-      p_request_id: sourceId, p_buyer_id: actor.user.id, p_marketplace_fee_cents: feeCents,
+      p_request_id: sourceId, p_buyer_id: actor.user.id, p_marketplace_fee_cents: feeCents, p_expected_shipping_cents: shippingCents,
     });
   const payment = Array.isArray(attempts) ? objectValue(attempts[0]) : {};
   if (attemptError || typeof payment.payment_id !== "string") redirect("/orcamentos?resultado=pagamento-erro");
@@ -117,7 +119,7 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
         payer: { email: actor.user.email },
         items: [
           ...items.map((item) => ({ title: item.name, unit_price: formatMercadoPagoAmount(item.unitCents), quantity: item.quantity })),
-          ...(shippingCents > 0 ? [{ title: `Frete — ${typeof orderRow.shipping_service === "string" ? orderRow.shipping_service.slice(0, 200) : "Loja"}`, unit_price: formatMercadoPagoAmount(shippingCents), quantity: 1 }] : []),
+          ...(shippingCents > 0 ? [{ title: `Frete — ${typeof (isOrder ? orderRow.shipping_service : customPrintDelivery.shipping_service) === "string" ? String(isOrder ? orderRow.shipping_service : customPrintDelivery.shipping_service).slice(0, 200) : "Loja"}`, unit_price: formatMercadoPagoAmount(shippingCents), quantity: 1 }] : []),
         ],
         config: { online: {
           success_url: new URL("/orcamentos?resultado=retorno-pagamento", siteUrl).toString(),

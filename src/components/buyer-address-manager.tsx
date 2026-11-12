@@ -30,7 +30,7 @@ function AddressForm({ address, first }: { address?: Address; first?: boolean })
 export function BuyerAddressManager({ addresses, error, result }: { addresses: Address[]; error: boolean; result?: string }) {
   return <section className="account-card buyer-address-section" id="enderecos">
     <span className="account-kicker">DADOS DE ENTREGA</span><h2>Meus endereços</h2>
-    <p className="buyer-address-intro">Escolha um endereço no carrinho para enviá-lo às lojas e combinar a entrega. O portal ainda não calcula frete nem processa pagamentos.</p>
+    <p className="buyer-address-intro">Escolha um endereço no carrinho ou após aceitar uma proposta de impressão personalizada. O portal ainda não consulta tarifas de frete automaticamente.</p>
     {result === "salvo" && <p className="auth-notice is-success" role="status">Endereço salvo.</p>}
     {result === "excluido" && <p className="auth-notice is-success" role="status">Endereço excluído.</p>}
     {result === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível salvar o endereço. Confira os campos e a migração 017.</p>}

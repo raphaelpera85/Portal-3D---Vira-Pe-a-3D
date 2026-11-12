@@ -181,6 +181,40 @@ export async function advanceCustomPrintProduction(formData: FormData): Promise<
   redirect(`/painel/maker?resultado=impressao-${nextStatus === "in_production" ? "iniciada" : "concluida"}`);
 }
 
+export async function submitCustomPrintShippingQuote(formData: FormData): Promise<void> {
+  const requestId = formData.get("requestId");
+  const quote = validateShippingQuote({ carrier: formData.get("carrier"), service: formData.get("service"), price: formData.get("price"), deliveryDays: formData.get("deliveryDays") });
+  if (typeof requestId !== "string" || !uuidPattern.test(requestId) || !quote) redirect("/painel/maker?resultado=frete-erro");
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("set_custom_print_shipping_quote", {
+    p_request_id: requestId, p_carrier: quote.carrier, p_service: quote.service,
+    p_shipping_cents: quote.shippingCents, p_delivery_days: quote.deliveryDays,
+  });
+  if (error) redirect("/painel/maker?resultado=frete-erro");
+  revalidatePath("/painel/maker");
+  revalidatePath("/orcamentos");
+  redirect("/painel/maker?resultado=frete-ofertado");
+}
+
+export async function markCustomPrintShipped(formData: FormData): Promise<void> {
+  const requestId = formData.get("requestId");
+  const shipment = validateShipmentTracking({
+    trackingCode: formData.get("trackingCode"), trackingUrl: formData.get("trackingUrl"), expectedDate: formData.get("expectedDate"),
+  });
+  if (typeof requestId !== "string" || !uuidPattern.test(requestId) || !shipment) redirect("/painel/maker?resultado=envio-erro");
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("mark_custom_print_shipped", {
+    p_request_id: requestId, p_tracking_code: shipment.trackingCode,
+    p_tracking_url: shipment.trackingUrl, p_expected_date: shipment.expectedDate,
+  });
+  if (error) redirect("/painel/maker?resultado=envio-erro");
+  revalidatePath("/painel/maker");
+  revalidatePath("/orcamentos");
+  redirect("/painel/maker?resultado=pedido-enviado");
+}
+
 export async function submitSellerOrderShippingQuote(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
   const quote = validateShippingQuote({ carrier: formData.get("carrier"), service: formData.get("service"), price: formData.get("price"), deliveryDays: formData.get("deliveryDays") });

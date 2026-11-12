@@ -56,6 +56,10 @@ A migração `20261112040606_link_cost_calculations_to_equipment.sql` associa op
 
 A migração `20261112040608_link_cost_calculations_to_profiles.sql` associa opcionalmente um perfil de impressão da mesma loja ao cálculo. A Server Action e a política RLS validam o dono; ao remover o perfil, a referência fica nula e o snapshot de custos permanece.
 
+A migração `20261112071521_custom_print_shipping.sql` adiciona endereço de entrega e estados de frete/rastreio para impressões personalizadas. O endereço salvo é copiado depois da escolha da proposta e fica em `custom_print_deliveries`, com leitura limitada pelo RLS ao comprador, à loja vencedora e à administração; usuários autenticados não podem gravar a tabela diretamente. RPCs validam cotação, aceite, checkout e rastreio. O frete aceito entra no total pago e fica fora da base da comissão; o snapshot de endereço é apagado se o comprador cancelar antes da produção.
+
+A migração `20261112072051_restrict_custom_print_delivery_access.sql` restringe explicitamente o RLS desse endereço à conta do comprador, ao dono da loja vencedora e à administração.
+
 O limite diário do OCR está em `supabase/migrations/20261112040101_slicer_ocr_quota.sql`. Uma função atômica registra até 30 imagens por fabricante/dia UTC, permite até três por chamada e remove metadados de uso com mais de 30 dias do próprio usuário; nenhum arquivo de imagem é persistido por essa integração.
 
 Consignações estão em `supabase/migrations/20261112040111_maker_consignment.sql`. Cada lote registra estabelecimento, produto e snapshots de custo, preço e comissão; movimentações append-only registram entrega, venda, devolução e perda. Funções `SECURITY DEFINER` conferem o dono da loja e bloqueiam saídas acima do saldo em uma transação com lock do lote. Consultas são privadas ao fabricante. Os valores a receber e o resultado são estimativas; não há integração com pagamentos nem conciliação de repasses.

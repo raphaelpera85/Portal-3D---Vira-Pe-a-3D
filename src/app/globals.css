@@ -822,6 +822,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .custom-print-files a { color: var(--brand); font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .custom-print-offers { display: grid; gap: 8px; }
 .custom-print-offers h3 { margin: 0; font-size: 14px; }
+.custom-print-shipping { display: grid; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.custom-print-shipping > h3 { margin: 0; font-size: 13px; }
 @media (max-width: 560px) { .custom-print-dimensions { gap: 5px; padding: 6px; } }
 .privacy-note { margin: 11px 0 0; color: var(--muted); font-size: 8px; line-height: 1.55; text-align: center; }
 .viewer-page-foot { display: flex; justify-content: space-between; gap: 24px; padding-top: 17px; color: var(--muted); font-size: 9px; line-height: 1.6; }

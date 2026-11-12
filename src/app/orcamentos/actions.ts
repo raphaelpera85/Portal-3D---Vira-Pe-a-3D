@@ -7,6 +7,7 @@ import { getUserWithRole } from "@/lib/auth-role.server";
 import { validateProductQuoteOffer, validateProductQuoteRequest, validateProductVariantSelection } from "@/lib/marketplace-validation";
 import { validateCustomPrintRequest } from "@/lib/custom-print-request";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
+import { validateShippingQuote } from "@/lib/shipping-quote";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const validSlug = (value: unknown): value is string => typeof value === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
@@ -73,6 +74,44 @@ export async function cancelCustomPrintRequest(formData: FormData): Promise<void
   revalidatePath("/orcamentos");
   revalidatePath("/painel/maker");
   redirect("/orcamentos?resultado=custom-cancelada");
+}
+
+export async function saveCustomPrintDeliveryAddress(formData: FormData): Promise<void> {
+  const requestId = formData.get("requestId");
+  const addressId = formData.get("addressId");
+  if (typeof requestId !== "string" || !uuidPattern.test(requestId) || typeof addressId !== "string" || !uuidPattern.test(addressId)) redirect("/orcamentos?resultado=frete-erro");
+  const actor = await getUserWithRole("buyer");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("save_custom_print_delivery_address", { p_request_id: requestId, p_address_id: addressId });
+  if (error) redirect("/orcamentos?resultado=frete-erro");
+  revalidatePath("/orcamentos");
+  revalidatePath("/painel/maker");
+  redirect("/orcamentos?resultado=frete-endereco");
+}
+
+export async function respondToCustomPrintShippingQuote(formData: FormData): Promise<void> {
+  const requestId = formData.get("requestId");
+  const response = formData.get("response");
+  if (typeof requestId !== "string" || !uuidPattern.test(requestId) || (response !== "accept" && response !== "decline")) redirect("/orcamentos?resultado=frete-erro");
+  const actor = await getUserWithRole("buyer");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("respond_to_custom_print_shipping_quote", { p_request_id: requestId, p_response: response });
+  if (error) redirect("/orcamentos?resultado=frete-erro");
+  revalidatePath("/orcamentos");
+  revalidatePath("/painel/maker");
+  redirect(`/orcamentos?resultado=frete-${response === "accept" ? "aceito" : "recusado"}`);
+}
+
+export async function confirmCustomPrintDelivery(formData: FormData): Promise<void> {
+  const requestId = formData.get("requestId");
+  if (typeof requestId !== "string" || !uuidPattern.test(requestId)) redirect("/orcamentos?resultado=entrega-erro");
+  const actor = await getUserWithRole("buyer");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("confirm_custom_print_delivery", { p_request_id: requestId });
+  if (error) redirect("/orcamentos?resultado=entrega-erro");
+  revalidatePath("/orcamentos");
+  revalidatePath("/painel/maker");
+  redirect("/orcamentos?resultado=entrega-confirmada");
 }
 
 export async function requestProductQuote(formData: FormData): Promise<void> {
