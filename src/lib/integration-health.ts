@@ -65,6 +65,7 @@ export function getIntegrationHealth(env: Environment): IntegrationHealthItem[] 
         ...( /^\d+$/.test(env.WHATSAPP_PHONE_NUMBER_ID?.trim() ?? "") ? [] : ["WHATSAPP_PHONE_NUMBER_ID"]),
         ...( /^v\d+\.\d+$/.test(env.WHATSAPP_GRAPH_API_VERSION?.trim() ?? "") ? [] : ["WHATSAPP_GRAPH_API_VERSION"]),
         ...( /^[a-z0-9_]+$/.test(env.WHATSAPP_TEMPLATE_NAME?.trim() ?? "") ? [] : ["WHATSAPP_TEMPLATE_NAME"]),
+        ...(env.WHATSAPP_TEMPLATE_LANGUAGE === undefined || /^[a-z]{2}_[A-Z]{2}$/.test(env.WHATSAPP_TEMPLATE_LANGUAGE) ? [] : ["WHATSAPP_TEMPLATE_LANGUAGE"]),
       ],
     },
     {
