@@ -35,7 +35,7 @@ flowchart LR
 - Compradores autenticados também enviam pedidos personalizados para modelos salvos. Lojas com equipamento disponível, compatibilidade técnica publicada e volume suficiente recebem o pedido, podem enviar propostas concorrentes e o comprador escolhe uma. Após a escolha, o comprador seleciona um endereço salvo; somente a loja vencedora pode lê-lo, cotar manualmente o frete e incluí-lo no checkout. Depois do pagamento confirmado, a loja inicia e conclui a produção, registra o rastreio e o comprador confirma a entrega. O banco bloqueia o início até confirmar o pagamento. Os arquivos ficam em bucket privado e são acessados por link assinado curto somente durante a participação.
 - Compradores autenticados salvam e removem produtos publicados em `/favoritos`; favoritos são privados por comprador e não incluem dados de demonstração.
 - Produtos de preço fixo também podem ser reunidos em carrinho persistente. O fechamento valida preços e disponibilidade no banco e cria um pedido separado por loja; após a loja confirmar disponibilidade e cotar manualmente o frete, o comprador aceita e paga produtos mais frete pelo Mercado Pago. A comissão incide no subtotal dos produtos. A loja informa o rastreio e o comprador confirma o recebimento. Solicitações diretas de compra aceitas também podem iniciar checkout e reservar estoque contado.
-- Produtos físicos de preço fixo podem anunciar até quatro grupos de personalização, como cor e tamanho; o carrinho mantém uma linha por combinação e leva a escolha ao pedido e aos avisos do fabricante. As opções compartilham o preço e o estoque total do produto.
+- Produtos físicos de preço fixo podem anunciar até quatro grupos de opções, como cor e tamanho. Cada uma das até 100 combinações pode ter preço e estoque próprios; a vitrine, o carrinho e a compra direta mostram e validam a combinação selecionada. Os itens do pedido guardam o identificador, as opções e o preço unitário como snapshot.
 - Fabricantes definem pronta entrega ou produção sob encomenda, acompanham estoque contado e prazo de preparação; o banco rejeita quantidades maiores que o estoque publicado.
 - Fabricantes podem solicitar reembolsos totais ou parciais no extrato; o banco reserva o saldo por cobrança e o Mercado Pago recebe uma chave de idempotência que permite repetir uma tentativa pendente sem emitir outro estorno.
 - Compradores podem cancelar orders ainda não pagas em `/orcamentos`; o portal confere a order no Mercado Pago e libera estoque reservado somente após confirmação.
@@ -60,8 +60,8 @@ flowchart LR
 
 ## Limites atuais
 
-- As 56 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
-- Preços e estoque por SKU, cotação automática de frete, compra de etiquetas, atualização automática de rastreio e cupons ainda estão pendentes. Pedidos do carrinho e impressões personalizadas usam cotação manual da loja. O atendimento atual funciona como caixa de entrada interna; alertas por e-mail/WhatsApp, anexos e SLA ainda não estão integrados. Endereços são snapshots privados por pedido e não são enviados a um serviço de logística.
+- As 58 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
+- Cotação automática de frete, compra de etiquetas, atualização automática de rastreio e cupons ainda estão pendentes. Pedidos do carrinho e impressões personalizadas usam cotação manual da loja. O atendimento atual funciona como caixa de entrada interna; anexos e SLA ainda não estão integrados. Endereços são snapshots privados por pedido e não são enviados a um serviço de logística.
 - Lembretes de manutenção dependem de o fabricante registrar datas/horímetros; o portal não infere intervalos nem apresenta recomendações do fabricante do equipamento.
 - Banners aceitam mídia HTTPS externa com carregamento tardio e texto alternativo; upload gerenciado e otimização de imagem ainda não estão conectados.
 - O visualizador não preserva atribuições reais de filamento por cor nem importa resultados de fatiamento. O OCR da calculadora depende de Cloud Vision configurado e reconhecimento de rótulos comuns; imagens e texto OCR não entram no histórico.
@@ -74,6 +74,5 @@ flowchart LR
 1. Validar os fluxos do portal contra o esquema Supabase aplicado e executar compras de teste ponta a ponta.
 2. Importar no banco as referências técnicas locais depois de rever as fontes.
 3. Ligar históricos de manutenção a materiais/produtos; a calculadora identifica filamentos e resinas pelo catálogo e avalia as condições técnicas do material para o modelo de impressora vinculado. O preço de compra continua informado pelo fabricante, e a manutenção usa a média dos custos registrados por hora acumulada.
-4. Implementar preço e estoque específicos por combinação de variações, preservando reservas e cancelamentos de pagamento.
-5. Integrar um provedor de frete para cotações e etiquetas depois de definir fornecedor e credenciais.
-6. Validar pagamentos sandbox antes de qualquer cobrança real e completar conciliação financeira, relatórios administrativos e auditoria.
+4. Integrar um provedor de frete para cotações e etiquetas depois de definir fornecedor e credenciais.
+5. Validar pagamentos sandbox antes de qualquer cobrança real e completar conciliação financeira, relatórios administrativos e auditoria.

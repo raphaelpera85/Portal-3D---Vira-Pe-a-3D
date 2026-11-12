@@ -1,21 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import type { ProductVariant } from "@/lib/products";
 
-type VariantOptions = Record<string, string[]>;
-type VariantSelection = Record<string, string>;
-
-export function ProductVariantFields({ options }: { options: VariantOptions }) {
-  const groups = Object.entries(options);
-  const [selected, setSelected] = useState<VariantSelection>(() => Object.fromEntries(groups.map(([name, values]) => [name, values[0] ?? ""])));
-
-  // shortcut: choices share product price and aggregate stock; upgrade when SKU-level pricing or stock is required.
+export function ProductVariantFields({ options, selected, onChange }: {
+  options: Record<string, string[]>;
+  selected: Record<string, string>;
+  onChange: (selected: Record<string, string>) => void;
+}) {
   return <>
-    <input type="hidden" name="variantOptions" value={JSON.stringify(selected)} />
-    {groups.map(([name, values]) => <label key={name}>{name}
-      <select required value={selected[name] ?? ""} onChange={(event) => setSelected((current) => ({ ...current, [name]: event.target.value }))}>
+    {Object.entries(options).map(([name, values]) => <label key={name}>{name}
+      <select required value={selected[name] ?? ""} onChange={(event) => onChange({ ...selected, [name]: event.target.value })}>
         {values.map((value) => <option key={value} value={value}>{value}</option>)}
       </select>
     </label>)}
   </>;
+}
+
+export function findProductVariant(variants: ProductVariant[], selection: Record<string, string>) {
+  const key = (options: Record<string, string>) => JSON.stringify(Object.fromEntries(Object.entries(options).sort(([a], [b]) => a.localeCompare(b))));
+  const selectedKey = key(selection);
+  return variants.find((variant) => key(variant.options) === selectedKey) ?? null;
 }

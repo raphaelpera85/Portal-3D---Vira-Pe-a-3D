@@ -1,7 +1,47 @@
 import { describe, expect, it } from "vitest";
-import { validateMakerApplication, validateProductDraft, validateProductInventory, validateProductQuoteOffer, validateProductQuoteRequest, validateStoreNotificationContacts } from "./marketplace-validation";
+import { expandProductVariantOptions, validateMakerApplication, validateProductDraft, validateProductInventory, validateProductQuoteOffer, validateProductQuoteRequest, validateProductVariantPricing, validateStoreNotificationContacts } from "./marketplace-validation";
 
 describe("marketplace form validation", () => {
+  it("expands product option groups into bounded, deterministic SKU combinations", () => {
+    expect(expandProductVariantOptions({ Cor: ["Preto", "Branco"], Tamanho: ["P", "M"] })).toEqual([
+      { Cor: "Preto", Tamanho: "P" }, { Cor: "Preto", Tamanho: "M" },
+      { Cor: "Branco", Tamanho: "P" }, { Cor: "Branco", Tamanho: "M" },
+    ]);
+    expect(expandProductVariantOptions({})).toEqual([]);
+    expect(expandProductVariantOptions({ Cor: Array.from({ length: 11 }, (_, i) => String(i)), Tamanho: Array.from({ length: 10 }, (_, i) => String(i)) })).toBeNull();
+    expect(expandProductVariantOptions({ Cor: ["Preto", "preto"] })).toBeNull();
+  });
+
+  it("requires one valid price and fulfillment-appropriate stock value for every variant", () => {
+    const options = { Cor: ["Preto", "Branco"] };
+    const rows = [
+      { options: { Cor: "Preto" }, priceBrl: 30, stockQuantity: 2 },
+      { options: { Cor: "Branco" }, priceBrl: 35.9, stockQuantity: 0 },
+    ];
+    expect(validateProductVariantPricing(JSON.stringify(rows), options, "ready_to_ship")).toEqual(rows);
+    expect(validateProductVariantPricing(JSON.stringify(rows.map((row) => ({ ...row, stockQuantity: null }))), options, "made_to_order"))
+      .toMatchObject([{ stockQuantity: null }, { stockQuantity: null }]);
+    expect(validateProductVariantPricing(JSON.stringify(rows.slice(0, 1)), options, "ready_to_ship")).toBeNull();
+    expect(validateProductVariantPricing(JSON.stringify([rows[0], { ...rows[0], priceBrl: 40 }]), options, "ready_to_ship")).toBeNull();
+    expect(validateProductVariantPricing(JSON.stringify(rows.map((row) => ({ ...row, priceBrl: 0 }))), options, "ready_to_ship")).toBeNull();
+    expect(validateProductVariantPricing(JSON.stringify(rows.map((row) => ({ ...row, priceBrl: 19.999 }))), options, "ready_to_ship")).toBeNull();
+  });
+
+  it("uses the minimum variant price and summed ready-to-ship stock for a listing", () => {
+    const draft = {
+      name: "Miniatura modular", categoryId: "7b383334-110a-4dc3-9000-6c7e0c2ad491", priceMode: "fixed",
+      priceBrl: "30", fulfillmentMode: "ready_to_ship", stockQuantity: "2", variantOptions: "Cor: Preto, Branco",
+      variantPricing: JSON.stringify([
+        { options: { Cor: "Preto" }, priceBrl: "30", stockQuantity: "2" },
+        { options: { Cor: "Branco" }, priceBrl: "35.90", stockQuantity: "0" },
+      ]),
+    };
+    expect(validateProductDraft(draft)).toMatchObject({ priceBrl: 30, stockQuantity: 2, variantPricing: [{ priceBrl: 30 }, { priceBrl: 35.9 }] });
+    expect(validateProductDraft({ ...draft, stockQuantity: "3" })).toBeNull();
+    expect(validateProductDraft({ ...draft, priceBrl: "29" })).toBeNull();
+    expect(validateProductDraft({ ...draft, variantPricing: "" })).toBeNull();
+  });
+
   it("requires a useful maker description and secure optional portfolio link", () => {
     expect(validateMakerApplication({ businessName: "Oficina Norte", description: "Produzimos peças e miniaturas personalizadas sob encomenda para clientes no Brasil." })?.portfolioUrl).toBeNull();
     expect(validateMakerApplication({ businessName: "Maker", description: "Descrição suficiente, com detalhes claros sobre a oficina e os produtos fabricados.", portfolioUrl: "http://example.com" })).toBeNull();

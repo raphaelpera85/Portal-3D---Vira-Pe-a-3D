@@ -1,4 +1,5 @@
 export type ProductVisual = "vase" | "dragon" | "organizer" | "keychain";
+export type ProductVariant = { id: string; options: Record<string, string>; priceBrl: number; stockQuantity: number | null };
 export type Product = {
   id: string;
   slug: string;
@@ -15,6 +16,7 @@ export type Product = {
   stockQuantity: number | null;
   preparationDays: number | null;
   variantOptions?: Record<string, string[]>;
+  variants?: ProductVariant[];
   priceLabel: string;
   media: string[];
   storeId: string | null;

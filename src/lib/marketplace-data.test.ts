@@ -40,6 +40,24 @@ describe("mapMarketplaceProduct", () => {
     expect(product.preparationDays).toBe(2);
   });
 
+  it("maps only variant prices, stock, and choices that belong to the published option groups", () => {
+    const product = mapMarketplaceProduct({
+      id: "p5", slug: "vaso-variante", name: "Vaso", price_mode: "fixed", price_brl: "30.00",
+      product_properties: { variant_options: { Cor: ["Preto", "Branco"] } },
+      variants: [
+        { id: "v1", variant_options: { Cor: "Preto" }, price_brl: "30.00", stock_quantity: 4 },
+        { id: "v2", variant_options: { Cor: "Branco" }, price_brl: "35.90", stock_quantity: 0 },
+        { id: "v3", variant_options: { Cor: "Roxo" }, price_brl: "10.00", stock_quantity: 2 },
+      ],
+      store: { name: "Ateliê", slug: "atelie" }, category: { name: "Casa", slug: "casa" },
+    });
+    expect(product.variants).toEqual([
+      { id: "v1", options: { Cor: "Preto" }, priceBrl: 30, stockQuantity: 4 },
+      { id: "v2", options: { Cor: "Branco" }, priceBrl: 35.9, stockQuantity: 0 },
+    ]);
+    expect(product.priceLabel.replace(/\u00a0/g, " ")).toBe("A partir de R$ 30,00");
+  });
+
   it("exposes public license prices without returning private file metadata", () => {
     const product = mapMarketplaceProduct({
       id: "p4", slug: "modelo-digital", name: "Modelo digital", listing_type: "digital", price_mode: "fixed", price_brl: "19.90",

@@ -22,8 +22,11 @@ export async function addProductToCart(formData: FormData): Promise<void> {
   if (!product) redirect(`/produtos/${encodeURIComponent(slug)}?carrinho=indisponivel`);
   const variantOptions = validateProductVariantSelection(formData.get("variantOptions"), product.product_properties);
   if (!variantOptions) redirect(`/produtos/${encodeURIComponent(slug)}?carrinho=erro`);
+  const rawVariantId = formData.get("variantId");
+  if (typeof rawVariantId !== "string" || (rawVariantId !== "" && !uuidPattern.test(rawVariantId))) redirect(`/produtos/${encodeURIComponent(slug)}?carrinho=erro`);
   const { error } = await actor.supabase.rpc("add_product_to_cart", {
     p_product_id: product.id, p_quantity: quantity.quantity, p_variant_options: variantOptions,
+    p_variant_id: rawVariantId || null,
   });
   if (error) redirect(`/produtos/${encodeURIComponent(slug)}?carrinho=erro`);
   revalidatePath("/carrinho");

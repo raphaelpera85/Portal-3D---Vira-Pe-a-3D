@@ -7,7 +7,7 @@ O `.env.local` é ignorado pelo `.gitignore` e guarda credenciais apenas na máq
 - Nenhuma chave `service_role` ou chave secreta está no código ou no `.env.example`.
 - Clientes SSR são criados por requisição; `src/proxy.ts` valida claims e propaga todos os cookies e cabeçalhos de cache emitidos pelo Supabase.
 - RLS restringe perfis e papéis ao usuário autenticado. Papéis não podem ser atribuídos pelo próprio usuário.
-- O catálogo limita leitura pública a registros publicados e escrita ao papel administrativo; as 56 migrações versionadas estão aplicadas ao projeto remoto `drblsfcahfniwusfblfw`.
+- O catálogo limita leitura pública a registros publicados e escrita ao papel administrativo; as 58 migrações versionadas estão aplicadas ao projeto remoto `drblsfcahfniwusfblfw`.
 - Arquivos `.env.local` e demais `.env*` são ignorados pelo Git.
 
 O fluxo público de conta usa Supabase Auth, valida os campos no servidor e não aceita papel enviado pelo usuário. O papel comprador é concedido pelo trigger `SECURITY DEFINER`; RLS impede o usuário de alterar seus papéis. Ações de orçamento exigem o papel comprador ou maker, e o banco confere a propriedade e a transição de estado dentro de funções `SECURITY DEFINER` com `search_path` vazio.

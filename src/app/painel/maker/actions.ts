@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { validateProductDraft, validateProductInventory, validateStoreNotificationContacts } from "@/lib/marketplace-validation";
+import { normalizeProductVariantOptions, validateProductDraft, validateProductInventory, validateProductVariantPricing, validateStoreNotificationContacts } from "@/lib/marketplace-validation";
 import { validateMaintenanceEntry, validateMakerPrinter } from "@/lib/printer-equipment";
 import { validateConsignmentInput, validateConsignmentMovement } from "@/lib/consignment";
 import { validatePrintProfile } from "@/lib/print-profiles";
@@ -25,7 +25,7 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     name: formData.get("name"), description: formData.get("description"), categoryId: formData.get("categoryId"), listingType: formData.get("listingType"),
     priceMode: formData.get("priceMode"), priceBrl: formData.get("priceBrl"), imageUrl: formData.get("imageUrl"), tags: formData.get("tags"),
     fulfillmentMode: formData.get("fulfillmentMode"), stockQuantity: formData.get("stockQuantity"), preparationDays: formData.get("preparationDays"),
-    variantOptions: formData.get("variantOptions"),
+    variantOptions: formData.get("variantOptions"), variantPricing: formData.get("variantPricing"),
   });
   const storeId = formData.get("storeId");
   if (!product || typeof storeId !== "string" || !uuidPattern.test(storeId)) return { message: "Confira nome, categoria e preço do anúncio.", success: false };
@@ -46,6 +46,18 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     catalog_status: "draft", created_by: actor.user.id,
   }).select("id").single();
   if (error) return { message: "Não foi possível salvar o rascunho. Confira a categoria e tente novamente.", success: false };
+  if (product.variantPricing.length) {
+    const { error: variantError } = await actor.supabase.rpc("save_maker_product_variants", {
+      p_product_id: createdProduct.id,
+      p_variants: product.variantPricing.map((variant) => ({
+        options: variant.options, priceBrl: variant.priceBrl, stockQuantity: variant.stockQuantity,
+      })),
+    });
+    if (variantError) {
+      await actor.supabase.from("marketplace_products").delete().eq("id", createdProduct.id).eq("created_by", actor.user.id);
+      return { message: "Não foi possível salvar as variações. Confira se a migração de SKUs está aplicada.", success: false };
+    }
+  }
   revalidatePath("/painel/maker");
   revalidatePath("/");
   return { message: product.listingType === "digital" ? "Rascunho digital criado. Envie o arquivo STL ou 3MF na lista de anúncios para concluir o cadastro." : "Rascunho salvo. A equipe revisará o anúncio antes da publicação.", success: true, productId: createdProduct.id, personalPriceBrl: product.priceBrl ?? undefined };
@@ -95,6 +107,31 @@ export async function updateProductInventory(formData: FormData): Promise<void> 
   revalidatePath("/painel/maker");
   revalidatePath("/");
   redirect("/painel/maker?resultado=estoque-salvo#produtos");
+}
+
+export async function updateProductVariants(formData: FormData): Promise<void> {
+  const productId = formData.get("productId");
+  if (typeof productId !== "string" || !uuidPattern.test(productId)) redirect("/painel/maker?resultado=variacao-erro#produtos");
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { data: product } = await actor.supabase.from("marketplace_products")
+    .select("id, fulfillment_mode, product_properties").eq("id", productId).eq("listing_type", "physical").eq("price_mode", "fixed").maybeSingle();
+  const properties = product?.product_properties && typeof product.product_properties === "object" && !Array.isArray(product.product_properties)
+    ? product.product_properties as Record<string, unknown> : {};
+  const options = normalizeProductVariantOptions(properties.variant_options);
+  const fulfillmentMode = product?.fulfillment_mode === "ready_to_ship" ? "ready_to_ship"
+    : product?.fulfillment_mode === "made_to_order" ? "made_to_order" : null;
+  const variants = options && fulfillmentMode ? validateProductVariantPricing(formData.get("variantPricing"), options, fulfillmentMode) : null;
+  if (!product || !variants?.length) redirect("/painel/maker?resultado=variacao-erro#produtos");
+  const { error } = await actor.supabase.rpc("save_maker_product_variants", {
+    p_product_id: product.id, p_variants: variants.map((variant) => ({
+      options: variant.options, priceBrl: variant.priceBrl, stockQuantity: variant.stockQuantity,
+    })),
+  });
+  if (error) redirect("/painel/maker?resultado=variacao-erro#produtos");
+  revalidatePath("/painel/maker");
+  revalidatePath("/");
+  redirect("/painel/maker?resultado=variacao-salva#produtos");
 }
 
 export async function saveStoreNotificationContacts(_previous: StoreNotificationContactState, formData: FormData): Promise<StoreNotificationContactState> {

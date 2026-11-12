@@ -1,5 +1,5 @@
 import type { Product, ProductVisual } from "./products";
-import { normalizeProductVariantOptions } from "./marketplace-validation";
+import { normalizeProductVariantOptions, validateProductVariantSelection } from "./marketplace-validation";
 
 type Row = Record<string, unknown>;
 const asObject = (value: unknown): Row => Array.isArray(value) ? asObject(value[0]) : value && typeof value === "object" ? value as Row : {};
@@ -29,6 +29,16 @@ export function mapMarketplaceProduct(row: Row): Product {
   const visual = visuals.has(row.visual as ProductVisual) ? row.visual as ProductVisual : null;
   const rawTheme = asText(row.color_theme);
   const variantOptions = normalizeProductVariantOptions(properties.variant_options ?? {}) ?? {};
+  const variants = (Array.isArray(row.variants) ? row.variants : []).flatMap((item) => {
+    const variant = asObject(item);
+    const selected = validateProductVariantSelection(JSON.stringify(variant.variant_options), properties);
+    const price = Number(variant.price_brl);
+    const stock = variant.stock_quantity == null ? null : Number(variant.stock_quantity);
+    return selected && typeof variant.id === "string" && Number.isFinite(price) && price > 0
+      && (stock == null || (Number.isSafeInteger(stock) && stock >= 0))
+      ? [{ id: variant.id, options: selected, priceBrl: price, stockQuantity: stock }]
+      : [];
+  });
   const maker = asText(store.name, "Fabricante ViraPeça");
   const personalLicense = Number(digitalAssetRow.personal_price_brl);
   const commercialLicense = Number(digitalAssetRow.commercial_price_brl);
@@ -38,8 +48,8 @@ export function mapMarketplaceProduct(row: Row): Product {
     description: asText(row.description), category: asText(category.name, "Outros"), tags: asTextList(row.tags),
     maker, color: themes.has(rawTheme) ? rawTheme : "blue", visual,
     priceBrl: priceMode === "quote" ? null : priceBrl, priceMode, fulfillmentMode, stockQuantity, preparationDays,
-    variantOptions,
-    priceLabel: priceMode === "quote" ? "Sob orçamento" : priceBrl == null ? "Preço indisponível" : `${priceMode === "from" ? "A partir de " : ""}${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(priceBrl)}`,
+    variantOptions, variants,
+    priceLabel: priceMode === "quote" ? "Sob orçamento" : priceBrl == null ? "Preço indisponível" : `${priceMode === "from" || variants.length > 0 ? "A partir de " : ""}${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(priceBrl)}`,
     media, storeId: asText(row.store_id) || null, storeSlug: asText(store.slug) || null, demo: false, listingType,
     digitalAsset: listingType === "digital" && Number.isFinite(personalLicense) && personalLicense > 0
       ? { personalPriceBrl: personalLicense, commercialPriceBrl: Number.isFinite(commercialLicense) && commercialLicense > 0 ? commercialLicense : null }

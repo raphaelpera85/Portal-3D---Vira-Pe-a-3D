@@ -1,6 +1,7 @@
 export type MakerApplicationInput = { businessName: string; description: string; portfolioUrl: string | null; city: string | null; stateCode: string | null };
 export type ProductVariantOptions = Record<string, string[]>;
-export type ProductDraftInput = { name: string; description: string; categoryId: string; media: string[]; tags: string[]; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; fulfillmentMode: "ready_to_ship" | "made_to_order" | "digital" | "quote"; stockQuantity: number | null; preparationDays: number | null; variantOptions: ProductVariantOptions };
+export type ProductVariantPricing = { options: Record<string, string>; priceBrl: number; stockQuantity: number | null };
+export type ProductDraftInput = { name: string; description: string; categoryId: string; media: string[]; tags: string[]; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; fulfillmentMode: "ready_to_ship" | "made_to_order" | "digital" | "quote"; stockQuantity: number | null; preparationDays: number | null; variantOptions: ProductVariantOptions; variantPricing: ProductVariantPricing[] };
 export type ProductInventoryInput = { fulfillmentMode: "ready_to_ship" | "made_to_order" | "quote"; stockQuantity: number | null; preparationDays: number | null };
 export type ProductQuoteRequestInput = { quantity: number; customization: string; dueDate: string | null };
 export type ProductQuoteOfferInput = { totalBrl: number; leadDays: number; terms: string };
@@ -22,6 +23,52 @@ export function normalizeProductVariantOptions(value: unknown): ProductVariantOp
   }
   if (new Set(Object.keys(options).map((name) => name.toLocaleLowerCase("pt-BR"))).size !== entries.length) return null;
   return options;
+}
+
+export function expandProductVariantOptions(value: unknown, limit = 100): Record<string, string>[] | null {
+  const options = normalizeProductVariantOptions(value);
+  if (!options || !Number.isSafeInteger(limit) || limit < 1) return null;
+  const groups = Object.entries(options);
+  if (!groups.length) return [];
+  const count = groups.reduce((total, [, values]) => total * values.length, 1);
+  if (count > limit) return null;
+  return groups.reduce<Record<string, string>[]>((combinations, [name, values]) =>
+    combinations.flatMap((combination) => values.map((value) => ({ ...combination, [name]: value }))), [{}]);
+}
+
+export function validateProductVariantPricing(raw: unknown, availableOptions: unknown,
+  fulfillmentMode: "ready_to_ship" | "made_to_order"): ProductVariantPricing[] | null {
+  const combinations = expandProductVariantOptions(availableOptions);
+  if (!combinations || !combinations.length || typeof raw !== "string" || raw.length > 40_000) return null;
+  let rows: unknown;
+  try { rows = JSON.parse(raw); } catch { return null; }
+  if (!Array.isArray(rows) || rows.length !== combinations.length) return null;
+  const key = (options: Record<string, string>) => JSON.stringify(Object.fromEntries(Object.entries(options).sort(([a], [b]) => a.localeCompare(b))));
+  const expected = new Set(combinations.map(key));
+  const byCombination = new Map<string, ProductVariantPricing>();
+  for (const row of rows) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) return null;
+    const value = row as Record<string, unknown>;
+    const selected = value.options;
+    if (!selected || typeof selected !== "object" || Array.isArray(selected)) return null;
+    const entries = Object.entries(selected as Record<string, unknown>);
+    if (entries.length !== Object.keys(normalizeProductVariantOptions(availableOptions) ?? {}).length
+      || entries.some(([name, choice]) => typeof choice !== "string")) return null;
+    const variantOptions = Object.fromEntries(entries as [string, string][]);
+    const variantKey = key(variantOptions);
+    const priceBrl = typeof value.priceBrl === "number" ? value.priceBrl
+      : typeof value.priceBrl === "string" && /^\d{1,9}(?:\.\d{1,2})?$/.test(value.priceBrl) ? Number(value.priceBrl) : Number.NaN;
+    const rawStock = value.stockQuantity;
+    const stockQuantity = typeof rawStock === "number" ? rawStock
+      : typeof rawStock === "string" && /^\d{1,7}$/.test(rawStock) ? Number(rawStock) : rawStock;
+    if (!expected.has(variantKey) || byCombination.has(variantKey) || !Number.isFinite(priceBrl) || priceBrl <= 0
+      || priceBrl > 999_999_999 || Math.abs(priceBrl * 100 - Math.round(priceBrl * 100)) > 1e-7
+      || (fulfillmentMode === "ready_to_ship" && (!Number.isSafeInteger(stockQuantity) || (stockQuantity as number) < 0 || (stockQuantity as number) > 1_000_000))
+    || (fulfillmentMode === "made_to_order" && stockQuantity !== null)) return null;
+    byCombination.set(variantKey, { options: variantOptions, priceBrl, stockQuantity: stockQuantity as number | null });
+  }
+  return combinations.map((combination) => byCombination.get(key(combination)) ?? null).some((row) => row === null)
+    ? null : combinations.map((combination) => byCombination.get(key(combination))!);
 }
 
 export function validateProductVariantOptions(value: unknown): ProductVariantOptions | null {
@@ -102,6 +149,12 @@ export function validateProductDraft(values: Record<string, unknown>): ProductDr
     || (priceMode !== "quote" && fulfillmentMode !== "ready_to_ship" && fulfillmentMode !== "made_to_order"))) return null;
   const stockQuantity = rawStock ? /^\d{1,7}$/.test(rawStock) ? Number(rawStock) : Number.NaN : null;
   const preparationDays = rawPreparationDays ? /^\d{1,3}$/.test(rawPreparationDays) ? Number(rawPreparationDays) : Number.NaN : null;
+  const variantPricing = Object.keys(variantOptions).length
+    ? validateProductVariantPricing(values.variantPricing, variantOptions, fulfillmentMode as "ready_to_ship" | "made_to_order")
+    : [];
+  if (Object.keys(variantOptions).length && (!variantPricing?.length
+    || Math.min(...variantPricing.map((variant) => variant.priceBrl)) !== priceBrl
+    || (fulfillmentMode === "ready_to_ship" && variantPricing.reduce((sum, variant) => sum + (variant.stockQuantity ?? 0), 0) !== stockQuantity))) return null;
   if ((fulfillmentMode === "ready_to_ship" && (stockQuantity == null || !Number.isSafeInteger(stockQuantity) || stockQuantity < 0 || stockQuantity > 1_000_000))
     || (listingType === "digital" && (stockQuantity != null || preparationDays != null))
     || (fulfillmentMode !== "ready_to_ship" && stockQuantity != null)
@@ -118,7 +171,7 @@ export function validateProductDraft(values: Record<string, unknown>): ProductDr
   }
   const tags = (text(values.tags) ?? "").split(",").map((tag) => tag.trim()).filter(Boolean);
   if (tags.length > 8 || tags.some((tag) => tag.length > 32)) return null;
-  return { name, description, categoryId, media, tags, listingType, priceMode, priceBrl, fulfillmentMode: fulfillmentMode as ProductDraftInput["fulfillmentMode"], stockQuantity: stockQuantity as number | null, preparationDays: preparationDays as number | null, variantOptions };
+  return { name, description, categoryId, media, tags, listingType, priceMode, priceBrl, fulfillmentMode: fulfillmentMode as ProductDraftInput["fulfillmentMode"], stockQuantity: stockQuantity as number | null, preparationDays: preparationDays as number | null, variantOptions, variantPricing: variantPricing ?? [] };
 }
 
 export function validateProductInventory(values: Record<string, unknown>, priceMode: unknown): ProductInventoryInput | null {

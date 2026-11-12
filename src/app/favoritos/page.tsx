@@ -7,7 +7,6 @@ import { ProductIllustration } from "@/components/product-illustration";
 import { SiteHeader } from "@/components/site-header";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { mapMarketplaceProduct } from "@/lib/marketplace-data";
-import { formatBrl } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Favoritos | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -39,7 +38,7 @@ export default async function FavoritesPage() {
           <Link className={`product-art art-${product.color}`} href={`/produtos/${product.slug}`} aria-label={`Ver ${product.name}`}>
             {product.media[0] ? <img src={product.media[0]} alt={product.name} width="480" height="380" loading="lazy" /> : product.visual ? <ProductIllustration product={product} /> : <span className="product-placeholder" aria-hidden="true">3D</span>}
           </Link>
-          <div className="favorite-card-copy"><span className="account-kicker">{product.category}</span><h2><Link href={`/produtos/${product.slug}`}>{product.name}</Link></h2><p>{product.maker} · {product.priceBrl == null ? product.priceLabel : formatBrl(product.priceBrl)}</p></div>
+          <div className="favorite-card-copy"><span className="account-kicker">{product.category}</span><h2><Link href={`/produtos/${product.slug}`}>{product.name}</Link></h2><p>{product.maker} · {product.priceLabel}</p></div>
           <FavoriteButton productId={product.id} slug={product.slug} initialFavorite />
         </article>)}
         {unavailableIds.map((id) => <article className="favorite-card favorite-unavailable" key={id}><div><span className="account-kicker">INDISPONÍVEL</span><h2>Produto não publicado</h2><p>Este item não está disponível na vitrine. Você pode removê-lo dos favoritos.</p></div><FavoriteButton productId={id} slug="produto-indisponivel" initialFavorite /></article>)}

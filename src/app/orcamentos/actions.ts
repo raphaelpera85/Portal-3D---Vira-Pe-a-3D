@@ -145,18 +145,25 @@ export async function requestProductPurchase(formData: FormData): Promise<void> 
   const actor = await getUserWithRole("buyer");
   if (!actor.supabase || !actor.user) redirect("/conta");
   if (!actor.authorized) redirect("/conta?resultado=perfil-comprador");
-  const { data: product } = await actor.supabase.from("marketplace_products").select("id, store_id, name, price_brl, product_properties, store:stores!inner(name)").eq("slug", slug).eq("catalog_status", "published").eq("price_mode", "fixed").eq("store.status", "published").maybeSingle();
+  const { data: product } = await actor.supabase.from("marketplace_products").select("id, store_id, name, price_brl, product_properties, variants:marketplace_product_variants(id, variant_options, price_brl), store:stores!inner(name)").eq("slug", slug).eq("catalog_status", "published").eq("price_mode", "fixed").eq("store.status", "published").maybeSingle();
   const store = objectValue(product?.store);
-  const unitPrice = Number(product?.price_brl);
-  if (!product || typeof store.name !== "string" || !Number.isFinite(unitPrice) || unitPrice <= 0) redirect(`/produtos/${encodeURIComponent(slug)}?compra=indisponivel`);
+  if (!product || typeof store.name !== "string" || !Number.isFinite(Number(product.price_brl)) || Number(product.price_brl) <= 0) redirect(`/produtos/${encodeURIComponent(slug)}?compra=indisponivel`);
   const variantOptions = validateProductVariantSelection(formData.get("variantOptions"), product.product_properties);
   if (!variantOptions) redirect(`/produtos/${encodeURIComponent(slug)}?compra=erro`);
+  const rawVariantId = formData.get("variantId");
+  if (typeof rawVariantId !== "string" || (rawVariantId !== "" && !uuidPattern.test(rawVariantId))) redirect(`/produtos/${encodeURIComponent(slug)}?compra=erro`);
+  const variantRows = Array.isArray(product.variants) ? product.variants : [];
+  const optionKey = (options: Record<string, string>) => JSON.stringify(Object.fromEntries(Object.entries(options).sort(([a], [b]) => a.localeCompare(b))));
+  const variant = variantRows.find((item) => item.id === rawVariantId && optionKey(item.variant_options as Record<string, string>) === optionKey(variantOptions));
+  if ((variantRows.length > 0 && !variant) || (rawVariantId && !variant)) redirect(`/produtos/${encodeURIComponent(slug)}?compra=erro`);
+  const unitPrice = Number(variant?.price_brl ?? product.price_brl);
+  if (!Number.isFinite(unitPrice) || unitPrice <= 0) redirect(`/produtos/${encodeURIComponent(slug)}?compra=indisponivel`);
   const variantNote = Object.entries(variantOptions).map(([name, value]) => `${name}: ${value}`).join(" · ");
   const customization = [request.customization, variantNote ? `Variações selecionadas: ${variantNote}` : ""].filter(Boolean).join("\n");
   if (customization.length > 2000) redirect(`/produtos/${encodeURIComponent(slug)}?compra=erro`);
   const { error } = await actor.supabase.from("product_quote_requests").insert({
     buyer_id: actor.user.id, store_id: product.store_id, product_id: product.id,
-    store_name: store.name, product_name: product.name, request_type: "purchase", unit_price_brl: unitPrice, variant_options: variantOptions,
+    store_name: store.name, product_name: product.name, request_type: "purchase", unit_price_brl: unitPrice, variant_id: variant?.id ?? null, variant_options: variantOptions,
     quantity: request.quantity, customization, due_date: request.dueDate,
   });
   if (error) redirect(`/produtos/${encodeURIComponent(slug)}?compra=erro`);

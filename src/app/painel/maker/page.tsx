@@ -14,12 +14,14 @@ import { MakerEquipmentManager } from "@/components/maker-equipment-manager";
 import { MakerConsignmentManager } from "@/components/maker-consignment-manager";
 import { MakerPrintProfileManager } from "@/components/maker-print-profile-manager";
 import { MakerProductInventoryForm } from "@/components/maker-product-inventory-form";
+import { MakerProductVariantsForm } from "@/components/maker-product-variants-form";
 import { MakerDigitalAssetManager } from "@/components/maker-digital-asset-manager";
 import { advanceCustomPrintProduction, deleteProductDraft, markCustomPrintShipped, markCustomPrintTargetRead, markQuoteRequestNotificationRead, markSellerOrderNotificationRead, markSellerPurchaseOrderShipped, retryCustomPrintNotificationDelivery, retryStoreNotificationDelivery, saveMakerStoreProfile, submitCustomPrintShippingQuote, submitSellerOrderShippingQuote } from "./actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { formatBrl, formatBrlTotal } from "@/lib/money";
 import { getCustomPrintEventLabel } from "@/lib/custom-print-events";
 import { readPrintProfileColors } from "@/lib/print-profile-colors";
+import { normalizeProductVariantOptions, validateProductVariantSelection } from "@/lib/marketplace-validation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { disconnectMercadoPago, startMercadoPagoConnect } from "./payment-actions";
 
@@ -52,7 +54,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     ? await paymentAdmin.from("store_payment_connections").select("provider_user_id, connected_at").eq("store_id", store.id).maybeSingle()
     : { data: null, error: null };
   const [productResult, quoteResult, customPrintResult, contactResult, orderResult, equipmentResult, printerModelsResult, consignmentResult, printProfileResult, materialsResult, nozzlesResult, printerSuggestionsResult] = store ? await Promise.all([
-    actor.supabase.from("marketplace_products").select("id, name, slug, listing_type, catalog_status, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, updated_at, digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl)").eq("store_id", store.id).order("created_at", { ascending: false }),
+    actor.supabase.from("marketplace_products").select("id, name, slug, listing_type, catalog_status, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, product_properties, updated_at, variants:marketplace_product_variants(variant_options, price_brl, stock_quantity), digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl)").eq("store_id", store.id).order("created_at", { ascending: false }),
     actor.supabase.from("product_quote_requests").select("id, request_type, unit_price_brl, product_name, quantity, customization, due_date, status, created_at, maker_read_at, offer:product_quote_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error), payments:seller_order_payments(status, total_cents, marketplace_fee_cents, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }),
     actor.supabase.from("custom_print_request_targets").select("id, status, compatibility, maker_read_at, request:custom_print_requests!inner(id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, production_started_at, production_completed_at, delivery:custom_print_deliveries(*), payments:seller_order_payments(status, total_cents, marketplace_fee_cents, created_at)), offer:custom_print_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }),
     actor.supabase.from("store_notification_contacts").select("email, whatsapp, whatsapp_opt_in").eq("store_id", store.id).maybeSingle(),
@@ -139,6 +141,8 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
             {resultado === "consignacao-salva" && <p className="auth-notice is-success" role="status">Lote em consignação registrado.</p>}
             {resultado === "consignacao-movimento-salvo" && <p className="auth-notice is-success" role="status">Movimentação registrada; estoque e estimativas atualizados.</p>}
             {(resultado === "consignacao-erro" || resultado === "consignacao-movimento-erro") && <p className="auth-notice is-error" role="alert">Não foi possível salvar a consignação. Confira os dados, o estoque disponível e a migração 015.</p>}
+            {resultado === "variacao-salva" && <p className="auth-notice is-success" role="status">Preços e estoques das variações atualizados.</p>}
+            {resultado === "variacao-erro" && <p className="auth-notice is-error" role="alert">Não foi possível atualizar as variações. Um checkout ativo pode estar reservando unidades; atualize a página e tente novamente.</p>}
             <MakerConsignmentManager
               items={(consignmentResult.data ?? []).map((item) => ({ ...item, movements: item.movements ?? [] }))}
               products={products.filter((product) => product.catalog_status === "published").map(({ id, name }) => ({ id, name }))}
@@ -149,7 +153,25 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
               {products.length === 0 ? <p>Ainda não há anúncios nesta loja.</p> : <ul className="maker-product-list">{products.map((product) => {
                 const asset = Array.isArray(product.digital_asset) ? product.digital_asset[0] : product.digital_asset;
                 return <li key={product.id}><div><strong>{product.name}</strong><span>{product.listing_type === "digital" ? "Arquivo digital" : product.price_mode === "quote" ? "Sob orçamento" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(product.price_brl))} · {product.catalog_status === "published" ? "Publicado" : product.catalog_status === "archived" ? "Arquivado" : "Rascunho em revisão"}</span></div>
-                  {product.listing_type === "digital" ? <MakerDigitalAssetManager productId={product.id} storeId={store.id} personalPriceBrl={Number(product.price_brl)} status={product.catalog_status} asset={asset ?? null} /> : <MakerProductInventoryForm product={product} />}
+                  {product.listing_type === "digital" ? <MakerDigitalAssetManager productId={product.id} storeId={store.id} personalPriceBrl={Number(product.price_brl)} status={product.catalog_status} asset={asset ?? null} /> : (() => {
+                    const properties = product.product_properties && typeof product.product_properties === "object" && !Array.isArray(product.product_properties)
+                      ? product.product_properties as Record<string, unknown> : {};
+                    const options = normalizeProductVariantOptions(properties.variant_options);
+                    const variants = (Array.isArray(product.variants) ? product.variants : []).flatMap((variant) => {
+                      const selected = validateProductVariantSelection(JSON.stringify(variant.variant_options), { variant_options: options ?? {} });
+                      const price = Number(variant.price_brl);
+                      const stock = variant.stock_quantity == null ? null : Number(variant.stock_quantity);
+                      return selected && Number.isFinite(price) && price > 0
+                        && (stock == null || (Number.isSafeInteger(stock) && stock >= 0))
+                        ? [{ options: selected, priceBrl: price, stockQuantity: stock }]
+                        : [];
+                    });
+                    return options && Object.keys(options).length > 0 && product.fulfillment_mode !== "quote" && product.fulfillment_mode !== "digital"
+                      ? <MakerProductVariantsForm productId={product.id} options={options}
+                          fulfillmentMode={product.fulfillment_mode === "ready_to_ship" ? "ready_to_ship" : "made_to_order"}
+                          variants={variants} basePrice={String(product.price_brl ?? "")} />
+                      : <MakerProductInventoryForm product={product} />;
+                  })()}
                   {product.catalog_status === "draft" && <form action={deleteProductDraft}><input type="hidden" name="productId" value={product.id} /><button className="button button-secondary" type="submit">Excluir rascunho</button></form>}</li>;
               })}</ul>}
             </section>
