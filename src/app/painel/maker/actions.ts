@@ -94,6 +94,7 @@ export async function calculateAndOfferSellerOrderShippingQuote(formData: FormDa
   const { error } = await actor.supabase.rpc("set_seller_order_shipping_quote", {
     p_order_id: orderId, p_carrier: "melhor_envio", p_service: cheapest.name,
     p_shipping_cents: Math.round(cheapest.price * 100), p_delivery_days: cheapest.deliveryDays,
+    p_provider_service_id: cheapest.id,
   });
   if (error) redirect("/painel/maker?resultado=frete-erro#pedidos");
   revalidatePath("/painel/maker");

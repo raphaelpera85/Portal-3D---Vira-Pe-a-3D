@@ -61,7 +61,7 @@ flowchart LR
 
 ## Limites atuais
 
-- As 66 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
+- As 67 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
 - Pedidos aceitos do carrinho podem consultar a cotação Melhor Envio com OAuth da loja e oferecer ao comprador a tarifa de menor preço, com cotação manual como alternativa. Credenciais de produção, compra de etiquetas com confirmação do vendedor, atualização automática de rastreio e notificações externas ainda dependem de configuração ou desenvolvimento. Impressões personalizadas seguem com cotação manual. O atendimento funciona como caixa de entrada interna; anexos e SLA ainda não estão integrados. Endereços são snapshots privados por pedido; o CEP do destinatário é enviado ao Melhor Envio somente ao solicitar cotação.
 - Lembretes de manutenção dependem de o fabricante registrar datas/horímetros; o portal não infere intervalos nem apresenta recomendações do fabricante do equipamento.
 - Banners aceitam mídia HTTPS externa com carregamento tardio e texto alternativo; upload gerenciado e otimização de imagem ainda não estão conectados.

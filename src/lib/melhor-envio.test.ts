@@ -12,4 +12,11 @@ describe("normalizeMelhorEnvioRates", () => {
       { id: 2, name: "Transportadora B · Expresso", company: "Transportadora B", price: 19.9, deliveryDays: 2 },
     ]);
   });
+
+  it("drops service IDs that cannot be used for a shipment", () => {
+    expect(normalizeMelhorEnvioRates([
+      { id: 0, name: "Invalid", company: { name: "Carrier" }, custom_price: "1", custom_delivery_time: 1 },
+      { id: 1.5, name: "Invalid", company: { name: "Carrier" }, custom_price: "1", custom_delivery_time: 1 },
+    ])).toEqual([]);
+  });
 });
