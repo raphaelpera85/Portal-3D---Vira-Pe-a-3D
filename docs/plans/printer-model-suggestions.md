@@ -17,10 +17,11 @@ Permitir que fabricantes peçam a inclusão de modelos ausentes no catálogo. A 
 - [x] Implementar submissão, fila privada e decisão administrativa transacional.
 - [x] Ligar o fluxo aos painéis do fabricante e da administração.
 - [x] Documentar a revisão antes de publicação.
-- [ ] Aplicar e testar a migration em PostgreSQL/Supabase quando o projeto estiver conectado.
+- [x] Aplicar a migration ao projeto Supabase configurado e confirmar a tabela no banco.
+- [ ] Validar submissão, aprovação e recusa ponta a ponta com contas de teste.
 
 ## Verificação
 
 - Testes unitários para normalização, URL HTTPS e campos inválidos.
 - `npm test`, `npm run typecheck`, `npm run build` e inspeção de diff.
-- A migration precisa ser aplicada e testada em PostgreSQL/Supabase antes de habilitar em produção.
+- A migration já está aplicada; o fluxo de curadoria precisa de teste ponta a ponta antes de habilitar em produção.

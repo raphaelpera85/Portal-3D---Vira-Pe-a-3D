@@ -8,4 +8,4 @@ Perfis privados aparecem somente no painel da loja. O fabricante pode enviar um 
 
 Perfis aprovados ficam somente para leitura pelo fabricante. Um perfil recusado pode ser corrigido e enviado novamente. A seleção na página do produto apresenta o lote e os valores informados sem tratá-los como previsão universal ou consumo geométrico.
 
-Para disponibilizar o recurso, aplique a migração `supabase/migrations/202611110016_maker_print_profiles.sql` depois das migrações 001–015. O SQL dessa migração ainda precisa ser aplicado e verificado no projeto Supabase configurado para o portal.
+O recurso e as migrações 001–016 estão aplicados ao projeto Supabase configurado para o portal. Mudanças futuras devem continuar versionadas em `supabase/migrations/` e validadas antes do deploy.

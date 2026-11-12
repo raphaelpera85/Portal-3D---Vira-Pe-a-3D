@@ -57,18 +57,18 @@ flowchart LR
 
 ## Limites atuais
 
-- As migrações ainda precisam ser aplicadas a um projeto Supabase e testadas contra PostgreSQL. O pagamento e o reembolso dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação com contas sandbox.
+- As 46 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
 - Cotação automática de frete, compra de etiquetas e atualização automática de rastreio, variantes, cupons e atendimento não estão conectados. O endereço é compartilhado com a loja, mas não é enviado a um serviço de logística.
 - Lembretes de manutenção dependem de o fabricante registrar datas/horímetros; o portal não infere intervalos nem apresenta recomendações do fabricante do equipamento.
 - Banners aceitam mídia HTTPS externa com carregamento tardio e texto alternativo; upload gerenciado e otimização de imagem ainda não estão conectados.
 - O visualizador não preserva atribuições reais de filamento por cor nem importa resultados de fatiamento. O OCR da calculadora depende de Cloud Vision configurado e reconhecimento de rótulos comuns; imagens e texto OCR não entram no histórico.
 - Catálogos técnicos não recebem atualização automatizada e suas telas administrativas exibem até 250 registros por categoria/relação. A lista de impressoras do maker usa modelos publicados no banco; sem registros publicados, o maker pode cadastrar equipamento próprio.
 - Designers podem solicitar e editar um portfólio em `/conta`; a aprovação concede acesso de maker e cria uma loja pendente, que a equipe publica em `/admin/fabricantes`. Só perfis aprovados aparecem em `/designers` e no sitemap. Anúncios digitais usam arquivos STL/3MF privados, cópia GLB de prévia interativa, licenças pessoais/comerciais, compra via checkout, links temporários de download e histórico; denúncias vão para `/admin/denuncias-digitais`. O arquivo original não é usado como prévia: o GLB fica privado no Storage e a página pública recebe um link assinado temporário para visualizá-lo. Fabricantes têm extrato das 500 cobranças mais recentes com totais pagos e comissão; ainda faltam conciliação financeira, relatórios administrativos e dados de liquidação/repasse do provedor. Solicitações de impressão personalizada mostram histórico de convites, propostas, decisões, cancelamento e etapas de produção para comprador e fabricante autorizado; cotação e rastreio do frete não estão conectados. Checkout Pro de pedidos aceitos do carrinho e compras diretas reserva estoque contado; a impressão personalizada só avança para produção depois do pagamento confirmado. O controle de consignação mantém estoque estimado por estabelecimento, sem conciliação com pedidos ou pagamentos.
-- A `proxy.ts` atualiza cookies e claims da sessão. Cada página e Server Action privada também verifica o papel do usuário; RLS permanece a fronteira de dados no banco. Reembolsos registrados via painel aguardam confirmação do Mercado Pago quando o resultado externo fica incerto; conciliação automática e gestão de evidências de chargebacks seguem pendentes.
+- A `proxy.ts` atualiza cookies e claims da sessão. Cada página e Server Action privada também verifica o papel do usuário; RLS permanece a fronteira de dados no banco. Reembolsos pendentes são conciliados diariamente. Fabricantes acompanham contestações no extrato e podem enviar evidências ao Mercado Pago enquanto o caso permanece aberto; o portal ainda não administra decisões de disputa.
 
 ## Próximas integrações
 
-1. Aplicar e validar as migrações no projeto Supabase configurado.
+1. Validar os fluxos do portal contra o esquema Supabase aplicado e executar compras de teste ponta a ponta.
 2. Importar no banco as referências técnicas locais depois de rever as fontes.
 3. Completar a integração equipamento/calculadora com materiais, manutenção rateada e histórico ligado a equipamento/produto.
 4. Integrar cotação de frete ao checkout e validar pagamentos sandbox antes de qualquer cobrança real.
