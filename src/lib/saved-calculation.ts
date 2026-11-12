@@ -6,6 +6,34 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}
 const isRecord = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value);
 const validNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
 const optionalUuid = (value: unknown) => value == null || value === "" ? null : typeof value === "string" && uuidPattern.test(value) ? value : undefined;
+export type SavedSlicerMetrics = {
+  slicer: string; modelGrams: number | null; supportGrams: number | null; totalGrams: number | null;
+  purgeGrams: number | null; wipeTowerGrams: number | null; filamentGrams: number | null; derivedMass: boolean;
+  lengthMeters: number | null; printHours: number | null; filamentChanges: number | null; estimatedCost: number | null;
+  materials: string[]; filaments: Array<{ index: number; grams: number; material: string | null; color: string | null }>;
+  conflicts: string[];
+};
+
+function parseSlicerMetrics(value: unknown): SavedSlicerMetrics | null | undefined {
+  if (value == null) return null;
+  if (!isRecord(value)) return undefined;
+  const metricFields = ["modelGrams", "supportGrams", "totalGrams", "purgeGrams", "wipeTowerGrams", "filamentGrams", "lengthMeters", "printHours", "filamentChanges", "estimatedCost"] as const;
+  const nullableNumber = (item: unknown) => item === null || validNumber(item);
+  if (typeof value.slicer !== "string" || value.slicer.length > 40 || typeof value.derivedMass !== "boolean"
+    || !metricFields.every((field) => nullableNumber(value[field]))
+    || !Array.isArray(value.materials) || value.materials.length > 20 || value.materials.some((item) => typeof item !== "string" || item.length > 40)
+    || !Array.isArray(value.conflicts) || value.conflicts.length > 30 || value.conflicts.some((item) => typeof item !== "string" || item.length > 80)
+    || !Array.isArray(value.filaments) || value.filaments.length > 32 || value.filaments.some((item) => !isRecord(item)
+      || !Number.isSafeInteger(item.index) || (item.index as number) < 0 || !validNumber(item.grams)
+      || !(item.material === null || typeof item.material === "string" && item.material.length <= 40)
+      || !(item.color === null || typeof item.color === "string" && item.color.length <= 40))) return undefined;
+  return {
+    slicer: value.slicer, derivedMass: value.derivedMass,
+    ...Object.fromEntries(metricFields.map((field) => [field, value[field]])),
+    materials: value.materials as string[], conflicts: value.conflicts as string[],
+    filaments: value.filaments as SavedSlicerMetrics["filaments"],
+  } as SavedSlicerMetrics;
+}
 
 export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknown, rawProductId?: unknown, rawPrinterId?: unknown, rawProfileId?: unknown) {
   if (typeof rawTitle !== "string" || rawTitle.trim().length < 2 || rawTitle.trim().length > 80) {
@@ -24,6 +52,8 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   if (!isRecord(parsed) || !isRecord(parsed.input) || !Array.isArray(parsed.channels) || parsed.channels.length < 1 || parsed.channels.length > 10) {
     return { calculation: null, error: "Informe ao menos um canal de venda válido." };
   }
+  const slicer = parseSlicerMetrics(parsed.slicer);
+  if (slicer === undefined) return { calculation: null, error: "Os dados reconhecidos pelo OCR são inválidos." };
 
   const rawInput = parsed.input;
   const pricingMode = rawInput.pricingMode === undefined ? "margin" : rawInput.pricingMode;
@@ -79,6 +109,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   return {
     calculation: {
       title: rawTitle.trim(), productId, printerId, profileId, input: safeInput, channels: safeChannels,
+      slicer,
       result: { breakdown: result.breakdown, unitCostCents: result.unitCostCents, channels: result.channels },
     },
     error: null,

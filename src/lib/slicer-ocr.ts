@@ -18,8 +18,9 @@ function parseNumber(value: string) {
   return Number(clean.replace(",", "."));
 }
 
-function findMeasurement(lines: string[], labels: string, units: string, normalize: (value: number, unit: string) => number) {
+function findMeasurement(lines: string[], labels: string, units: string, normalize: (value: number, unit: string) => number, exclude?: RegExp) {
   for (const line of lines) {
+    if (exclude?.test(line)) continue;
     const label = new RegExp(labels, "i").exec(line);
     if (!label) continue;
     const after = line.slice(label.index + label[0].length);
@@ -88,6 +89,8 @@ function parseOne(text: string) {
     modelGrams: findMeasurement(lines, massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
     supportGrams: findMeasurement(lines, massLabels.support, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
     totalGrams: findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
+    purgeGrams: findMeasurement(lines, String.raw`(?:purge|flush|purga|filamento\s+descartado)`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, /(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza)/i),
+    wipeTowerGrams: findMeasurement(lines, String.raw`(?:(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza))`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
     lengthMeters: length,
     printHours: findPrintHours(lines),
     filamentChanges: findCount(lines, String.raw`(?:filament\s+changes?|color\s+changes?|trocas?(?:\s+de\s+(?:filamento|cor))?|mudan[cç]as\s+de\s+(?:filamento|cor)|swaps?)\s*[:=\-]?`),
@@ -111,6 +114,8 @@ export function parseSlicerOcrTexts(texts: string[]) {
   const totalGrams = unique<number>("totalGrams", "consumo total");
   const modelGrams = unique<number>("modelGrams", "peso do modelo");
   const supportGrams = unique<number>("supportGrams", "peso dos suportes");
+  const purgeGrams = unique<number>("purgeGrams", "purga");
+  const wipeTowerGrams = unique<number>("wipeTowerGrams", "torre de limpeza");
   const canDeriveMass = totalGrams === null && !conflicts.includes("consumo total") && modelGrams !== null && supportGrams !== null;
   const filaments = new Map<number, { index: number; grams: number; material: string | null; color: string | null }>();
   const conflictingFilaments = new Set<number>();
@@ -133,6 +138,8 @@ export function parseSlicerOcrTexts(texts: string[]) {
     modelGrams,
     supportGrams,
     totalGrams,
+    purgeGrams,
+    wipeTowerGrams,
     filamentGrams: totalGrams ?? (canDeriveMass ? modelGrams! + supportGrams! : null),
     derivedMass: canDeriveMass,
     lengthMeters: unique<number>("lengthMeters", "comprimento do filamento"),

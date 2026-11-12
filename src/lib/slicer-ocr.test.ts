@@ -30,4 +30,20 @@ describe("parseSlicerOcrTexts", () => {
       { index: 2, grams: 8, material: "PETG", color: "azul" },
     ]);
   });
+
+  it("recognizes purge and wipe tower separately without adding either to total filament", () => {
+    const result = parseSlicerOcrTexts(["Total filament: 20 g\nPurge: 3,2 g\nWipe tower: 1.1 g"]);
+    expect(result).toMatchObject({ totalGrams: 20, filamentGrams: 20, purgeGrams: 3.2, wipeTowerGrams: 1.1 });
+  });
+
+  it("does not classify purge tower consumption as both purge and tower", () => {
+    const result = parseSlicerOcrTexts(["Purge tower: 2 g"]);
+    expect(result.purgeGrams).toBeNull();
+    expect(result.wipeTowerGrams).toBe(2);
+  });
+
+  it("keeps purge and wipe tower separate from a derived model plus support total", () => {
+    expect(parseSlicerOcrTexts(["Model: 10 g\nSupports: 2 g\nPurge: 3 g\nWipe tower: 1 g"]))
+      .toMatchObject({ totalGrams: null, filamentGrams: 12, derivedMass: true, purgeGrams: 3, wipeTowerGrams: 1 });
+  });
 });

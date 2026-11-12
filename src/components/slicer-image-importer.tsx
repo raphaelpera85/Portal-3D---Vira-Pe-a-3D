@@ -87,13 +87,16 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
           <div><dt>Peso do modelo</dt><dd>{extraction.modelGrams == null ? "Não identificado" : `${extraction.modelGrams.toLocaleString("pt-BR")} g`}</dd></div>
           <div><dt>Suportes</dt><dd>{extraction.supportGrams == null ? "Não identificado" : `${extraction.supportGrams.toLocaleString("pt-BR")} g`}</dd></div>
           <div><dt>Peso total</dt><dd>{extraction.totalGrams == null ? "Não identificado" : `${extraction.totalGrams.toLocaleString("pt-BR")} g`}</dd></div>
+          <div><dt>Purga</dt><dd>{extraction.purgeGrams == null ? "Não identificado" : `${extraction.purgeGrams.toLocaleString("pt-BR")} g`}</dd></div>
+          <div><dt>Torre de limpeza</dt><dd>{extraction.wipeTowerGrams == null ? "Não identificado" : `${extraction.wipeTowerGrams.toLocaleString("pt-BR")} g`}</dd></div>
           <div><dt>Comprimento</dt><dd>{extraction.lengthMeters == null ? "Não identificado" : `${extraction.lengthMeters.toLocaleString("pt-BR")} m`}</dd></div>
           <div><dt>Tempo</dt><dd>{extraction.printHours == null ? "Não identificado" : `${extraction.printHours.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} h`}</dd></div>
           <div><dt>Trocas</dt><dd>{extraction.filamentChanges ?? "Não identificado"}</dd></div>
           <div><dt>Custo reconhecido</dt><dd>{extraction.estimatedCost == null ? "Não identificado" : `${extraction.estimatedCost.toLocaleString("pt-BR")} · confirme a moeda`}</dd></div>
         </dl>
         {extraction.filaments.length > 0 && <div className="price-ocr-filaments"><strong>Consumo por filamento</strong><ul>{extraction.filaments.map((filament) => <li key={filament.index}><span>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""}</span><b>{filament.grams.toLocaleString("pt-BR")} g</b></li>)}</ul></div>}
-        {extraction.derivedMass && <p className="price-ocr-note">O total foi somado do peso do modelo e dos suportes; purga e desperdício não foram identificados.</p>}
+        {extraction.derivedMass && <p className="price-ocr-note">O total foi somado do peso do modelo e dos suportes. Purga e torre aparecem separadas e não são somadas automaticamente.</p>}
+        {(extraction.purgeGrams != null || extraction.wipeTowerGrams != null) && <p className="price-ocr-note">Confira se purga e torre já estão incluídas no peso total do fatiador antes de usar o consumo no cálculo; o portal não as soma novamente.</p>}
         {extraction.conflicts.length > 0 && <p className="price-ocr-conflict" role="alert">Valores divergentes entre imagens: {extraction.conflicts.join(", ")}. Eles foram deixados sem preenchimento.</p>}
         {extraction.text && <details className="price-ocr-text"><summary>Conferir texto reconhecido</summary><pre>{extraction.text}</pre></details>}
         <button className="button button-primary" type="button" onClick={apply}>Revisar e preencher peso/tempo</button>

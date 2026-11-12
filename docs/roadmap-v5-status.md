@@ -12,7 +12,7 @@ Revisão em 12 de novembro de 2026. Esta página compara os requisitos de produt
 | 4. Catálogos técnicos | Parcial | Existem catálogos de impressoras, materiais, resinas e bicos, sugestões de modelos ausentes, compatibilidade e registro de equipamentos/manutenções. A cobertura de marcas e especificações precisa crescer com fontes oficiais revisadas. |
 | 5. Marketplace | Parcial | Contas, lojas moderadas, anúncios, busca, favoritos, carrinho multivendedor, cupons percentuais e fixos, pedidos e gestão de pedidos existem. Cupons são rateados por loja e descontados antes da comissão. Pedidos físicos aceitos podem consultar tarifas Melhor Envio pela conta autorizada do vendedor e oferecer a menor ao comprador; credenciais de produção ainda faltam. |
 | 6. Calculadora | Parcial | Cálculo manual por lote, componentes, custos de impressora, margem sobre venda, markup sobre custo, comparação de canais, histórico privado e exportação PDF/CSV estão implementados. O fluxo de consignação aceita comissão percentual e taxa fixa por venda; a migração e a integração foram publicadas em produção. |
-| 7. OCR e precificação avançada | Parcial | OCR aceita até três imagens por envio, consolida leituras e deixa valores conflitantes sem preenchimento; o fabricante revisa antes de aplicar. A leitura depende do Google Cloud Vision. A extração não cobre consistentemente todos os campos, slicers, moedas e configurações previstos no Prompt Master. |
+| 7. OCR e precificação avançada | Parcial | OCR aceita até três imagens por envio, consolida leituras e deixa valores conflitantes sem preenchimento; o fabricante revisa antes de aplicar. Agora separa peso de purga e torre de limpeza sem somá-los automaticamente. A leitura depende do Google Cloud Vision; extração de campos, perfis, moedas e configurações ainda precisa de cobertura e validação com capturas reais por fatiador. |
 | 8. Pagamentos e logística | Parcial | Fluxos Mercado Pago, webhooks, idempotência, cancelamento e reembolso existem. Anúncios físicos guardam peso/dimensões e cada loja mantém CEP de origem privado. O OAuth Melhor Envio consulta tarifas e oferece a menor por pedido; faltam credenciais de produção, compra de etiquetas e rastreamento automático. |
 | 9. Orçamentos | Parcial | Solicitações, propostas, escolha do fabricante, início/conclusão da impressão, cotação manual para impressões personalizadas, pagamento, rastreio, entrega e histórico existem. Pedidos do carrinho aceitos podem receber cotação Melhor Envio; etiquetas, rastreio automático e estados completos de produção sob encomenda seguem pendentes. |
 | 10. Expansão | Parcial | Arquivos digitais, suporte, notificações, perfis e relatórios têm módulos no produto. E-mail/anexos/SLA do suporte, recomendações e relatórios avançados ainda não estão completos. |
@@ -26,8 +26,8 @@ Revisão em 12 de novembro de 2026. Esta página compara os requisitos de produt
 ## Próximas entregas
 
 1. Configurar Google Vision, Resend e WhatsApp na Vercel e validar busca por imagem, OCR e notificações externas sem expor segredos no Git.
-2. Escolher o provedor de frete e automatizar cotações, etiquetas e rastreamento, preservando pedidos por loja, comissão e histórico financeiro.
-3. Completar consumo por modelo, calculadora, OCR e estados de produção descritos nas fases 3, 6, 7 e 9; cobrir cada fluxo com testes de regras e autorização.
-4. Completar cadastros de fabricantes e testar compra, notificações, logística e pós-venda ponta a ponta em ambiente de homologação.
+2. Configurar e testar o OAuth Melhor Envio em sandbox; depois implementar compra de etiquetas com confirmação explícita do vendedor e sincronização de rastreio.
+3. Completar consumo editável por modelo/perfil, campos de OCR para todos os slicers e histórico de origem dos dados; validar com imagens e fatiamentos reais.
+4. Expandir a curadoria oficial dos catálogos e estados de produção, depois testar compra e pós-venda ponta a ponta com contas sandbox.
 
 Os detalhes de instalação, banco, segurança, operação e integrações continuam nos documentos vinculados pelo [README](../README.md).
