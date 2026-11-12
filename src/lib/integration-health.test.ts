@@ -83,4 +83,19 @@ describe("getIntegrationHealth", () => {
     expect(result?.status).toBe("missing");
     expect(result?.missingVariables).toContain("WHATSAPP_TEMPLATE_LANGUAGE");
   });
+
+  it("does not trim WhatsApp values that the delivery worker will reject", () => {
+    const result = getIntegrationHealth({
+      WHATSAPP_ACCESS_TOKEN: "token",
+      WHATSAPP_PHONE_NUMBER_ID: " 123456 ",
+      WHATSAPP_GRAPH_API_VERSION: " v23.0 ",
+      WHATSAPP_TEMPLATE_NAME: " virapeca_novo_orcamento ",
+    }).find((item) => item.id === "whatsapp");
+
+    expect(result?.missingVariables).toEqual(expect.arrayContaining([
+      "WHATSAPP_PHONE_NUMBER_ID",
+      "WHATSAPP_GRAPH_API_VERSION",
+      "WHATSAPP_TEMPLATE_NAME",
+    ]));
+  });
 });
