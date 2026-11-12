@@ -93,6 +93,7 @@ export default async function AdminPage() {
         <Link className="button button-secondary" href="/admin/avaliacoes">Moderação de avaliações</Link>
         <Link className="button button-secondary" href="/admin/denuncias-digitais">Denúncias de conteúdo</Link>
         <Link className="button button-secondary" href="/admin/atendimento">Central de atendimento</Link>
+        <Link className="button button-secondary" href="/admin/integracoes">Status das integrações</Link>
       </nav>
     </section>
   </main></>;
