@@ -160,17 +160,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
           <div className="steps-grid">
             <article className="step-card"><span className="step-number">01</span><div className="step-icon step-icon-blue">⌘</div><h3>Explore ou envie</h3><p>Abra STL, OBJ, 3MF ou glTF e explore geometria, cores e dimensões.</p><span className="step-arrow">↗</span></article>
             <article className="step-card"><span className="step-number">02</span><div className="step-icon step-icon-green">◈</div><h3>Encontre um maker</h3><p>Consulte produtos publicados por lojas aprovadas no marketplace.</p><span className="step-arrow">↗</span></article>
-            <article className="step-card"><span className="step-number">03</span><div className="step-icon step-icon-sand">✳</div><h3>Acompanhe a peça</h3><p>Pedidos e acompanhamento de produção serão habilitados depois.</p><span className="step-arrow">↗</span></article>
+            <article className="step-card"><span className="step-number">03</span><div className="step-icon step-icon-sand">✳</div><h3>Acompanhe a peça</h3><p>Consulte propostas e pedidos na sua conta enquanto a loja atualiza a produção e o envio.</p><span className="step-arrow">↗</span></article>
           </div>
         </section>
 
         <section className="closing-section shell" id="conta">
           <div className="closing-panel">
             <div><p className="eyebrow">VIRAPEÇA 3D</p><h2>Tem uma ideia<br />dando voltas?</h2><p>Ela pode começar a tomar forma agora.</p></div>
-            <a className="button button-light" href="#produtos">Ver peças de exemplo <span aria-hidden="true">↗</span></a>
+            <a className="button button-light" href="#produtos">Explorar o catálogo <span aria-hidden="true">↗</span></a>
             <div className="closing-shape" aria-hidden="true"><span /><span /><span /></div>
           </div>
-          <p className="phase-note">O visualizador processa arquivos no navegador. Compras e orçamentos exigem uma conta e o backend conectado; pagamentos dependem da conexão Mercado Pago da loja. Sem backend, a vitrine mostra exemplos demonstrativos.</p>
+          <p className="phase-note">O visualizador processa arquivos no navegador. Para comprar, pedir uma impressão ou acompanhar pedidos, entre na sua conta. O pagamento é iniciado depois que a loja confirma o pedido e conecta sua conta Mercado Pago.</p>
         </section>
       </main>
       <footer className="site-footer">
