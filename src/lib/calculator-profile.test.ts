@@ -13,7 +13,7 @@ const profile = {
 describe("mapPrintProfileToCalculator", () => {
   it("scales profile consumption to enough plates and preserves matching filament prices", () => {
     expect(mapPrintProfileToCalculator(profile, 3, [
-      { index: 1, grams: 1, pricePerKg: 99, material: "PLA", color: "#336699" },
+      { index: 1, grams: 1, lengthMeters: null, pricePerKg: 99, material: "PLA", color: "#336699" },
     ])).toMatchObject({
       material: "PLA fosco", filamentGrams: 48, printHours: 7,
       slicerMetrics: {
