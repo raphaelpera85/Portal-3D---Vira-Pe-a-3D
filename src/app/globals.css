@@ -720,6 +720,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .viewer-spinner { width: 28px; height: 28px; border: 2px solid var(--line-strong); border-top-color: var(--brand); border-radius: 50%; animation: viewer-spin .8s linear infinite; }
 @keyframes viewer-spin { to { transform: rotate(360deg); } }
 .viewer-message { position: absolute; z-index: 3; right: 14px; bottom: 14px; left: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border: 1px solid color-mix(in srgb, var(--green) 25%, var(--line)); border-radius: 5px; background: var(--paper); color: var(--muted-strong); font-size: 10px; box-shadow: 0 5px 22px var(--shadow-wash); }
+.viewer-message > span { min-width: 0; overflow-wrap: anywhere; }
 .viewer-message.is-error { border-color: color-mix(in srgb, #dc2626 45%, var(--line)); color: #b91c1c; }
 .viewer-message button { display: grid; flex: 0 0 26px; width: 26px; height: 26px; place-items: center; border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
 .viewer-message button:hover { background: var(--surface); }
@@ -1043,7 +1044,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   .main-nav a { padding: 13px 8px; border-bottom: 1px solid var(--line); }
   .header-actions { gap: 8px; }
   .header-login { display: none; }
-  .header-maker { gap: 5px; padding: 10px 11px; font-size: 10px; }
+  .header-maker { display: none; }
   .icon-button { width: 35px; height: 35px; }
   .menu-button { display: grid; }
   .calculator-page { padding-bottom: 40px; }
@@ -1127,6 +1128,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   .viewer-page-intro { padding-block: 21px 14px; }
   .viewer-page-intro p { font-size: 8px; }
   .viewer-layout { grid-template-columns: 1fr; }
+  .viewer-layout:not(.viewer-readonly) { min-height: 0; }
   .viewer-stage-wrap { border-right: 0; }
   .viewer-stage-toolbar { flex-wrap: wrap; gap: 8px; padding-inline: 10px; }
   .viewer-upload-button { min-height: 34px; padding-inline: 9px; font-size: 10px; }
@@ -1134,6 +1136,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   .viewer-stage-actions { gap: 1px; }
   .viewer-icon-button { width: 29px; height: 31px; }
   .viewer-stage { min-height: 350px; }
+  .viewer-hint { flex-basis: 100%; margin-left: 0; text-align: center; }
   .viewer-toolbar { min-height: 48px; gap: 4px; padding-inline: 8px; }
   .viewer-view-button { min-height: 29px; padding-inline: 7px; font-size: 8px; }
   .viewer-hint { width: 100%; margin: 3px 0 0; text-align: center; }
