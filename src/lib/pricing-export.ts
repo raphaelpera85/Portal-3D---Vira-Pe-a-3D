@@ -40,7 +40,13 @@ export function exportPrintCalculationCsv(
     [],
     ["Composição de custos", "Total do lote (R$)"],
     ["Material", money(result.breakdown.materialCents)],
-    ...(input.filamentCosts?.length ? [["Custo por cor/material", "Massa (g)", "Preço (R$/kg)", "Subtotal (R$)"], ...input.filamentCosts.map((item, index) => [item.name || `Filamento ${index + 1}${item.color ? ` · ${item.color}` : ""}`, decimal(item.grams), decimal(item.pricePerKg), money(Math.round(item.grams * item.pricePerKg / 1000 * 100))])] : []),
+    ...(input.filamentCosts?.length ? [
+      ["Custo por cor/material", "Massa (g)", "Preço (R$/kg)", "Subtotal (R$)"],
+      ...input.filamentCosts.map((item, index) => [
+        `${item.name || `Filamento ${index + 1}`}${item.color ? ` · ${item.color}` : ""}`,
+        decimal(item.grams), decimal(item.pricePerKg), money(Math.round(item.grams * item.pricePerKg / 1000 * 100)),
+      ]),
+    ] : []),
     ["Energia", money(result.breakdown.energyCents)],
     ["Operação da máquina", money(result.breakdown.machineCents)],
     ["Depreciação", money(result.breakdown.depreciationCents)],
