@@ -33,7 +33,7 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
 
   const { data: order, error: orderError } = isOrder
     ? await actor.supabase.from("seller_purchase_orders")
-      .select("id, store_id, store_name, status, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, items:seller_purchase_order_items(product_name, unit_price_brl, quantity)")
+      .select("id, store_id, store_name, status, coupon_code, coupon_discount_cents, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, items:seller_purchase_order_items(product_name, unit_price_brl, quantity)")
       .eq("id", orderId).eq("buyer_id", actor.user.id).maybeSingle()
     : isDirectPurchase ? await actor.supabase.from("product_quote_requests")
       .select("id, store_id, store_name, product_name, unit_price_brl, quantity, status, request_type, license_type")
@@ -66,15 +66,18 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
     return { name, unitPrice, unitCents, quantity };
   });
   const subtotalCents = items.reduce((sum, item) => sum + item.unitCents * item.quantity, 0);
+  const couponDiscountCents = isOrder ? Number(orderRow.coupon_discount_cents ?? 0) : 0;
+  const payableSubtotalCents = subtotalCents - couponDiscountCents;
   const shippingCents = isOrder ? Number(orderRow.shipping_cost_cents) : isCustomPrint ? Number(customPrintDelivery.shipping_cost_cents) : 0;
-  const totalCents = subtotalCents + shippingCents;
-  if (!Number.isSafeInteger(subtotalCents) || subtotalCents < 1 || !Number.isSafeInteger(shippingCents) || shippingCents < 0
+  const totalCents = payableSubtotalCents + shippingCents;
+  if (!Number.isSafeInteger(subtotalCents) || subtotalCents < 1 || !Number.isSafeInteger(couponDiscountCents) || couponDiscountCents < 0
+    || payableSubtotalCents < 1 || !Number.isSafeInteger(shippingCents) || shippingCents < 0
     || !Number.isSafeInteger(totalCents) || totalCents < 1
     || items.some((item) => !item.name || !Number.isSafeInteger(item.unitCents) || item.unitCents < 1 || !Number.isInteger(item.quantity) || item.quantity < 1)) {
     redirect("/orcamentos?resultado=pagamento-erro");
   }
   let feeCents: number;
-  try { feeCents = calculateMarketplaceFeeCents(subtotalCents, feePercent); }
+  try { feeCents = calculateMarketplaceFeeCents(payableSubtotalCents, feePercent); }
   catch { redirect("/orcamentos?resultado=pagamento-configurar"); }
 
   const { data: connection } = await admin.from("store_payment_connections").select("provider_user_id")
@@ -118,7 +121,9 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
         ...(persistedFeeCents > 0 ? { marketplace_fee: formatMercadoPagoAmount(persistedFeeCents) } : {}),
         payer: { email: actor.user.email },
         items: [
-          ...items.map((item) => ({ title: item.name, unit_price: formatMercadoPagoAmount(item.unitCents), quantity: item.quantity })),
+          ...(isOrder && couponDiscountCents > 0
+            ? [{ title: `Produtos do pedido · cupom ${String(orderRow.coupon_code ?? "")}`.slice(0, 240), unit_price: formatMercadoPagoAmount(payableSubtotalCents), quantity: 1 }]
+            : items.map((item) => ({ title: item.name, unit_price: formatMercadoPagoAmount(item.unitCents), quantity: item.quantity }))),
           ...(shippingCents > 0 ? [{ title: `Frete — ${typeof (isOrder ? orderRow.shipping_service : customPrintDelivery.shipping_service) === "string" ? String(isOrder ? orderRow.shipping_service : customPrintDelivery.shipping_service).slice(0, 200) : "Loja"}`, unit_price: formatMercadoPagoAmount(shippingCents), quantity: 1 }] : []),
         ],
         config: { online: {

@@ -38,6 +38,10 @@ O comprador pode cancelar, em `/orcamentos`, um checkout ainda não pago. A aç�
 
 Para impressões personalizadas, o comprador escolhe um endereço salvo depois de aceitar uma proposta. O endereço completo fica privado e só é mostrado à loja vencedora; a loja informa transportadora, serviço, preço e prazo manualmente. O comprador precisa aceitar a cotação antes do checkout. O frete é cobrado no mesmo pagamento, mas a comissão incide somente sobre a proposta de fabricação. Depois que o webhook confirmar o pagamento e a produção for concluída, a loja informa o rastreio e o comprador confirma o recebimento. Não há consulta automática de tarifas nem compra de etiquetas.
 
+### Cupons de carrinho
+
+Administradores cadastram e ativam cupons percentuais ou de valor fixo em `/admin/cupons`. O código é validado novamente pelo banco ao criar os pedidos. O desconto é pago pelos vendedores, distribuído proporcionalmente ao valor dos produtos de cada loja e reduz a base da comissão da plataforma; o frete não recebe desconto. A redução não pode zerar o subtotal de uma loja, porque cada pedido pode ser pago separadamente. Nesta versão, cupons não têm data de validade nem limite de resgates.
+
 ## OCR de imagens de fatiadores
 
 Para habilitar a leitura de capturas de tela, selecione um projeto no Google Cloud Console, habilite a Cloud Vision API e crie uma chave em **APIs e serviços → Credenciais**. Restrinja a chave à Cloud Vision API e armazene somente no servidor como `GOOGLE_CLOUD_VISION_API_KEY`; não use prefixo `NEXT_PUBLIC_`. A documentação oficial explica a [autenticação e as restrições de chaves](https://docs.cloud.google.com/docs/authentication/api-keys) e o [endpoint `images:annotate`](https://docs.cloud.google.com/vision/docs/request).

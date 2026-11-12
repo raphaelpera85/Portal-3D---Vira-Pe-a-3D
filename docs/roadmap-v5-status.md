@@ -10,7 +10,7 @@ Revisão em 12 de novembro de 2026. Esta página compara os requisitos de produt
 | 2. Visualizador | Implementada | Upload local de STL, OBJ, 3MF, GLB e GLTF; rotação, zoom, dimensões, escala, exportação GLB e layout responsivo. |
 | 3. Modelos avançados | Parcial | 3MF, materiais/cores, componentes e biblioteca privada estão no visualizador. A coleção `/modelos` contém 94 modelos únicos em sete categorias, com prévias, tags, busca por texto, busca por imagem e páginas individuais de visualização/download. Os 94 originais agora ficam em `models/` no repositório público e são carregados diretamente pelo visualizador; a busca por imagem depende do Google Cloud Vision. Consumo por filamento ainda não é calculado a partir do fatiamento. |
 | 4. Catálogos técnicos | Parcial | Existem catálogos de impressoras, materiais, resinas e bicos, sugestões de modelos ausentes, compatibilidade e registro de equipamentos/manutenções. A cobertura de marcas e especificações precisa crescer com fontes oficiais revisadas. |
-| 5. Marketplace | Parcial | Contas, lojas moderadas, anúncios, busca, favoritos, carrinho multivendedor, pedidos e gestão de pedidos existem. Cupons e cotação/etiqueta/rastreamento automáticos de frete seguem pendentes. |
+| 5. Marketplace | Parcial | Contas, lojas moderadas, anúncios, busca, favoritos, carrinho multivendedor, cupons percentuais e fixos, pedidos e gestão de pedidos existem. Cupons são rateados por loja e descontados antes da comissão; frete segue manual. Cotação/etiqueta/rastreamento automáticos seguem pendentes. |
 | 6. Calculadora | Parcial | Cálculo manual por lote, componentes, custos de impressora, margem sobre venda, markup sobre custo, comparação de canais, histórico privado e exportação PDF/CSV estão implementados. O fluxo de consignação aceita comissão percentual e taxa fixa por venda; a migração e a integração foram publicadas em produção. |
 | 7. OCR e precificação avançada | Parcial | OCR de imagens de fatiadores e entrada manual existem; a leitura depende do Google Cloud Vision e requer revisão humana. Ainda falta fechar consolidação de múltiplas imagens e todos os campos previstos no Prompt Master. |
 | 8. Pagamentos e logística | Parcial | Fluxos Mercado Pago, webhooks, idempotência, cancelamento e reembolso existem. Frete de produtos físicos automatizado e repasses do marketplace ainda precisam de integração e validação operacional. |
@@ -27,7 +27,7 @@ Revisão em 12 de novembro de 2026. Esta página compara os requisitos de produt
 ## Próximas entregas
 
 1. Configurar Google Vision, Resend e WhatsApp na Vercel e validar busca por imagem, OCR e notificações externas sem expor segredos no Git.
-2. Implementar cupons e automatizar cotações, etiquetas e rastreamento de fretes físicos, preservando pedidos por loja, comissão e histórico financeiro.
+2. Automatizar cotações, etiquetas e rastreamento de fretes físicos, preservando pedidos por loja, comissão e histórico financeiro.
 3. Fechar as lacunas de calculadora, OCR e estados de produção descritas nas fases 6, 7 e 9; cobrir cada fluxo com testes de regras e autorização.
 4. Completar cadastros de fabricantes e testar compra, notificações, logística e pós-venda ponta a ponta em ambiente de homologação.
 

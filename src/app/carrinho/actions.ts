@@ -7,6 +7,7 @@ import { getUserWithRole } from "@/lib/auth-role.server";
 import { isBuyerAddressId } from "@/lib/buyer-address";
 import { validateProductQuoteRequest, validateProductVariantSelection } from "@/lib/marketplace-validation";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
+import { normalizeCouponCode } from "@/lib/coupon";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const validSlug = (value: unknown): value is string => typeof value === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
@@ -56,18 +57,36 @@ export async function removeCartItem(formData: FormData): Promise<void> {
   redirect("/carrinho?resultado=atualizado");
 }
 
+export async function applyCartCoupon(formData: FormData): Promise<void> {
+  const code = normalizeCouponCode(formData.get("code"));
+  if (!code) redirect("/carrinho?resultado=cupom-invalido");
+  const actor = await getUserWithRole("buyer");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("preview_marketplace_coupon", { p_code: code });
+  if (error) redirect(`/carrinho?cupom=${encodeURIComponent(code)}&resultado=cupom-invalido`);
+  redirect(`/carrinho?cupom=${encodeURIComponent(code)}&resultado=cupom-aplicado`);
+}
+
+export async function removeCartCoupon(): Promise<void> {
+  redirect("/carrinho?resultado=cupom-removido");
+}
+
 export async function checkoutCart(formData: FormData): Promise<void> {
   const addressId = formData.get("addressId");
+  const rawCouponCode = formData.get("couponCode");
+  const couponCode = rawCouponCode === null || rawCouponCode === "" ? null : normalizeCouponCode(rawCouponCode);
+  if (rawCouponCode !== null && rawCouponCode !== "" && !couponCode) redirect("/carrinho?resultado=cupom-invalido");
   if (!isBuyerAddressId(addressId)) redirect("/carrinho?resultado=endereco-invalido");
   const actor = await getUserWithRole("buyer");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { data: address } = await actor.supabase.from("buyer_addresses").select("id")
     .eq("id", addressId).eq("buyer_id", actor.user.id).maybeSingle();
   if (!address) redirect("/carrinho?resultado=endereco-invalido");
-  const { error } = await actor.supabase.rpc("create_orders_from_cart", { p_buyer_address_id: address.id });
+  const { error } = await actor.supabase.rpc("create_orders_from_cart", { p_buyer_address_id: address.id, p_coupon_code: couponCode });
   revalidatePath("/carrinho");
   revalidatePath("/orcamentos");
   revalidatePath("/painel/maker");
+  if (error?.message.includes("Coupon")) redirect("/carrinho?resultado=cupom-invalido");
   if (error) redirect("/carrinho?resultado=indisponivel");
   after(dispatchNotificationQueue);
   redirect("/orcamentos?resultado=pedido-enviado");
