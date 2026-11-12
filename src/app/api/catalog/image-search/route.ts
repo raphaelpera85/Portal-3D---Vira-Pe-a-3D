@@ -16,6 +16,7 @@ export async function POST(request: Request) {
 
   let form: FormData;
   try { form = await request.formData(); } catch { return Response.json({ error: "invalid_multipart_request" }, { status: 400 }); }
+  if (form.get("consent") !== "yes") return Response.json({ error: "image_search_consent_required" }, { status: 400 });
   const file = form.get("image");
   if (!(file instanceof File) || file.size < 1 || file.size > MAX_SLICER_OCR_IMAGE_BYTES) return Response.json({ error: "invalid_image" }, { status: 400 });
   const image = { type: file.type, size: file.size, bytes: new Uint8Array(await file.arrayBuffer()) };

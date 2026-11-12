@@ -20,6 +20,7 @@ export function CatalogImageSearch({ configured, category }: { configured: boole
     try {
       const form = new FormData();
       form.append("image", image);
+      form.append("consent", "yes");
       const response = await fetch("/api/catalog/image-search", { method: "POST", body: form });
       const data = await response.json().catch(() => null) as { query?: string; terms?: string[]; error?: string } | null;
       if (!response.ok || !data?.query) throw new Error(data?.error ?? "image_search_provider_failed");
