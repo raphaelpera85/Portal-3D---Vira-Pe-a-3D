@@ -51,9 +51,10 @@ describe("printer equipment validation", () => {
   it("derives calculator rates only from values the maker recorded", () => {
     expect(deriveEquipmentRates({
       purchasePriceBrl: "4500.00", residualValueBrl: "900", usefulLifeHours: "8000",
-      averagePowerWatts: "92", energyTariffPerKwh: "0.89",
-    })).toEqual({ averagePowerWatts: 92, energyTariffPerKwh: 0.89, depreciationPerHour: 0.45 });
+      averagePowerWatts: "92", energyTariffPerKwh: "0.89", maintenanceCostBrl: "320", accumulatedHours: "640",
+    })).toEqual({ averagePowerWatts: 92, energyTariffPerKwh: 0.89, depreciationPerHour: 0.45, maintenancePerHour: 0.5 });
     expect(deriveEquipmentRates({ purchasePriceBrl: 4500, residualValueBrl: null, usefulLifeHours: 8000, averagePowerWatts: null, energyTariffPerKwh: null }))
-      .toEqual({ averagePowerWatts: null, energyTariffPerKwh: null, depreciationPerHour: null });
+      .toEqual({ averagePowerWatts: null, energyTariffPerKwh: null, depreciationPerHour: null, maintenancePerHour: null });
+    expect(deriveEquipmentRates({ maintenanceCostBrl: 320, accumulatedHours: 0 }).maintenancePerHour).toBeNull();
   });
 });

@@ -29,8 +29,8 @@ export type MaintenanceEntryInput = {
   nextDueHours: number | null;
 };
 
-export type EquipmentRateInput = { purchasePriceBrl?: number | string | null; residualValueBrl?: number | string | null; usefulLifeHours?: number | string | null; averagePowerWatts?: number | string | null; energyTariffPerKwh?: number | string | null };
-export type EquipmentRates = { averagePowerWatts: number | null; energyTariffPerKwh: number | null; depreciationPerHour: number | null };
+export type EquipmentRateInput = { purchasePriceBrl?: number | string | null; residualValueBrl?: number | string | null; usefulLifeHours?: number | string | null; averagePowerWatts?: number | string | null; energyTariffPerKwh?: number | string | null; maintenanceCostBrl?: number | string | null; accumulatedHours?: number | string | null };
+export type EquipmentRates = { averagePowerWatts: number | null; energyTariffPerKwh: number | null; depreciationPerHour: number | null; maintenancePerHour: number | null };
 
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
 const numeric = (value: unknown) => {
@@ -49,14 +49,21 @@ export function deriveEquipmentRates(values: EquipmentRateInput): EquipmentRates
   const usefulLife = amount(values.usefulLifeHours);
   const averagePowerWatts = amount(values.averagePowerWatts);
   const energyTariffPerKwh = amount(values.energyTariffPerKwh);
+  const maintenanceCost = amount(values.maintenanceCostBrl);
+  const accumulatedHours = amount(values.accumulatedHours);
   const hasDepreciationInputs = [purchase, residual, usefulLife].every((value) => value != null && Number.isFinite(value) && value >= 0);
   const depreciationPerHour = hasDepreciationInputs && usefulLife! > 0 && purchase! >= residual!
     ? (Math.round(purchase! * 100) - Math.round(residual! * 100)) / 100 / usefulLife!
+    : null;
+  const maintenancePerHour = maintenanceCost != null && Number.isFinite(maintenanceCost) && maintenanceCost >= 0
+    && accumulatedHours != null && Number.isFinite(accumulatedHours) && accumulatedHours > 0
+    ? Math.round(maintenanceCost * 100) / 100 / accumulatedHours
     : null;
   return {
     averagePowerWatts: averagePowerWatts != null && Number.isFinite(averagePowerWatts) && averagePowerWatts > 0 ? averagePowerWatts : null,
     energyTariffPerKwh: energyTariffPerKwh != null && Number.isFinite(energyTariffPerKwh) && energyTariffPerKwh >= 0 ? energyTariffPerKwh : null,
     depreciationPerHour,
+    maintenancePerHour,
   };
 }
 

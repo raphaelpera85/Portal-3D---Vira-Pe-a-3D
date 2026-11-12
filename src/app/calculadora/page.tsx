@@ -18,7 +18,7 @@ export default async function CalculatorPage() {
   const actor = await getUserWithRole("maker");
   const canUseOcr = Boolean(actor.supabase && actor.user && actor.authorized);
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
-  let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null }> = [];
+  let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string }> = [];
   let products: Array<{ id: string; name: string; slug: string; published: boolean }> = [];
   let profiles: Array<{ id: string; name: string }> = [];
   let equipmentNotice: string | null = null;
@@ -33,7 +33,7 @@ export default async function CalculatorPage() {
       canSaveCalculations = true;
       const [{ data, error }, history, productResult, profileResult] = await Promise.all([
         actor.supabase.from("maker_printers")
-          .select("id, manufacturer_snapshot, model_snapshot, nickname, purchase_price_brl, residual_value_brl, useful_life_hours, measured_average_power_w, energy_tariff_per_kwh")
+          .select("id, manufacturer_snapshot, model_snapshot, nickname, purchase_price_brl, residual_value_brl, useful_life_hours, accumulated_hours, measured_average_power_w, energy_tariff_per_kwh")
           .eq("store_id", store.id).neq("operational_status", "inactive").order("nickname"),
         actor.supabase.from("maker_cost_calculations").select("id, title, input_snapshot, product_id, printer_id, profile_id, created_at")
           .eq("store_id", store.id).order("created_at", { ascending: false }).limit(20),
@@ -45,11 +45,25 @@ export default async function CalculatorPage() {
       if (error) equipmentNotice = "Não foi possível carregar seus equipamentos. A calculadora manual continua disponível.";
       if (productResult.error) productNotice = "Não foi possível carregar os produtos desta loja para vinculá-los ao cálculo.";
       if (profileResult.error) profileNotice = "Não foi possível carregar os perfis desta loja para vinculá-los ao cálculo.";
+      const maintenanceCosts = new Map<string, number>();
+      const printerIds = (data ?? []).map((printer) => printer.id);
+      for (let offset = 0; printerIds.length > 0; offset += 1000) {
+        const { data: events, error: maintenanceError } = await actor.supabase.from("printer_maintenance_events")
+          .select("printer_id, cost_brl").in("printer_id", printerIds).range(offset, offset + 999);
+        if (maintenanceError) {
+          maintenanceCosts.clear();
+          equipmentNotice = "Não foi possível carregar o histórico de manutenção para sugerir uma taxa média; informe-a manualmente.";
+          break;
+        }
+        for (const event of events ?? []) maintenanceCosts.set(event.printer_id, (maintenanceCosts.get(event.printer_id) ?? 0) + Number(event.cost_brl));
+        if ((events?.length ?? 0) < 1000) break;
+      }
       equipment = (data ?? []).map((printer) => ({
         id: printer.id, label: `${printer.nickname} · ${printer.manufacturer_snapshot} ${printer.model_snapshot}`,
         purchasePriceBrl: printer.purchase_price_brl, residualValueBrl: printer.residual_value_brl,
         usefulLifeHours: printer.useful_life_hours, averagePowerWatts: printer.measured_average_power_w,
-        energyTariffPerKwh: printer.energy_tariff_per_kwh,
+        energyTariffPerKwh: printer.energy_tariff_per_kwh, maintenanceCostBrl: maintenanceCosts.get(printer.id) ?? null,
+        accumulatedHours: printer.accumulated_hours,
       }));
       products = (productResult.data ?? []).map((product) => ({ id: product.id, name: product.name, slug: product.slug, published: product.catalog_status === "published" }));
       profiles = (profileResult.data ?? []).map((profile) => ({ id: profile.id, name: profile.profile_name }));

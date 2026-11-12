@@ -132,15 +132,19 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
 
   function selectComponentEquipment(componentId: string, equipmentId: string) {
     const selected = equipment.find((item) => item.id === equipmentId);
-    updateProductionComponent(componentId, "equipmentId", equipmentId);
-    if (!selected) return;
+    if (!selected) {
+      setProductionComponents((current) => current.map((component) => component.id === componentId ? { ...component, equipmentId: "", maintenancePerHour: "" } : component));
+      return;
+    }
     const rates = deriveEquipmentRates(selected);
     setProductionComponents((current) => current.map((component) => component.id === componentId ? {
       ...component,
+      equipmentId,
       printer: selected.label,
       ...(rates.averagePowerWatts == null ? {} : { averagePowerWatts: String(rates.averagePowerWatts) }),
       ...(rates.energyTariffPerKwh == null ? {} : { energyPricePerKwh: String(rates.energyTariffPerKwh) }),
       ...(rates.depreciationPerHour == null ? {} : { depreciationPerHour: String(rates.depreciationPerHour) }),
+      maintenancePerHour: rates.maintenancePerHour == null ? "" : String(rates.maintenancePerHour),
     } : component));
   }
 
@@ -150,7 +154,11 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
 
   function selectEquipment(id: string) {
     const selected = equipment.find((item) => item.id === id);
-    if (!selected) return;
+    if (!selected) {
+      setSelectedEquipmentId("");
+      setFields((current) => ({ ...current, maintenancePerHour: "" }));
+      return;
+    }
     setSelectedEquipmentId(id);
     const rates = deriveEquipmentRates(selected);
     setFields((current) => ({
@@ -158,6 +166,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       ...(rates.averagePowerWatts == null ? {} : { averagePowerWatts: String(rates.averagePowerWatts) }),
       ...(rates.energyTariffPerKwh == null ? {} : { energyPricePerKwh: String(rates.energyTariffPerKwh) }),
       ...(rates.depreciationPerHour == null ? {} : { depreciationPerHour: String(rates.depreciationPerHour) }),
+      maintenancePerHour: rates.maintenancePerHour == null ? "" : String(rates.maintenancePerHour),
     }));
   }
 
@@ -225,7 +234,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
               <CostField label="Tarifa de energia" suffix="R$/kWh" value={fields.energyPricePerKwh} onChange={(value) => updateField("energyPricePerKwh", value)} />
               <CostField label="Operação da máquina" suffix="R$/h" hint="Sem depreciação nem manutenção." value={fields.machineCostPerHour} onChange={(value) => updateField("machineCostPerHour", value)} />
               <CostField label="Depreciação" suffix="R$/h" value={fields.depreciationPerHour} onChange={(value) => updateField("depreciationPerHour", value)} />
-              <CostField label="Manutenção rateada" suffix="R$/h" value={fields.maintenancePerHour} onChange={(value) => updateField("maintenancePerHour", value)} />
+              <CostField label="Manutenção rateada" suffix="R$/h" hint="Sugestão pela despesa registrada dividida pelas horas acumuladas; você pode ajustar." value={fields.maintenancePerHour} onChange={(value) => updateField("maintenancePerHour", value)} />
             </div>
             <div className="price-subheading"><h3>Outros arquivos e componentes impressos</h3><button type="button" className="price-add-button" onClick={addProductionComponent} disabled={productionComponents.length >= MAX_PRODUCTION_COMPONENTS}><CirclePlus size={15} /> Adicionar componente</button></div>
             <p className="price-field-hint">Cada componente representa o total de material, tempo e custos de todas as execuções necessárias para este lote. Informe no tempo total quantas execuções foram necessárias; não multiplicamos pelas peças.</p>
@@ -246,7 +255,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
                 <CostField label="Tarifa de energia" suffix="R$/kWh" value={component.energyPricePerKwh} onChange={(value) => updateProductionComponent(component.id, "energyPricePerKwh", value)} idSuffix={component.id} />
                 <CostField label="Operação da máquina" suffix="R$/h" value={component.machineCostPerHour} onChange={(value) => updateProductionComponent(component.id, "machineCostPerHour", value)} idSuffix={component.id} />
                 <CostField label="Depreciação" suffix="R$/h" value={component.depreciationPerHour} onChange={(value) => updateProductionComponent(component.id, "depreciationPerHour", value)} idSuffix={component.id} />
-                <CostField label="Manutenção rateada" suffix="R$/h" value={component.maintenancePerHour} onChange={(value) => updateProductionComponent(component.id, "maintenancePerHour", value)} idSuffix={component.id} />
+                <CostField label="Manutenção rateada" suffix="R$/h" hint="Sugestão histórica da impressora selecionada; você pode ajustar." value={component.maintenancePerHour} onChange={(value) => updateProductionComponent(component.id, "maintenancePerHour", value)} idSuffix={component.id} />
                 <CostField label="Mão de obra total" suffix="min" value={component.laborMinutes} onChange={(value) => updateProductionComponent(component.id, "laborMinutes", value)} idSuffix={component.id} />
                 <CostField label="Valor da mão de obra" suffix="R$/h" value={component.laborRatePerHour} onChange={(value) => updateProductionComponent(component.id, "laborRatePerHour", value)} idSuffix={component.id} />
               </div>
