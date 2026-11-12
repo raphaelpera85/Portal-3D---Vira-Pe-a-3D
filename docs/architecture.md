@@ -43,7 +43,7 @@ flowchart LR
 - Revisão administrativa aprova perfis submetidos como comunitários ou oficiais; páginas públicas leem somente perfis publicados ligados a produtos e lojas publicados.
 - Administradores gerenciam destaques da homepage em `/admin/banners`; os seis primeiros ativos pela ordem configurada aparecem na vitrine. Destinos são limitados a caminhos internos e imagens exigem HTTPS e texto alternativo.
 - Fabricantes editam descrição, logo, banner, cidade/UF e políticas comerciais pelo painel; somente lojas aprovadas são listadas e indexáveis, e as páginas de produto e a homepage levam às vitrines.
-- Compradores podem avaliar loja e itens de pedidos pagos e concluídos; uma avaliação por pedido/loja e por item fica pendente até aprovação administrativa em `/admin/avaliacoes`. Páginas de produto exibem avaliações publicadas sem identificar o comprador.
+- Compradores podem avaliar lojas e produtos após pedidos do carrinho concluídos, compras diretas pagas e arquivos digitais pagos; impressões personalizadas podem receber avaliação da loja depois de pagas e concluídas. Avaliações ficam pendentes até aprovação em `/admin/avaliacoes`; páginas públicas exibem apenas as aprovadas e não identificam o comprador.
 - Administradores cadastram e revisam modelos mestres de impressoras em `/admin/catalogos/impressoras`, com referências HTTPS e data de conferência obrigatórias para publicar.
 - Fabricantes podem sugerir modelos ausentes do catálogo; a curadoria administrativa aprova ou recusa e aprovação cria apenas um rascunho revisável.
 - Administradores cadastram materiais, resinas, bicos e relações de compatibilidade em `/admin/catalogos/materiais` e `/admin/catalogos/bicos`; cada vínculo publicado requer fonte HTTPS e data de conferência.
@@ -55,7 +55,7 @@ flowchart LR
 ## Limites atuais
 
 - As migrações ainda precisam ser aplicadas a um projeto Supabase e testadas contra PostgreSQL. O pagamento depende de credenciais Mercado Pago, comissão configurada e webhook ativo.
-- Cotação automática de frete, compra de etiquetas e atualização automática de rastreio, variantes, cupons e atendimento não estão conectados. Avaliações verificadas cobrem pedidos de produtos pagos e concluídos do carrinho; compras de arquivos digitais e impressões personalizadas ainda não geram avaliações. O endereço é compartilhado com a loja, mas não é enviado a um serviço de logística.
+- Cotação automática de frete, compra de etiquetas e atualização automática de rastreio, variantes, cupons e atendimento não estão conectados. O endereço é compartilhado com a loja, mas não é enviado a um serviço de logística.
 - Lembretes de manutenção dependem de o fabricante registrar datas/horímetros; o portal não infere intervalos nem apresenta recomendações do fabricante do equipamento.
 - Banners aceitam mídia HTTPS externa com carregamento tardio e texto alternativo; upload gerenciado e otimização de imagem ainda não estão conectados.
 - O visualizador não preserva atribuições reais de filamento por cor nem importa resultados de fatiamento. O OCR da calculadora depende de Cloud Vision configurado e reconhecimento de rótulos comuns; imagens e texto OCR não entram no histórico.

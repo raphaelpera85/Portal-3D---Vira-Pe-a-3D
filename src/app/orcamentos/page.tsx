@@ -37,6 +37,11 @@ const resultMessages: Record<string, string> = {
 const dateLabel = (value: string | null) => value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${value.slice(0, 10)}T00:00:00Z`)) : null;
 const offerStatus = (value: string) => ({ offered: "Proposta enviada", accepted: "Aceita", declined: "Recusada" }[value] ?? value);
 const requestStatus = (value: string, type: string) => type === "purchase" ? ({ pending: "Aguardando fabricante", accepted: "Disponibilidade confirmada", declined: "Pedido recusado", cancelled: "Cancelado" }[value] ?? value) : ({ pending: "Aguardando proposta", offered: "Proposta recebida", accepted: "Proposta aceita", declined: "Proposta recusada", cancelled: "Cancelado" }[value] ?? value);
+type ReviewSource = "cart" | "purchase" | "custom_print";
+function ReviewForm({ sourceType, sourceId, reviewType, itemId = "", label }: { sourceType: ReviewSource; sourceId: string; reviewType: "product" | "store"; itemId?: string; label: string }) {
+  return <form action={submitMarketplaceReviewAction} className="auth-form"><input type="hidden" name="sourceType" value={sourceType} /><input type="hidden" name="sourceId" value={sourceId} /><input type="hidden" name="itemId" value={itemId} /><input type="hidden" name="reviewType" value={reviewType} /><label>Nota<select name="rating" defaultValue="5" required><option value="5">5 · Excelente</option><option value="4">4 · Muito bom</option><option value="3">3 · Bom</option><option value="2">2 · Regular</option><option value="1">1 · Ruim</option></select></label><label>Comentário (opcional)<textarea name="body" maxLength={1200} rows={3} /></label><button className="button button-primary" type="submit">{label}</button></form>;
+}
+const reviewStatus = (review: { status: string; rating: number }) => `${review.status === "pending" ? "Aguardando moderação" : review.status === "published" ? "Avaliação publicada" : "Avaliação não publicada"} · ${review.rating}/5`;
 
 export default async function BuyerQuotesPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
   const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("buyer")]);
@@ -53,11 +58,14 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
   const { data, error } = requestResult;
   const orders = orderResult.data ?? [];
   const customRequests = customResult.data ?? [];
-  const reviewResult = orders.length
-    ? await actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, review_type, rating, body, status").in("order_id", orders.map((order) => order.id))
-    : { data: [], error: null };
-  const reviewsUnavailable = Boolean(reviewResult.error);
-  const reviews = reviewResult.data ?? [];
+  const purchaseIds = (data ?? []).filter((request) => request.request_type === "purchase").map((request) => request.id);
+  const [cartReviews, purchaseReviews, customPrintReviews] = await Promise.all([
+    orders.length ? actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, purchase_request_id, custom_print_request_id, review_type, rating, status").in("order_id", orders.map((order) => order.id)) : Promise.resolve({ data: [], error: null }),
+    purchaseIds.length ? actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, purchase_request_id, custom_print_request_id, review_type, rating, status").in("purchase_request_id", purchaseIds) : Promise.resolve({ data: [], error: null }),
+    customRequests.length ? actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, purchase_request_id, custom_print_request_id, review_type, rating, status").in("custom_print_request_id", customRequests.map((request) => request.id)) : Promise.resolve({ data: [], error: null }),
+  ]);
+  const reviewsUnavailable = Boolean(cartReviews.error || purchaseReviews.error || customPrintReviews.error);
+  const reviews = [...(cartReviews.data ?? []), ...(purchaseReviews.data ?? []), ...(customPrintReviews.data ?? [])];
 
   return <>
     <SiteHeader />
@@ -65,7 +73,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
       <Link className="viewer-back-link" href="/">← Voltar para o início</Link>
       <div className="account-heading"><p className="eyebrow">ÁREA DO COMPRADOR</p><h1>Meus pedidos e orçamentos</h1><p>Acompanhe solicitações e propostas dos fabricantes.</p></div>
       {resultado && resultMessages[resultado] && <p className={`auth-notice ${["erro", "pagamento-configurar", "pagamento-conta-vendedor", "pagamento-email", "pagamento-erro", "avaliacao-erro"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{resultMessages[resultado]}</p>}
-      {reviewsUnavailable && <p className="auth-notice is-error" role="status">Avaliações temporariamente indisponíveis. A equipe precisa aplicar a migração 034 do banco.</p>}
+      {reviewsUnavailable && <p className="auth-notice is-error" role="status">Algumas avaliações estão temporariamente indisponíveis. A equipe precisa aplicar as migrações 034 e 036 do banco.</p>}
       {error || orderResult.error || customResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar seus pedidos. Confira as migrações do marketplace e de impressão personalizada.</p> : !data?.length && !orders.length && !customRequests.length ? <section className="account-card"><h2>Nenhum pedido por enquanto</h2><p>Explore produtos ou envie um modelo 3D para receber propostas de impressão.</p><Link className="button button-primary" href="/#produtos">Explorar produtos</Link><Link className="button button-secondary" href="/visualizador">Enviar modelo 3D</Link></section> : <section className="quote-list" aria-label="Pedidos e orçamentos">
         {customRequests.map((request) => {
           const payment = [...(request.payments ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
@@ -100,6 +108,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
           </>}
           {request.status === "in_production" && <p className="quote-small-note">O fabricante iniciou a produção em {dateLabel(request.production_started_at)}.</p>}
           {request.status === "completed" && <p className="quote-small-note">O fabricante marcou a impressão como concluída em {dateLabel(request.production_completed_at)}. O envio e o frete seguem combinados com a loja.</p>}
+          {request.status === "completed" && payment?.status === "paid" && !customPrintReviews.error && <section className="marketplace-order-reviews" aria-label="Avaliar impressão personalizada"><h3>Avaliação da impressão</h3><div className="marketplace-review-form-card"><strong>Avalie a loja {request.offers?.find((offer) => offer.status === "accepted")?.store_name ?? "fabricante"}</strong>{reviews.find((review) => review.custom_print_request_id === request.id) ? <p className="quote-small-note">{reviewStatus(reviews.find((review) => review.custom_print_request_id === request.id)!)}</p> : <ReviewForm sourceType="custom_print" sourceId={request.id} reviewType="store" label="Enviar avaliação da loja" />}</div></section>}
           {eventHistory.length > 0 && <div className="quote-delivery-status"><strong>Histórico da solicitação</strong><ol className="custom-print-timeline">{eventHistory.map((event) => <li key={event.id}><time dateTime={event.created_at}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(event.created_at))}</time><span>{getCustomPrintEventLabel(event.event_type)}{event.event_type === "proposal_sent" ? ` · ${formatBrl(Number(event.event_data?.total_brl))} · ${event.event_data?.lead_days} dias` : ""}</span><small>{event.actor_user_id === actor.user.id ? `Você · ${event.storeName}` : event.storeName}</small></li>)}</ol></div>}
           </article>;
         })}
@@ -135,12 +144,12 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
               {order.shipment_status === "shipped" && <form action={confirmSellerPurchaseOrderDelivery}><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="complete" value="false" /><button className="button button-secondary" type="submit">Confirmar recebimento</button></form>}
               {order.shipment_status === "delivered" && <form action={confirmSellerPurchaseOrderDelivery}><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="complete" value="true" /><button className="button button-primary" type="submit">Concluir pedido</button></form>}
             </div>}
-            {order.shipment_status === "completed" && payment?.status === "paid" && !reviewsUnavailable && <section className="marketplace-order-reviews" aria-label="Avaliar sua compra">
+            {order.shipment_status === "completed" && payment?.status === "paid" && !cartReviews.error && <section className="marketplace-order-reviews" aria-label="Avaliar sua compra">
               <h3>Avaliações da compra</h3>
-              <div className="marketplace-review-form-card"><strong>Avalie a loja {order.store_name}</strong>{storeReview ? <p className="quote-small-note">{storeReview.status === "pending" ? "Aguardando moderação" : storeReview.status === "published" ? "Avaliação publicada" : "Avaliação não publicada"} · {storeReview.rating}/5</p> : <form action={submitMarketplaceReviewAction} className="auth-form"><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="itemId" value="" /><label>Nota<select name="rating" defaultValue="5" required><option value="5">5 · Excelente</option><option value="4">4 · Muito bom</option><option value="3">3 · Bom</option><option value="2">2 · Regular</option><option value="1">1 · Ruim</option></select></label><label>Comentário (opcional)<textarea name="body" maxLength={1200} rows={3} /></label><button className="button button-primary" type="submit">Enviar avaliação da loja</button></form>}</div>
+              <div className="marketplace-review-form-card"><strong>Avalie a loja {order.store_name}</strong>{storeReview ? <p className="quote-small-note">{reviewStatus(storeReview)}</p> : <ReviewForm sourceType="cart" sourceId={order.id} reviewType="store" label="Enviar avaliação da loja" />}</div>
               {order.items?.map((item) => {
                 const itemReview = reviews.find((review) => review.order_item_id === item.id && review.review_type === "product");
-                return <div className="marketplace-review-form-card" key={item.id}><strong>Avalie {item.product_name}</strong>{itemReview ? <p className="quote-small-note">{itemReview.status === "pending" ? "Aguardando moderação" : itemReview.status === "published" ? "Avaliação publicada" : "Avaliação não publicada"} · {itemReview.rating}/5</p> : <form action={submitMarketplaceReviewAction} className="auth-form"><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="itemId" value={item.id} /><label>Nota<select name="rating" defaultValue="5" required><option value="5">5 · Excelente</option><option value="4">4 · Muito bom</option><option value="3">3 · Bom</option><option value="2">2 · Regular</option><option value="1">1 · Ruim</option></select></label><label>Comentário (opcional)<textarea name="body" maxLength={1200} rows={3} /></label><button className="button button-primary" type="submit">Enviar avaliação do produto</button></form>}</div>;
+                return <div className="marketplace-review-form-card" key={item.id}><strong>Avalie {item.product_name}</strong>{itemReview ? <p className="quote-small-note">{reviewStatus(itemReview)}</p> : <ReviewForm sourceType="cart" sourceId={order.id} itemId={item.id} reviewType="product" label="Enviar avaliação do produto" />}</div>;
               })}
             </section>}
             {Array.isArray(order.events) && order.events.length > 0 && <div className="quote-delivery-status" aria-label="Histórico do pedido"><strong>Histórico</strong>{[...order.events].sort((a, b) => a.created_at.localeCompare(b.created_at)).map((event) => <div key={event.id}><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.created_at))} · {event.description}</span></div>)}</div>}
@@ -169,6 +178,11 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
                         : payment && <p className="auth-notice is-error" role="status">A tentativa anterior foi encerrada. Você pode iniciar uma nova.</p>}
               {payment?.status !== "paid" && payment?.status !== "refunded" && payment?.status !== "partially_refunded" && payment?.status !== "pending" && <form action={startSellerOrderPayment}><input type="hidden" name="purchaseRequestId" value={request.id} /><button className="button button-primary" type="submit">{payment?.status === "creating" ? "Retomar checkout" : "Pagar com Mercado Pago"} · {formatBrlTotal(request.unit_price_brl!, request.quantity)}</button></form>}
               <p className="quote-small-note">{request.license_type ? "O download fica disponível somente após confirmação do pagamento." : "O fabricante confirmou a disponibilidade. O checkout cobra os produtos; o frete é combinado com a loja."}</p>
+              {payment?.status === "paid" && !purchaseReviews.error && <section className="marketplace-order-reviews" aria-label="Avaliar sua compra"><h3>Avaliações da compra</h3>{(["store", "product"] as const).map((reviewType) => {
+                const review = reviews.find((item) => item.purchase_request_id === request.id && item.review_type === reviewType);
+                const label = reviewType === "store" ? `loja ${request.store_name}` : request.product_name;
+                return <div className="marketplace-review-form-card" key={reviewType}><strong>Avalie {label}</strong>{review ? <p className="quote-small-note">{reviewStatus(review)}</p> : <ReviewForm sourceType="purchase" sourceId={request.id} reviewType={reviewType} label={`Enviar avaliação ${reviewType === "store" ? "da loja" : "do produto"}`} />}</div>;
+              })}</section>}
             </>}
             {request.status === "accepted" && request.request_type !== "purchase" && <p className="quote-small-note">A proposta foi aceita. O pagamento e a contratação serão combinados fora da plataforma nesta versão.</p>}
           </article>;

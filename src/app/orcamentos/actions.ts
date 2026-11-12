@@ -204,19 +204,34 @@ export async function confirmSellerPurchaseOrderDelivery(formData: FormData): Pr
 }
 
 export async function submitMarketplaceReviewAction(formData: FormData): Promise<void> {
-  const orderId = formData.get("orderId");
+  const sourceType = formData.get("sourceType");
+  const sourceId = formData.get("sourceId");
   const itemId = formData.get("itemId");
+  const reviewType = formData.get("reviewType");
   const rating = formData.get("rating");
   const body = formData.get("body");
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId)
+  if (!(sourceType === "cart" || sourceType === "purchase" || sourceType === "custom_print")
+    || typeof sourceId !== "string" || !uuidPattern.test(sourceId)
     || (itemId !== "" && (typeof itemId !== "string" || !uuidPattern.test(itemId)))
+    || !(reviewType === "product" || reviewType === "store")
+    || (sourceType === "cart" && ((reviewType === "product") !== Boolean(itemId)))
+    || (sourceType === "purchase" && itemId !== "")
+    || (sourceType === "custom_print" && (reviewType !== "store" || itemId !== ""))
     || typeof rating !== "string" || !["1", "2", "3", "4", "5"].includes(rating)
     || typeof body !== "string" || body.length > 1200) redirect("/orcamentos?resultado=avaliacao-erro");
   const actor = await getUserWithRole("buyer");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
-  const { error } = await actor.supabase.rpc("submit_marketplace_review", {
-    p_order_id: orderId, p_order_item_id: itemId || null, p_rating: Number(rating), p_body: body.trim() || null,
-  });
+  const { error } = sourceType === "cart"
+    ? await actor.supabase.rpc("submit_marketplace_review", {
+      p_order_id: sourceId, p_order_item_id: itemId || null, p_rating: Number(rating), p_body: body.trim() || null,
+    })
+    : sourceType === "purchase"
+      ? await actor.supabase.rpc("submit_product_purchase_review", {
+        p_request_id: sourceId, p_review_type: reviewType, p_rating: Number(rating), p_body: body.trim() || null,
+      })
+      : await actor.supabase.rpc("submit_custom_print_review", {
+        p_request_id: sourceId, p_rating: Number(rating), p_body: body.trim() || null,
+      });
   if (error) redirect("/orcamentos?resultado=avaliacao-erro");
   revalidatePath("/orcamentos");
   redirect("/orcamentos?resultado=avaliacao-enviada");
