@@ -35,6 +35,12 @@ export function MakerProductForm({ storeId, categories }: { storeId: string; cat
           </>}
           <label>Prazo de preparação (dias)<input name="preparationDays" type="number" min="0" max="365" step="1" placeholder="Opcional" /></label>
         </>}
+        {listingType === "physical" && <fieldset className="shipping-package-fields"><legend>Embalagem do produto</legend><small>Opcional. Informe as medidas externas da embalagem e o peso com a peça protegida.</small><div>
+          <label>Peso (g)<input name="packageWeightG" type="number" min="1" max="100000" step="1" placeholder="Ex.: 420" /></label>
+          <label>Comprimento (cm)<input name="packageLengthCm" type="number" min="0.1" max="500" step="0.01" /></label>
+          <label>Largura (cm)<input name="packageWidthCm" type="number" min="0.1" max="500" step="0.01" /></label>
+          <label>Altura (cm)<input name="packageHeightCm" type="number" min="0.1" max="500" step="0.01" /></label>
+        </div></fieldset>}
         <label>Imagem pública HTTPS (opcional)<input name="imageUrl" type="url" maxLength={1000} placeholder="https://" /></label>
         <label>Tags separadas por vírgula (opcional)<input name="tags" maxLength={260} placeholder="miniatura, RPG, articulado" /></label>
         <button className="button button-primary" type="submit" disabled={pending || categories.length === 0 || state.success}>{pending ? "Salvando…" : "Salvar rascunho"}</button>

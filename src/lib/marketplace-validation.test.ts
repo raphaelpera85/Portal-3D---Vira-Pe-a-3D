@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expandProductVariantOptions, validateMakerApplication, validateProductDraft, validateProductInventory, validateProductQuoteOffer, validateProductQuoteRequest, validateProductVariantPricing, validateStoreNotificationContacts } from "./marketplace-validation";
+import { expandProductVariantOptions, validateMakerApplication, validateProductDraft, validateProductInventory, validateProductQuoteOffer, validateProductQuoteRequest, validateProductShippingPackage, validateProductVariantPricing, validateStoreNotificationContacts } from "./marketplace-validation";
 
 describe("marketplace form validation", () => {
   it("expands product option groups into bounded, deterministic SKU combinations", () => {
@@ -66,6 +66,16 @@ describe("marketplace form validation", () => {
     expect(validateProductInventory({ fulfillmentMode: "ready_to_ship", stockQuantity: "" }, "fixed")).toBeNull();
     expect(validateProductInventory({ fulfillmentMode: "made_to_order", preparationDays: "12" }, "from")).toEqual({ fulfillmentMode: "made_to_order", stockQuantity: null, preparationDays: 12 });
     expect(validateProductInventory({ fulfillmentMode: "quote" }, "quote")).toEqual({ fulfillmentMode: "quote", stockQuantity: null, preparationDays: null });
+  });
+
+  it("validates shipping package data as an all-or-none physical product detail", () => {
+    const base = { name: "Vaso modular", categoryId: "7b383334-110a-4dc3-9000-6c7e0c2ad491", priceMode: "fixed", priceBrl: "84.90" };
+    const parcel = { packageWeightG: "420", packageLengthCm: "18", packageWidthCm: "12.5", packageHeightCm: "9" };
+    expect(validateProductDraft({ ...base, ...parcel })).toMatchObject({ shippingPackage: { weightG: 420, lengthCm: 18, widthCm: 12.5, heightCm: 9 } });
+    expect(validateProductDraft({ ...base, packageWeightG: "420" })).toBeNull();
+    expect(validateProductDraft({ ...base, ...parcel, packageWeightG: "0" })).toBeNull();
+    expect(validateProductDraft({ ...base, listingType: "digital", fulfillmentMode: "digital", ...parcel })).toBeNull();
+    expect(validateProductShippingPackage(parcel)).toEqual({ weightG: 420, lengthCm: 18, widthCm: 12.5, heightCm: 9 });
   });
 
   it("accepts digital listings only with fixed pricing and digital fulfillment", () => {

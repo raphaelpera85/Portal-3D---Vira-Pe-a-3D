@@ -23,6 +23,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Enviar evidências de contestação uma única vez pelo painel do fabricante e sincronizar o status do provedor.
 - [ ] Adicionar testes de integração com contas de teste e validar as migrations no Supabase conectado.
 - [x] Implementar cotação manual de frete por loja para pedidos do carrinho e impressão personalizada, aceite do comprador, inclusão no checkout, rastreio manual e confirmação de recebimento.
+- [x] Coletar e validar peso e dimensões externas da embalagem em anúncios físicos para preparar cotações automáticas.
 - [ ] Integrar provedor para cotações automáticas, compra de etiquetas e atualização automática de rastreio.
 
 ## Bloqueios de produção
@@ -40,6 +41,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - A documentação do Mercado Pago informa que a comissão do marketplace é aplicada após a taxa do Mercado Pago e que o reembolso pode exigir saldo disponível do vendedor; a plataforma não consegue garantir sozinha o reembolso integral nesse cenário.
 - O checkout online atende pedidos do carrinho, solicitações diretas de compra e propostas de impressão aceitos, sempre por loja.
 - Para pedidos de carrinho, o checkout inclui o frete manual cotado pela loja e aceito pelo comprador; a comissão é calculada somente sobre os produtos. A cotação não usa tarifas ao vivo e não emite etiqueta.
+- Cupons são pagos pelos vendedores, rateados pelo valor dos produtos de cada loja. A comissão incide sobre o subtotal do vendedor após o desconto; frete não entra na base da comissão. Os campos de embalagem agora guardam peso e dimensões externas, mas ainda não consultam tarifas de transportadoras.
 - Impressões personalizadas copiam o endereço salvo somente após o comprador escolher uma proposta; RLS libera o snapshot apenas ao comprador, à loja vencedora e à administração. A cotação aceita soma ao checkout sem aumentar a base da comissão; o rastreio só pode ser enviado após pagamento confirmado e produção concluída.
 - Estoque contado de produtos é reservado atomicamente ao iniciar o checkout de carrinho ou compra direta, confirmado como vendido apenas pelo webhook e devolvido se o provedor rejeitar, cancelar ou expirar a order. Serviços de impressão não reservam estoque de produto; a produção só pode começar após o webhook confirmar o pagamento. Orders do Mercado Pago expiram em um dia.
 - O cron diário da Vercel também reconcilia até oito reembolsos pendentes com mais de cinco minutos; itens inconclusivos permanecem pendentes para a próxima execução e usam a mesma chave idempotente.

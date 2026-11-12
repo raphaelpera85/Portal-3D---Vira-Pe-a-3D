@@ -608,6 +608,13 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .maker-product-inventory small { grid-column: 1 / -1; color: var(--muted); font-size: 10px; }
 .maker-product-inventory .button { justify-self: start; }
 .product-inventory-note { margin: 0; color: var(--muted); font-size: 11px; }
+.maker-product-package-form { display: grid; justify-items: start; gap: 10px; padding: 12px; border: 1px solid var(--line); background: var(--paper); }
+.shipping-package-fields { display: grid; gap: 8px; min-width: 0; width: 100%; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 5px; }
+.shipping-package-fields legend { padding-inline: 4px; color: var(--ink); font-size: 11px; font-weight: 700; }
+.shipping-package-fields small { color: var(--muted); font-size: 10px; }
+.shipping-package-fields > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.shipping-package-fields label { display: grid; gap: 5px; color: var(--muted-strong); font-size: 10px; font-weight: 700; }
+.shipping-package-fields input { min-width: 0; min-height: 38px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); color: var(--ink); font: inherit; font-size: 11px; }
 .admin-dashboard { max-width: 1120px; }
 .admin-overview-section { margin-top: 34px; }
 .admin-overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
@@ -710,6 +717,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .integration-health-grid { grid-template-columns: 1fr; }
   .maker-product-inventory { grid-template-columns: 1fr; }
   .maker-product-inventory small { grid-column: auto; }
+  .shipping-package-fields > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .maker-location-fields { grid-template-columns: 1fr; }
   .consignment-form-grid, .consignment-report dl, .consignment-item-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .consignment-item-heading { flex-direction: column; }

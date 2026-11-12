@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { normalizeProductVariantOptions, validateProductDraft, validateProductInventory, validateProductVariantPricing, validateStoreNotificationContacts } from "@/lib/marketplace-validation";
+import { normalizeProductVariantOptions, validateProductDraft, validateProductInventory, validateProductShippingPackage, validateProductVariantPricing, validateStoreNotificationContacts } from "@/lib/marketplace-validation";
 import { validateMaintenanceEntry, validateMakerPrinter } from "@/lib/printer-equipment";
 import { validateConsignmentInput, validateConsignmentMovement } from "@/lib/consignment";
 import { validatePrintProfile } from "@/lib/print-profiles";
@@ -26,6 +26,8 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     priceMode: formData.get("priceMode"), priceBrl: formData.get("priceBrl"), imageUrl: formData.get("imageUrl"), tags: formData.get("tags"),
     fulfillmentMode: formData.get("fulfillmentMode"), stockQuantity: formData.get("stockQuantity"), preparationDays: formData.get("preparationDays"),
     variantOptions: formData.get("variantOptions"), variantPricing: formData.get("variantPricing"),
+    packageWeightG: formData.get("packageWeightG"), packageLengthCm: formData.get("packageLengthCm"),
+    packageWidthCm: formData.get("packageWidthCm"), packageHeightCm: formData.get("packageHeightCm"),
   });
   const storeId = formData.get("storeId");
   if (!product || typeof storeId !== "string" || !uuidPattern.test(storeId)) return { message: "Confira nome, categoria e preço do anúncio.", success: false };
@@ -42,6 +44,8 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     description: product.description, listing_type: product.listingType, fulfillment_mode: product.fulfillmentMode,
     price_mode: product.priceMode, price_brl: product.priceBrl, media: product.media, tags: product.tags,
     stock_quantity: product.stockQuantity, preparation_days: product.preparationDays,
+    package_weight_g: product.shippingPackage?.weightG ?? null, package_length_cm: product.shippingPackage?.lengthCm ?? null,
+    package_width_cm: product.shippingPackage?.widthCm ?? null, package_height_cm: product.shippingPackage?.heightCm ?? null,
     product_properties: { variant_options: product.variantOptions },
     catalog_status: "draft", created_by: actor.user.id,
   }).select("id").single();
@@ -107,6 +111,27 @@ export async function updateProductInventory(formData: FormData): Promise<void> 
   revalidatePath("/painel/maker");
   revalidatePath("/");
   redirect("/painel/maker?resultado=estoque-salvo#produtos");
+}
+
+export async function updateProductShippingPackage(formData: FormData): Promise<void> {
+  const productId = formData.get("productId");
+  if (typeof productId !== "string" || !uuidPattern.test(productId)) redirect("/painel/maker?resultado=embalagem-erro#produtos");
+  const shippingPackage = validateProductShippingPackage({
+    packageWeightG: formData.get("packageWeightG"), packageLengthCm: formData.get("packageLengthCm"),
+    packageWidthCm: formData.get("packageWidthCm"), packageHeightCm: formData.get("packageHeightCm"),
+  });
+  if (shippingPackage === null) redirect("/painel/maker?resultado=embalagem-erro#produtos");
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("save_maker_product_shipping_package", {
+    p_product_id: productId, p_weight_g: shippingPackage?.weightG ?? null,
+    p_length_cm: shippingPackage?.lengthCm ?? null, p_width_cm: shippingPackage?.widthCm ?? null,
+    p_height_cm: shippingPackage?.heightCm ?? null,
+  });
+  if (error) redirect("/painel/maker?resultado=embalagem-erro#produtos");
+  revalidatePath("/painel/maker");
+  revalidatePath("/");
+  redirect("/painel/maker?resultado=embalagem-salva#produtos");
 }
 
 export async function updateProductVariants(formData: FormData): Promise<void> {
