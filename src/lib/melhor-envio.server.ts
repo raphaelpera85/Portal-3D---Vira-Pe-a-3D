@@ -25,12 +25,15 @@ async function getConnection(storeId: string) {
   return { admin, connection: data as Connection };
 }
 
-export async function getMelhorEnvioAccessToken(storeId: string) {
+export async function getMelhorEnvioAccessToken(storeId: string, requiredScopes: string[] = []) {
   const encryptionKey = process.env.ME_TOKEN_ENCRYPTION_KEY;
   const clientId = process.env.ME_CLIENT_ID;
   const clientSecret = process.env.ME_CLIENT_SECRET;
   if (!encryptionKey || !clientId || !clientSecret) throw new Error("Melhor Envio não configurado");
   const { admin, connection } = await getConnection(storeId);
+  if (requiredScopes.some((scope) => !connection.scopes.split(/\s+/).includes(scope))) {
+    throw new Error("Reconecte sua conta Melhor Envio para autorizar a emissão e o rastreio de etiquetas");
+  }
   if (new Date(connection.token_expires_at).getTime() > Date.now() + 120_000) {
     return decryptMercadoPagoToken(connection.access_token_ciphertext, encryptionKey);
   }
@@ -72,6 +75,21 @@ export async function getMelhorEnvioAccessToken(storeId: string) {
     return decryptMercadoPagoToken(latest.access_token_ciphertext, encryptionKey);
   }
   return token.access_token;
+}
+
+export async function requestMelhorEnvio(storeId: string, scopes: string[], path: string, body: unknown) {
+  const accessToken = await getMelhorEnvioAccessToken(storeId, scopes);
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`, "content-type": "application/json", accept: "application/json",
+      "user-agent": "ViraPeca3D (suporte@virapeca3d.com.br)",
+    },
+    body: JSON.stringify(body), signal: AbortSignal.timeout(12000), cache: "no-store", redirect: "error",
+  });
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) throw new Error("Não foi possível concluir a operação no Melhor Envio");
+  return payload;
 }
 
 export { type MelhorEnvioRate } from "@/lib/melhor-envio";

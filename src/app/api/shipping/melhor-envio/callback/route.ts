@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       access_token_ciphertext: encryptMercadoPagoToken(token.access_token, encryptionKey),
       refresh_token_ciphertext: encryptMercadoPagoToken(token.refresh_token, encryptionKey),
       token_expires_at: new Date(Date.now() + token.expires_in * 1000).toISOString(),
-      scopes: typeof token.scope === "string" ? token.scope : "shipping-calculate", updated_at: new Date().toISOString(),
+      scopes: typeof token.scope === "string" ? token.scope : "shipping-calculate cart-write cart-read shipping-checkout shipping-generate shipping-print shipping-tracking", updated_at: new Date().toISOString(),
     }, { onConflict: "store_id" });
     if (error) throw new Error("Could not store token");
     return redirectTo("melhor-envio-conectado");

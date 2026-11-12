@@ -435,6 +435,10 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .maker-shipping-quote-form label { display: grid; gap: 5px; min-width: 0; color: var(--muted-strong); font-size: 10px; font-weight: 700; }
 .maker-shipping-quote-form input, .maker-shipping-quote-form select { width: 100%; min-width: 0; min-height: 38px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); color: var(--ink); font: inherit; font-size: 11px; }
 .maker-shipping-quote-form small { color: var(--muted); font-size: 10px; }
+.maker-shipping-label-manager { display: grid; gap: 10px; margin-top: 14px; }
+.maker-shipping-quote-form > p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.maker-shipping-quote-form .quote-consent { grid-column: 1 / -1; }
+.maker-shipping-origin-form .equipment-form-grid { margin-block: 12px; }
 .cart-order-items { margin-block: 18px; }
 .cart-order-items > li strong { color: var(--ink); }
 .quote-card { margin: 0; }

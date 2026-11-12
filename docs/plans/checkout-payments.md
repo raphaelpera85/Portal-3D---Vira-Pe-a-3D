@@ -27,8 +27,9 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Coletar CEP de origem por loja em registro privado protegido por RLS do proprietário.
 - [x] Integrar OAuth Melhor Envio por loja, cifrar tokens e oferecer ao comprador a tarifa mais barata em pedidos do carrinho.
 - [ ] Configurar e validar os aplicativos Melhor Envio Sandbox e Produção.
-- [ ] Comprar etiqueta após confirmação explícita do vendedor; a operação consome saldo da carteira do vendedor.
-- [ ] Sincronizar rastreamento/status da transportadora; impressão personalizada permanece em cotação manual.
+- [x] Criar etiqueta no carrinho Melhor Envio após pagamento do pedido; mostrar o custo e exigir confirmação antes de debitar a carteira do vendedor.
+- [x] Solicitar geração e impressão privada da etiqueta e atualizar status/rastreio via webhook com assinatura HMAC; impressão personalizada permanece em cotação manual.
+- [ ] Configurar webhook e validar o fluxo de ponta a ponta com pedido e conta sandbox do Melhor Envio.
 
 ## Bloqueios de produção
 
@@ -44,7 +45,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 
 - A documentação do Mercado Pago informa que a comissão do marketplace é aplicada após a taxa do Mercado Pago e que o reembolso pode exigir saldo disponível do vendedor; a plataforma não consegue garantir sozinha o reembolso integral nesse cenário.
 - O checkout online atende pedidos do carrinho, solicitações diretas de compra e propostas de impressão aceitos, sempre por loja.
-- Para pedidos de carrinho, a loja pode consultar tarifas da conta Melhor Envio e oferecer a menor; o comprador aceita antes do checkout. A comissão continua calculada somente sobre os produtos. A cotação não emite etiqueta.
+- Para pedidos de carrinho, a loja pode consultar tarifas da conta Melhor Envio e oferecer a menor; o comprador aceita antes do checkout. A comissão continua calculada somente sobre os produtos. Depois do pagamento, uma única embalagem pode ser adicionada ao carrinho do Melhor Envio e comprada com confirmação explícita do vendedor.
 - Cupons são pagos pelos vendedores, rateados pelo valor dos produtos de cada loja. A comissão incide sobre o subtotal do vendedor após o desconto; frete não entra na base da comissão. Os campos de embalagem guardam peso e dimensões externas e alimentam a consulta de tarifas Melhor Envio; a cotação manual continua disponível.
 - O CEP de origem fica fora da vitrine pública e só pode ser lido ou alterado pelo dono da loja. Os tokens Melhor Envio são cifrados no servidor e a tabela não permite leitura por usuários nem anônimos.
 - Impressões personalizadas copiam o endereço salvo somente após o comprador escolher uma proposta; RLS libera o snapshot apenas ao comprador, à loja vencedora e à administração. A cotação aceita soma ao checkout sem aumentar a base da comissão; o rastreio só pode ser enviado após pagamento confirmado e produção concluída.
@@ -52,7 +53,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - O cron diário da Vercel também reconcilia até oito reembolsos pendentes com mais de cinco minutos; itens inconclusivos permanecem pendentes para a próxima execução e usam a mesma chave idempotente.
 - Para receber contestações, habilite o evento `Contestações` no painel de notificações Mercado Pago. O portal encaminha arquivos pelo servidor, após verificar a propriedade da loja, o estado remoto `pending`, o prazo e os limites oficiais; os arquivos passam por um bucket privado temporário e são removidos após o envio ou depois de 24 horas.
 - O portal registra estado, data e quantidade de comprovantes enviados. O arquivo enviado permanece na conta Mercado Pago, e decisões são atualizadas quando o provedor notifica o caso.
-- Administração de decisões fora das notificações do provedor, compra de etiquetas, rastreio logístico automatizado e validação dos fluxos com contas sandbox ainda não estão concluídos.
+- A operação de etiqueta por múltiplos volumes, sua configuração de webhook em sandbox/produção e a validação de ponta a ponta com contas sandbox ainda não estão concluídas.
 - O webhook atualiza o estado do pagamento após validar a assinatura e consultar a order no Mercado Pago. A página de retorno não confirma pagamento.
 - O webhook de `chargebacks` valida a notificação assinada, lê os IDs das cases da order e busca seus detalhes com o token do vendedor e seu `X-Caller-Id`; o extrato mostra estado, cobertura e prazo de envio. As migrations de contestação e do bucket privado estão aplicadas no Supabase conectado; a validação ponta a ponta ainda depende de contas sandbox.
 - A desconexão local remove os tokens cifrados e bloqueia novos checkouts e reembolsos em andamento; ela não revoga a autorização remota, que o vendedor precisa remover na própria conta Mercado Pago ([gestão OAuth](https://www.mercadopago.com.br/developers/pt/docs/subscriptions/additional-content/security/oauth/management?scope=prod)).
