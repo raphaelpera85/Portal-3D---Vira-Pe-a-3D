@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 import { CirclePlus, Calculator, Trash2 } from "lucide-react";
 import { calculatePrintPrice, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "@/lib/pricing";
+import { exportPrintCalculationCsv } from "@/lib/pricing-export";
 import { deriveEquipmentRates, type EquipmentRateInput } from "@/lib/printer-equipment";
 import { evaluateMaterialCompatibility, type CatalogPrinter } from "@/lib/compatibility";
 import type { MaterialEntry } from "@/lib/technical-catalog";
@@ -231,6 +232,18 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   }
 
   const breakdown = result.breakdown;
+  const canExport = hasProductionCost && Boolean(breakdown) && result.errors.length === 0;
+
+  function downloadCsv() {
+    if (!canExport) return;
+    const csv = exportPrintCalculationCsv(calculationTitle.trim() || fields.material.trim() || "Cálculo ViraPeça 3D", input, parsedChannels, result);
+    const objectUrl = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = `${(calculationTitle.trim() || fields.material.trim() || "calculo-virapeca-3d").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "calculo-virapeca-3d"}.csv`;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  }
 
   return (
     <section className="price-calculator shell" aria-label="Calculadora de custos de impressão 3D">
@@ -365,8 +378,30 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             })}
           </div>
           <p className="price-disclaimer">Estimativa manual: não inclui impostos, frete, tarifas não informadas ou custos de produção não preenchidos.</p>
+          <div className="price-export-actions">
+            <button className="button button-secondary" type="button" disabled={!canExport} onClick={() => window.print()}>Salvar relatório em PDF</button>
+            <button className="button button-secondary" type="button" disabled={!canExport} onClick={downloadCsv}>Baixar CSV</button>
+          </div>
         </aside>
       </div>
+
+      {canExport && breakdown && <section className="price-print-report" aria-hidden="true">
+        <p className="eyebrow">VIRAPEÇA 3D · PRECIFICAÇÃO</p>
+        <h1>Relatório de custos e preços</h1>
+        <p><strong>Cálculo:</strong> {calculationTitle.trim() || fields.material.trim() || "Sem título"}</p>
+        <p><strong>Lote:</strong> {input.batchQuantity} peças · <strong>Material:</strong> {input.material || "não informado"}</p>
+        <p><strong>Custo total:</strong> {money(breakdown.totalCostCents)} · <strong>Custo unitário:</strong> {money(result.unitCostCents)}</p>
+        <h2>Composição do custo do lote</h2>
+        <table><tbody>{[
+          ["Material", breakdown.materialCents], ["Energia", breakdown.energyCents], ["Operação da máquina", breakdown.machineCents],
+          ["Depreciação", breakdown.depreciationCents], ["Manutenção", breakdown.maintenanceCents], ["Mão de obra", breakdown.laborCents],
+          ["Componentes adicionais", breakdown.additionalCents], ["Custos fixos rateados", breakdown.overheadCents],
+          ["Custo fixo do lote", breakdown.batchFixedCents], ["Reserva para falhas", breakdown.failureReserveCents],
+        ].map(([label, cents]) => <tr key={String(label)}><th>{String(label)}</th><td>{money(cents as number)}</td></tr>)}<tr><th>Total do lote</th><td>{money(breakdown.totalCostCents)}</td></tr></tbody></table>
+        <h2>Preços por canal</h2>
+        <table><thead><tr><th>Canal</th><th>Taxa</th><th>Preço</th><th>Lucro</th><th>Margem</th></tr></thead><tbody>{result.channels.map((scenario) => <tr key={scenario.id}><th>{scenario.name}</th><td>{parsedChannels.find((channel) => channel.id === scenario.id)?.feePercent}% + {money(scenario.fixedFeeCents)}</td><td>{money(scenario.priceCents)}</td><td>{money(scenario.profitCents)}</td><td>{scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</td></tr>)}</tbody></table>
+        <p className="price-print-note">Estimativa com base nos custos e taxas informados. Não inclui custos que ficaram em branco, impostos ou frete.</p>
+      </section>}
 
       <section className="price-history" aria-labelledby="price-history-title">
         <div className="price-history-heading"><div><p className="eyebrow">CÁLCULOS DA SUA LOJA</p><h2 id="price-history-title">Histórico salvo</h2><p>Snapshots preservam os valores usados no momento do cálculo.</p></div></div>
