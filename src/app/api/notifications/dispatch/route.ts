@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 import { reconcilePendingSellerRefunds } from "@/lib/seller-payment-reconciliation.server";
+import { cleanupStaleChargebackEvidenceUploads } from "@/lib/chargeback-evidence-cleanup.server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -16,5 +17,6 @@ export async function GET(request: Request) {
   if (!secret || !safeEqual(authorization, `Bearer ${secret}`)) return Response.json({ error: "unauthorized" }, { status: 401 });
   const result = await dispatchNotificationQueue();
   const refunds = await reconcilePendingSellerRefunds();
-  return Response.json({ notifications: result.body, refundReconciliation: refunds }, { status: result.status });
+  const evidenceCleanup = await cleanupStaleChargebackEvidenceUploads();
+  return Response.json({ notifications: result.body, refundReconciliation: refunds, evidenceCleanup }, { status: result.status });
 }

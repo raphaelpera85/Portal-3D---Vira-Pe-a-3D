@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
+import { MakerChargebackEvidenceForm } from "@/components/maker-chargeback-evidence-form";
 import { formatBrl } from "@/lib/money";
 import { summarizeSellerPayments } from "@/lib/seller-payment-ledger";
 import { getUserWithRole } from "@/lib/auth-role.server";
@@ -42,7 +43,7 @@ export default async function MakerFinancePage({ searchParams }: { searchParams:
   if (!store) redirect("/painel/maker");
 
   const { data: payments, error } = await actor.supabase.from("seller_order_payments")
-    .select("id, order_id, purchase_request_id, custom_print_request_id, total_cents, marketplace_fee_cents, provider_order_id, status, provider_status, created_at, refunds:seller_order_refunds(id, amount_cents, status, provider_status, created_at), chargebacks:seller_order_chargebacks(case_id, case_status, reason, amount_cents, currency, coverage_applied, documentation_status, documentation_deadline)")
+    .select("id, order_id, purchase_request_id, custom_print_request_id, total_cents, marketplace_fee_cents, provider_order_id, status, provider_status, created_at, refunds:seller_order_refunds(id, amount_cents, status, provider_status, created_at), chargebacks:seller_order_chargebacks(case_id, case_status, reason, amount_cents, currency, coverage_applied, documentation_status, documentation_deadline, documents_sent_at, documents_count)")
     .eq("store_id", store.id).order("created_at", { ascending: false }).limit(500);
   const rows = payments ?? [];
   const summary = summarizeSellerPayments(rows);
@@ -82,9 +83,11 @@ export default async function MakerFinancePage({ searchParams }: { searchParams:
                   <span>{chargebackStatusLabels[chargeback.case_status] ?? "Atualização recebida"} · {new Intl.NumberFormat("pt-BR", { style: "currency", currency: chargeback.currency }).format(Number(chargeback.amount_cents) / 100)}</span>
                   {chargeback.reason && <small>{chargeback.reason}</small>}
                   <span className={`quote-status status-${chargeback.documentation_status}`}>{documentationStatusLabels[chargeback.documentation_status] ?? "Status de documentos desconhecido"}</span>
-                  {chargeback.documentation_status === "pending" && <small>Envie os comprovantes pela sua conta Mercado Pago antes do prazo indicado abaixo.</small>}
+                  {chargeback.documentation_status === "pending" && <small>Envie os comprovantes pelo portal antes do prazo indicado abaixo.</small>}
+                  {chargeback.documents_sent_at && <small>{chargeback.documents_count} comprovante(s) enviados em <time dateTime={chargeback.documents_sent_at}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(chargeback.documents_sent_at))}</time>.</small>}
                   {chargeback.documentation_deadline && <small>Prazo: <time dateTime={chargeback.documentation_deadline}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(chargeback.documentation_deadline))}</time></small>}
                   {chargeback.coverage_applied !== null && <small>{chargeback.coverage_applied ? "Decisão favorável ao vendedor" : "Decisão desfavorável ao vendedor"}</small>}
+                  {chargeback.documentation_status === "pending" && <MakerChargebackEvidenceForm caseId={chargeback.case_id} />}
                 </li>)}</ul> : "—"}
               </td></tr>;
             })}</tbody></table></div>}

@@ -11,7 +11,8 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Decidir provedor e arquitetura com base na documentação oficial.
 - [x] Exibir extrato dos 500 pagamentos mais recentes por loja, com totais pagos e comissão registrada.
 - [x] Vincular contas de vendedor com OAuth PKCE e persistência criptografada dos tokens.
-- [ ] Implementar desconexão local e orientar revogação da autorização do vendedor no Mercado Pago.
+- [x] Desconectar localmente a loja, remover tokens cifrados e bloquear novos checkouts.
+- [ ] Orientar o vendedor a revogar a autorização remota na própria conta Mercado Pago.
 - [x] Implementar refresh token, Checkout Pro para pedidos de carrinho, compras diretas e propostas de impressão aceitos, taxa de marketplace configurável e idempotência.
 - [x] Implementar webhook assinado, consulta server-to-server e transição auditável do pagamento.
 - [x] Registrar o status de contestação quando a order consultada no webhook retorna `charged_back`, bloquear nova cobrança da mesma origem e exibir o caso nos painéis.
@@ -19,7 +20,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Permitir ao comprador cancelar uma cobrança ainda não paga, com validação da order, idempotência e liberação do estoque reservado.
 - [x] Reconciliar diariamente até oito reembolsos pendentes por execução usando a mesma chave idempotente.
 - [x] Receber o tópico `chargebacks`, consultar os detalhes pelo token OAuth do vendedor e exibir status, valor, cobertura e prazo no extrato.
-- [ ] Enviar evidências e administrar decisões de contestações no portal.
+- [x] Enviar evidências de contestação uma única vez pelo painel do fabricante e sincronizar o status do provedor.
 - [ ] Adicionar testes de integração com contas de teste e validar as migrations no Supabase conectado.
 - [x] Implementar cotação manual de frete por loja, aceite do comprador, inclusão no checkout, rastreio manual e confirmação de recebimento.
 - [ ] Integrar provedor para cotações automáticas, compra de etiquetas e atualização automática de rastreio.
@@ -41,8 +42,9 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - Para pedidos de carrinho, o checkout inclui o frete manual cotado pela loja e aceito pelo comprador; a comissão é calculada somente sobre os produtos. A cotação não usa tarifas ao vivo e não emite etiqueta.
 - Estoque contado de produtos é reservado atomicamente ao iniciar o checkout de carrinho ou compra direta, confirmado como vendido apenas pelo webhook e devolvido se o provedor rejeitar, cancelar ou expirar a order. Serviços de impressão não reservam estoque de produto; a produção só pode começar após o webhook confirmar o pagamento. Orders do Mercado Pago expiram em um dia.
 - O cron diário da Vercel também reconcilia até oito reembolsos pendentes com mais de cinco minutos; itens inconclusivos permanecem pendentes para a próxima execução e usam a mesma chave idempotente.
-- Para receber contestações, habilite o evento `Contestações` no painel de notificações Mercado Pago. Evidências continuam sendo enviadas manualmente pela conta do vendedor; o portal ainda não faz upload nem registra a decisão final.
-- Envio de evidências e administração de decisões de disputas, frete automatizado e validação com contas sandbox ainda não estão concluídos.
+- Para receber contestações, habilite o evento `Contestações` no painel de notificações Mercado Pago. O portal encaminha arquivos pelo servidor, após verificar a propriedade da loja, o estado remoto `pending`, o prazo e os limites oficiais; os arquivos passam por um bucket privado temporário e são removidos após o envio ou depois de 24 horas.
+- O portal registra estado, data e quantidade de comprovantes enviados. O arquivo enviado permanece na conta Mercado Pago, e decisões são atualizadas quando o provedor notifica o caso.
+- Administração de decisões fora das notificações do provedor, frete automatizado e validação com contas sandbox ainda não estão concluídos.
 - O webhook atualiza o estado do pagamento após validar a assinatura e consultar a order no Mercado Pago. A página de retorno não confirma pagamento.
-- O webhook de `chargebacks` valida a notificação assinada, lê os IDs das cases da order e busca seus detalhes com o token do vendedor e seu `X-Caller-Id`; o extrato mostra estado, cobertura e prazo de envio. A migration precisa estar aplicada no Supabase conectado antes de ativar o evento.
+- O webhook de `chargebacks` valida a notificação assinada, lê os IDs das cases da order e busca seus detalhes com o token do vendedor e seu `X-Caller-Id`; o extrato mostra estado, cobertura e prazo de envio. As migrations de contestação e do bucket privado precisam estar aplicadas no Supabase conectado.
 - A desconexão local remove os tokens cifrados e bloqueia novos checkouts e reembolsos em andamento; ela não revoga a autorização remota, que o vendedor precisa remover na própria conta Mercado Pago ([gestão OAuth](https://www.mercadopago.com.br/developers/pt/docs/subscriptions/additional-content/security/oauth/management?scope=prod)).
