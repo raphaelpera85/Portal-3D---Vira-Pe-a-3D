@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateCalculationToSave } from "./saved-calculation";
+import { mapThreeMfPlateToSlicerMetrics, validateCalculationToSave } from "./saved-calculation";
 
 const snapshot = {
   input: {
@@ -10,6 +10,26 @@ const snapshot = {
   },
   channels: [{ id: "marketplace", name: "Marketplace", feePercent: 12, fixedFee: 2 }],
 };
+
+describe("mapThreeMfPlateToSlicerMetrics", () => {
+  it("uses plate totals when present and derives a total only from complete filament weights", () => {
+    expect(mapThreeMfPlateToSlicerMetrics({
+      index: 2, weightGrams: null, printTimeSeconds: 5400, supportUsed: true,
+      filaments: [
+        { color: "ff0000", type: "PLA", weightGrams: 12, lengthMeters: 4 },
+        { color: "0000ff", type: "PETG", weightGrams: 8, lengthMeters: 3 },
+      ],
+    }, 1)).toMatchObject({
+      slicer: "Arquivo 3MF · placa 2", filamentGrams: 20, derivedMass: true,
+      lengthMeters: 7, printHours: 1.5, materials: ["PLA", "PETG"],
+      filaments: [{ index: 1, grams: 12, color: "ff0000" }, { index: 2, grams: 8, color: "0000ff" }],
+    });
+    expect(mapThreeMfPlateToSlicerMetrics({
+      index: 1, weightGrams: 25, printTimeSeconds: null, supportUsed: null,
+      filaments: [{ color: null, type: "PLA", weightGrams: 12, lengthMeters: null }, { color: null, type: "PETG", weightGrams: null, lengthMeters: null }],
+    }, 1)).toMatchObject({ filamentGrams: 25, derivedMass: false, lengthMeters: null, filaments: [{ grams: 12 }] });
+  });
+});
 
 describe("validateCalculationToSave", () => {
   it("recalculates and returns a bounded immutable snapshot", () => {

@@ -1,4 +1,5 @@
 import { calculatePrintPrice, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "./pricing";
+import type { ThreeMfSlicePlate } from "./model-file";
 
 export const MAX_SAVED_CALCULATION_JSON = 20_000;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -13,6 +14,34 @@ export type SavedSlicerMetrics = {
   materials: string[]; filaments: Array<{ index: number; grams: number; material: string | null; color: string | null }>;
   conflicts: string[];
 };
+
+export function mapThreeMfPlateToSlicerMetrics(plate: ThreeMfSlicePlate, plateNumber: number): SavedSlicerMetrics {
+  const filamentGrams = plate.weightGrams ?? (plate.filaments.length > 0 && plate.filaments.every((filament) => filament.weightGrams !== null)
+    ? plate.filaments.reduce((total, filament) => total + filament.weightGrams!, 0)
+    : null);
+  const lengths = plate.filaments.map((filament) => filament.lengthMeters);
+  return {
+    slicer: `Arquivo 3MF · placa ${plate.index ?? plateNumber}`,
+    modelGrams: null,
+    supportGrams: null,
+    totalGrams: plate.weightGrams,
+    purgeGrams: null,
+    wipeTowerGrams: null,
+    filamentGrams,
+    derivedMass: plate.weightGrams === null && filamentGrams !== null,
+    lengthMeters: lengths.length > 0 && lengths.every((length) => length !== null)
+      ? lengths.reduce((total, length) => total + length!, 0)
+      : null,
+    printHours: plate.printTimeSeconds === null ? null : plate.printTimeSeconds / 3600,
+    filamentChanges: null,
+    estimatedCost: null,
+    materials: [...new Set(plate.filaments.map((filament) => filament.type).filter((type): type is string => Boolean(type)))].slice(0, 20),
+    filaments: plate.filaments.flatMap((filament, index) => filament.weightGrams === null ? [] : [{
+      index: index + 1, grams: filament.weightGrams, material: filament.type, color: filament.color,
+    }]).slice(0, 32),
+    conflicts: [],
+  };
+}
 
 function parseSlicerMetrics(value: unknown): SavedSlicerMetrics | null | undefined {
   if (value == null) return null;
