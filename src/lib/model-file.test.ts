@@ -149,6 +149,10 @@ describe("model dimensions", () => {
     expect(exceedsThreeMfExpansionLimit(MAX_THREE_MF_UNCOMPRESSED_BYTES - 10, 10)).toBe(false);
     expect(exceedsThreeMfExpansionLimit(MAX_THREE_MF_UNCOMPRESSED_BYTES - 10, 11)).toBe(true);
   });
+
+  it("allows the Batman 3MF package, which expands to 124 MiB", () => {
+    expect(exceedsThreeMfExpansionLimit(0, 124 * 1024 * 1024)).toBe(false);
+  });
 });
 
 describe("model color selection", () => {

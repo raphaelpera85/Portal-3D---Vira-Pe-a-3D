@@ -1,6 +1,6 @@
 export const MAX_MODEL_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_PUBLIC_MODEL_FILE_BYTES = 50 * 1024 * 1024;
-export const MAX_THREE_MF_UNCOMPRESSED_BYTES = 100 * 1024 * 1024;
+export const MAX_THREE_MF_UNCOMPRESSED_BYTES = 150 * 1024 * 1024;
 
 export type ModelUnit = "mm" | "cm" | "m";
 export type ModelSourceUnit = ModelUnit | "um" | "in" | "ft";
@@ -65,7 +65,7 @@ export async function readThreeMfPackage(data: Uint8Array) {
   let expandedBytes = 0;
   const archive = unzipSync(data, { filter: (entry) => {
     if (exceedsThreeMfExpansionLimit(expandedBytes, entry.originalSize)) {
-      throw new Error("O pacote 3MF ultrapassa o limite de extração de 100 MB.");
+      throw new Error(`O pacote 3MF ultrapassa o limite de extração de ${MAX_THREE_MF_UNCOMPRESSED_BYTES / 1024 / 1024} MB.`);
     }
     expandedBytes += entry.originalSize;
     return true;

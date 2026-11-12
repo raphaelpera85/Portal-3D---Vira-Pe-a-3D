@@ -190,13 +190,15 @@
   },
   {
     "id": "70bda315e46e",
-    "name": "247d32bf94a2fe3d3171a12165d265b9",
+    "name": "Batman",
     "category": "Chaveiros",
     "categorySlug": "chaveiros",
     "image": "/modelos/70bda315e46e.png",
     "tags": [
       "chaveiro",
-      "247d32bf94a2fe3d3171a12165d265b9"
+      "batman",
+      "dc",
+      "homem-morcego"
     ],
     "filePath": "models/2569eac8db885e1e3d76095344cb77d62e5538a71983057772cfec4464b2ca77.3mf"
   },
@@ -546,18 +548,6 @@
     "filePath": "models/816e03a10dcec0f30f2f8a92776bbf3a99b69f2b4110d21e51bb723c44bca4dd.3mf"
   },
   {
-    "id": "fb4326d92e74",
-    "name": "Spidy",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/fb4326d92e74.png",
-    "tags": [
-      "chaveiro",
-      "spidy"
-    ],
-    "filePath": "models/816e03a10dcec0f30f2f8a92776bbf3a99b69f2b4110d21e51bb723c44bca4dd.3mf"
-  },
-  {
     "id": "b5bb8102324d",
     "name": "strongergroot keychain print",
     "category": "Chaveiros",
@@ -649,20 +639,6 @@
     "category": "Chaveiros",
     "categorySlug": "chaveiros",
     "image": "/modelos/254940e7f223.png",
-    "tags": [
-      "chaveiro",
-      "3deep",
-      "flexi",
-      "pug"
-    ],
-    "filePath": "models/c2a3cd0c982dd56ba54a053f0294c356ad21d714f3def7cfaa5045446ad82508.3mf"
-  },
-  {
-    "id": "842b11790cac",
-    "name": "3Deep Flexi Pug Keychain (AMS)",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/842b11790cac.png",
     "tags": [
       "chaveiro",
       "3deep",
