@@ -10,7 +10,7 @@ import { ModelUploadManager, type SavedModelUpload } from "@/components/model-up
 import { createMeterExportCopy } from "@/lib/model-export";
 import {
   formatModelDimensions, MAX_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
-  type ModelFormat, type ModelSourceUnit, getModelFormat, readThreeMfUnit, validateModelFiles,
+  type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
 
 type ViewName = "frente" | "tras" | "topo" | "base" | "esquerda" | "direita";
@@ -207,6 +207,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
       await sceneReadyRef.current?.promise;
       if (!rendererRef.current) throw new Error("Este dispositivo não conseguiu iniciar a visualização WebGL.");
       const [THREE, buffer] = await Promise.all([import("three"), file.arrayBuffer()]);
+      let threeMfColors: ThreeMfColorData | null = null;
       const manager = new THREE.LoadingManager();
       manager.setURLModifier((resource) => {
         let filename = resource.split(/[?#]/)[0].split(/[\\/]/).pop()!;
@@ -237,12 +238,14 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
         }
         object = loader.parse(new TextDecoder().decode(buffer));
       } else if (kind === "3mf") {
-        const [{ ThreeMFLoader }, detectedUnit] = await Promise.all([
+        const [{ ThreeMFLoader }, packageData] = await Promise.all([
           import("three/examples/jsm/loaders/3MFLoader.js"),
-          readThreeMfUnit(new Uint8Array(buffer)),
+          readThreeMfPackage(new Uint8Array(buffer)),
         ]);
-        modelUnit = detectedUnit;
+        modelUnit = packageData.unit;
+        threeMfColors = packageData.colors;
         object = new ThreeMFLoader(manager).parse(buffer);
+        applyThreeMfColors(object, threeMfColors, THREE);
         object.rotation.x = -Math.PI / 2;
       } else {
         const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
@@ -279,7 +282,15 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
         parts.push({ id, name, visible: true });
       });
       setComponents(parts);
-      setModelColors(extractModelColors(wrapper, kind, THREE));
+      const fileColors = extractModelColors(wrapper, kind, THREE);
+      const paintedColors = threeMfColors?.componentPaintColors.flat().filter(Boolean) ?? [];
+      setModelColors([...new Set([
+        ...fileColors,
+        ...paintedColors,
+        ...(threeMfColors?.componentPartColors.flat() ?? []),
+        ...Object.values(threeMfColors?.namedColors ?? {}),
+        ...(threeMfColors?.paintPaletteColors ?? []),
+      ])].filter(Boolean).slice(0, 12));
       const size = bounds.getSize(new THREEAgain.Vector3());
       const grid = sceneRef.current?.getObjectByName("build-grid");
       const axes = sceneRef.current?.getObjectByName("build-axes");
@@ -492,7 +503,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
             <div className="model-color-list" aria-label="Cores definidas no arquivo">
               {modelColors.map((color) => <span key={color} className="model-color-swatch" style={{ backgroundColor: `#${color}` }} title={`#${color}`} aria-label={`Cor #${color}`} role="img" />)}
             </div>
-            <p className="scale-note">Prévia visual do modelo; não representa uma atribuição de filamento.</p>
+            <p className="scale-note">Cores lidas dos materiais ou da configuração de filamentos do arquivo.</p>
           </>}
           {components.length > 0 && <>
             <div className="inspector-divider" />
@@ -541,6 +552,41 @@ function extractModelColors(root: THREE.Object3D, format: ModelFormat, THREE: ty
     }
   });
   return [...colors].slice(0, 12);
+}
+
+function applyThreeMfColors(root: THREE.Object3D, colors: ThreeMfColorData, THREE: typeof import("three")) {
+  const paint = (object: THREE.Object3D, hex: string, force = false) => object.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const colored = materials.map((material) => {
+      if (!material) return material;
+      const original = material as THREE.Material & { color?: THREE.Color; map?: THREE.Texture | null };
+      if (material.vertexColors || original.map || (!force && original.color?.isColor && original.color.getHex() !== 0xffffff)) return material;
+      const clone = material.clone() as THREE.Material & { color?: THREE.Color };
+      clone.color?.set(`#${hex}`);
+      return clone;
+    });
+    mesh.material = Array.isArray(mesh.material) ? colored : colored[0];
+  });
+  root.children.forEach((item, index) => {
+    colors.componentPartColors[index]?.forEach((hex, partIndex) => {
+      if (hex && item.children[partIndex]) paint(item.children[partIndex], hex, true);
+    });
+    item.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const faceCount = mesh.geometry.getAttribute("position")?.count / 3;
+      const hex = colors.namedColors[child.name]
+        ?? colors.faceColors[faceCount]?.[0]
+        ?? colors.namedColors[item.name]
+        ?? colors.objectColors[index];
+      if (hex) paint(child, hex);
+    });
+    colors.componentPaintColors[index]?.forEach((hex, componentIndex) => {
+      if (hex && item.children[componentIndex]) paint(item.children[componentIndex], hex, true);
+    });
+  });
 }
 
 function disposeObject(object: THREE.Object3D) {

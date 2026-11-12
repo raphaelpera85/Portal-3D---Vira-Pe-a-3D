@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
-import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelFormat, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfUnit, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
+import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelFormat, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfUnit, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
 
 describe("model upload validation", () => {
   it("accepts STL, OBJ, 3MF, GLB and GLTF files under the size limit", () => {
@@ -73,6 +73,42 @@ describe("model dimensions", () => {
     expect(parseThreeMfUnit('<model unit="inch" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">')).toBe("in");
     expect(parseThreeMfUnit("<model>")).toBe("mm");
     expect(parseThreeMfUnit('<model unit="league">')).toBeNull();
+  });
+
+  it("maps Bambu filament slots to build objects and named parts", () => {
+    const colors = parseThreeMfColors(
+      '<model><resources><object id="2" name="Holder"><components><component objectid="3"/><component objectid="4"/></components></object></resources><build><item objectid="2" /></build></model>',
+      '<config><object id="2"><metadata key="name" value="Holder"/><metadata key="extruder" value="1"/><part id="4"><metadata key="name" value="Icon"/><metadata key="extruder" value="2"/><mesh_stat face_count="12"/></part><part id="5"><metadata key="name" value="Mark"/><metadata key="extruder" value="3"/></part></object></config>',
+      JSON.stringify({ filament_colour: ["#ff0000", "#00ff00", "#0000ff"] }),
+    );
+    expect(colors.objectColors).toEqual(["ff0000"]);
+    expect(colors.namedColors).toEqual({ Holder: "ff0000", Icon: "00ff00", Mark: "0000ff" });
+    expect(colors.faceColors).toEqual({ 12: ["00ff00"] });
+    expect(colors.componentPartColors).toEqual([["00ff00", "0000ff"]]);
+    expect(colors.palette).toEqual(["ff0000", "00ff00", "0000ff"]);
+  });
+
+  it("maps painted Bambu child objects to their root components", () => {
+    const colors = parseThreeMfColors(
+      '<model><resources><object id="2"><components><component objectid="3" p:path="/3D/Objects/paint.model"/></components></object></resources><build><item objectid="2"/></build></model>',
+      '<config><object id="2"><metadata key="extruder" value="1"/></object></config>',
+      JSON.stringify({ filament_colour: ["#ff0000", "#00ff00", "#0000ff"] }),
+      [{ path: "3D/Objects/paint.model", xml: '<model><resources><object id="3"><mesh><triangles><triangle paint_color="0C"/><triangle paint_color="0C"/></triangles></mesh></object></resources></model>' }],
+    );
+    expect(colors.objectColors).toEqual(["ff0000"]);
+    expect(colors.componentPaintColors).toEqual([["0000ff"]]);
+    expect(colors.paintPaletteColors).toEqual(["0000ff"]);
+  });
+
+  it("reads multi-color Bambu selectors into the palette without flattening the component", () => {
+    const colors = parseThreeMfColors(
+      '<model><resources><object id="2"><components><component objectid="3" p:path="/3D/Objects/paint.model"/></components></object></resources><build><item objectid="2"/></build></model>',
+      '<config><object id="2"><metadata key="extruder" value="1"/></object></config>',
+      JSON.stringify({ filament_colour: ["#ff0000", "#00ff00"] }),
+      [{ path: "3D/Objects/paint.model", xml: '<model><resources><object id="3"><mesh><triangles><triangle paint_color="418"/></triangles></mesh></object></resources></model>' }],
+    );
+    expect(colors.componentPaintColors).toEqual([[""]]);
+    expect(colors.paintPaletteColors).toEqual(["ff0000", "00ff00"]);
   });
 
   it("reads the unit from the 3MF model inside its zip package", async () => {
