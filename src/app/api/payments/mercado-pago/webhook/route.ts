@@ -1,4 +1,5 @@
 import { getMercadoPagoSellerAccessToken } from "@/lib/mercado-pago-access-token.server";
+import { listMercadoPagoOrderChargebacks, parseMercadoPagoChargebackCase } from "@/lib/mercado-pago-chargebacks";
 import { isMercadoPagoOrderForPayment, mapMercadoPagoOrderStatus, verifyMercadoPagoWebhookSignature } from "@/lib/mercado-pago-payments";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
   if (!secret || !admin) return Response.json({ error: "payment_webhook_not_configured" }, { status: 503 });
   const url = new URL(request.url);
   const eventType = url.searchParams.get("type");
-  if (eventType && !["order", "orders_v2"].includes(eventType)) return new Response(null, { status: 200 });
+  if (eventType && !["order", "orders_v2", "chargebacks"].includes(eventType)) return new Response(null, { status: 200 });
   const orderId = url.searchParams.get("data.id");
   const signature = request.headers.get("x-signature") ?? "";
   const requestId = request.headers.get("x-request-id") ?? "";
@@ -55,13 +56,39 @@ export async function POST(request: Request) {
   const providerStatus = typeof providerOrder.status === "string" ? providerOrder.status : "";
   const statusDetail = typeof providerOrder.status_detail === "string" ? providerOrder.status_detail : "";
   const mappedStatus = mapMercadoPagoOrderStatus(providerStatus, statusDetail);
-  if (!mappedStatus) return new Response(null, { status: 200 });
-  const { error } = await admin.rpc("record_seller_order_payment_status", {
-    p_payment_id: payment.id,
-    p_provider_order_id: orderId,
-    p_provider_status: statusDetail ? `${providerStatus}:${statusDetail}` : providerStatus,
-    p_status: mappedStatus,
-  });
-  if (error) return Response.json({ error: "payment_status_write_failed" }, { status: 503 });
+  if (mappedStatus) {
+    const { error } = await admin.rpc("record_seller_order_payment_status", {
+      p_payment_id: payment.id,
+      p_provider_order_id: orderId,
+      p_provider_status: statusDetail ? `${providerStatus}:${statusDetail}` : providerStatus,
+      p_status: mappedStatus,
+    });
+    if (error) return Response.json({ error: "payment_status_write_failed" }, { status: 503 });
+  } else if (eventType !== "chargebacks") return new Response(null, { status: 200 });
+
+  for (const chargeback of listMercadoPagoOrderChargebacks(providerOrder)) {
+    if (!/^\d{1,20}$/.test(connection.provider_user_id)) return Response.json({ error: "invalid_seller_id" }, { status: 503 });
+    let caseResponse: Response;
+    try {
+      caseResponse = await fetch(`https://api.mercadopago.com/v1/chargebacks/${chargeback.caseId}`, {
+        headers: { Authorization: `Bearer ${accessToken}`, "X-Caller-Id": connection.provider_user_id },
+        signal: AbortSignal.timeout(8000), cache: "no-store", redirect: "error",
+      });
+    } catch {
+      return Response.json({ error: "provider_chargeback_unavailable" }, { status: 503 });
+    }
+    if (!caseResponse.ok) return Response.json({ error: "provider_chargeback_unavailable" }, { status: 503 });
+    const parsedCase = parseMercadoPagoChargebackCase(await caseResponse.json().catch(() => null), chargeback.caseId);
+    if (!parsedCase) return Response.json({ error: "provider_chargeback_invalid" }, { status: 503 });
+    const { error } = await admin.from("seller_order_chargebacks").upsert({
+      case_id: parsedCase.caseId, payment_id: payment.id, store_id: payment.store_id,
+      case_status: chargeback.status, reason: parsedCase.reason, reason_id: parsedCase.reasonId,
+      amount_cents: parsedCase.amountCents, currency: parsedCase.currency,
+      coverage_applied: parsedCase.coverageApplied, coverage_eligible: parsedCase.coverageEligible,
+      documentation_status: parsedCase.documentationStatus, documentation_deadline: parsedCase.documentationDeadline,
+      provider_updated_at: parsedCase.providerUpdatedAt, updated_at: new Date().toISOString(),
+    }, { onConflict: "case_id" });
+    if (error) return Response.json({ error: "chargeback_write_failed" }, { status: 503 });
+  }
   return new Response(null, { status: 200 });
 }
