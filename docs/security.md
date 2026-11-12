@@ -16,6 +16,8 @@ Modelos enviados à biblioteca são opcionais e ficam no bucket privado `buyer-m
 
 A leitura de anúncios públicos exige que o anúncio esteja publicado, a loja esteja publicada e a categoria esteja ativa. A mídia externa aceita apenas URLs HTTPS ao mapear registros para a interface. A escrita maker é limitada à própria loja e a rascunhos; a publicação requer um papel administrativo.
 
+O gerenciamento de categorias valida papel administrativo em cada Server Action e continua sujeito à política RLS `is_catalog_admin`. Slugs e ordens são validados no servidor; a ação impede desativar categorias que ainda tenham anúncios publicados para não ocultar esses anúncios da vitrine.
+
 Solicitações de maker são privadas para o próprio usuário e para administradores. Uma função `SECURITY DEFINER` revisa a solicitação em transação, concede o papel maker e abre uma loja pendente. As políticas maker só permitem escrever rascunhos em loja publicada; triggers impedem alterar status de loja e produto fora de uma ação administrativa. O primeiro papel admin é provisionado manualmente no SQL Editor após a verificação da conta.
 
 Pedidos de orçamento e propostas ficam visíveis apenas ao comprador dono, ao fabricante dono da loja e a administradores. As funções de enviar proposta, responder e cancelar verificam papel, propriedade e estado, evitando transições diretas pelo cliente. Solicitações diretas de compra aceitas podem abrir Checkout Pro; os demais orçamentos não movimentam dinheiro.
