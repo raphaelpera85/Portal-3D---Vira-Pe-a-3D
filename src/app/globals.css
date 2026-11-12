@@ -1110,6 +1110,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .header-inner { min-height: 66px; gap: 10px; }
   .header-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   .header-inner, .header-actions { min-width: 0; }
+  .site-header .header-inner { width: 100%; padding-inline: 17px; }
   .site-header .header-maker { display: none; }
   .site-header .menu-button { display: grid; }
   .brand { font-size: 18px; }
@@ -1123,7 +1124,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .menu-button { display: grid; }
   .viewer-page { width: 100%; overflow-x: clip; }
   .viewer-page .shell, .viewer-shell, .viewer-layout, .viewer-stage-wrap, .viewer-inspector { min-width: 0; max-width: 100%; }
-  .viewer-page .viewer-stage-toolbar { grid-template-columns: minmax(0, 1fr) auto; }
+  .viewer-page .viewer-stage-toolbar { grid-template-columns: minmax(0, 1fr); }
+  .viewer-page .viewer-stage-actions { grid-column: 1; justify-content: space-between; margin: 0; }
   .viewer-page .viewer-toolbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .viewer-page .viewer-message { right: 8px; left: 8px; }
   .viewer-page-intro, .viewer-topline { min-width: 0; }
