@@ -784,11 +784,13 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .scale-note { margin: 10px 0 0; color: var(--muted); font-size: 9px; line-height: 1.55; }
 .component-count { display: inline-grid; min-width: 23px; height: 23px; padding-inline: 5px; place-items: center; border-radius: 12px; background: var(--surface); color: var(--muted-strong); font-size: 9px; font-weight: 700; }
 .model-color-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.model-color-swatch { width: 23px; height: 23px; border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); border-radius: 50%; box-shadow: inset 0 0 0 2px var(--paper); }
+.model-color-swatch { width: 27px; height: 27px; padding: 0; border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); border-radius: 50%; box-shadow: inset 0 0 0 2px var(--paper); cursor: pointer; }
+.model-color-swatch:hover, .model-color-swatch:focus-visible, .model-color-swatch.is-selected { outline: 2px solid var(--brand); outline-offset: 2px; }
 .viewer-component-list { display: grid; max-height: 185px; gap: 3px; overflow-y: auto; margin: 10px 0 0; padding: 0; list-style: none; }
 .viewer-component-list li { display: flex; min-height: 34px; align-items: center; gap: 8px; padding: 3px 4px; border-bottom: 1px solid var(--line); }
 .component-index { color: var(--muted); font-family: Georgia, serif; font-size: 9px; }
 .component-name { flex: 1; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.component-name.is-color-match { color: var(--brand); font-weight: 800; }
 .component-visibility { display: grid; width: 27px; height: 27px; flex: 0 0 27px; place-items: center; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; }
 .component-visibility:hover, .component-visibility[aria-pressed="false"] { background: var(--surface); color: var(--brand); }
 .file-summary { display: flex; min-width: 0; align-items: center; gap: 10px; }
@@ -1026,7 +1028,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .catalog-next-step a { display: flex; align-items: center; justify-content: space-between; color: var(--brand); font-size: 9px; font-weight: 700; }
 .catalog-next-step a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
   .header-inner { min-height: 66px; gap: 10px; }
   .main-nav { position: absolute; top: 65px; right: 0; left: 0; display: none; flex-direction: column; align-items: stretch; gap: 0; padding: 8px 17px 16px; border-bottom: 1px solid var(--line); background: var(--paper); }
   .main-nav.is-open { display: flex; }
@@ -1061,7 +1063,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .technical-panel { padding: 19px 16px; }
   .technical-facts > div { padding: 9px 8px; }
 }
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
   .header-maker { display: none; }
   .viewer-page { padding-bottom: 45px; }
   .viewer-page-intro { min-width: 0; gap: 10px; padding-block: 21px 14px; }

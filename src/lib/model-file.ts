@@ -7,6 +7,10 @@ export type ModelFormat = "stl" | "obj" | "3mf" | "glb" | "gltf";
 export type ModelDimensions = { x: number; y: number; z: number };
 export type ThreeMfColorData = { componentPaintColors: string[][]; componentPartColors: string[][]; faceColors: Record<number, string[]>; objectColors: string[]; namedColors: Record<string, string>; palette: string[]; paintPaletteColors: string[] };
 
+export function getModelColorMatchedComponentIds(components: Array<{ id: string; colors: string[] }>, color: string | null) {
+  return color ? components.filter((component) => component.colors.includes(color)).map((component) => component.id) : [];
+}
+
 export function exceedsThreeMfExpansionLimit(expandedBytes: number, nextEntryBytes: number) {
   return nextEntryBytes > MAX_THREE_MF_UNCOMPRESSED_BYTES - expandedBytes;
 }

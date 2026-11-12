@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
-import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelFormat, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfUnit, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
+import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelFormat, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfUnit, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
 
 describe("model upload validation", () => {
   it("accepts STL, OBJ, 3MF, GLB and GLTF files under the size limit", () => {
@@ -120,5 +120,17 @@ describe("model dimensions", () => {
   it("caps the combined uncompressed size of 3MF package entries", () => {
     expect(exceedsThreeMfExpansionLimit(MAX_THREE_MF_UNCOMPRESSED_BYTES - 10, 10)).toBe(false);
     expect(exceedsThreeMfExpansionLimit(MAX_THREE_MF_UNCOMPRESSED_BYTES - 10, 11)).toBe(true);
+  });
+});
+
+describe("model color selection", () => {
+  it("matches only components that use the selected file color", () => {
+    const components = [
+      { id: "body", colors: ["161616"] },
+      { id: "detail", colors: ["ff8000", "ffffff"] },
+      { id: "uncolored", colors: [] },
+    ];
+    expect(getModelColorMatchedComponentIds(components, "ff8000")).toEqual(["detail"]);
+    expect(getModelColorMatchedComponentIds(components, null)).toEqual([]);
   });
 });

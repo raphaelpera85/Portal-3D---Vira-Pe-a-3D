@@ -8,7 +8,7 @@
 - Dimensões do limite da malha e escala proporcional de 10% a 300% na prévia.
 - STL e OBJ não carregam uma unidade padronizada. O usuário precisa confirmá-la antes que as dimensões sejam mostradas.
 - 3MF lê a unidade do arquivo (milímetro por padrão no padrão 3MF); unidades desconhecidas precisam de confirmação manual. GLB/GLTF usam metros, como definido pelo glTF. A dimensão pode ser mostrada em mm, cm ou m.
-- A paleta mostra cores de vértice e materiais incluídos nos formatos suportados, como aparência visual, sem atribuir filamentos.
+- A paleta mostra cores de vértice, materiais e atribuições presentes no arquivo, como aparência visual, sem atribuir filamentos. Selecione uma amostra para realçar os componentes correspondentes no modelo e na lista.
 - Malhas de uma cena podem ser ocultadas individualmente quando o formato as mantém separadas.
 - Escala proporcional de 10% a 300% pode ser baixada como uma nova cópia GLB. A unidade original é convertida para metros conforme o padrão glTF; componentes ocultos não entram na cópia.
 - A página pública do produto permite selecionar perfis de impressão comunitários ou oficiais aprovados e consultar o lote, os parâmetros e o consumo declarados pelo fabricante.

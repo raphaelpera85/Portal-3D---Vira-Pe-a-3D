@@ -10,7 +10,7 @@ import { ModelUploadManager, type SavedModelUpload } from "@/components/model-up
 import { createMeterExportCopy } from "@/lib/model-export";
 import {
   formatModelDimensions, MAX_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
-  type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, getModelFormat, readThreeMfPackage, validateModelFiles,
+  type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, getModelColorMatchedComponentIds, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
 
 type ViewName = "frente" | "tras" | "topo" | "base" | "esquerda" | "direita";
@@ -22,7 +22,7 @@ const views: { name: ViewName; label: string; direction: [number, number, number
   { name: "esquerda", label: "Esquerda", direction: [-1, 0, 0.35] },
   { name: "direita", label: "Direita", direction: [1, 0, 0.35] },
 ];
-type ViewerComponent = { id: string; name: string; visible: boolean };
+type ViewerComponent = { id: string; name: string; visible: boolean; colors: string[] };
 
 export function ModelViewer({ buyerId, savedModels = [], materials = [], today, libraryError = false, previewUrl, readOnly = false }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: { id: string; label: string }[]; today: string; libraryError?: boolean; previewUrl?: string | null; readOnly?: boolean }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
@@ -33,6 +33,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
   const threeRef = useRef<typeof import("three") | null>(null);
   const modelRef = useRef<THREE.Group | null>(null);
   const componentObjectsRef = useRef<Map<string, THREE.Object3D>>(new Map());
+  const originalEmissivesRef = useRef<Map<string, Array<{ material: THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number }; color: THREE.Color; intensity: number }>>>(new Map());
   const resourceUrlsRef = useRef<string[]>([]);
   const sceneReadyRef = useRef<{ promise: Promise<void>; resolve: () => void } | null>(null);
   if (!sceneReadyRef.current) {
@@ -49,6 +50,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
   const [sourceUnit, setSourceUnit] = useState<ModelSourceUnit | null>(null);
   const [components, setComponents] = useState<ViewerComponent[]>([]);
   const [modelColors, setModelColors] = useState<string[]>([]);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [unit, setUnit] = useState<ModelUnit | "">("");
   const [scale, setScale] = useState(100);
   const [showGrid, setShowGrid] = useState(true);
@@ -57,6 +59,13 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState("");
   const [webglError, setWebglError] = useState(false);
+
+  function restoreColorHighlight() {
+    originalEmissivesRef.current.forEach((entries) => entries.forEach(({ material, color, intensity }) => {
+      material.emissive?.copy(color);
+      if (material.emissiveIntensity !== undefined) material.emissiveIntensity = intensity;
+    }));
+  }
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -173,6 +182,15 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
   }, [showGrid, showAxes, rawDimensions]);
 
   useEffect(() => {
+    restoreColorHighlight();
+    const matchedIds = new Set(getModelColorMatchedComponentIds(components, selectedColor));
+    matchedIds.forEach((id) => originalEmissivesRef.current.get(id)?.forEach(({ material }) => {
+      material.emissive?.set(`#${selectedColor}`);
+      if (material.emissiveIntensity !== undefined) material.emissiveIntensity = 0.65;
+    }));
+  }, [components, selectedColor]);
+
+  useEffect(() => {
     const model = modelRef.current;
     if (!model) return;
     model.scale.setScalar(scale / 100);
@@ -265,6 +283,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
       wrapper.position.set(-center.x, -center.y, -bounds.min.z);
 
       if (modelRef.current) {
+        restoreColorHighlight();
         frameRef.current?.remove(modelRef.current);
         disposeObject(modelRef.current);
       }
@@ -274,14 +293,23 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
       wrapper.scale.setScalar(1);
       const parts: ViewerComponent[] = [];
       componentObjectsRef.current.clear();
+      originalEmissivesRef.current.clear();
       wrapper.traverse((child) => {
         if (!(child as THREE.Mesh).isMesh) return;
         const id = child.uuid;
         const name = child.name.trim() || `Componente ${parts.length + 1}`;
+        const mesh = child as THREE.Mesh;
         componentObjectsRef.current.set(id, child);
-        parts.push({ id, name, visible: true });
+        const originalEmissives: Array<{ material: THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number }; color: THREE.Color; intensity: number }> = [];
+        (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach((entry) => {
+          const material = entry as THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number };
+          if (material.emissive?.isColor) originalEmissives.push({ material, color: material.emissive.clone(), intensity: material.emissiveIntensity ?? 1 });
+        });
+        originalEmissivesRef.current.set(id, originalEmissives);
+        parts.push({ id, name, visible: true, colors: extractModelColors(mesh, kind, THREE) });
       });
       setComponents(parts);
+      setSelectedColor(null);
       const fileColors = extractModelColors(wrapper, kind, THREE);
       const paintedColors = threeMfColors?.componentPaintColors.flat().filter(Boolean) ?? [];
       setModelColors([...new Set([
@@ -501,9 +529,9 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
             <div className="inspector-divider" />
             <div className="inspector-section-head"><h2>Cores do arquivo</h2><span className="component-count">{modelColors.length}</span></div>
             <div className="model-color-list" aria-label="Cores definidas no arquivo">
-              {modelColors.map((color) => <span key={color} className="model-color-swatch" style={{ backgroundColor: `#${color}` }} title={`#${color}`} aria-label={`Cor #${color}`} role="img" />)}
+              {modelColors.map((color) => <button key={color} type="button" className={`model-color-swatch${selectedColor === color ? " is-selected" : ""}`} style={{ backgroundColor: `#${color}` }} title={`Destacar componentes da cor #${color}`} aria-label={`Destacar componentes da cor #${color}`} aria-pressed={selectedColor === color} onClick={() => setSelectedColor(selectedColor === color ? null : color)} />)}
             </div>
-            <p className="scale-note">Cores lidas dos materiais ou da configuração de filamentos do arquivo.</p>
+            <p className="scale-note">{selectedColor ? getModelColorMatchedComponentIds(components, selectedColor).length > 0 ? `Componentes que usam #${selectedColor} estão destacados. Selecione novamente para limpar.` : `#${selectedColor} aparece nos dados do arquivo, sem associação a uma parte visível.` : "Selecione uma cor para destacar as partes correspondentes no modelo."}</p>
           </>}
           {components.length > 0 && <>
             <div className="inspector-divider" />
@@ -511,7 +539,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
             <ul className="viewer-component-list">
               {components.map((component, index) => <li key={component.id}>
                 <span className="component-index">{String(index + 1).padStart(2, "0")}</span>
-                <span className="component-name" title={component.name}>{component.name}</span>
+                <span className={`component-name${selectedColor && component.colors.includes(selectedColor) ? " is-color-match" : ""}`} title={component.name}>{component.name}</span>
                 <button type="button" className="component-visibility" aria-label={`${component.visible ? "Ocultar" : "Exibir"} ${component.name}`} aria-pressed={component.visible} onClick={() => toggleComponent(component)}>{component.visible ? <Eye size={15} /> : <EyeOff size={15} />}</button>
               </li>)}
             </ul>
@@ -545,7 +573,7 @@ function extractModelColors(root: THREE.Object3D, format: ModelFormat, THREE: ty
             if (colors.size >= 12) break;
           }
         }
-      } else if ((format === "glb" || format === "3mf") && materialWithColor.color?.isColor && (!materialWithColor.map || materialWithColor.color.getHex() !== 0xffffff)) {
+      } else if (format !== "stl" && materialWithColor.color?.isColor && (!materialWithColor.map || materialWithColor.color.getHex() !== 0xffffff)) {
         colors.add(materialWithColor.color.getHexString());
       }
       if (colors.size >= 12) break;
