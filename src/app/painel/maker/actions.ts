@@ -506,6 +506,12 @@ export async function addCustomPrintShippingLabelToCart(formData: FormData): Pro
   const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
   const context = store ? await getCustomPrintShippingLabelContext(admin, store.id, requestId) : null;
   if (!store || !context) redirect("/painel/maker?resultado=etiqueta-pedido-erro#pedidos");
+  if (shipment.widthCm !== Number(context.delivery.shipping_package_width_cm)
+    || shipment.heightCm !== Number(context.delivery.shipping_package_height_cm)
+    || shipment.lengthCm !== Number(context.delivery.shipping_package_length_cm)
+    || shipment.weightKg !== Number(context.delivery.shipping_package_weight_kg)) {
+    redirect("/painel/maker?resultado=etiqueta-pacote-diverge#pedidos");
+  }
   const { data: label, error: createError } = await admin.from("seller_order_shipping_labels")
     .insert({ custom_print_request_id: requestId, store_id: store.id, status: "creating" }).select("id").maybeSingle();
   if (createError || !label) redirect("/painel/maker?resultado=etiqueta-ja-criada#pedidos");
@@ -702,6 +708,8 @@ export async function calculateAndOfferCustomPrintShippingQuote(formData: FormDa
     p_request_id: requestId, p_carrier: "melhor_envio", p_service: cheapest.name,
     p_shipping_cents: Math.round(cheapest.price * 100), p_delivery_days: cheapest.deliveryDays,
     p_provider_service_id: cheapest.id,
+    p_package_width_cm: parcel.widthCm, p_package_height_cm: parcel.heightCm,
+    p_package_length_cm: parcel.lengthCm, p_package_weight_kg: parcel.weightKg,
   });
   if (error) redirect("/painel/maker?resultado=frete-erro#pedidos");
   revalidatePath("/painel/maker");

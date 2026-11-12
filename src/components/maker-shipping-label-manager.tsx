@@ -6,9 +6,11 @@ type Label = {
   tracking_code: string | null; tracking_url: string | null; print_url: string | null;
 };
 
-type LabelTarget = { orderId: string; customPrintRequestId?: never } | { orderId?: never; customPrintRequestId: string };
+type ShippingPackage = { widthCm: number; heightCm: number; lengthCm: number; weightKg: number };
+type LabelTarget = { orderId: string; customPrintRequestId?: never; shippingPackage?: never }
+  | { orderId?: never; customPrintRequestId: string; shippingPackage: ShippingPackage };
 
-export function MakerShippingLabelManager({ orderId, customPrintRequestId, label, result, enabled }: LabelTarget & { label: Label | null; result?: string; enabled: boolean }) {
+export function MakerShippingLabelManager({ orderId, customPrintRequestId, shippingPackage, label, result, enabled }: LabelTarget & { label: Label | null; result?: string; enabled: boolean }) {
   const targetId = customPrintRequestId ?? orderId;
   const targetName = customPrintRequestId ? "customPrintRequestId" : "orderId";
   const addToCartAction = customPrintRequestId ? addCustomPrintShippingLabelToCart : addSellerOrderShippingLabelToCart;
@@ -16,9 +18,11 @@ export function MakerShippingLabelManager({ orderId, customPrintRequestId, label
   const generateAction = customPrintRequestId ? generateCustomPrintShippingLabel : generateSellerOrderShippingLabel;
   const printAction = customPrintRequestId ? printCustomPrintShippingLabel : printSellerOrderShippingLabel;
   const targetInput = <input type="hidden" name={targetName} value={targetId} />;
+  const packageInputs = shippingPackage ? <><p className="quote-small-note">Pacote cotado: {shippingPackage.widthCm} × {shippingPackage.heightCm} × {shippingPackage.lengthCm} cm · {shippingPackage.weightKg} kg</p><input type="hidden" name="packageWidthCm" value={shippingPackage.widthCm} /><input type="hidden" name="packageHeightCm" value={shippingPackage.heightCm} /><input type="hidden" name="packageLengthCm" value={shippingPackage.lengthCm} /><input type="hidden" name="packageWeightKg" value={shippingPackage.weightKg} /></> : <div className="equipment-form-grid"><label>Largura embalada (cm)<input name="packageWidthCm" type="number" min="1" max="1000" step="0.1" required /></label><label>Altura embalada (cm)<input name="packageHeightCm" type="number" min="1" max="1000" step="0.1" required /></label><label>Comprimento embalado (cm)<input name="packageLengthCm" type="number" min="1" max="1000" step="0.1" required /></label><label>Peso embalado (kg)<input name="packageWeightKg" type="number" min="0.01" max="30000" step="0.01" required /></label></div>;
   return <section className="maker-shipping-label-manager">
     <span className="account-kicker">ETIQUETA E RASTREIO · MELHOR ENVIO</span>
     {result === "etiqueta-dados-erro" && <p className="auth-notice is-error" role="alert">Confira NF-e, CPF, telefone e as medidas/peso da embalagem.</p>}
+    {result === "etiqueta-pacote-diverge" && <p className="auth-notice is-error" role="alert">O pacote da etiqueta precisa ser igual ao pacote cotado. Atualize a cotação antes de emitir a etiqueta.</p>}
     {result === "etiqueta-pedido-erro" && <p className="auth-notice is-error" role="alert">A etiqueta exige pagamento confirmado, cotação Melhor Envio aceita e dados completos do remetente.</p>}
     {result === "etiqueta-configurar" && <p className="auth-notice is-error" role="alert">Configure Melhor Envio e as migrações antes de emitir etiquetas.</p>}
     {result === "etiqueta-erro" && <p className="auth-notice is-error" role="alert">Não foi possível preparar a etiqueta. Verifique a conta Melhor Envio; se ela estiver no carrinho, não tente criar outra.</p>}
@@ -47,7 +51,7 @@ export function MakerShippingLabelManager({ orderId, customPrintRequestId, label
       <label>Chave de acesso da NF-e<input name="invoiceKey" inputMode="numeric" minLength={44} maxLength={54} pattern="[0-9.\- /]{44,54}" required /></label>
       <label>CPF do destinatário<input name="recipientDocument" inputMode="numeric" minLength={11} maxLength={14} pattern="[0-9.\-]{11,14}" required /></label>
       <label>Telefone do destinatário<input name="recipientPhone" type="tel" inputMode="tel" minLength={10} maxLength={16} placeholder="DDD + número" required /></label>
-      <div className="equipment-form-grid"><label>Largura embalada (cm)<input name="packageWidthCm" type="number" min="1" max="1000" step="0.1" required /></label><label>Altura embalada (cm)<input name="packageHeightCm" type="number" min="1" max="1000" step="0.1" required /></label><label>Comprimento embalado (cm)<input name="packageLengthCm" type="number" min="1" max="1000" step="0.1" required /></label><label>Peso embalado (kg)<input name="packageWeightKg" type="number" min="0.01" max="30000" step="0.01" required /></label></div>
+      {packageInputs}
       {targetInput}
       <button className="button button-primary" type="submit">Adicionar etiqueta ao carrinho do Melhor Envio</button>
     </form> : null}

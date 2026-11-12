@@ -77,11 +77,17 @@ export function validateMelhorEnvioShipment(values: Record<string, FormDataEntry
 }
 
 export function validateMelhorEnvioPackage(values: Record<string, FormDataEntryValue | null>) {
-  const read = (key: string) => typeof values[key] === "string" ? (values[key] as string).trim().replace(",", ".") : "";
-  const widthCm = Number(read("packageWidthCm"));
-  const heightCm = Number(read("packageHeightCm"));
-  const lengthCm = Number(read("packageLengthCm"));
-  const weightKg = Number(read("packageWeightKg"));
+  const read = (key: string) => typeof values[key] === "string" ? (values[key] as string).trim() : "";
+  const width = read("packageWidthCm");
+  const height = read("packageHeightCm");
+  const length = read("packageLengthCm");
+  const weight = read("packageWeightKg");
+  if (![width, height, length].every((value) => /^\d{1,4}(?:[.,]\d{1,2})?$/.test(value))
+    || !/^\d{1,5}(?:[.,]\d{1,3})?$/.test(weight)) return null;
+  const widthCm = Number(width.replace(",", "."));
+  const heightCm = Number(height.replace(",", "."));
+  const lengthCm = Number(length.replace(",", "."));
+  const weightKg = Number(weight.replace(",", "."));
   if (![widthCm, heightCm, lengthCm].every((value) => Number.isFinite(value) && value >= 1 && value <= 1000)
     || !Number.isFinite(weightKg) || weightKg < 0.01 || weightKg > 30000) return null;
   return { widthCm, heightCm, lengthCm, weightKg };

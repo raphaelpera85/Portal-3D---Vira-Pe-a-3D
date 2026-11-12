@@ -52,5 +52,7 @@ describe("validateMelhorEnvioPackage", () => {
   it("rejects zero or out-of-range package measurements", () => {
     expect(validateMelhorEnvioPackage({ packageWidthCm: "0", packageHeightCm: "10", packageLengthCm: "20", packageWeightKg: "0.75" })).toBeNull();
     expect(validateMelhorEnvioPackage({ packageWidthCm: "12", packageHeightCm: "10", packageLengthCm: "20", packageWeightKg: "30001" })).toBeNull();
+    expect(validateMelhorEnvioPackage({ packageWidthCm: "12.345", packageHeightCm: "10", packageLengthCm: "20", packageWeightKg: "0.75" })).toBeNull();
+    expect(validateMelhorEnvioPackage({ packageWidthCm: "12", packageHeightCm: "10", packageLengthCm: "20", packageWeightKg: "0.12345" })).toBeNull();
   });
 });
