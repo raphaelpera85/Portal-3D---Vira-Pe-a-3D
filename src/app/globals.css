@@ -537,6 +537,14 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .maker-product-inventory .button { justify-self: start; }
 .product-inventory-note { margin: 0; color: var(--muted); font-size: 11px; }
 .admin-dashboard { max-width: 1120px; }
+.admin-overview-section { margin-top: 34px; }
+.admin-overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.admin-overview-card { display: grid; min-height: 130px; align-content: space-between; padding: 17px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); transition: border-color .16s, transform .16s; }
+.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--brand); }
+.admin-overview-card > span { color: var(--muted-strong); font-size: 11px; font-weight: 700; }
+.admin-overview-card strong { color: var(--ink); font-family: Georgia, serif; font-size: 34px; font-weight: 400; line-height: 1; }
+.admin-overview-card small { color: var(--muted); font-size: 9px; }
+.admin-overview-tools { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
 .admin-review-section { display: grid; gap: 12px; margin-top: 34px; }
 .admin-section-title { display: flex; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); }
 .admin-section-title h2 { margin: 0 0 12px; font-size: 28px; }
@@ -598,6 +606,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 @media (max-width: 680px) {
   .admin-review-card, .admin-review-card-compact { grid-template-columns: 1fr; }
   .admin-section-title { align-items: flex-start; flex-direction: column; gap: 0; }
+  .admin-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .maker-product-inventory { grid-template-columns: 1fr; }
   .maker-product-inventory small { grid-column: auto; }
   .maker-location-fields { grid-template-columns: 1fr; }

@@ -33,7 +33,7 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
     <>
       <SiteHeader />
       <main className="admin-dashboard shell">
-        <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
+        <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
         <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CONTROLE DE QUALIDADE</p><h1>Revisão do marketplace</h1><p>Analise fabricantes, lojas e anúncios antes que apareçam publicamente.</p></div>
         <p><Link className="button button-secondary" href="/admin/banners">Gerenciar banners da página inicial</Link></p>
         <p><Link className="button button-secondary" href="/admin/designers">Revisar perfis de designers</Link></p>

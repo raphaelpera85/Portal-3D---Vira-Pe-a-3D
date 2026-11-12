@@ -43,7 +43,7 @@ export default async function HomepageBannersAdminPage({ searchParams }: { searc
   return <>
     <SiteHeader />
     <main className="admin-dashboard shell">
-      <Link className="viewer-back-link" href="/admin/fabricantes">← Voltar à revisão do marketplace</Link>
+      <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CONTEÚDO DA VITRINE</p><h1>Banners da página inicial</h1><p>Crie campanhas, ajuste a ordem e publique ou pause os destaques. A homepage mostra os seis primeiros banners ativos.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
       <section className="admin-review-section">

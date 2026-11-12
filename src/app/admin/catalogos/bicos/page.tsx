@@ -78,7 +78,7 @@ export default async function NozzleCatalogAdminPage({ searchParams }: { searchP
   return <>
     <SiteHeader />
     <main className="admin-dashboard shell">
-      <Link className="viewer-back-link" href="/admin/catalogos/impressoras">← Voltar à curadoria técnica</Link>
+      <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
       <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link href="/admin/catalogos/impressoras">Impressoras</Link><Link href="/admin/catalogos/materiais">Materiais e resinas</Link><Link aria-current="page" href="/admin/catalogos/bicos">Bicos e compatibilidade</Link></nav>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Bicos e compatibilidade</h1><p>Diâmetro, interface e compatibilidade são relações distintas. Cada vínculo publicado exige fonte própria.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}

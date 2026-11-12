@@ -53,7 +53,7 @@ export default async function MaterialCatalogAdminPage({ searchParams }: { searc
   return <>
     <SiteHeader />
     <main className="admin-dashboard shell">
-      <Link className="viewer-back-link" href="/admin/catalogos/impressoras">← Voltar à curadoria técnica</Link>
+      <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
       <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link href="/admin/catalogos/impressoras">Impressoras</Link><Link aria-current="page" href="/admin/catalogos/materiais">Materiais e resinas</Link><Link href="/admin/catalogos/bicos">Bicos e compatibilidade</Link></nav>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Materiais e resinas</h1><p>Registre as condições por produto. Campos desconhecidos permanecem vazios; publicar exige fonte HTTPS e data de conferência.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}

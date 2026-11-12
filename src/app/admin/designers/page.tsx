@@ -14,7 +14,7 @@ export default async function DesignerAdminPage({ searchParams }: { searchParams
   if (!actor.supabase || !actor.authorized) redirect("/conta");
   const { data, error } = await actor.supabase.from("designer_profiles").select("id, slug, display_name, biography, portfolio_url, city, state_code, specialties, status, response_note, created_at")
     .order("created_at", { ascending: false }).limit(100);
-  return <><SiteHeader /><main className="admin-dashboard shell"><Link className="viewer-back-link" href="/admin/fabricantes">← Revisão do marketplace</Link>
+  return <><SiteHeader /><main className="admin-dashboard shell"><Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CONTROLE DE QUALIDADE</p><h1>Perfis de designers</h1><p>Revise os portfólios antes de publicar no diretório da comunidade.</p></div>
     {resultado && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{resultMessages[resultado] ?? "Ação concluída."}</p>}
     <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">ATÉ 100 MAIS RECENTES</span><h2>Perfis e solicitações</h2></div>

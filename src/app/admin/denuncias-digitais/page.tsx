@@ -15,7 +15,7 @@ export default async function DigitalAssetReportsPage({ searchParams }: { search
   const { data, error } = await actor.supabase.from("digital_asset_reports")
     .select("id, reason, details, created_at, product:marketplace_products!inner(name, slug, store:stores(name))")
     .eq("status", "open").order("created_at").limit(100);
-  return <><SiteHeader /><main className="admin-dashboard shell"><Link className="viewer-back-link" href="/admin/fabricantes">← Revisão do marketplace</Link>
+  return <><SiteHeader /><main className="admin-dashboard shell"><Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">INTEGRIDADE DO CATÁLOGO</p><h1>Denúncias de conteúdo</h1><p>Revise alegações de violação de direitos em modelos digitais publicados.</p></div>
     {resultado && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{resultado === "erro" ? "Não foi possível salvar a análise." : "Denúncia analisada."}</p>}
     <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">FILA ABERTA</span><h2>Denúncias pendentes</h2></div>

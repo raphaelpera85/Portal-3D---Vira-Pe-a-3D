@@ -67,7 +67,7 @@ export default async function PrinterCatalogAdminPage({ searchParams }: { search
   return <>
     <SiteHeader />
     <main className="admin-dashboard shell">
-      <Link className="viewer-back-link" href="/admin/fabricantes">← Voltar ao painel administrativo</Link>
+      <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
       <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link aria-current="page" href="/admin/catalogos/impressoras">Impressoras</Link><Link href="/admin/catalogos/materiais">Materiais e resinas</Link><Link href="/admin/catalogos/bicos">Bicos e compatibilidade</Link></nav>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Impressoras</h1><p>Cadastre especificações com fonte e data de conferência. Só publique registros verificados.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}

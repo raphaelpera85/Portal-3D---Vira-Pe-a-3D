@@ -54,7 +54,7 @@ flowchart LR
 - `/catalogos` consulta os registros publicados no banco quando disponíveis e usa dados locais de referência quando não há conexão.
 - `/visualizador` lê arquivos STL, OBJ, 3MF, GLB e GLTF localmente no navegador; compradores podem salvar conjuntos validados no Supabase Storage privado e reabri-los depois. `/calculadora` estima custos e preços por canal; makers salvam snapshots privados e, se Cloud Vision estiver configurado, leem capturas de tela com consentimento.
 - O histórico de custos pode ser associado a um anúncio e ao equipamento principal da própria loja sem alterar o snapshot recalculado; os vínculos são validados no servidor e na política RLS.
-- O painel administrativo atual aprova fabricantes, lojas e anúncios; ainda não é um console geral de gestão.
+- `/admin` reúne contagens das filas pendentes (fabricantes, lojas, anúncios, perfis, designers, denúncias, avaliações e sugestões de impressora) e atalhos para as ferramentas administrativas existentes. Cada contagem usa a sessão autenticada e as políticas RLS. Indicadores financeiros e de negócio, atendimento, relatórios, auditoria e conciliação administrativa ainda não estão implementados.
 
 ## Limites atuais
 
@@ -75,3 +75,4 @@ flowchart LR
 4. Integrar cotação de frete ao checkout e validar pagamentos sandbox antes de qualquer cobrança real.
 5. Implementar cotação e rastreio de frete por loja.
 6. Criar pedidos de impressão associados aos arquivos privados e histórico persistente da calculadora.
+7. Completar o painel administrativo com indicadores financeiros confiáveis, atendimento, relatórios e auditoria.
