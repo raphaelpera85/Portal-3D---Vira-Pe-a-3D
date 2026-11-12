@@ -28,7 +28,7 @@ function validCnpj(value: string) {
 }
 
 function validNfeKey(value: string) {
-  if (!/^\d{44}$/.test(value) || /^([0-9])\1+$/.test(value)) return false;
+  if (!/^\d{44}$/.test(value) || value.slice(20, 22) !== "55" || /^([0-9])\1+$/.test(value)) return false;
   const sum = [...value.slice(0, 43)].reverse().reduce((total, digit, index) => total + Number(digit) * (index % 8 + 2), 0);
   const remainder = sum % 11;
   const checkDigit = remainder < 2 ? 0 : 11 - remainder;
