@@ -17,7 +17,7 @@ create policy "Buyers can request published physical products"
     )
   );
 
-create function public.enqueue_quote_request_notifications()
+create or replace function public.enqueue_quote_request_notifications()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare message_data jsonb := jsonb_build_object('request_type', new.request_type, 'product_name', new.product_name,
   'quantity', new.quantity, 'license_type', new.license_type);

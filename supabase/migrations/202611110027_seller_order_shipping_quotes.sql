@@ -53,7 +53,7 @@ grant select on public.seller_purchase_order_events to authenticated;
 create policy "Order participants can read order history" on public.seller_purchase_order_events for select to authenticated
   using (exists (select 1 from public.seller_purchase_orders o where o.id = order_id
     and (o.buyer_id = (select auth.uid()) or exists (select 1 from public.stores s join public.user_roles r
-      on r.user_id = s.owner_user_id where s.id = o.store_id and s.owner_user_id = (select auth.uid()) and r.role = 'maker'::public.app_role)));
+      on r.user_id = s.owner_user_id where s.id = o.store_id and s.owner_user_id = (select auth.uid()) and r.role = 'maker'::public.app_role))));
 
 insert into public.seller_purchase_order_events (order_id, actor_user_id, event_type, description, metadata, created_at)
   select id, buyer_id, 'order_created', 'Pedido criado antes do histórico de eventos.', '{"legacy_import":true}'::jsonb, created_at

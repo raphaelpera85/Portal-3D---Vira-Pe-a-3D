@@ -6,14 +6,14 @@ grant select (has_preview) on public.digital_assets to authenticated;
 
 drop policy "Makers can upload a private digital product file" on storage.objects;
 create policy "Makers can upload private digital product files and previews" on storage.objects for insert to authenticated
-  with check (bucket_id = 'digital-assets' and (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-    and (storage.foldername(name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-    and (storage.filename(name) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(stl|3mf)$'
-      or storage.filename(name) ~* '^preview-[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.glb$')
+  with check (bucket_id = 'digital-assets' and (storage.foldername(storage.objects.name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    and (storage.foldername(storage.objects.name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    and (storage.filename(storage.objects.name) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(stl|3mf)$'
+      or storage.filename(storage.objects.name) ~* '^preview-[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.glb$')
     and exists (select 1 from public.stores s join public.marketplace_products p on p.store_id = s.id
       join public.user_roles r on r.user_id = s.owner_user_id
-      where s.id::text = (storage.foldername(name))[1] and s.owner_user_id = (select auth.uid())
-        and p.id::text = (storage.foldername(name))[2] and p.created_by = (select auth.uid())
+      where s.id::text = (storage.foldername(storage.objects.name))[1] and s.owner_user_id = (select auth.uid())
+        and p.id::text = (storage.foldername(storage.objects.name))[2] and p.created_by = (select auth.uid())
         and p.listing_type = 'digital' and p.catalog_status = 'draft' and r.role = 'maker'::public.app_role));
 
 drop function public.register_digital_asset(uuid, text, text, integer, numeric);

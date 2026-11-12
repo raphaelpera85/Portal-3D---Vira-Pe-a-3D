@@ -12,9 +12,9 @@ begin
   if (select auth.uid()) is null or not exists (
     select 1 from public.user_roles r where r.user_id = (select auth.uid()) and r.role = 'buyer'::public.app_role
   ) or p_dimensions_mm is null or jsonb_typeof(p_dimensions_mm) <> 'object'
-    or case when jsonb_typeof(p_dimensions_mm->'x') = 'number' then (p_dimensions_mm->>'x')::numeric not between 0.01 and 10000 else true end
-    or case when jsonb_typeof(p_dimensions_mm->'y') = 'number' then (p_dimensions_mm->>'y')::numeric not between 0.01 and 10000 else true end
-    or case when jsonb_typeof(p_dimensions_mm->'z') = 'number' then (p_dimensions_mm->>'z')::numeric not between 0.01 and 10000 else true end then
+    or (case when jsonb_typeof(p_dimensions_mm->'x') = 'number' then (p_dimensions_mm->>'x')::numeric not between 0.01 and 10000 else true end)
+    or (case when jsonb_typeof(p_dimensions_mm->'y') = 'number' then (p_dimensions_mm->>'y')::numeric not between 0.01 and 10000 else true end)
+    or (case when jsonb_typeof(p_dimensions_mm->'z') = 'number' then (p_dimensions_mm->>'z')::numeric not between 0.01 and 10000 else true end) then
     raise exception using errcode = '22023', message = 'Invalid model dimensions';
   end if;
   update public.buyer_model_uploads set dimensions_mm = p_dimensions_mm
@@ -403,7 +403,7 @@ $$;
 revoke all on function public.retry_custom_print_notification_delivery(uuid) from public, anon;
 grant execute on function public.retry_custom_print_notification_delivery(uuid) to authenticated;
 
-create function public.delete_buyer_model_upload(p_upload_id uuid)
+create or replace function public.delete_buyer_model_upload(p_upload_id uuid)
 returns void language plpgsql security definer set search_path = '' as $$
 declare upload_row public.buyer_model_uploads%rowtype;
 begin

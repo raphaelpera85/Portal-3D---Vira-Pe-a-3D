@@ -37,11 +37,7 @@ create table public.marketplace_products (
   currency char(3) not null default 'BRL' check (currency = 'BRL'),
   media jsonb not null default '[]'::jsonb check (jsonb_typeof(media) = 'array'),
   tags text[] not null default '{}',
-  search_document tsvector generated always as (
-    setweight(to_tsvector('portuguese'::regconfig, coalesce(name, '')), 'A') ||
-    setweight(to_tsvector('portuguese'::regconfig, coalesce(description, '')), 'B') ||
-    setweight(to_tsvector('portuguese'::regconfig, coalesce(array_to_string(tags, ' '), '')), 'C')
-  ) stored,
+  search_document tsvector not null default ''::tsvector,
   color_theme text not null default 'blue' check (color_theme in ('blue', 'green', 'sand', 'pink')),
   visual text check (visual is null or visual in ('vase', 'dragon', 'organizer', 'keychain')),
   stock_quantity integer check (stock_quantity is null or stock_quantity >= 0),
@@ -55,6 +51,26 @@ create table public.marketplace_products (
   check ((price_mode = 'quote' and price_brl is null) or (price_mode in ('fixed', 'from') and price_brl is not null)),
   check (catalog_status <> 'published' or published_at is not null)
 );
+
+create function public.update_marketplace_product_search_document()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.search_document :=
+    setweight(to_tsvector('portuguese', coalesce(new.name, '')), 'A') ||
+    setweight(to_tsvector('portuguese', coalesce(new.description, '')), 'B') ||
+    setweight(to_tsvector('portuguese', coalesce(array_to_string(new.tags, ' '), '')), 'C');
+  return new;
+end;
+$$;
+
+revoke all on function public.update_marketplace_product_search_document() from public, anon, authenticated;
+
+create trigger marketplace_products_update_search_document
+  before insert or update of name, description, tags on public.marketplace_products
+  for each row execute function public.update_marketplace_product_search_document();
 
 create index product_categories_active_order on public.product_categories (sort_order, name) where active;
 create index stores_public_lookup on public.stores (slug) where status = 'published';

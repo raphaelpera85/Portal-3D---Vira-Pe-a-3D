@@ -29,28 +29,28 @@ create policy "Admins can read digital assets" on public.digital_assets for sele
   using ((select public.is_catalog_admin()));
 
 create policy "Makers can upload a private digital product file" on storage.objects for insert to authenticated
-  with check (bucket_id = 'digital-assets' and (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-    and (storage.foldername(name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-    and storage.filename(name) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(stl|3mf)$'
+  with check (bucket_id = 'digital-assets' and (storage.foldername(storage.objects.name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    and (storage.foldername(storage.objects.name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    and storage.filename(storage.objects.name) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(stl|3mf)$'
     and exists (select 1 from public.stores s join public.marketplace_products p on p.store_id = s.id
       join public.user_roles r on r.user_id = s.owner_user_id
-      where s.id::text = (storage.foldername(name))[1] and s.owner_user_id = (select auth.uid())
-        and p.id::text = (storage.foldername(name))[2] and p.created_by = (select auth.uid())
+      where s.id::text = (storage.foldername(storage.objects.name))[1] and s.owner_user_id = (select auth.uid())
+        and p.id::text = (storage.foldername(storage.objects.name))[2] and p.created_by = (select auth.uid())
         and p.listing_type = 'digital' and p.catalog_status = 'draft' and r.role = 'maker'::public.app_role));
 create policy "Makers can read their private digital product file" on storage.objects for select to authenticated
   using (bucket_id = 'digital-assets' and exists (select 1 from public.stores s
-    where s.id::text = (storage.foldername(name))[1] and s.owner_user_id = (select auth.uid())));
+    where s.id::text = (storage.foldername(storage.objects.name))[1] and s.owner_user_id = (select auth.uid())));
 create policy "Makers can replace their private digital product file" on storage.objects for update to authenticated
   using (bucket_id = 'digital-assets' and exists (select 1 from public.stores s join public.marketplace_products p on p.store_id = s.id
-    where s.id::text = (storage.foldername(name))[1] and s.owner_user_id = (select auth.uid())
-      and p.id::text = (storage.foldername(name))[2] and p.created_by = (select auth.uid()) and p.listing_type = 'digital' and p.catalog_status = 'draft'))
+    where s.id::text = (storage.foldername(storage.objects.name))[1] and s.owner_user_id = (select auth.uid())
+      and p.id::text = (storage.foldername(storage.objects.name))[2] and p.created_by = (select auth.uid()) and p.listing_type = 'digital' and p.catalog_status = 'draft'))
   with check (bucket_id = 'digital-assets' and exists (select 1 from public.stores s join public.marketplace_products p on p.store_id = s.id
-    where s.id::text = (storage.foldername(name))[1] and s.owner_user_id = (select auth.uid())
-      and p.id::text = (storage.foldername(name))[2] and p.created_by = (select auth.uid()) and p.listing_type = 'digital' and p.catalog_status = 'draft'));
+    where s.id::text = (storage.foldername(storage.objects.name))[1] and s.owner_user_id = (select auth.uid())
+      and p.id::text = (storage.foldername(storage.objects.name))[2] and p.created_by = (select auth.uid()) and p.listing_type = 'digital' and p.catalog_status = 'draft'));
 create policy "Makers can remove their private digital product file" on storage.objects for delete to authenticated
   using (bucket_id = 'digital-assets' and exists (select 1 from public.stores s join public.marketplace_products p on p.store_id = s.id
-    where s.id::text = (storage.foldername(name))[1] and s.owner_user_id = (select auth.uid())
-      and p.id::text = (storage.foldername(name))[2] and p.created_by = (select auth.uid()) and p.listing_type = 'digital' and p.catalog_status = 'draft'));
+    where s.id::text = (storage.foldername(storage.objects.name))[1] and s.owner_user_id = (select auth.uid())
+      and p.id::text = (storage.foldername(storage.objects.name))[2] and p.created_by = (select auth.uid()) and p.listing_type = 'digital' and p.catalog_status = 'draft'));
 
 alter table public.marketplace_products add constraint digital_products_require_digital_fulfillment
   check (listing_type <> 'digital' or (fulfillment_mode = 'digital' and price_mode = 'fixed' and stock_quantity is null and preparation_days is null));

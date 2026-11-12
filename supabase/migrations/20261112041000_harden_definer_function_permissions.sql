@@ -1,0 +1,13 @@
+revoke all on function public.bootstrap_store_notification_contacts() from public, anon;
+revoke all on function public.cancel_product_quote_request(uuid) from public, anon;
+revoke all on function public.enqueue_quote_request_notifications() from public, anon, authenticated;
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+revoke all on function public.is_catalog_admin() from public, anon;
+revoke all on function public.prevent_owner_product_status_change() from public, anon, authenticated;
+revoke all on function public.prevent_owner_store_status_change() from public, anon, authenticated;
+revoke all on function public.respond_to_product_purchase_request(uuid, text) from public, anon;
+revoke all on function public.respond_to_product_quote_offer(uuid, text) from public, anon;
+revoke all on function public.retry_store_notification_delivery(uuid) from public, anon;
+revoke all on function public.review_maker_application(uuid, text, text) from public, anon;
+revoke all on function public.rls_auto_enable() from public, anon, authenticated;
+revoke all on function public.submit_product_quote_offer(uuid, numeric, smallint, text) from public, anon;
