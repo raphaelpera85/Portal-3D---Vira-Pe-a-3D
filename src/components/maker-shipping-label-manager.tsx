@@ -1,12 +1,21 @@
 import { formatBrl } from "@/lib/money";
-import { addSellerOrderShippingLabelToCart, buySellerOrderShippingLabel, generateSellerOrderShippingLabel, printSellerOrderShippingLabel } from "@/app/painel/maker/actions";
+import { addCustomPrintShippingLabelToCart, addSellerOrderShippingLabelToCart, buyCustomPrintShippingLabel, buySellerOrderShippingLabel, generateCustomPrintShippingLabel, generateSellerOrderShippingLabel, printCustomPrintShippingLabel, printSellerOrderShippingLabel } from "@/app/painel/maker/actions";
 
 type Label = {
   id: string; status: string; shipping_cost_cents: number | null; provider_status: string | null;
   tracking_code: string | null; tracking_url: string | null; print_url: string | null;
 };
 
-export function MakerShippingLabelManager({ orderId, label, result, enabled }: { orderId: string; label: Label | null; result?: string; enabled: boolean }) {
+type LabelTarget = { orderId: string; customPrintRequestId?: never } | { orderId?: never; customPrintRequestId: string };
+
+export function MakerShippingLabelManager({ orderId, customPrintRequestId, label, result, enabled }: LabelTarget & { label: Label | null; result?: string; enabled: boolean }) {
+  const targetId = customPrintRequestId ?? orderId;
+  const targetName = customPrintRequestId ? "customPrintRequestId" : "orderId";
+  const addToCartAction = customPrintRequestId ? addCustomPrintShippingLabelToCart : addSellerOrderShippingLabelToCart;
+  const buyAction = customPrintRequestId ? buyCustomPrintShippingLabel : buySellerOrderShippingLabel;
+  const generateAction = customPrintRequestId ? generateCustomPrintShippingLabel : generateSellerOrderShippingLabel;
+  const printAction = customPrintRequestId ? printCustomPrintShippingLabel : printSellerOrderShippingLabel;
+  const targetInput = <input type="hidden" name={targetName} value={targetId} />;
   return <section className="maker-shipping-label-manager">
     <span className="account-kicker">ETIQUETA E RASTREIO · MELHOR ENVIO</span>
     {result === "etiqueta-dados-erro" && <p className="auth-notice is-error" role="alert">Confira NF-e, CPF, telefone e as medidas/peso da embalagem.</p>}
@@ -30,16 +39,16 @@ export function MakerShippingLabelManager({ orderId, label, result, enabled }: {
       {label.tracking_code && <span>Código: {label.tracking_code}</span>}
       {label.tracking_url && <a href={label.tracking_url} target="_blank" rel="noreferrer">Acompanhar entrega ↗</a>}
       {label.print_url && <a href={label.print_url} target="_blank" rel="noreferrer">Abrir etiqueta para impressão ↗</a>}
-      {label.status === "carted" && <form action={buySellerOrderShippingLabel} className="maker-shipping-quote-form"><input type="hidden" name="orderId" value={orderId} /><label className="quote-consent"><input type="checkbox" name="confirmPurchase" value="yes" required /> Confirmo a compra da etiqueta por {formatBrl((label.shipping_cost_cents ?? 0) / 100)} debitada da minha carteira Melhor Envio.</label><button className="button button-primary" type="submit">Confirmar e pagar etiqueta</button></form>}
-      {label.status === "paid" && <form action={generateSellerOrderShippingLabel}><input type="hidden" name="orderId" value={orderId} /><button className="button button-secondary" type="submit">Solicitar geração da etiqueta</button></form>}
-      {label.status === "generated" && !label.print_url && <form action={printSellerOrderShippingLabel}><input type="hidden" name="orderId" value={orderId} /><button className="button button-secondary" type="submit">Gerar link privado de impressão</button></form>}
-    </div> : enabled ? <form action={addSellerOrderShippingLabelToCart} className="maker-shipping-quote-form">
+      {label.status === "carted" && <form action={buyAction} className="maker-shipping-quote-form">{targetInput}<label className="quote-consent"><input type="checkbox" name="confirmPurchase" value="yes" required /> Confirmo a compra da etiqueta por {formatBrl((label.shipping_cost_cents ?? 0) / 100)} debitada da minha carteira Melhor Envio.</label><button className="button button-primary" type="submit">Confirmar e pagar etiqueta</button></form>}
+      {label.status === "paid" && <form action={generateAction}>{targetInput}<button className="button button-secondary" type="submit">Solicitar geração da etiqueta</button></form>}
+      {label.status === "generated" && !label.print_url && <form action={printAction}>{targetInput}<button className="button button-secondary" type="submit">Gerar link privado de impressão</button></form>}
+    </div> : enabled ? <form action={addToCartAction} className="maker-shipping-quote-form">
       <p>Informações enviadas ao Melhor Envio para criar a etiqueta. A NF-e e o CPF são usados nesta solicitação e não ficam salvos no portal. O custo só será debitado quando você confirmar a compra na próxima etapa.</p>
       <label>Chave de acesso da NF-e<input name="invoiceKey" inputMode="numeric" minLength={44} maxLength={54} pattern="[0-9.\- /]{44,54}" required /></label>
       <label>CPF do destinatário<input name="recipientDocument" inputMode="numeric" minLength={11} maxLength={14} pattern="[0-9.\-]{11,14}" required /></label>
       <label>Telefone do destinatário<input name="recipientPhone" type="tel" inputMode="tel" minLength={10} maxLength={16} placeholder="DDD + número" required /></label>
       <div className="equipment-form-grid"><label>Largura embalada (cm)<input name="packageWidthCm" type="number" min="1" max="1000" step="0.1" required /></label><label>Altura embalada (cm)<input name="packageHeightCm" type="number" min="1" max="1000" step="0.1" required /></label><label>Comprimento embalado (cm)<input name="packageLengthCm" type="number" min="1" max="1000" step="0.1" required /></label><label>Peso embalado (kg)<input name="packageWeightKg" type="number" min="0.01" max="30000" step="0.01" required /></label></div>
-      <input type="hidden" name="orderId" value={orderId} />
+      {targetInput}
       <button className="button button-primary" type="submit">Adicionar etiqueta ao carrinho do Melhor Envio</button>
     </form> : null}
   </section>;

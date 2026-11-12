@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     || typeof data.status !== "string" || data.status.length > 80) return Response.json({ error: "Invalid event data" }, { status: 400 });
   const admin = createSupabaseAdminClient();
   if (!admin) return Response.json({ error: "Webhook unavailable" }, { status: 503 });
-  const { data: label } = await admin.from("seller_order_shipping_labels").select("id, order_id, store_id, status, tracking_code")
+  const { data: label } = await admin.from("seller_order_shipping_labels").select("id, order_id, custom_print_request_id, store_id, status, tracking_code")
     .eq("provider_order_id", data.id).maybeSingle();
   if (!label) return Response.json({ received: true });
   const { data: connection } = await admin.from("store_melhor_envio_connections").select("provider_user_id")
@@ -62,9 +62,10 @@ export async function POST(request: Request) {
   }).eq("id", label.id);
   if (labelError) return Response.json({ error: "Could not update shipment" }, { status: 500 });
 
-  const { data: order } = await admin.from("seller_purchase_orders").select("shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_shipped_at, shipping_delivered_at")
-    .eq("id", label.order_id).maybeSingle();
-  if (order && trackingCode && (providerStatus === "posted" || providerStatus === "delivered")) {
+  if (label.order_id) {
+    const { data: order } = await admin.from("seller_purchase_orders").select("shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_shipped_at, shipping_delivered_at")
+      .eq("id", label.order_id).maybeSingle();
+    if (order && trackingCode && (providerStatus === "posted" || providerStatus === "delivered")) {
     const nextStatus = providerStatus === "delivered" ? "delivered" : order.shipment_status === "awaiting_shipment" ? "shipped" : order.shipment_status;
     if (["shipped", "delivered"].includes(nextStatus)) {
       const now = new Date().toISOString();
@@ -75,6 +76,24 @@ export async function POST(request: Request) {
         updated_at: now,
       }).eq("id", label.order_id).in("shipment_status", ["awaiting_shipment", "shipped"]);
       if (error) return Response.json({ error: "Could not update order" }, { status: 500 });
+    }
+    }
+  } else if (label.custom_print_request_id) {
+    const { data: delivery } = await admin.from("custom_print_deliveries")
+      .select("shipment_status, shipping_tracking_url, shipping_shipped_at, shipping_delivered_at")
+      .eq("request_id", label.custom_print_request_id).maybeSingle();
+    if (delivery && trackingCode && (providerStatus === "posted" || providerStatus === "delivered")) {
+      const nextStatus = providerStatus === "delivered" ? "delivered" : delivery.shipment_status === "awaiting_shipment" ? "shipped" : delivery.shipment_status;
+      if (["shipped", "delivered"].includes(nextStatus)) {
+        const now = new Date().toISOString();
+        const { error } = await admin.from("custom_print_deliveries").update({
+          shipment_status: nextStatus, shipping_tracking_code: trackingCode, shipping_tracking_url: trackingUrl ?? delivery.shipping_tracking_url,
+          shipping_shipped_at: delivery.shipping_shipped_at ?? now,
+          shipping_delivered_at: nextStatus === "delivered" ? delivery.shipping_delivered_at ?? now : null,
+          updated_at: now,
+        }).eq("request_id", label.custom_print_request_id).in("shipment_status", ["awaiting_shipment", "shipped"]);
+        if (error) return Response.json({ error: "Could not update custom print delivery" }, { status: 500 });
+      }
     }
   }
   return Response.json({ received: true });

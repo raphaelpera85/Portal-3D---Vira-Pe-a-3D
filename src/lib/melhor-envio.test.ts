@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeMelhorEnvioRates, validateMelhorEnvioShipment } from "./melhor-envio";
+import { normalizeMelhorEnvioRates, validateMelhorEnvioPackage, validateMelhorEnvioShipment } from "./melhor-envio";
 
 const shipmentFields = {
   recipientPhone: "(11) 91234-5678",
@@ -40,5 +40,17 @@ describe("validateMelhorEnvioShipment", () => {
 
   it("rejects an NFC-e model 65 key even when its check digit is valid", () => {
     expect(validateMelhorEnvioShipment({ ...shipmentFields, invoiceKey: "35261112345678000199650010000000011000000015" })).toBeNull();
+  });
+});
+
+describe("validateMelhorEnvioPackage", () => {
+  it("accepts and normalizes a package for a custom print quote", () => {
+    expect(validateMelhorEnvioPackage({ packageWidthCm: "12,5", packageHeightCm: "10", packageLengthCm: "20", packageWeightKg: "0,75" }))
+      .toEqual({ widthCm: 12.5, heightCm: 10, lengthCm: 20, weightKg: 0.75 });
+  });
+
+  it("rejects zero or out-of-range package measurements", () => {
+    expect(validateMelhorEnvioPackage({ packageWidthCm: "0", packageHeightCm: "10", packageLengthCm: "20", packageWeightKg: "0.75" })).toBeNull();
+    expect(validateMelhorEnvioPackage({ packageWidthCm: "12", packageHeightCm: "10", packageLengthCm: "20", packageWeightKg: "30001" })).toBeNull();
   });
 });

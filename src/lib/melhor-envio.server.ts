@@ -97,7 +97,7 @@ export { type MelhorEnvioRate } from "@/lib/melhor-envio";
 export async function calculateMelhorEnvioRates(storeId: string, from: string, to: string, products: Array<{
   id: string; width: number; height: number; length: number; weight: number; insurance_value: number; quantity: number;
 }>) {
-  const accessToken = await getMelhorEnvioAccessToken(storeId);
+  const accessToken = await getMelhorEnvioAccessToken(storeId, ["shipping-calculate"]);
   const response = await fetch(`${baseUrl}/api/v2/me/shipment/calculate`, {
     method: "POST",
     headers: {

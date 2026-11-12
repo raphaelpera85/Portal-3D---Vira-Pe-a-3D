@@ -76,6 +76,17 @@ export function validateMelhorEnvioShipment(values: Record<string, FormDataEntry
   return { invoiceKey, recipientPhone, recipientDocument, widthCm, heightCm, lengthCm, weightKg };
 }
 
+export function validateMelhorEnvioPackage(values: Record<string, FormDataEntryValue | null>) {
+  const read = (key: string) => typeof values[key] === "string" ? (values[key] as string).trim().replace(",", ".") : "";
+  const widthCm = Number(read("packageWidthCm"));
+  const heightCm = Number(read("packageHeightCm"));
+  const lengthCm = Number(read("packageLengthCm"));
+  const weightKg = Number(read("packageWeightKg"));
+  if (![widthCm, heightCm, lengthCm].every((value) => Number.isFinite(value) && value >= 1 && value <= 1000)
+    || !Number.isFinite(weightKg) || weightKg < 0.01 || weightKg > 30000) return null;
+  return { widthCm, heightCm, lengthCm, weightKg };
+}
+
 export function normalizeMelhorEnvioRates(payload: unknown): MelhorEnvioRate[] {
   if (!Array.isArray(payload)) return [];
   return payload.flatMap((item): MelhorEnvioRate[] => {
