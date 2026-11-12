@@ -65,6 +65,29 @@ describe("calculatePrintPrice", () => {
     expect(result.channels[0].priceCents).toBe(600);
   });
 
+  it("calculates markup over unit cost and finds the smallest cent price per channel", () => {
+    const result = calculatePrintPrice({ ...sample, pricingMode: "markup", targetMarkupPercent: 50, targetMarginPercent: 0 }, [
+      { id: "direct", name: "Venda direta", feePercent: 0, fixedFee: 0 },
+      { id: "marketplace", name: "Marketplace", feePercent: 10, fixedFee: 1 },
+    ]);
+
+    expect(result.errors).toEqual([]);
+    expect(result.unitCostCents).toBe(6247);
+    expect(result.channels.map((channel) => channel.priceCents)).toEqual([9371, 10523]);
+    expect(result.channels[0].profitCents).toBe(3124);
+    expect(result.channels[1].profitCents).toBe(3124);
+    expect(result.channels[1].actualMarginPercent).toBeLessThan(50);
+  });
+
+  it("rejects a markup whose price would exceed safe integer precision", () => {
+    const result = calculatePrintPrice({ ...sample, pricingMode: "markup", targetMarkupPercent: Number.MAX_VALUE }, [
+      { id: "direct", name: "Venda direta", feePercent: 0, fixedFee: 0 },
+    ]);
+
+    expect(result.errors).toContain("Os valores excedem o limite seguro do cálculo.");
+    expect(result.channels).toEqual([]);
+  });
+
   it("calculates a full production batch once and distributes per-piece and fixed costs correctly", () => {
     const result = calculatePrintPrice({ ...sample, batchQuantity: 4, batchFixedCost: 10 }, [
       { id: "direct", name: "Venda direta", feePercent: 0, fixedFee: 0 },

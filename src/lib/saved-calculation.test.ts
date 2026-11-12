@@ -54,6 +54,23 @@ describe("validateCalculationToSave", () => {
     expect(result.calculation?.result.unitCostCents).toBe(result.calculation?.result.breakdown.totalCostCents);
   });
 
+  it("validates and recalculates markup snapshots while keeping older snapshots in margin mode", () => {
+    const markup = validateCalculationToSave("Suporte de mesa", JSON.stringify({
+      ...snapshot,
+      input: { ...snapshot.input, pricingMode: "markup", targetMarkupPercent: 50 },
+    }));
+    const older = validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot));
+
+    expect(markup.error).toBeNull();
+    expect(markup.calculation?.input).toMatchObject({ pricingMode: "markup", targetMarkupPercent: 50 });
+    expect(markup.calculation?.result.channels[0].profitCents).toBeGreaterThan(0);
+    expect(older.calculation?.input).toMatchObject({ pricingMode: "margin", targetMarkupPercent: 0 });
+    expect(validateCalculationToSave("Suporte", JSON.stringify({
+      ...snapshot,
+      input: { ...snapshot.input, pricingMode: "unknown", targetMarkupPercent: 50 },
+    })).calculation).toBeNull();
+  });
+
   it("validates and recalculates saved component runs", () => {
     const component = {
       name: "Tampa", material: "PETG", printer: "Impressora B", piecesPerProduct: 2,

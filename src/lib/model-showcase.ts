@@ -1,7 +1,11 @@
 import models from "./model-showcase-data.json";
 
-export type ShowcaseModel = { id: string; name: string; category: string; categorySlug: string; image: string; tags: string[] };
+export type ShowcaseModel = { id: string; name: string; category: string; categorySlug: string; image: string; filePath: string; tags: string[] };
 export const modelShowcase = models as ShowcaseModel[];
+
+export function getShowcaseModel(id: string) {
+  return modelShowcase.find((model) => model.id === id) ?? null;
+}
 
 const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
-import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelFormat, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfUnit, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
+import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfUnit, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
 
 describe("model upload validation", () => {
   it("accepts STL, OBJ, 3MF, GLB and GLTF files under the size limit", () => {
@@ -35,6 +35,12 @@ describe("model upload validation", () => {
       { name: "scene.gltf", size: 10 },
       { name: "scene.bin", size: 20 * 1024 * 1024 },
     ])).toContain("conjunto");
+  });
+
+  it("allows catalog files up to 50 MB without changing the 20 MB upload limit", () => {
+    expect(MAX_MODEL_FILE_BYTES).toBe(20 * 1024 * 1024);
+    expect(validateModelFiles([{ name: "catalog.3mf", size: 45 * 1024 * 1024 }], MAX_PUBLIC_MODEL_FILE_BYTES)).toBeNull();
+    expect(validateModelFiles([{ name: "catalog.3mf", size: 51 * 1024 * 1024 }], MAX_PUBLIC_MODEL_FILE_BYTES)).toContain("50 MB");
   });
 });
 

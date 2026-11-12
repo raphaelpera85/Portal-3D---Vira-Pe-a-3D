@@ -38,6 +38,8 @@ export type PrintCostInput = {
   failureReservePercent: number;
   additionalCosts: AdditionalCost[];
   targetMarginPercent: number;
+  pricingMode?: "margin" | "markup";
+  targetMarkupPercent?: number;
 };
 
 export type CostBreakdown = {
@@ -65,6 +67,8 @@ export type ChannelPrice = {
 };
 
 export function calculatePrintPrice(input: PrintCostInput, channels: SalesChannel[]) {
+  const pricingMode = input.pricingMode ?? "margin";
+  const targetMarkupPercent = input.targetMarkupPercent ?? 0;
   const batchQuantity = input.batchQuantity ?? 1;
   const batchFixedCost = input.batchFixedCost ?? 0;
   const components = input.productionComponents ?? [];
@@ -73,7 +77,7 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     input.filamentGrams, input.filamentPricePerKg, input.printHours, input.averagePowerWatts,
     input.energyPricePerKwh, input.machineCostPerHour, input.depreciationPerHour,
     input.maintenancePerHour, input.laborMinutes, input.laborRatePerHour,
-    input.overheadPerUnit, input.failureReservePercent, input.targetMarginPercent,
+    input.overheadPerUnit, input.failureReservePercent, input.targetMarginPercent, targetMarkupPercent,
     ...input.additionalCosts.map(({ amount }) => amount),
     ...components.flatMap(({ piecesPerProduct, filamentGrams, filamentPricePerKg, printHours, averagePowerWatts, energyPricePerKwh, machineCostPerHour, depreciationPerHour, maintenancePerHour, laborMinutes, laborRatePerHour }) => [
       piecesPerProduct, filamentGrams, filamentPricePerKg, printHours, averagePowerWatts,
@@ -84,6 +88,9 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
 
   if (numericValues.some((value) => !Number.isFinite(value))) {
     return { errors: ["Preencha somente valores numéricos válidos."], breakdown: null, unitCostCents: null, channels: [] };
+  }
+  if (pricingMode !== "margin" && pricingMode !== "markup") {
+    return { errors: ["Selecione margem sobre venda ou markup sobre custo."], breakdown: null, unitCostCents: null, channels: [] };
   }
   if (numericValues.some((value) => value < 0)) {
     return { errors: ["Os custos e quantidades não podem ser negativos."], breakdown: null, unitCostCents: null, channels: [] };
@@ -99,10 +106,11 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
   )) {
     return { errors: ["Revise os nomes, as quantidades e o limite de componentes por lote."], breakdown: null, unitCostCents: null, channels: [] };
   }
-  if (input.failureReservePercent > 100 || input.targetMarginPercent >= 100 || channels.some((channel) => channel.feePercent >= 100)) {
-    return { errors: ["Margens e reservas devem ficar entre 0% e 100%."], breakdown: null, unitCostCents: null, channels: [] };
+  if (input.failureReservePercent > 100 || channels.some((channel) => channel.feePercent >= 100)
+    || (pricingMode === "margin" && input.targetMarginPercent >= 100)) {
+    return { errors: ["Margens, taxas e reservas devem ficar entre 0% e 100%."], breakdown: null, unitCostCents: null, channels: [] };
   }
-  if (channels.some((channel) => input.targetMarginPercent + channel.feePercent >= 100)) {
+  if (pricingMode === "margin" && channels.some((channel) => input.targetMarginPercent + channel.feePercent >= 100)) {
     return { errors: ["A margem desejada somada às taxas precisa ser menor que 100%."], breakdown: null, unitCostCents: null, channels: [] };
   }
 
@@ -135,9 +143,13 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     return { errors: ["Os valores excedem o limite seguro do cálculo."], breakdown: null, unitCostCents: null, channels: [] };
   }
 
+  const targetMarkupProfitCents = unitCostCents == null ? 0 : Math.ceil(unitCostCents * targetMarkupPercent / 100);
+  if (unitCostCents != null && !Number.isSafeInteger(targetMarkupProfitCents)) {
+    return { errors: ["Os valores excedem o limite seguro do cálculo."], breakdown: null, unitCostCents: null, channels: [] };
+  }
   if (channels.some((channel) => {
-    const denominator = 1 - channel.feePercent / 100 - input.targetMarginPercent / 100;
-    const baseCents = (unitCostCents ?? 0) + roundCents(channel.fixedFee);
+    const denominator = 1 - channel.feePercent / 100 - (pricingMode === "margin" ? input.targetMarginPercent / 100 : 0);
+    const baseCents = (unitCostCents ?? 0) + roundCents(channel.fixedFee) + (pricingMode === "markup" ? targetMarkupProfitCents : 0);
     return !Number.isSafeInteger(roundCents(channel.fixedFee)) || (unitCostCents != null && !Number.isSafeInteger(Math.ceil((baseCents + 1) / denominator) + 1));
   })) {
     return { errors: ["Os valores excedem o limite seguro do cálculo."], breakdown: null, unitCostCents: null, channels: [] };
@@ -151,20 +163,20 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     }
 
     const feeRate = channel.feePercent / 100;
-    const marginRate = input.targetMarginPercent / 100;
+    const marginRate = pricingMode === "margin" ? input.targetMarginPercent / 100 : 0;
     const denominator = 1 - feeRate - marginRate;
     const baseCents = unitCostCents + feeCents;
-    let high = Math.max(baseCents, Math.ceil((baseCents + 1) / denominator) + 1);
-    const meetsMargin = (priceCents: number) => {
+    let high = Math.max(baseCents, Math.ceil((baseCents + (pricingMode === "markup" ? targetMarkupProfitCents : 0) + 1) / denominator) + 1);
+    const meetsTarget = (priceCents: number) => {
       const roundedPercentageFee = roundCents(priceCents / 100 * channel.feePercent / 100);
       const profit = priceCents - unitCostCents - feeCents - roundedPercentageFee;
-      return profit / priceCents * 100 >= input.targetMarginPercent;
+      return pricingMode === "markup" ? profit >= targetMarkupProfitCents : profit / priceCents * 100 >= input.targetMarginPercent;
     };
 
     let low = baseCents;
     while (low < high) {
       const middle = Math.floor((low + high) / 2);
-      if (meetsMargin(middle)) high = middle;
+      if (meetsTarget(middle)) high = middle;
       else low = middle + 1;
     }
 

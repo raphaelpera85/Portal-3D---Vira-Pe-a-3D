@@ -36,4 +36,10 @@ describe("exportPrintCalculationCsv", () => {
     const result = calculatePrintPrice({ ...input, targetMarginPercent: 100 }, channels);
     expect(() => exportPrintCalculationCsv("Cálculo", input, channels, result)).toThrow("Não há um cálculo válido para exportar.");
   });
+
+  it("labels the target as markup when that pricing method is selected", () => {
+    const markupInput = { ...input, pricingMode: "markup" as const, targetMarkupPercent: 50, targetMarginPercent: 0 };
+    const result = calculatePrintPrice(markupInput, channels);
+    expect(exportPrintCalculationCsv("Suporte", markupInput, channels, result)).toContain('"Markup desejado (%)";"50"');
+  });
 });

@@ -26,6 +26,8 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   }
 
   const rawInput = parsed.input;
+  const pricingMode = rawInput.pricingMode === undefined ? "margin" : rawInput.pricingMode;
+  const targetMarkupPercent = rawInput.targetMarkupPercent === undefined && pricingMode === "margin" ? 0 : rawInput.targetMarkupPercent;
   const material = rawInput.material === undefined ? "" : typeof rawInput.material === "string" && rawInput.material.length <= 120 ? rawInput.material.trim() : undefined;
   const numberFields = ["filamentGrams", "filamentPricePerKg", "printHours", "averagePowerWatts", "energyPricePerKwh", "machineCostPerHour", "depreciationPerHour", "maintenancePerHour", "laborMinutes", "laborRatePerHour", "overheadPerUnit", "failureReservePercent", "targetMarginPercent"] as const;
   const batchQuantity = rawInput.batchQuantity === undefined ? 1 : rawInput.batchQuantity;
@@ -45,7 +47,8 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
       } as ProductionComponent
       : null)
     : null;
-  if (material === undefined || !numberFields.every((field) => validNumber(rawInput[field])) || !validNumber(batchQuantity) || !Number.isSafeInteger(batchQuantity) || batchQuantity < 1 || batchQuantity > MAX_BATCH_QUANTITY
+  if ((pricingMode !== "margin" && pricingMode !== "markup") || (pricingMode === "markup" && rawInput.targetMarkupPercent === undefined)
+    || !validNumber(targetMarkupPercent) || material === undefined || !numberFields.every((field) => validNumber(rawInput[field])) || !validNumber(batchQuantity) || !Number.isSafeInteger(batchQuantity) || batchQuantity < 1 || batchQuantity > MAX_BATCH_QUANTITY
     || !validNumber(batchFixedCost) || !Array.isArray(rawInput.additionalCosts) || rawInput.additionalCosts.length > 30
     || productionComponents === null || productionComponents.some((component) => component === null)) {
     return { calculation: null, error: "Revise os valores do cálculo antes de salvar." };
@@ -56,7 +59,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
     : null);
   if (additionalCosts.some((item) => item === null)) return { calculation: null, error: "Há componentes adicionais inválidos." };
 
-  const input = { ...Object.fromEntries(numberFields.map((field) => [field, rawInput[field]])), material, batchQuantity, batchFixedCost, productionComponents } as unknown as Omit<PrintCostInput, "additionalCosts">;
+  const input = { ...Object.fromEntries(numberFields.map((field) => [field, rawInput[field]])), material, batchQuantity, batchFixedCost, productionComponents, pricingMode, targetMarkupPercent } as unknown as Omit<PrintCostInput, "additionalCosts">;
   const channels = parsed.channels.map((item) => isRecord(item) && typeof item.id === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(item.id)
     && typeof item.name === "string" && item.name.trim().length <= 80
     && validNumber(item.feePercent) && item.feePercent < 100 && validNumber(item.fixedFee)

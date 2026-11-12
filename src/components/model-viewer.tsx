@@ -9,7 +9,7 @@ import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js
 import { ModelUploadManager, type SavedModelUpload } from "@/components/model-upload-manager";
 import { createMeterExportCopy } from "@/lib/model-export";
 import {
-  formatModelDimensions, MAX_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
+  formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
   type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, getModelColorMatchedComponentIds, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
 
@@ -24,7 +24,7 @@ const views: { name: ViewName; label: string; direction: [number, number, number
 ];
 type ViewerComponent = { id: string; name: string; visible: boolean; colors: string[] };
 
-export function ModelViewer({ buyerId, savedModels = [], materials = [], today, libraryError = false, previewUrl, readOnly = false }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: { id: string; label: string }[]; today: string; libraryError?: boolean; previewUrl?: string | null; readOnly?: boolean }) {
+export function ModelViewer({ buyerId, savedModels = [], materials = [], today, libraryError = false, previewUrl, modelName, readOnly = false }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: { id: string; label: string }[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -197,13 +197,13 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
     if (modelOriginPositionRef.current) model.position.copy(modelOriginPositionRef.current).multiplyScalar(scale / 100);
   }, [scale]);
 
-  async function loadFiles(files: File[], publicPreview = false): Promise<boolean> {
+  async function loadFiles(files: File[], publicPreview = false, maxFileBytes = MAX_MODEL_FILE_BYTES): Promise<boolean> {
     if (files.length === 0) return false;
     if (exporting) {
       setMessage("Aguarde a exportação terminar antes de trocar o modelo.");
       return false;
     }
-    const validation = validateModelFiles(files);
+    const validation = validateModelFiles(files, maxFileBytes);
     if (validation) {
       setMessage(validation);
       return false;
@@ -232,7 +232,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
         try { filename = decodeURIComponent(filename); } catch {}
         const localFile = fileUrls.get(filename.toLowerCase());
         if (localFile) return localFile;
-        if (publicPreview && !resource.startsWith("data:")) throw new Error("A prévia precisa incluir todos os recursos dentro do GLB.");
+        if (publicPreview && kind !== "3mf" && !resource.startsWith("data:")) throw new Error("A prévia precisa incluir todos os recursos dentro do GLB.");
         return resource;
       });
       let object: THREE.Object3D;
@@ -356,16 +356,20 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
   useEffect(() => {
     if (!readOnly || !previewUrl) return;
     const controller = new AbortController();
-    void fetch(previewUrl, { cache: "no-store", signal: controller.signal }).then(async (response) => {
+    void fetch(previewUrl, { signal: controller.signal }).then(async (response) => {
       if (!response.ok) throw new Error("Prévia indisponível");
       const blob = await response.blob();
-      if (blob.size > MAX_MODEL_FILE_BYTES) throw new Error("Prévia acima do limite");
-      await loadFiles([new File([blob], "preview.glb", { type: "model/gltf-binary" })], true);
+      const isPublic3mf = modelName !== undefined;
+      const maxFileBytes = isPublic3mf ? MAX_PUBLIC_MODEL_FILE_BYTES : MAX_MODEL_FILE_BYTES;
+      if (blob.size > maxFileBytes) throw new Error("Arquivo acima do limite");
+      const filename = isPublic3mf ? `${modelName}.3mf` : "preview.glb";
+      const type = isPublic3mf ? "application/vnd.ms-package.3dmanufacturing-3dmodel+xml" : "model/gltf-binary";
+      await loadFiles([new File([blob], filename, { type })], true, maxFileBytes);
     }).catch(() => {
       if (!controller.signal.aborted) setMessage("Prévia 3D indisponível. Atualize a página para tentar novamente.");
     });
     return () => controller.abort();
-  }, [previewUrl, readOnly]);
+  }, [previewUrl, readOnly, modelName]);
 
   function fitView() {
     const camera = cameraRef.current;
@@ -476,7 +480,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
 
   return (
     <section className="viewer-shell shell" aria-label="Visualizador de modelos 3D">
-      <div className="viewer-topline"><span><Box size={16} aria-hidden="true" /> VISUALIZADOR VIRAPEÇA 3D</span><span>{readOnly ? "PRÉVIA PÚBLICA · GLB" : "PRÉVIA LOCAL · ENVIO OPCIONAL"}</span></div>
+      <div className="viewer-topline"><span><Box size={16} aria-hidden="true" /> VISUALIZADOR VIRAPEÇA 3D</span><span>{readOnly ? `${modelName ? "MODELO PÚBLICO · 3MF" : "PRÉVIA PÚBLICA · GLB"}` : "PRÉVIA LOCAL · ENVIO OPCIONAL"}</span></div>
       <div className={`viewer-layout${readOnly ? " viewer-readonly" : ""}`}>
         <div className="viewer-stage-wrap">
           <div className="viewer-stage-toolbar">
@@ -501,10 +505,10 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
             onDrop={(event) => { if (!readOnly) { event.preventDefault(); void loadFiles(Array.from(event.dataTransfer.files)); } }}
           >
             <div className="viewer-canvas-label">X <i /> Y <i /> Z</div>
-            {!rawDimensions && !busy && <div className="viewer-empty"><div className="viewer-empty-icon"><Box size={30} /></div><h2>{readOnly ? "Prévia 3D do produto" : "Veja seu modelo ganhar forma."}</h2><p>{readOnly ? "Carregando a cópia de prévia enviada pelo fabricante." : "Abra ou arraste um arquivo STL, OBJ, 3MF ou GLB para explorar a peça em 3D."}</p>{!readOnly && <span>Até 20 MB no conjunto · processamento no seu dispositivo</span>}</div>}
+            {!rawDimensions && !busy && <div className="viewer-empty"><div className="viewer-empty-icon"><Box size={30} /></div><h2>{readOnly ? modelName ? `Visualize ${modelName} em 3D` : "Prévia 3D do produto" : "Veja seu modelo ganhar forma."}</h2><p>{readOnly ? modelName ? "Carregando o arquivo 3MF original." : "Carregando a cópia de prévia enviada pelo fabricante." : "Abra ou arraste um arquivo STL, OBJ, 3MF ou GLB para explorar a peça em 3D."}</p>{!readOnly && <span>Até 20 MB no conjunto · processamento no seu dispositivo</span>}</div>}
             {busy && <div className="viewer-loading" role="status"><span className="viewer-spinner" />Preparando modelo 3D…</div>}
             {webglError && <div className="viewer-loading" role="alert">Este dispositivo não conseguiu iniciar a visualização 3D (WebGL).</div>}
-            {message && <div className={`viewer-message${message.startsWith("Não foi") || message.includes("Escolha") || message.includes("20 MB") || message.includes("vazio") || message.includes("Selecione") || message.includes("compatível") ? " is-error" : ""}`} role="status"><span>{message}</span><button type="button" onClick={() => setMessage("")} aria-label="Dispensar mensagem"><X size={14} /></button></div>}
+            {message && <div className={`viewer-message${message.startsWith("Não foi") || message.includes("Escolha") || message.includes("20 MB") || message.includes("50 MB") || message.includes("vazio") || message.includes("Selecione") || message.includes("compatível") ? " is-error" : ""}`} role="status"><span>{message}</span><button type="button" onClick={() => setMessage("")} aria-label="Dispensar mensagem"><X size={14} /></button></div>}
           </div>
           <div className="viewer-toolbar">
             {views.map((view) => <button key={view.name} type="button" className="viewer-view-button" disabled={!rawDimensions} onClick={() => selectView(view.name)}>{view.label}</button>)}

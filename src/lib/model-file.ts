@@ -1,4 +1,5 @@
 export const MAX_MODEL_FILE_BYTES = 20 * 1024 * 1024;
+export const MAX_PUBLIC_MODEL_FILE_BYTES = 50 * 1024 * 1024;
 export const MAX_THREE_MF_UNCOMPRESSED_BYTES = 100 * 1024 * 1024;
 
 export type ModelUnit = "mm" | "cm" | "m";
@@ -29,7 +30,7 @@ export function validateModelFile(file: Pick<File, "name" | "size">): string | n
   return null;
 }
 
-export function validateModelFiles(files: Array<Pick<File, "name" | "size">>): string | null {
+export function validateModelFiles(files: Array<Pick<File, "name" | "size">>, maxBytes = MAX_MODEL_FILE_BYTES): string | null {
   const models = files.filter((file) => getModelFormat(file.name));
   if (models.length !== 1) return "Selecione um modelo principal por vez.";
   const companions = new Set(["mtl", "bin", "png", "jpg", "jpeg", "webp"]);
@@ -37,7 +38,7 @@ export function validateModelFiles(files: Array<Pick<File, "name" | "size">>): s
     return "Um dos arquivos associados não é compatível.";
   }
   if (files.some((file) => file.size === 0)) return "Um dos arquivos selecionados está vazio.";
-  if (files.reduce((total, file) => total + file.size, 0) > MAX_MODEL_FILE_BYTES) return "O conjunto de arquivos precisa ter até 20 MB.";
+  if (files.reduce((total, file) => total + file.size, 0) > maxBytes) return `O conjunto de arquivos precisa ter até ${Math.round(maxBytes / 1024 / 1024)} MB.`;
   return null;
 }
 

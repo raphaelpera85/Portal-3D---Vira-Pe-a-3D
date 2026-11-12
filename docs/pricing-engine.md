@@ -10,13 +10,13 @@ A rota `/calculadora` calcula um lote por vez no navegador. O cálculo manual fu
 - Tempo de impressão, potência média medida e tarifa por kWh.
 - Custo operacional da máquina, depreciação e manutenção por hora.
 - Tempo e valor da mão de obra, custos fixos rateados, componentes e reserva para falhas.
-- Margem bruta desejada e taxas percentuais e fixas informadas para cada canal.
+- Método de precificação: margem sobre preço de venda ou markup sobre custo unitário; taxas percentuais e fixas informadas por canal.
 
 ## Cálculo
 
 O custo de material é `gramas do lote × preço/kg ÷ 1000`. Energia usa `potência média em kW × horas do lote × tarifa`; custos de máquina e mão de obra também usam os totais informados para cada execução. A execução principal e cada componente adicional têm seus próprios materiais, impressoras e custos. Para cada componente, informe quantas unidades entram em um produto final e os custos totais necessários para produzir esse componente para todo o lote. Se a produção exigiu várias execuções, some o tempo e os demais custos das execuções daquele componente antes de preencher; o portal não multiplica tempo por peças. Componentes físicos e custos rateados por peça são multiplicados pela quantidade do lote; custo fixo de lote entra uma vez. Cada item monetário é arredondado para centavos antes da soma. A reserva para falhas incide sobre todos os custos somados. O custo unitário usa arredondamento para cima, evitando que a divisão deixe parte do custo do lote sem cobertura. Preços por canal são calculados por unidade.
 
-O preço por canal é o menor preço em centavos em que o lucro após a tarifa fixa e a taxa percentual arredondada ainda atinge a margem desejada sobre o preço de venda. As taxas ficam vazias inicialmente: a interface não presume tarifas de plataformas.
+No modo de margem, o preço por canal é o menor valor em centavos em que o lucro após taxas ainda atinge a porcentagem desejada sobre o preço de venda. No modo de markup, a meta é o acréscimo sobre o custo unitário após as taxas do canal; o preço é o menor valor em centavos que cobre esse lucro. O resultado também mostra a margem efetiva em ambos os modos. As taxas ficam vazias inicialmente: a interface não presume tarifas de plataformas.
 
 ## Limites atuais
 
@@ -30,5 +30,6 @@ O preço por canal é o menor preço em centavos em que o lucro após a tarifa f
 - O OCR inicial reconhece rótulos comuns para consumo total, modelo, suportes, comprimento, tempo, trocas, materiais e linhas por filamento/cor quando legíveis. Não garante suporte a todas as versões/localizações dos slicers, perfis ou custos com moeda ambígua. Divergências ficam sem preenchimento.
 - Os componentes podem ter materiais do catálogo ou descrições manuais, impressoras diferentes e preços de compra próprios; esses dados são preservados nos snapshots do histórico. Ainda não há associação desses componentes com arquivos 3D enviados, perfis ou bicos. O controle de consignação é independente das vendas e dos pedidos do marketplace.
 - O resultado é uma estimativa baseada nos dados informados e não substitui a validação de custos reais do fabricante.
+- Cálculos salvos antigos sem `pricingMode` continuam sendo lidos como margem sobre o preço. Novos snapshots registram o modo e o percentual de markup quando esse método é escolhido.
 
 As fórmulas e os limites do cálculo são exercitados por `src/lib/pricing.test.ts`.

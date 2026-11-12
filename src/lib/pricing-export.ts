@@ -36,7 +36,7 @@ export function exportPrintCalculationCsv(
     ["Material", input.material],
     ["Custo total do lote (R$)", money(result.breakdown.totalCostCents)],
     ["Custo unitário estimado (R$)", money(result.unitCostCents)],
-    ["Margem desejada (%)", decimal(input.targetMarginPercent)],
+    [input.pricingMode === "markup" ? "Markup desejado (%)" : "Margem desejada (%)", decimal(input.pricingMode === "markup" ? input.targetMarkupPercent : input.targetMarginPercent)],
     [],
     ["Composição de custos", "Total do lote (R$)"],
     ["Material", money(result.breakdown.materialCents)],

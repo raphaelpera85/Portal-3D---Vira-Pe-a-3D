@@ -19,8 +19,8 @@ function galleryUrl(query: string, category: string, page = 1) {
 function ModelCards({ models }: { models: ShowcaseModel[] }) {
   return <div className="model-gallery-grid" aria-live="polite">
     {models.map((model) => <article className="model-gallery-card" key={model.id}>
-      <div className="model-gallery-image"><img src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width="480" height="360" loading="lazy" /></div>
-      <div className="model-gallery-copy"><div className="product-meta"><span>{model.category}</span><span aria-hidden="true">3MF</span></div><h3>{model.name}</h3>
+      <Link className="model-gallery-image" href={`/modelos/${model.id}`} prefetch={false} aria-label={`Abrir ${model.name}, visualizar e baixar modelo 3D`}><img src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width="480" height="360" loading="lazy" /></Link>
+      <div className="model-gallery-copy"><Link className="model-gallery-summary" href={`/modelos/${model.id}`} prefetch={false}><div className="product-meta"><span>{model.category}</span><span aria-hidden="true">3MF</span></div><h3>{model.name}</h3></Link>
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={galleryUrl(tag, model.categorySlug)}>{tag}</Link></li>)}</ul>
       </div>
     </article>)}
@@ -46,7 +46,7 @@ export function ModelShowcase({ models, query, category, page, pages }: { models
       <form className="search-field" action="/modelos" method="get"><label className="sr-only" htmlFor="model-gallery-search">Buscar modelos por nome ou tag</label><input id="model-gallery-search" type="search" name="q" maxLength={100} defaultValue={query} placeholder="Nome, animal, tema ou tag" />{category && <input type="hidden" name="categoria" value={category} />}<button type="submit">Buscar</button></form>
       <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={category} redirectPath="/modelos" />
     </div>
-    <p className="catalog-disclaimer">Galeria de prévias; os arquivos originais ainda não estão associados a uma loja aprovada para venda.</p>
+    <p className="catalog-disclaimer">Abra um modelo para girar a prévia 3D e baixar o arquivo 3MF original.</p>
     <ModelCards models={models} />
     {pages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos modelos">{page > 1 ? <Link className="button button-secondary" href={galleryUrl(query, category, page - 1)}>← Página anterior</Link> : <span />}<span>Página {page} de {pages}</span>{page < pages ? <Link className="button button-secondary" href={galleryUrl(query, category, page + 1)}>Próxima página →</Link> : <span />}</nav>}
   </section>;

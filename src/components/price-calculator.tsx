@@ -12,7 +12,7 @@ import { deleteMakerCalculation, saveMakerCalculation } from "@/app/calculadora/
 import { SlicerImageImporter } from "@/components/slicer-image-importer";
 import type { parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 
-type FormFields = Record<keyof Omit<PrintCostInput, "additionalCosts" | "productionComponents" | "targetMarginPercent"> | "targetMarginPercent", string>;
+type FormFields = Record<keyof Omit<PrintCostInput, "additionalCosts" | "productionComponents" | "pricingMode">, string>;
 type ChannelFields = Omit<SalesChannel, "feePercent" | "fixedFee"> & { feePercent: string; fixedFee: string };
 type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
@@ -26,7 +26,7 @@ const initialFields: FormFields = {
   batchQuantity: "1", batchFixedCost: "", material: "", filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "",
   energyPricePerKwh: "", machineCostPerHour: "", depreciationPerHour: "",
   maintenancePerHour: "", laborMinutes: "", laborRatePerHour: "", overheadPerUnit: "",
-  failureReservePercent: "", targetMarginPercent: "",
+  failureReservePercent: "", targetMarginPercent: "", targetMarkupPercent: "",
 };
 
 const initialChannels: ChannelFields[] = [
@@ -89,6 +89,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const [extras, setExtras] = useState<ExtraField[]>([]);
   const [productionComponents, setProductionComponents] = useState<ProductionComponentFields[]>([]);
   const [channels, setChannels] = useState(initialChannels);
+  const [pricingMode, setPricingMode] = useState<"margin" | "markup">("margin");
   const [calculationTitle, setCalculationTitle] = useState("");
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
@@ -129,14 +130,17 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     laborRatePerHour: numberValue(fields.laborRatePerHour),
     overheadPerUnit: numberValue(fields.overheadPerUnit),
     failureReservePercent: numberValue(fields.failureReservePercent),
-    targetMarginPercent: numberValue(fields.targetMarginPercent),
+    targetMarginPercent: pricingMode === "margin" ? numberValue(fields.targetMarginPercent) : 0,
+    targetMarkupPercent: pricingMode === "markup" ? numberValue(fields.targetMarkupPercent) : 0,
+    pricingMode,
     additionalCosts: extras.map(({ name, amount }) => ({ name, amount: numberValue(amount) })),
   };
-  const result = useMemo(() => calculatePrintPrice(input, parsedChannels), [fields, extras, productionComponents, channels]);
+  const result = useMemo(() => calculatePrintPrice(input, parsedChannels), [fields, extras, productionComponents, channels, pricingMode]);
   const hasProductionCost = Boolean(result.breakdown?.totalCostCents);
   const hasCurrentValues = Object.entries(fields).some(([key, value]) => value !== "" && key !== "batchQuantity" && key !== "batchFixedCost") || extras.length > 0
     || productionComponents.length > 0
-    || channels.some((channel) => channel.feePercent !== "" || channel.fixedFee !== "" || !initialChannels.some((initial) => initial.id === channel.id && initial.name === channel.name));
+    || channels.some((channel) => channel.feePercent !== "" || channel.fixedFee !== "" || !initialChannels.some((initial) => initial.id === channel.id && initial.name === channel.name))
+    || pricingMode !== "margin";
 
   function updateField(field: keyof FormFields, value: string) {
     setFields((current) => ({ ...current, [field]: value }));
@@ -218,7 +222,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     try {
       const saved = JSON.parse(snapshot) as { input?: PrintCostInput; channels?: SalesChannel[] };
       if (!saved.input || !Array.isArray(saved.channels)) return;
-      setFields(Object.fromEntries(Object.entries(saved.input).filter(([key]) => key !== "additionalCosts" && key !== "productionComponents").map(([key, value]) => [key, String(value)])) as FormFields);
+      setFields({ ...initialFields, ...Object.fromEntries(Object.entries(saved.input).filter(([key]) => key !== "additionalCosts" && key !== "productionComponents" && key !== "pricingMode").map(([key, value]) => [key, String(value)])) } as FormFields);
+      setPricingMode(saved.input.pricingMode === "markup" ? "markup" : "margin");
       setExtras(saved.input.additionalCosts.map((item) => ({ id: crypto.randomUUID(), name: item.name, amount: String(item.amount) })));
       setProductionComponents((saved.input.productionComponents ?? []).map((component) => ({
         id: crypto.randomUUID(), equipmentId: "", ...Object.fromEntries(Object.entries(component).map(([key, value]) => [key, String(value)])),
@@ -337,8 +342,13 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
           </section>
 
           <section className="price-card">
-            <div className="price-card-heading"><span className="price-step">04</span><div><h2>Margem e canais</h2><p>Informe as condições que você paga em cada canal. O preço é calculado para atingir a margem após as taxas.</p></div></div>
-            <div className="price-margin-field"><CostField label="Margem desejada sobre o preço" suffix="%" hint="Margem é lucro dividido pelo preço de venda; não é markup." value={fields.targetMarginPercent} onChange={(value) => updateField("targetMarginPercent", value)} /></div>
+            <div className="price-card-heading"><span className="price-step">04</span><div><h2>Preço e canais</h2><p>Escolha markup sobre o custo ou margem sobre o preço. As taxas informadas são consideradas em cada canal.</p></div></div>
+            <div className="price-margin-field">
+              <label className="price-field" htmlFor="pricing-mode"><span>Método de precificação</span><select id="pricing-mode" value={pricingMode} onChange={(event) => setPricingMode(event.target.value as "margin" | "markup")}><option value="margin">Margem sobre o preço de venda</option><option value="markup">Markup sobre o custo unitário</option></select></label>
+              {pricingMode === "margin"
+                ? <CostField label="Margem desejada sobre o preço" suffix="%" hint="Lucro dividido pelo preço de venda." value={fields.targetMarginPercent} onChange={(value) => updateField("targetMarginPercent", value)} />
+                : <CostField label="Markup desejado sobre o custo" suffix="%" hint="Acréscimo desejado sobre o custo unitário, após taxas do canal." value={fields.targetMarkupPercent} onChange={(value) => updateField("targetMarkupPercent", value)} />}
+            </div>
             <div className="price-channels">
               {channels.map((channel) => <div className="price-channel-row" key={channel.id}>
                 <label><span className="sr-only">Nome do canal de venda</span><input type="text" value={channel.name} onChange={(event) => updateChannel(channel.id, "name", event.target.value)} /></label>
@@ -366,14 +376,16 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
               ["Custo fixo do lote", breakdown?.batchFixedCents], ["Reserva para falhas", breakdown?.failureReserveCents],
             ].map(([label, value]) => <div className="price-breakdown-row" key={String(label)}><span>{label}</span><strong>{hasProductionCost ? money(value as number) : "—"}</strong></div>)}
           </div>
-          <div className="price-scenario-heading"><h2>Preço unitário por canal</h2><span>meta: {fields.targetMarginPercent ? `${fields.targetMarginPercent}%` : "—"}</span></div>
+          <div className="price-scenario-heading"><h2>Preço unitário por canal</h2><span>{pricingMode === "markup" ? "markup" : "margem"}: {(pricingMode === "markup" ? fields.targetMarkupPercent : fields.targetMarginPercent) ? `${pricingMode === "markup" ? fields.targetMarkupPercent : fields.targetMarginPercent}%` : "—"}</span></div>
           <div className="price-scenario-list">
             {channels.map((channel) => {
               const scenario = result.channels.find((item) => item.id === channel.id);
-              const ready = fields.targetMarginPercent !== "" && channel.feePercent !== "" && channel.fixedFee !== "";
+              const target = pricingMode === "markup" ? fields.targetMarkupPercent : fields.targetMarginPercent;
+              const ready = target !== "" && channel.feePercent !== "" && channel.fixedFee !== "";
+              const actualMarkup = result.unitCostCents ? ((scenario?.profitCents ?? 0) / result.unitCostCents * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) : null;
               return <article className="price-scenario" key={channel.id}>
                 <div className="price-scenario-top"><span>{channel.name || "Canal sem nome"}</span><strong>{ready && !result.errors.length ? money(scenario?.priceCents) : "—"}</strong></div>
-                <p>{ready && scenario?.profitCents != null ? `Lucro ${money(scenario.profitCents)} · margem ${scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%` : "Informe a margem e as taxas deste canal."}</p>
+                <p>{ready && scenario?.profitCents != null ? `Lucro ${money(scenario.profitCents)} · margem ${scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%${pricingMode === "markup" && actualMarkup ? ` · markup ${actualMarkup}%` : ""}` : "Informe a meta e as taxas deste canal."}</p>
               </article>;
             })}
           </div>
@@ -389,6 +401,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
         <p className="eyebrow">VIRAPEÇA 3D · PRECIFICAÇÃO</p>
         <h1>Relatório de custos e preços</h1>
         <p><strong>Cálculo:</strong> {calculationTitle.trim() || fields.material.trim() || "Sem título"}</p>
+        <p><strong>Meta:</strong> {pricingMode === "markup" ? "Markup" : "Margem"} de {pricingMode === "markup" ? fields.targetMarkupPercent : fields.targetMarginPercent}%</p>
         <p><strong>Lote:</strong> {input.batchQuantity} peças · <strong>Material:</strong> {input.material || "não informado"}</p>
         <p><strong>Custo total:</strong> {money(breakdown.totalCostCents)} · <strong>Custo unitário:</strong> {money(result.unitCostCents)}</p>
         <h2>Composição do custo do lote</h2>
