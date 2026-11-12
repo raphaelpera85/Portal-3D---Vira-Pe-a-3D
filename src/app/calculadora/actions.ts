@@ -7,21 +7,27 @@ import { validateCalculationToSave } from "@/lib/saved-calculation";
 export type SaveCalculationState = { message: string; success: boolean };
 
 export async function saveMakerCalculation(_previous: SaveCalculationState, formData: FormData): Promise<SaveCalculationState> {
-  const validated = validateCalculationToSave(formData.get("title"), formData.get("snapshot"));
+  const validated = validateCalculationToSave(formData.get("title"), formData.get("snapshot"), formData.get("productId"));
   if (!validated.calculation) return { message: validated.error ?? "Confira os dados do cálculo.", success: false };
 
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) return { message: "Entre em uma conta de fabricante aprovada para salvar cálculos.", success: false };
   const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
   if (!store) return { message: "Não foi possível localizar a loja do fabricante.", success: false };
+  if (validated.calculation.productId) {
+    const { data: product } = await actor.supabase.from("marketplace_products").select("id")
+      .eq("id", validated.calculation.productId).eq("store_id", store.id).maybeSingle();
+    if (!product) return { message: "Vincule apenas um produto da sua própria loja.", success: false };
+  }
 
   const { error } = await actor.supabase.from("maker_cost_calculations").insert({
     store_id: store.id,
+    product_id: validated.calculation.productId,
     title: validated.calculation.title,
     input_snapshot: { input: validated.calculation.input, channels: validated.calculation.channels },
     result_snapshot: validated.calculation.result,
   });
-  if (error) return { message: "Não foi possível salvar. Confira se a migração do histórico está aplicada.", success: false };
+  if (error) return { message: "Não foi possível salvar. Confira se as migrações do histórico e do vínculo com produtos estão aplicadas.", success: false };
 
   revalidatePath("/calculadora");
   return { message: "Cálculo salvo no histórico da loja.", success: true };

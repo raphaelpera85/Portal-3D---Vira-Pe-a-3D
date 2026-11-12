@@ -1,17 +1,20 @@
 import { calculatePrintPrice, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "./pricing";
 
 export const MAX_SAVED_CALCULATION_JSON = 20_000;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value);
 const validNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
 
-export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknown) {
+export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknown, rawProductId?: unknown) {
   if (typeof rawTitle !== "string" || rawTitle.trim().length < 2 || rawTitle.trim().length > 80) {
     return { calculation: null, error: "Informe um nome de 2 a 80 caracteres." };
   }
   if (typeof rawSnapshot !== "string" || rawSnapshot.length === 0 || rawSnapshot.length > MAX_SAVED_CALCULATION_JSON) {
     return { calculation: null, error: "Os dados do cálculo estão ausentes ou excedem o limite." };
   }
+  const productId = rawProductId == null || rawProductId === "" ? null : typeof rawProductId === "string" && uuidPattern.test(rawProductId) ? rawProductId : undefined;
+  if (productId === undefined) return { calculation: null, error: "O produto vinculado é inválido." };
 
   let parsed: unknown;
   try { parsed = JSON.parse(rawSnapshot); } catch { return { calculation: null, error: "Os dados do cálculo são inválidos." }; }
@@ -68,7 +71,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
 
   return {
     calculation: {
-      title: rawTitle.trim(), input: safeInput, channels: safeChannels,
+      title: rawTitle.trim(), productId, input: safeInput, channels: safeChannels,
       result: { breakdown: result.breakdown, unitCostCents: result.unitCostCents, channels: result.channels },
     },
     error: null,

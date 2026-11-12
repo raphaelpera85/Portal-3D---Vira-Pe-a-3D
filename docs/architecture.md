@@ -50,6 +50,7 @@ flowchart LR
 - E-mail e WhatsApp usam fila persistente com tentativas; WhatsApp depende de consentimento do maker e template aprovado.
 - `/catalogos` consulta os registros publicados no banco quando disponíveis e usa dados locais de referência quando não há conexão.
 - `/visualizador` lê arquivos STL, OBJ, 3MF, GLB e GLTF localmente no navegador; compradores podem salvar conjuntos validados no Supabase Storage privado e reabri-los depois. `/calculadora` estima custos e preços por canal; makers salvam snapshots privados e, se Cloud Vision estiver configurado, leem capturas de tela com consentimento.
+- O histórico de custos pode ser associado a um anúncio da própria loja sem alterar o snapshot recalculado; a validação é repetida no servidor e na política RLS.
 - O painel administrativo atual aprova fabricantes, lojas e anúncios; ainda não é um console geral de gestão.
 
 ## Limites atuais

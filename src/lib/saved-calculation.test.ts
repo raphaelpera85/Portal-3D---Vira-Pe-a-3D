@@ -21,6 +21,13 @@ describe("validateCalculationToSave", () => {
     expect(result.calculation?.result.channels[0].priceCents).toBeGreaterThan(0);
   });
 
+  it("keeps an optional product association and rejects malformed product IDs", () => {
+    const productId = "89abcdef-1234-4123-8123-123456789abc";
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), productId).calculation?.productId).toBe(productId);
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot), "not-a-uuid").calculation).toBeNull();
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot)).calculation?.productId).toBeNull();
+  });
+
   it("keeps older single-piece snapshots as one-piece batches", () => {
     const result = validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot));
     expect(result.calculation?.input.batchQuantity).toBe(1);
