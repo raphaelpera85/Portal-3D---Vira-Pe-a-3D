@@ -5,7 +5,7 @@ export type ModelUnit = "mm" | "cm" | "m";
 export type ModelSourceUnit = ModelUnit | "um" | "in" | "ft";
 export type ModelFormat = "stl" | "obj" | "3mf" | "glb" | "gltf";
 export type ModelDimensions = { x: number; y: number; z: number };
-export type ThreeMfColorData = { componentPaintColors: string[][]; componentPartColors: string[][]; faceColors: Record<number, string[]>; objectColors: string[]; namedColors: Record<string, string>; palette: string[]; paintPaletteColors: string[] };
+export type ThreeMfColorData = { componentPaintColors: string[][]; componentTriangleColors: string[][][]; componentPartColors: string[][]; faceColors: Record<number, string[]>; objectColors: string[]; namedColors: Record<string, string>; palette: string[]; paintPaletteColors: string[] };
 
 export function getModelColorMatchedComponentIds(components: Array<{ id: string; colors: string[] }>, color: string | null) {
   return color ? components.filter((component) => component.colors.includes(color)).map((component) => component.id) : [];
@@ -99,7 +99,7 @@ export function parseThreeMfColors(modelXml: string, modelSettingsXml: string, p
   const namedColors: Record<string, string> = {};
   const faceColors: Record<number, string[]> = {};
   const partColors = new Map<string, string[]>();
-  const paintColors = new Map<string, Map<string, number>>();
+  const paintColors = new Map<string, { triangles: string[]; counts: Map<string, number> }>();
   const decodePaintStates = (value: string) => {
     if (!/^[\da-f]+$/i.test(value) || value.length > 2048) return [];
     const nibbles = [...value].flatMap((digit, index) => index % 2 === 0 && index + 1 < value.length
@@ -161,15 +161,17 @@ export function parseThreeMfColors(modelXml: string, modelSettingsXml: string, p
     for (const object of xml.matchAll(/<object\b([^>]*)>([\s\S]*?)<\/object>/gi)) {
       const id = object[1].match(/\bid=["']([^"']+)["']/i)?.[1];
       const counts = new Map<string, number>();
+      const triangles: string[] = [];
       for (const triangle of object[2].matchAll(/<triangle\b([^>]*)\/?\s*>/gi)) {
         const code = triangle[1].match(/\bpaint_color=["']([^"']+)["']/i)?.[1];
-        if (!code) continue;
-        for (const state of decodePaintStates(code)) {
-          const color = palette[state - 1];
-          if (color) counts.set(color, (counts.get(color) ?? 0) + 1);
-        }
+        const states = code ? decodePaintStates(code) : [];
+        const colors = [...new Set(states.map((state) => palette[state - 1]).filter((value): value is string => Boolean(value)))];
+        // shortcut: mixed selector states within one triangle are listed but not rendered; interpolate them when vertex paint data is available.
+        const color = colors.length === 1 ? colors[0] : "";
+        triangles.push(color);
+        for (const value of colors) counts.set(value, (counts.get(value) ?? 0) + 1);
       }
-      if (id && counts.size) paintColors.set(`${path.toLowerCase()}#${id}`, counts);
+      if (id && counts.size) paintColors.set(`${path.toLowerCase()}#${id}`, { triangles, counts });
     }
   }
   const rootObjects = new Map([...modelXml.matchAll(/<object\b([^>]*)>([\s\S]*?)<\/object>/gi)]
@@ -179,13 +181,20 @@ export function parseThreeMfColors(modelXml: string, modelSettingsXml: string, p
     return [...body.matchAll(/<component\b([^>]*)\/?\s*>/gi)].map((component) => {
       const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase();
       const id = component[1].match(/\bobjectid=["']([^"']+)["']/i)?.[1];
-      const counts = path && id ? paintColors.get(`${path}#${id}`) : undefined;
-      // shortcut: only uniform component paint is applied; add per-face rendering when selector geometry mapping is available.
+      const counts = path && id ? paintColors.get(`${path}#${id}`)?.counts : undefined;
       return counts?.size === 1 ? [...counts.keys()][0] : "";
     });
   });
-  const paintPaletteColors = [...new Set([...paintColors.values()].flatMap((counts) => [...counts.keys()]))];
-  return { componentPaintColors, componentPartColors, faceColors, objectColors, namedColors, palette: [...new Set(palette)], paintPaletteColors };
+  const componentTriangleColors = [...modelXml.matchAll(/<item\b[^>]*\bobjectid=["']([^"']+)[^>]*\/?\s*>/gi)].map((item) => {
+    const body = rootObjects.get(item[1]) ?? "";
+    return [...body.matchAll(/<component\b([^>]*)\/?\s*>/gi)].map((component) => {
+      const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase();
+      const id = component[1].match(/\bobjectid=["']([^"']+)["']/i)?.[1];
+      return path && id ? paintColors.get(`${path}#${id}`)?.triangles ?? [] : [];
+    });
+  });
+  const paintPaletteColors = [...new Set([...paintColors.values()].flatMap(({ counts }) => [...counts.keys()]))];
+  return { componentPaintColors, componentTriangleColors, componentPartColors, faceColors, objectColors, namedColors, palette: [...new Set(palette)], paintPaletteColors };
 }
 
 export function modelUnitToMeters(unit: ModelSourceUnit) {

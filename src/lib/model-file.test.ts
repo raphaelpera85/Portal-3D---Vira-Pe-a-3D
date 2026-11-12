@@ -100,6 +100,16 @@ describe("model dimensions", () => {
     expect(colors.paintPaletteColors).toEqual(["0000ff"]);
   });
 
+  it("preserves per-triangle paint colors in geometry order", () => {
+    const colors = parseThreeMfColors(
+      '<model><resources><object id="2"><components><component objectid="3" p:path="/3D/Objects/paint.model"/></components></object></resources><build><item objectid="2"/></build></model>',
+      "",
+      JSON.stringify({ filament_colour: ["#ff0000", "#00ff00", "#0000ff"] }),
+      [{ path: "3D/Objects/paint.model", xml: '<model><resources><object id="3"><mesh><triangles><triangle paint_color="0C"/><triangle/></triangles></mesh></object></resources></model>' }],
+    );
+    expect(colors.componentTriangleColors).toEqual([[ ["0000ff", ""] ]]);
+  });
+
   it("reads multi-color Bambu selectors into the palette without flattening the component", () => {
     const colors = parseThreeMfColors(
       '<model><resources><object id="2"><components><component objectid="3" p:path="/3D/Objects/paint.model"/></components></object></resources><build><item objectid="2"/></build></model>',
@@ -108,6 +118,7 @@ describe("model dimensions", () => {
       [{ path: "3D/Objects/paint.model", xml: '<model><resources><object id="3"><mesh><triangles><triangle paint_color="418"/></triangles></mesh></object></resources></model>' }],
     );
     expect(colors.componentPaintColors).toEqual([[""]]);
+    expect(colors.componentTriangleColors).toEqual([[ [""] ]]);
     expect(colors.paintPaletteColors).toEqual(["ff0000", "00ff00"]);
   });
 
