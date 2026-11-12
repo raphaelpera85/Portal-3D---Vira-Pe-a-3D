@@ -4,6 +4,7 @@ import type { Product } from "@/lib/products";
 import type { MarketplaceCategory } from "@/lib/marketplace.server";
 import { ProductIllustration } from "@/components/product-illustration";
 import { FavoriteButton } from "@/components/favorite-button";
+import { CatalogImageSearch } from "@/components/catalog-image-search";
 
 type Props = {
   products: Product[];
@@ -47,6 +48,7 @@ export function ProductCatalog({ products, categories, source, notice, query, ca
           <button type="submit" aria-label="Buscar">Buscar</button>
         </form>
       </div>
+      <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={activeCategory} />
       <div className="product-grid" aria-live="polite">
         {products.map((product, index) => (
           <article className="product-card" key={product.id}>
@@ -56,6 +58,7 @@ export function ProductCatalog({ products, categories, source, notice, query, ca
             </Link>{canFavorite && !product.demo && <FavoriteButton productId={product.id} slug={product.slug} initialFavorite={favoriteProductIds.includes(product.id)} />}</div>
             <div className="product-meta"><span>{product.category}</span><span aria-hidden="true">↗</span></div>
             <h3><Link href={`/produtos/${product.slug}`}>{product.name}</Link></h3>
+            {product.tags.length > 0 && <ul className="product-tags" aria-label={`Tags de ${product.name}`}>{product.tags.slice(0, 5).map((tag) => <li key={tag}><Link href={catalogUrl({ query: tag, category: activeCategory })}>{tag}</Link></li>)}</ul>}
             <p className="product-maker">{product.storeSlug ? <Link href={`/lojas/${product.storeSlug}`}>{product.maker}</Link> : product.maker}</p>
             <p className="product-price">{product.priceLabel}</p>
           </article>

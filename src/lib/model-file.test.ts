@@ -110,6 +110,17 @@ describe("model dimensions", () => {
     expect(colors.componentTriangleColors).toEqual([[ ["0000ff", ""] ]]);
   });
 
+  it("maps painted Bambu components stored inside the main model package", () => {
+    const modelXml = '<model><resources><object id="2"><components><component objectid="3"/></components></object><object id="3"><mesh><triangles><triangle paint_color="4"/></triangles></mesh></object></resources><build><item objectid="2"/></build></model>';
+    const colors = parseThreeMfColors(
+      modelXml,
+      "",
+      JSON.stringify({ filament_colour: ["#ff0000"] }),
+      [{ path: "3D/3dmodel.model", xml: modelXml }],
+    );
+    expect(colors.componentTriangleColors).toEqual([[ ["ff0000"] ]]);
+  });
+
   it("reads multi-color Bambu selectors into the palette without flattening the component", () => {
     const colors = parseThreeMfColors(
       '<model><resources><object id="2"><components><component objectid="3" p:path="/3D/Objects/paint.model"/></components></object></resources><build><item objectid="2"/></build></model>',

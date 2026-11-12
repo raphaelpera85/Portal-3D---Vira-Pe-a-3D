@@ -7,7 +7,7 @@ O `.env.local` é ignorado pelo `.gitignore` e guarda credenciais apenas na máq
 - Nenhuma chave `service_role` ou chave secreta está no código ou no `.env.example`.
 - Clientes SSR são criados por requisição; `src/proxy.ts` valida claims e propaga todos os cookies e cabeçalhos de cache emitidos pelo Supabase.
 - RLS restringe perfis e papéis ao usuário autenticado. Papéis não podem ser atribuídos pelo próprio usuário.
-- O catálogo limita leitura pública a registros publicados e escrita ao papel administrativo; as 58 migrações versionadas estão aplicadas ao projeto remoto `drblsfcahfniwusfblfw`.
+- O catálogo limita leitura pública a registros publicados e escrita ao papel administrativo; as migrações versionadas estão aplicadas ao projeto remoto `drblsfcahfniwusfblfw`.
 - Arquivos `.env.local` e demais `.env*` são ignorados pelo Git.
 
 O fluxo público de conta usa Supabase Auth, valida os campos no servidor e não aceita papel enviado pelo usuário. O papel comprador é concedido pelo trigger `SECURITY DEFINER`; RLS impede o usuário de alterar seus papéis. Ações de orçamento exigem o papel comprador ou maker, e o banco confere a propriedade e a transição de estado dentro de funções `SECURITY DEFINER` com `search_path` vazio.
@@ -25,6 +25,8 @@ Pedidos de orçamento e propostas ficam visíveis apenas ao comprador dono, ao f
 Contatos de notificação ficam em `store_notification_contacts`, sem exposição na tabela pública `stores`. O WhatsApp só recebe mensagem quando o dono da loja informa o número e consente explicitamente. A fila guarda o destino e um resumo do tipo de solicitação/produto/quantidade; compras incluem os nomes das opções públicas selecionadas, mas não enviam observações livres nem dados pessoais do comprador. A rota de envio exige `CRON_SECRET`, usa `SUPABASE_SECRET_KEY` server-side (com suporte à chave legada `SUPABASE_SERVICE_ROLE_KEY`) e retorna apenas contagens, nunca destinos ou corpos de mensagens. E-mail e WhatsApp devem ser configurados e validados antes de produção.
 
 O endpoint OCR exige sessão e papel maker, valida PNG/JPEG/WebP por assinatura, aceita até três imagens de 2 MiB (4 MiB agregados) e impõe cota diária de 30 imagens por maker. A chave `GOOGLE_CLOUD_VISION_API_KEY` fica somente no servidor e deve ser restringida à Cloud Vision API. Cada envio exige consentimento visível; as capturas não são gravadas pelo ViraPeça e o texto retornado é limitado antes de ser mostrado ao próprio usuário. O envio depende de serviço externo e de cotas/faturamento configurados no Google Cloud.
+
+A busca pública por imagem usa o mesmo segredo server-side, valida assinatura e tamanho (2 MiB), exige consentimento e limita a 5 buscas por IP a cada dia UTC. A imagem é enviada ao Google Cloud Vision para rótulos e correspondências web, não é armazenada pelo ViraPeça e não recebe vetorização facial. O limite depende do cabeçalho IP encaminhado pela plataforma e as cotas/faturamento precisam ser configurados no Google Cloud.
 
 Lotes de consignação e movimentações só podem ser consultados pelo maker dono da loja. Inserções passam por funções transacionais que validam o estabelecimento, produto opcional, quantidades e saldo; movimentações não podem ser editadas diretamente pela sessão autenticada. As estimativas financeiras não enviam nem movimentam valores.
 

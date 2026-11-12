@@ -179,7 +179,7 @@ export function parseThreeMfColors(modelXml: string, modelSettingsXml: string, p
   const componentPaintColors = [...modelXml.matchAll(/<item\b[^>]*\bobjectid=["']([^"']+)["'][^>]*\/?\s*>/gi)].map((item) => {
     const body = rootObjects.get(item[1]) ?? "";
     return [...body.matchAll(/<component\b([^>]*)\/?\s*>/gi)].map((component) => {
-      const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase();
+      const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase() ?? "3d/3dmodel.model";
       const id = component[1].match(/\bobjectid=["']([^"']+)["']/i)?.[1];
       const counts = path && id ? paintColors.get(`${path}#${id}`)?.counts : undefined;
       return counts?.size === 1 ? [...counts.keys()][0] : "";
@@ -188,7 +188,7 @@ export function parseThreeMfColors(modelXml: string, modelSettingsXml: string, p
   const componentTriangleColors = [...modelXml.matchAll(/<item\b[^>]*\bobjectid=["']([^"']+)[^>]*\/?\s*>/gi)].map((item) => {
     const body = rootObjects.get(item[1]) ?? "";
     return [...body.matchAll(/<component\b([^>]*)\/?\s*>/gi)].map((component) => {
-      const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase();
+      const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase() ?? "3d/3dmodel.model";
       const id = component[1].match(/\bobjectid=["']([^"']+)["']/i)?.[1];
       return path && id ? paintColors.get(`${path}#${id}`)?.triangles ?? [] : [];
     });
