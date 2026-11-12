@@ -32,6 +32,7 @@ npm run build
 - `src/lib/supabase/`: clientes browser e server para sessões SSR.
 - `supabase/migrations/`: perfis e papéis iniciais com RLS.
 - `docs/`: arquitetura, banco, segurança, integrações e publicação.
+- [docs/image-extraction.md](docs/image-extraction.md): limites, normalização e revisão dos campos extraídos por OCR.
 - `docs/google-search-console.md`: identidade de busca, verificação, sitemap e robots.
 - `docs/roadmap-v5-status.md`: estado auditado das fases e próximos passos do Prompt Master V5.0.
 - `/admin/integracoes`: presença e validade básica das variáveis de ambiente dos provedores, sem exibir valores secretos.
