@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { strToU8, zipSync } from "fflate";
 import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
+import { mapThreeMfPlateToSlicerMetrics } from "./saved-calculation";
 
 describe("model upload validation", () => {
   it("accepts STL, OBJ, 3MF, GLB and GLTF files under the size limit", () => {
@@ -103,6 +106,20 @@ describe("model dimensions", () => {
       "Metadata/slice_info.config": strToU8('<plate><metadata key="weight" value="2.4"/></plate>'),
     });
     await expect(readThreeMfPackage(archive)).resolves.toMatchObject({ slicePlates: [{ weightGrams: 2.4 }] });
+  });
+
+  it("imports per-color slicer metrics from a real catalog 3MF into calculator fields", async () => {
+    const file = readFileSync(path.join(process.cwd(), "models/creeper-articulated-16-units.3mf"));
+    const { slicePlates } = await readThreeMfPackage(new Uint8Array(file));
+    const metrics = mapThreeMfPlateToSlicerMetrics(slicePlates[0], 1);
+
+    expect(metrics).toMatchObject({
+      slicer: "Arquivo 3MF · placa 1", filamentGrams: 222.17, printHours: 52333 / 3600,
+      materials: ["PLA"], filaments: [
+        { index: 1, grams: 3.08, color: "000000" },
+        { index: 2, grams: 219.09, color: "00ae42" },
+      ],
+    });
   });
 
   it("maps Bambu filament slots to build objects and named parts", () => {
