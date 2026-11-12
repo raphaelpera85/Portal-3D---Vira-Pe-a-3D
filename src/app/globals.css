@@ -1095,6 +1095,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .viewer-page-foot { flex-direction: column; gap: 5px; }
 }
 @media (max-width: 650px) {
+  body { overflow-x: clip; }
   .homepage-banners, .admin-banner-form, .printer-model-form { grid-template-columns: 1fr; }
   .printer-model-json { grid-column: auto; }
   .homepage-banner { min-height: 270px; }
@@ -1116,6 +1117,9 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .menu-button { display: grid; }
   .viewer-page { width: 100%; overflow-x: clip; }
   .viewer-page .shell, .viewer-shell, .viewer-layout, .viewer-stage-wrap, .viewer-inspector { min-width: 0; max-width: 100%; }
+  .viewer-page .viewer-stage-toolbar { grid-template-columns: minmax(0, 1fr) auto; }
+  .viewer-page .viewer-toolbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .viewer-page .viewer-message { right: 8px; left: 8px; }
   .viewer-page-intro, .viewer-topline { min-width: 0; }
   .viewer-topline { gap: 8px; }
   .viewer-topline span:last-child { max-width: 50%; overflow-wrap: anywhere; text-align: right; }
