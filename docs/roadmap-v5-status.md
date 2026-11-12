@@ -11,10 +11,10 @@ Revisão em 12 de novembro de 2026. Esta página compara os requisitos de produt
 | 3. Modelos avançados | Parcial | 3MF, materiais/cores, componentes e biblioteca privada estão no visualizador. A coleção `/modelos` contém 94 modelos únicos em sete categorias, com prévias, tags, busca por texto, busca por imagem e páginas individuais de visualização/download. Os 94 originais agora ficam em `models/` no repositório público e são carregados diretamente pelo visualizador; a busca por imagem depende do Google Cloud Vision. Consumo por filamento ainda não é calculado a partir do fatiamento. |
 | 4. Catálogos técnicos | Parcial | Existem catálogos de impressoras, materiais, resinas e bicos, sugestões de modelos ausentes, compatibilidade e registro de equipamentos/manutenções. A cobertura de marcas e especificações precisa crescer com fontes oficiais revisadas. |
 | 5. Marketplace | Parcial | Contas, lojas moderadas, anúncios, busca, favoritos, carrinho multivendedor, pedidos e gestão de pedidos existem. Cupons e cotação/etiqueta/rastreamento automáticos de frete seguem pendentes. |
-| 6. Calculadora | Parcial | Cálculo manual por lote, componentes, custos de impressora, margem sobre venda, markup sobre custo, comparação de canais, histórico privado e exportação PDF/CSV estão implementados. O fluxo de consignação aceita comissão percentual e taxa fixa por venda; a migração aditiva foi aplicada em produção e o código aguarda publicação. |
+| 6. Calculadora | Parcial | Cálculo manual por lote, componentes, custos de impressora, margem sobre venda, markup sobre custo, comparação de canais, histórico privado e exportação PDF/CSV estão implementados. O fluxo de consignação aceita comissão percentual e taxa fixa por venda; a migração e a integração foram publicadas em produção. |
 | 7. OCR e precificação avançada | Parcial | OCR de imagens de fatiadores e entrada manual existem; a leitura depende do Google Cloud Vision e requer revisão humana. Ainda falta fechar consolidação de múltiplas imagens e todos os campos previstos no Prompt Master. |
 | 8. Pagamentos e logística | Parcial | Fluxos Mercado Pago, webhooks, idempotência, cancelamento e reembolso existem. Frete de produtos físicos automatizado e repasses do marketplace ainda precisam de integração e validação operacional. |
-| 9. Orçamentos | Parcial | Solicitações de impressão, propostas e decisões do fabricante existem. Acompanhamento completo da produção e entrega ainda precisa ser verificado contra os estados previstos no Prompt Master. |
+| 9. Orçamentos | Parcial | Solicitações, propostas, escolha do fabricante, início/conclusão da impressão, cotação de frete, pagamento, rastreio, entrega e histórico de eventos existem para impressões personalizadas e pedidos do carrinho. As cotações de frete ainda são manuais; a automação de transportadoras e os estados completos de produção de produtos sob encomenda seguem pendentes. |
 | 10. Expansão | Parcial | Arquivos digitais, suporte, notificações, perfis e relatórios têm módulos no produto. E-mail/anexos/SLA do suporte, recomendações e relatórios avançados ainda não estão completos. |
 
 ## Dependências de produção observadas
@@ -26,10 +26,9 @@ Revisão em 12 de novembro de 2026. Esta página compara os requisitos de produt
 
 ## Próximas entregas
 
-1. Completar a configuração operacional das integrações de imagem, e-mail e WhatsApp nos ambientes de produção e validar cada canal sem expor segredos no Git.
-2. Publicar o catálogo Git atualizado e validar visualização e download dos 94 arquivos 3MF em produção.
-3. Implementar frete de produtos físicos e cupons com provedor/regra aprovados, preservando pedidos por loja, cálculo de comissão e histórico financeiro.
-4. Fechar as lacunas de calculadora, OCR e estados de produção descritas nas fases 6, 7 e 9; cobrir cada fluxo com testes de regras e autorização.
-5. Manter o onboarding administrativo e do fabricante seguro, completar cadastros reais e testar compra/notificações ponta a ponta em ambiente de homologação.
+1. Configurar Google Vision, Resend e WhatsApp na Vercel e validar busca por imagem, OCR e notificações externas sem expor segredos no Git.
+2. Implementar cupons e automatizar cotações, etiquetas e rastreamento de fretes físicos, preservando pedidos por loja, comissão e histórico financeiro.
+3. Fechar as lacunas de calculadora, OCR e estados de produção descritas nas fases 6, 7 e 9; cobrir cada fluxo com testes de regras e autorização.
+4. Completar cadastros de fabricantes e testar compra, notificações, logística e pós-venda ponta a ponta em ambiente de homologação.
 
 Os detalhes de instalação, banco, segurança, operação e integrações continuam nos documentos vinculados pelo [README](../README.md).
