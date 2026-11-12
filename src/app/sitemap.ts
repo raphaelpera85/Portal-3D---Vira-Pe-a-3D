@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { modelShowcase } from "@/lib/model-showcase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -12,8 +13,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: path === "" ? "weekly" : "monthly",
     priority: path === "" ? 1 : 0.6,
   }));
+  const modelPages: MetadataRoute.Sitemap = modelShowcase.map((model) => ({
+    url: new URL(`/modelos/${encodeURIComponent(model.id)}`, base).toString(),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
   const supabase = await createSupabaseServerClient();
-  if (!supabase) return fixedPages;
+  if (!supabase) return [...fixedPages, ...modelPages];
 
   const [productsResult, designersResult, storesResult] = await Promise.all([
     supabase.from("marketplace_products").select("slug, updated_at, media").eq("catalog_status", "published").order("published_at", { ascending: false }).limit(50000),
@@ -40,5 +46,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "monthly",
     priority: 0.6,
   }));
-  return [...fixedPages, ...products, ...designers, ...stores];
+  return [...fixedPages, ...modelPages, ...products, ...designers, ...stores];
 }

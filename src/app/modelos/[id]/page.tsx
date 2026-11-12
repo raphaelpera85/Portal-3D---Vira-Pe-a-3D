@@ -3,14 +3,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ModelViewer } from "@/components/model-viewer";
 import { SiteHeader } from "@/components/site-header";
-import { getModelAssetUrl, getShowcaseModel } from "@/lib/model-showcase";
+import { getModelAssetUrl, getShowcaseModel, modelShowcase } from "@/lib/model-showcase";
+import { getSiteUrl } from "@/lib/site-url";
 
 type ModelPageProps = { params: Promise<{ id: string }> };
+
+export function generateStaticParams() {
+  return modelShowcase.map(({ id }) => ({ id }));
+}
 
 export async function generateMetadata({ params }: ModelPageProps): Promise<Metadata> {
   const { id } = await params;
   const model = getShowcaseModel(id);
-  return model ? { title: `${model.name} | Modelos 3D | ViraPeça 3D`, description: `Visualize o modelo 3D ${model.name} e baixe o arquivo 3MF original.` } : { title: "Modelo não encontrado | ViraPeça 3D" };
+  return model ? {
+    title: `${model.name} | Modelos 3D | ViraPeça 3D`,
+    description: `Visualize o modelo 3D ${model.name} e baixe o arquivo 3MF original.`,
+    ...(getSiteUrl() ? { alternates: { canonical: `/modelos/${encodeURIComponent(model.id)}` } } : {}),
+  } : { title: "Modelo não encontrado | ViraPeça 3D" };
 }
 
 export default async function ModelPage({ params }: ModelPageProps) {

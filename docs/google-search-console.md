@@ -8,20 +8,21 @@
 - Página inicial: **Sua ideia vira realidade**
 - Descrição: **Encontre peças feitas por fabricantes independentes ou transforme seu modelo 3D em uma peça real.**
 - Título padrão: **ViraPeça 3D — Sua ideia vira realidade**
-- Sitemap: `https://<domínio-publicado>/sitemap.xml` (inclui a galeria pública `/modelos`)
-- Robots: `https://<domínio-publicado>/robots.txt`
+- Origem pública atual: `https://virapeca3d.vercel.app/`
+- Propriedade Search Console recomendada: **Prefixo do URL** `https://virapeca3d.vercel.app/` (a ViraPeça não controla o DNS de `vercel.app` para criar uma propriedade Domínio)
+- Sitemap: <https://virapeca3d.vercel.app/sitemap.xml> (inclui as 94 páginas individuais de modelos 3D e anúncios, perfis e lojas públicos)
+- Robots: <https://virapeca3d.vercel.app/robots.txt>
 
-O domínio público ainda não foi definido. Configure `NEXT_PUBLIC_SITE_URL` com a origem HTTPS exata antes de publicar; páginas canônicas, Open Graph e sitemap usam esse endereço. Produtos demonstrativos não entram no sitemap nem são indexáveis. Produtos reais entram somente quando publicados e acessíveis pelas políticas públicas do banco.
+A produção está configurada com `NEXT_PUBLIC_SITE_URL=https://virapeca3d.vercel.app`; a homepage pública já responde com URL canônica nessa origem e sitemap/robots estão acessíveis. Produtos demonstrativos não entram no sitemap nem são indexáveis. Produtos reais entram somente quando publicados e acessíveis pelas políticas públicas do banco.
 
 ## Criar e verificar a propriedade
 
-1. No Search Console, crie uma propriedade **Domínio** se tiver acesso ao DNS. Esse método cobre protocolos e subdomínios e exige um registro TXT no provedor DNS.
-2. Se não puder editar o DNS, crie uma propriedade **Prefixo do URL** usando a origem completa do site, por exemplo `https://www.exemplo.com/`. O método de tag HTML só se aplica a propriedades de prefixo.
-3. Para a verificação por tag HTML, copie apenas o conteúdo do atributo `content` fornecido pelo Google para `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` no ambiente de produção. A aplicação publica esse token no `<head>` da página inicial. Não reutilize nem invente o token.
-4. Após publicar com o domínio e o token corretos, confirme que a página inicial contém `meta name="google-site-verification"` e conclua a verificação no Search Console.
-5. Envie `/sitemap.xml` no relatório **Sitemaps** e confira `/robots.txt`. O sitemap inclui páginas públicas da plataforma, anúncios, perfis de designers e lojas aprovados; ignora parâmetros de busca e filtros.
+1. No Search Console, crie a propriedade **Prefixo do URL** `https://virapeca3d.vercel.app/`.
+2. Escolha o método de verificação por tag HTML e copie apenas o conteúdo do atributo `content` fornecido pelo Google para `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` no ambiente de produção. A aplicação publica esse token no `<head>` da página inicial. Não reutilize nem invente o token.
+3. Depois de publicar com o token correto, confirme que a página inicial contém `meta name="google-site-verification"` e conclua a verificação no Search Console.
+4. Envie `sitemap.xml` no relatório **Sitemaps** e confira `robots.txt`. O sitemap inclui os modelos 3D e páginas públicas de anúncios, perfis de designers e lojas aprovados; ignora parâmetros de busca e filtros.
 
-Não foi criada propriedade no Search Console, não foi enviado DNS e nenhum token de verificação foi configurado. Isso só pode ser concluído após definir o domínio e ter acesso ao Search Console/DNS.
+Ainda não foi criada propriedade no Search Console nem configurado o token de verificação. O token deve ser copiado da própria propriedade do Google após criá-la; o acesso à conta Google é necessário para concluir a verificação e enviar o sitemap.
 
 ## Metadados e rastreamento
 
