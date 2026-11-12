@@ -7,6 +7,20 @@ describe("parseSlicerOcrTexts", () => {
     expect(result).toMatchObject({ slicer: "OrcaSlicer", modelGrams: 211.63, supportGrams: 12.17, totalGrams: 223.8, filamentGrams: 223.8, lengthMeters: 75.65, printHours: 13 + 40 / 60, filamentChanges: 1, materials: ["PLA"], estimatedCost: 16.799 });
   });
 
+  it("recognizes the slicers used by Creality, ELEGOO, Flashforge, Raise3D, and UltiMaker", () => {
+    const names = [
+      ["Creality Print 7.3.1", "Creality Print"],
+      ["ElegooSlicer", "ElegooSlicer"],
+      ["FlashPrint 5", "FlashPrint"],
+      ["ideaMaker", "ideaMaker"],
+      ["UltiMaker Cura", "UltiMaker Cura"],
+    ];
+
+    for (const [text, expected] of names) {
+      expect(parseSlicerOcrTexts([text]).slicer).toBe(expected);
+    }
+  });
+
   it("detects conflicting screenshots and leaves missing fields empty", () => {
     const result = parseSlicerOcrTexts(["Total filament: 20 g", "Total filament: 22 g"]);
     expect(result.totalGrams).toBeNull();

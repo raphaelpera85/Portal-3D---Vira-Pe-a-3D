@@ -25,7 +25,7 @@ O parser procura rótulos em português e inglês e só preenche valores associa
 | Linhas por filamento | Índice, massa, comprimento, material e cor, quando legíveis |
 | Custo exibido pelo fatiador | Valor numérico sem moeda assumida |
 
-Os nomes de fatiador reconhecidos são Anycubic Slicer Next, OrcaSlicer, Bambu Studio, Cura e PrusaSlicer. Reconhecer o nome não garante que todos os campos daquele programa ou versão sejam extraídos.
+Os nomes de fatiador reconhecidos são Anycubic Slicer Next, OrcaSlicer, Bambu Studio, Cura, UltiMaker Cura, PrusaSlicer, Creality Print, ElegooSlicer, FlashPrint e ideaMaker. Reconhecer o nome não garante que todos os campos daquele programa ou versão sejam extraídos.
 
 ## Consolidação de várias imagens
 

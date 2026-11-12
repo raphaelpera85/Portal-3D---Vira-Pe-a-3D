@@ -6,6 +6,18 @@ const massLabels = {
 };
 const materialPattern = String.raw`(?:PLA(?:\+|\s*Silk|\s*Matte)?|PETG(?:-CF)?|ABS|ASA|TPU|PA(?:-CF)?|NYLON|PC|PVA|HIPS|RESIN|RESINA)`;
 const colorPattern = String.raw`(?:preto|branco|vermelho|azul|verde|amarelo|laranja|roxo|rosa|cinza|marrom|black|white|red|blue|green|yellow|orange|purple|pink|gray|grey|brown)`;
+const slicerPatterns: Array<[RegExp, string]> = [
+  [/Anycubic\s+Slicer\s+Next/i, "Anycubic Slicer Next"],
+  [/OrcaSlicer/i, "OrcaSlicer"],
+  [/Bambu\s+Studio/i, "Bambu Studio"],
+  [/PrusaSlicer/i, "PrusaSlicer"],
+  [/Creality\s+Print/i, "Creality Print"],
+  [/Elegoo\s*Slicer/i, "ElegooSlicer"],
+  [/Flash\s*Print/i, "FlashPrint"],
+  [/idea\s*Maker/i, "ideaMaker"],
+  [/UltiMaker\s+Cura/i, "UltiMaker Cura"],
+  [/\bCura\b/i, "Cura"],
+];
 
 function parseNumber(value: string) {
   const clean = value.replace(/\s/g, "");
@@ -88,7 +100,7 @@ function parseOne(text: string) {
       ? [{ index: Number(row[1]), grams: gramsValue, lengthMeters, material, color: (labeledColor ?? namedColor ?? null)?.toLowerCase() ?? null }]
       : [];
   });
-  const slicer = /Anycubic\s+Slicer\s+Next|OrcaSlicer|Bambu\s+Studio|PrusaSlicer|Cura/i.exec(text)?.[0] ?? null;
+  const slicer = slicerPatterns.find(([pattern]) => pattern.test(text))?.[1] ?? null;
   return {
     slicer,
     modelGrams: findMeasurement(lines, massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
