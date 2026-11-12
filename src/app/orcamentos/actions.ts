@@ -203,6 +203,25 @@ export async function confirmSellerPurchaseOrderDelivery(formData: FormData): Pr
   redirect(`/orcamentos?resultado=${complete ? "pedido-concluido" : "pedido-entregue"}`);
 }
 
+export async function submitMarketplaceReviewAction(formData: FormData): Promise<void> {
+  const orderId = formData.get("orderId");
+  const itemId = formData.get("itemId");
+  const rating = formData.get("rating");
+  const body = formData.get("body");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId)
+    || (itemId !== "" && (typeof itemId !== "string" || !uuidPattern.test(itemId)))
+    || typeof rating !== "string" || !["1", "2", "3", "4", "5"].includes(rating)
+    || typeof body !== "string" || body.length > 1200) redirect("/orcamentos?resultado=avaliacao-erro");
+  const actor = await getUserWithRole("buyer");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("submit_marketplace_review", {
+    p_order_id: orderId, p_order_item_id: itemId || null, p_rating: Number(rating), p_body: body.trim() || null,
+  });
+  if (error) redirect("/orcamentos?resultado=avaliacao-erro");
+  revalidatePath("/orcamentos");
+  redirect("/orcamentos?resultado=avaliacao-enviada");
+}
+
 export async function cancelProductQuoteRequest(formData: FormData): Promise<void> {
   const requestId = formData.get("requestId");
   if (typeof requestId !== "string" || !uuidPattern.test(requestId)) redirect("/orcamentos?resultado=erro");

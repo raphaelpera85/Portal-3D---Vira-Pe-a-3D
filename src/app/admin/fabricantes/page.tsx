@@ -38,6 +38,7 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
         <p><Link className="button button-secondary" href="/admin/banners">Gerenciar banners da página inicial</Link></p>
         <p><Link className="button button-secondary" href="/admin/designers">Revisar perfis de designers</Link></p>
         <p><Link className="button button-secondary" href="/admin/denuncias-digitais">Revisar denúncias de arquivos digitais</Link></p>
+        <p><Link className="button button-secondary" href="/admin/avaliacoes">Moderar avaliações de compradores</Link></p>
         <p><Link className="button button-secondary" href="/admin/catalogos/impressoras">Gerenciar catálogo mestre de impressoras</Link></p>
         {resultado && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{resultMessages[resultado] ?? "Ação concluída."}</p>}
         <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">ETAPA 1</span><h2>Solicitações de fabricantes</h2></div>

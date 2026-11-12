@@ -40,6 +40,10 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   const profileResult = buyer?.supabase ? await buyer.supabase.from("maker_print_profiles")
     .select("id, profile_name, profile_type, sharing_scope, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, print_hours, material_grams, material_by_color")
     .eq("product_id", product.id).in("sharing_scope", ["community", "official"]).eq("review_status", "published").order("profile_type").order("profile_name") : null;
+  const [productReviews, storeReviews] = buyer?.supabase ? await Promise.all([
+    buyer.supabase.from("marketplace_reviews").select("id, rating, body, created_at").eq("review_type", "product").eq("product_id", product.id).eq("status", "published").order("created_at", { ascending: false }).limit(20),
+    buyer.supabase.from("marketplace_reviews").select("id, rating, body, created_at").eq("review_type", "store").eq("store_id", product.storeId).eq("status", "published").order("created_at", { ascending: false }).limit(20),
+  ]) : [null, null];
   const favoriteResult = buyer?.supabase && buyer.user && buyer.authorized
     ? await buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id).eq("product_id", product.id).maybeSingle()
     : null;
@@ -74,6 +78,13 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
           </section>
         </div>
         {product.digitalAsset?.previewUrl && <div className="product-model-preview"><p className="account-kicker">PRÉVIA INTERATIVA · ARQUIVO GLB</p><ModelViewer buyerId={null} today={new Date().toISOString().slice(0, 10)} previewUrl={product.digitalAsset.previewUrl} readOnly /></div>}
+        {!product.demo && <section className="product-reviews" aria-label="Avaliações verificadas">
+          <p className="eyebrow">COMPRAS VERIFICADAS</p><h2>Avaliações de {product.name}</h2>
+          {productReviews?.error || storeReviews?.error ? <p className="quote-small-note">As avaliações serão exibidas após a configuração do módulo no banco.</p> : <>
+            <div className="product-review-group"><h3>Este produto</h3>{productReviews?.data?.length ? productReviews.data.map((review) => <article className="product-review-card" key={review.id}><p className="product-review-stars" aria-label={`${review.rating} de 5 estrelas`}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</p>{review.body && <p>{review.body}</p>}<small>Comprador verificado · {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(review.created_at))}</small></article>) : <p className="quote-small-note">Este produto ainda não tem avaliações publicadas.</p>}</div>
+            <div className="product-review-group"><h3>Loja {product.maker}</h3>{storeReviews?.data?.length ? storeReviews.data.map((review) => <article className="product-review-card" key={review.id}><p className="product-review-stars" aria-label={`${review.rating} de 5 estrelas`}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</p>{review.body && <p>{review.body}</p>}<small>Comprador verificado · {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(review.created_at))}</small></article>) : <p className="quote-small-note">Esta loja ainda não tem avaliações publicadas.</p>}</div>
+          </>}
+        </section>}
         {profileResult && <ProductPrintProfiles error={Boolean(profileResult.error)} profiles={(profileResult.data ?? []).map((profile) => ({
           id: profile.id, name: profile.profile_name, type: profile.profile_type,
           scope: profile.sharing_scope as "community" | "official", printer: profile.printer_snapshot,

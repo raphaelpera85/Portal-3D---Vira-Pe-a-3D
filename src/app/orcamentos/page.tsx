@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
-import { cancelCustomPrintRequest, cancelProductQuoteRequest, confirmSellerPurchaseOrderDelivery, respondToCustomPrintOffer, respondToProductQuoteOffer, respondToSellerOrderShippingQuote } from "./actions";
+import { cancelCustomPrintRequest, cancelProductQuoteRequest, confirmSellerPurchaseOrderDelivery, respondToCustomPrintOffer, respondToProductQuoteOffer, respondToSellerOrderShippingQuote, submitMarketplaceReviewAction } from "./actions";
 import { startSellerOrderPayment } from "./payment-actions";
 import { downloadDigitalAssetAction } from "./digital-actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
@@ -29,6 +29,7 @@ const resultMessages: Record<string, string> = {
   "frete-erro": "Não foi possível atualizar a cotação de frete. Atualize a página e tente novamente.",
   "pedido-entregue": "Recebimento confirmado. Você pode concluir o pedido quando estiver tudo certo.", "pedido-concluido": "Pedido concluído. Obrigado por comprar no ViraPeça 3D.",
   "entrega-erro": "Não foi possível atualizar o status da entrega.",
+  "avaliacao-enviada": "Sua avaliação foi enviada para moderação.", "avaliacao-erro": "Não foi possível enviar a avaliação. Confirme se o pedido foi pago e concluído.",
   "custom-solicitado": "Solicitação enviada às lojas compatíveis. Acompanhe as propostas nesta página.",
   "custom-aceita": "Proposta escolhida. Pague para que a loja possa iniciar a produção.",
   "custom-recusada": "Proposta recusada.", "custom-cancelada": "Solicitação cancelada e acesso aos arquivos revogado.",
@@ -44,7 +45,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
     actor.supabase.from("product_quote_requests")
       .select("id, request_type, license_type, product_id, unit_price_brl, product_name, store_name, quantity, customization, due_date, status, created_at, offer:product_quote_offers(id, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at), downloads:digital_asset_downloads(id, created_at)")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
-    actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, shipping_shipped_at, shipping_delivered_at, completed_at, items:seller_purchase_order_items(product_name, unit_price_brl, quantity), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at), events:seller_purchase_order_events(id, event_type, description, created_at)")
+    actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, shipping_shipped_at, shipping_delivered_at, completed_at, items:seller_purchase_order_items(id, product_id, product_name, unit_price_brl, quantity), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at), events:seller_purchase_order_events(id, event_type, description, created_at)")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
     actor.supabase.from("custom_print_requests").select("id, upload_id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, winning_store_id, production_started_at, production_completed_at, created_at, offers:custom_print_offers(id, store_name, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at), targets:custom_print_request_targets(id, store:stores(name), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at))")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
@@ -52,13 +53,19 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
   const { data, error } = requestResult;
   const orders = orderResult.data ?? [];
   const customRequests = customResult.data ?? [];
+  const reviewResult = orders.length
+    ? await actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, review_type, rating, body, status").in("order_id", orders.map((order) => order.id))
+    : { data: [], error: null };
+  const reviewsUnavailable = Boolean(reviewResult.error);
+  const reviews = reviewResult.data ?? [];
 
   return <>
     <SiteHeader />
     <main className="account-page shell quote-page">
       <Link className="viewer-back-link" href="/">← Voltar para o início</Link>
       <div className="account-heading"><p className="eyebrow">ÁREA DO COMPRADOR</p><h1>Meus pedidos e orçamentos</h1><p>Acompanhe solicitações e propostas dos fabricantes.</p></div>
-      {resultado && resultMessages[resultado] && <p className={`auth-notice ${["erro", "pagamento-configurar", "pagamento-conta-vendedor", "pagamento-email", "pagamento-erro"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{resultMessages[resultado]}</p>}
+      {resultado && resultMessages[resultado] && <p className={`auth-notice ${["erro", "pagamento-configurar", "pagamento-conta-vendedor", "pagamento-email", "pagamento-erro", "avaliacao-erro"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{resultMessages[resultado]}</p>}
+      {reviewsUnavailable && <p className="auth-notice is-error" role="status">Avaliações temporariamente indisponíveis. A equipe precisa aplicar a migração 034 do banco.</p>}
       {error || orderResult.error || customResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar seus pedidos. Confira as migrações do marketplace e de impressão personalizada.</p> : !data?.length && !orders.length && !customRequests.length ? <section className="account-card"><h2>Nenhum pedido por enquanto</h2><p>Explore produtos ou envie um modelo 3D para receber propostas de impressão.</p><Link className="button button-primary" href="/#produtos">Explorar produtos</Link><Link className="button button-secondary" href="/visualizador">Enviar modelo 3D</Link></section> : <section className="quote-list" aria-label="Pedidos e orçamentos">
         {customRequests.map((request) => {
           const payment = [...(request.payments ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
@@ -101,10 +108,11 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
           const shippingCents = order.shipping_quote_status === "accepted" ? Number(order.shipping_cost_cents ?? 0) : 0;
           const totalCents = subtotalCents + shippingCents;
           const payment = [...(order.payments ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+          const storeReview = reviews.find((review) => review.order_id === order.id && review.review_type === "store");
           const carrierLabel = ({ correios: "Correios", melhor_envio: "Melhor Envio", transportadora: "Transportadora" } as Record<string, string>)[order.shipping_carrier ?? ""] ?? "Frete";
           return <article className="account-card quote-card" key={order.id}>
             <div className="quote-card-heading"><div><span className="account-kicker">PEDIDO DO CARRINHO · {order.store_name}</span><h2>{order.items?.length ?? 0} produto(s)</h2></div><span className={`quote-status status-${order.status}`}>{order.status === "pending" ? "Aguardando fabricante" : order.status === "accepted" ? "Disponibilidade confirmada" : "Pedido recusado"}</span></div>
-            <ul className="cart-order-items">{order.items?.map((item, index) => <li key={`${item.product_name}-${index}`}><span>{item.quantity} × {item.product_name}</span><strong>{formatBrlTotal(item.unit_price_brl, item.quantity)}</strong></li>)}</ul>
+            <ul className="cart-order-items">{order.items?.map((item) => <li key={item.id}><span>{item.quantity} × {item.product_name}</span><strong>{formatBrlTotal(item.unit_price_brl, item.quantity)}</strong></li>)}</ul>
             <p className="cart-store-total">Subtotal dos produtos: <strong>{formatBrl(subtotalCents / 100)}</strong></p>
             {order.status === "accepted" && order.shipping_quote_status === "offered" && <div className="quote-offer-summary"><div><span className="account-kicker">COTAÇÃO DE FRETE</span><strong>{carrierLabel} · {order.shipping_service}</strong><span>{formatBrl(Number(order.shipping_cost_cents) / 100)} · prazo estimado de transporte: {order.shipping_delivery_days} dia(s)</span></div><div className="quote-actions"><form action={respondToSellerOrderShippingQuote}><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="response" value="accept" /><button className="button button-primary" type="submit">Aceitar frete</button></form><form action={respondToSellerOrderShippingQuote}><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="response" value="decline" /><button className="button button-secondary" type="submit">Recusar</button></form></div></div>}
             {order.status === "accepted" && order.shipping_quote_status === "awaiting_quote" && <p className="quote-small-note">A loja está preparando uma cotação de frete para este pedido.</p>}
@@ -127,6 +135,14 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
               {order.shipment_status === "shipped" && <form action={confirmSellerPurchaseOrderDelivery}><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="complete" value="false" /><button className="button button-secondary" type="submit">Confirmar recebimento</button></form>}
               {order.shipment_status === "delivered" && <form action={confirmSellerPurchaseOrderDelivery}><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="complete" value="true" /><button className="button button-primary" type="submit">Concluir pedido</button></form>}
             </div>}
+            {order.shipment_status === "completed" && payment?.status === "paid" && !reviewsUnavailable && <section className="marketplace-order-reviews" aria-label="Avaliar sua compra">
+              <h3>Avaliações da compra</h3>
+              <div className="marketplace-review-form-card"><strong>Avalie a loja {order.store_name}</strong>{storeReview ? <p className="quote-small-note">{storeReview.status === "pending" ? "Aguardando moderação" : storeReview.status === "published" ? "Avaliação publicada" : "Avaliação não publicada"} · {storeReview.rating}/5</p> : <form action={submitMarketplaceReviewAction} className="auth-form"><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="itemId" value="" /><label>Nota<select name="rating" defaultValue="5" required><option value="5">5 · Excelente</option><option value="4">4 · Muito bom</option><option value="3">3 · Bom</option><option value="2">2 · Regular</option><option value="1">1 · Ruim</option></select></label><label>Comentário (opcional)<textarea name="body" maxLength={1200} rows={3} /></label><button className="button button-primary" type="submit">Enviar avaliação da loja</button></form>}</div>
+              {order.items?.map((item) => {
+                const itemReview = reviews.find((review) => review.order_item_id === item.id && review.review_type === "product");
+                return <div className="marketplace-review-form-card" key={item.id}><strong>Avalie {item.product_name}</strong>{itemReview ? <p className="quote-small-note">{itemReview.status === "pending" ? "Aguardando moderação" : itemReview.status === "published" ? "Avaliação publicada" : "Avaliação não publicada"} · {itemReview.rating}/5</p> : <form action={submitMarketplaceReviewAction} className="auth-form"><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="itemId" value={item.id} /><label>Nota<select name="rating" defaultValue="5" required><option value="5">5 · Excelente</option><option value="4">4 · Muito bom</option><option value="3">3 · Bom</option><option value="2">2 · Regular</option><option value="1">1 · Ruim</option></select></label><label>Comentário (opcional)<textarea name="body" maxLength={1200} rows={3} /></label><button className="button button-primary" type="submit">Enviar avaliação do produto</button></form>}</div>;
+              })}
+            </section>}
             {Array.isArray(order.events) && order.events.length > 0 && <div className="quote-delivery-status" aria-label="Histórico do pedido"><strong>Histórico</strong>{[...order.events].sort((a, b) => a.created_at.localeCompare(b.created_at)).map((event) => <div key={event.id}><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.created_at))} · {event.description}</span></div>)}</div>}
           </article>;
         })}

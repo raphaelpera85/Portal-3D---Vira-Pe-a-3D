@@ -295,6 +295,17 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .product-tags span { padding: 6px 10px; border: 1px solid var(--line); border-radius: 30px; color: var(--muted-strong); font-size: 11px; }
 .product-detail-note { margin-top: 30px; padding: 18px; border-left: 3px solid var(--brand); background: var(--surface); font-size: 12px; }
 .product-detail-note p { margin: 6px 0 0; color: var(--muted); }
+.marketplace-order-reviews, .product-reviews { display: grid; gap: 14px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.marketplace-order-reviews h3, .product-review-group h3 { margin: 0; font-size: 17px; }
+.marketplace-review-form-card, .product-review-card { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); }
+.marketplace-review-form-card .auth-form { max-width: 520px; }
+.marketplace-review-form-card .auth-form textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--paper); color: var(--ink); }
+.product-reviews { margin-top: 64px; }
+.product-reviews > h2 { margin: 0; font-size: clamp(26px, 4vw, 38px); }
+.product-review-group { display: grid; gap: 10px; }
+.product-review-card > p { margin: 0; color: var(--muted-strong); line-height: 1.6; }
+.product-review-card small { color: var(--muted); font-size: 11px; }
+.product-review-stars { color: #d99016 !important; letter-spacing: 2px; font-size: 16px; }
 .quote-request-card { display: grid; gap: 10px; }
 .quote-request-card .auth-form { margin: 0; }
 .quote-small-note, .quote-meta { color: var(--muted); font-size: 11px; line-height: 1.6; }
