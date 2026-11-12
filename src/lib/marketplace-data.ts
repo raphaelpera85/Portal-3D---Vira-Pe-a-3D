@@ -1,4 +1,5 @@
 import type { Product, ProductVisual } from "./products";
+import { normalizeProductVariantOptions } from "./marketplace-validation";
 
 type Row = Record<string, unknown>;
 const asObject = (value: unknown): Row => Array.isArray(value) ? asObject(value[0]) : value && typeof value === "object" ? value as Row : {};
@@ -14,6 +15,7 @@ export function mapMarketplaceProduct(row: Row): Product {
   const store = asObject(row.store);
   const category = asObject(row.category);
   const digitalAssetRow = asObject(row.digital_asset);
+  const properties = asObject(row.product_properties);
   const listingType = row.listing_type === "digital" || row.listing_type === "print_service" ? row.listing_type : "physical";
   const rawPrice = row.price_brl;
   const priceBrl = rawPrice == null || rawPrice === "" || !Number.isFinite(Number(rawPrice)) || Number(rawPrice) <= 0 ? null : Number(rawPrice);
@@ -26,6 +28,7 @@ export function mapMarketplaceProduct(row: Row): Product {
   const media = asSecureUrls(row.media);
   const visual = visuals.has(row.visual as ProductVisual) ? row.visual as ProductVisual : null;
   const rawTheme = asText(row.color_theme);
+  const variantOptions = normalizeProductVariantOptions(properties.variant_options ?? {}) ?? {};
   const maker = asText(store.name, "Fabricante ViraPeça");
   const personalLicense = Number(digitalAssetRow.personal_price_brl);
   const commercialLicense = Number(digitalAssetRow.commercial_price_brl);
@@ -35,6 +38,7 @@ export function mapMarketplaceProduct(row: Row): Product {
     description: asText(row.description), category: asText(category.name, "Outros"), tags: asTextList(row.tags),
     maker, color: themes.has(rawTheme) ? rawTheme : "blue", visual,
     priceBrl: priceMode === "quote" ? null : priceBrl, priceMode, fulfillmentMode, stockQuantity, preparationDays,
+    variantOptions,
     priceLabel: priceMode === "quote" ? "Sob orçamento" : priceBrl == null ? "Preço indisponível" : `${priceMode === "from" ? "A partir de " : ""}${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(priceBrl)}`,
     media, storeId: asText(row.store_id) || null, storeSlug: asText(store.slug) || null, demo: false, listingType,
     digitalAsset: listingType === "digital" && Number.isFinite(personalLicense) && personalLicense > 0

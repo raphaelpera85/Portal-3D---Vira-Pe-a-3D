@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
-import { validateProductQuoteOffer, validateProductQuoteRequest } from "@/lib/marketplace-validation";
+import { validateProductQuoteOffer, validateProductQuoteRequest, validateProductVariantSelection } from "@/lib/marketplace-validation";
 import { validateCustomPrintRequest } from "@/lib/custom-print-request";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 
@@ -106,14 +106,19 @@ export async function requestProductPurchase(formData: FormData): Promise<void> 
   const actor = await getUserWithRole("buyer");
   if (!actor.supabase || !actor.user) redirect("/conta");
   if (!actor.authorized) redirect("/conta?resultado=perfil-comprador");
-  const { data: product } = await actor.supabase.from("marketplace_products").select("id, store_id, name, price_brl, store:stores!inner(name)").eq("slug", slug).eq("catalog_status", "published").eq("price_mode", "fixed").eq("store.status", "published").maybeSingle();
+  const { data: product } = await actor.supabase.from("marketplace_products").select("id, store_id, name, price_brl, product_properties, store:stores!inner(name)").eq("slug", slug).eq("catalog_status", "published").eq("price_mode", "fixed").eq("store.status", "published").maybeSingle();
   const store = objectValue(product?.store);
   const unitPrice = Number(product?.price_brl);
   if (!product || typeof store.name !== "string" || !Number.isFinite(unitPrice) || unitPrice <= 0) redirect(`/produtos/${encodeURIComponent(slug)}?compra=indisponivel`);
+  const variantOptions = validateProductVariantSelection(formData.get("variantOptions"), product.product_properties);
+  if (!variantOptions) redirect(`/produtos/${encodeURIComponent(slug)}?compra=erro`);
+  const variantNote = Object.entries(variantOptions).map(([name, value]) => `${name}: ${value}`).join(" · ");
+  const customization = [request.customization, variantNote ? `Variações selecionadas: ${variantNote}` : ""].filter(Boolean).join("\n");
+  if (customization.length > 2000) redirect(`/produtos/${encodeURIComponent(slug)}?compra=erro`);
   const { error } = await actor.supabase.from("product_quote_requests").insert({
     buyer_id: actor.user.id, store_id: product.store_id, product_id: product.id,
-    store_name: store.name, product_name: product.name, request_type: "purchase", unit_price_brl: unitPrice,
-    quantity: request.quantity, customization: request.customization, due_date: request.dueDate,
+    store_name: store.name, product_name: product.name, request_type: "purchase", unit_price_brl: unitPrice, variant_options: variantOptions,
+    quantity: request.quantity, customization, due_date: request.dueDate,
   });
   if (error) redirect(`/produtos/${encodeURIComponent(slug)}?compra=erro`);
   after(dispatchNotificationQueue);

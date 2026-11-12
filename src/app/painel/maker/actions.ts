@@ -25,6 +25,7 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     name: formData.get("name"), description: formData.get("description"), categoryId: formData.get("categoryId"), listingType: formData.get("listingType"),
     priceMode: formData.get("priceMode"), priceBrl: formData.get("priceBrl"), imageUrl: formData.get("imageUrl"), tags: formData.get("tags"),
     fulfillmentMode: formData.get("fulfillmentMode"), stockQuantity: formData.get("stockQuantity"), preparationDays: formData.get("preparationDays"),
+    variantOptions: formData.get("variantOptions"),
   });
   const storeId = formData.get("storeId");
   if (!product || typeof storeId !== "string" || !uuidPattern.test(storeId)) return { message: "Confira nome, categoria e preço do anúncio.", success: false };
@@ -41,6 +42,7 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     description: product.description, listing_type: product.listingType, fulfillment_mode: product.fulfillmentMode,
     price_mode: product.priceMode, price_brl: product.priceBrl, media: product.media, tags: product.tags,
     stock_quantity: product.stockQuantity, preparation_days: product.preparationDays,
+    product_properties: { variant_options: product.variantOptions },
     catalog_status: "draft", created_by: actor.user.id,
   }).select("id").single();
   if (error) return { message: "Não foi possível salvar o rascunho. Confira a categoria e tente novamente.", success: false };

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { isBuyerAddressId } from "@/lib/buyer-address";
-import { validateProductQuoteRequest } from "@/lib/marketplace-validation";
+import { validateProductQuoteRequest, validateProductVariantSelection } from "@/lib/marketplace-validation";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -17,10 +17,14 @@ export async function addProductToCart(formData: FormData): Promise<void> {
   if (!validSlug(slug) || !quantity) redirect("/carrinho?resultado=erro");
   const actor = await getUserWithRole("buyer");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
-  const { data: product } = await actor.supabase.from("marketplace_products").select("id")
+  const { data: product } = await actor.supabase.from("marketplace_products").select("id, product_properties")
     .eq("slug", slug).eq("catalog_status", "published").eq("price_mode", "fixed").maybeSingle();
   if (!product) redirect(`/produtos/${encodeURIComponent(slug)}?carrinho=indisponivel`);
-  const { error } = await actor.supabase.rpc("add_product_to_cart", { p_product_id: product.id, p_quantity: quantity.quantity });
+  const variantOptions = validateProductVariantSelection(formData.get("variantOptions"), product.product_properties);
+  if (!variantOptions) redirect(`/produtos/${encodeURIComponent(slug)}?carrinho=erro`);
+  const { error } = await actor.supabase.rpc("add_product_to_cart", {
+    p_product_id: product.id, p_quantity: quantity.quantity, p_variant_options: variantOptions,
+  });
   if (error) redirect(`/produtos/${encodeURIComponent(slug)}?carrinho=erro`);
   revalidatePath("/carrinho");
   redirect("/carrinho?resultado=adicionado");

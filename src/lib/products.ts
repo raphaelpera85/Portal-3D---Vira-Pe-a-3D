@@ -14,6 +14,7 @@ export type Product = {
   fulfillmentMode: "ready_to_ship" | "made_to_order" | "digital" | "quote";
   stockQuantity: number | null;
   preparationDays: number | null;
+  variantOptions?: Record<string, string[]>;
   priceLabel: string;
   media: string[];
   storeId: string | null;

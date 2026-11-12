@@ -35,6 +35,7 @@ flowchart LR
 - Compradores autenticados também enviam pedidos personalizados para modelos salvos. Lojas com equipamento disponível, compatibilidade técnica publicada e volume suficiente recebem o pedido, podem enviar propostas concorrentes e o comprador escolhe uma; após pagar via Mercado Pago, a loja vencedora inicia e conclui a produção no painel. O banco bloqueia o início até confirmar o pagamento. Os arquivos ficam em bucket privado e são acessados por link assinado curto somente durante a participação.
 - Compradores autenticados salvam e removem produtos publicados em `/favoritos`; favoritos são privados por comprador e não incluem dados de demonstração.
 - Produtos de preço fixo também podem ser reunidos em carrinho persistente. O fechamento valida preços e disponibilidade no banco e cria um pedido separado por loja; após a loja confirmar disponibilidade e cotar manualmente o frete, o comprador aceita e paga produtos mais frete pelo Mercado Pago. A comissão incide no subtotal dos produtos. A loja informa o rastreio e o comprador confirma o recebimento. Solicitações diretas de compra aceitas também podem iniciar checkout e reservar estoque contado.
+- Produtos físicos de preço fixo podem anunciar até quatro grupos de personalização, como cor e tamanho; o carrinho mantém uma linha por combinação e leva a escolha ao pedido e aos avisos do fabricante. As opções compartilham o preço e o estoque total do produto.
 - Fabricantes definem pronta entrega ou produção sob encomenda, acompanham estoque contado e prazo de preparação; o banco rejeita quantidades maiores que o estoque publicado.
 - Fabricantes podem solicitar reembolsos totais ou parciais no extrato; o banco reserva o saldo por cobrança e o Mercado Pago recebe uma chave de idempotência que permite repetir uma tentativa pendente sem emitir outro estorno.
 - Compradores podem cancelar orders ainda não pagas em `/orcamentos`; o portal confere a order no Mercado Pago e libera estoque reservado somente após confirmação.
@@ -57,8 +58,8 @@ flowchart LR
 
 ## Limites atuais
 
-- As 46 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
-- Cotação automática de frete, compra de etiquetas e atualização automática de rastreio, variantes, cupons e atendimento não estão conectados. O endereço é compartilhado com a loja, mas não é enviado a um serviço de logística.
+- As 51 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
+- Preços e estoque por SKU, cotação automática de frete, compra de etiquetas, atualização automática de rastreio, cupons e atendimento não estão conectados. O endereço é compartilhado com a loja, mas não é enviado a um serviço de logística.
 - Lembretes de manutenção dependem de o fabricante registrar datas/horímetros; o portal não infere intervalos nem apresenta recomendações do fabricante do equipamento.
 - Banners aceitam mídia HTTPS externa com carregamento tardio e texto alternativo; upload gerenciado e otimização de imagem ainda não estão conectados.
 - O visualizador não preserva atribuições reais de filamento por cor nem importa resultados de fatiamento. O OCR da calculadora depende de Cloud Vision configurado e reconhecimento de rótulos comuns; imagens e texto OCR não entram no histórico.

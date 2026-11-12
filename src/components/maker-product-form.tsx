@@ -27,6 +27,7 @@ export function MakerProductForm({ storeId, categories }: { storeId: string; cat
         {listingType === "digital" ? <input type="hidden" name="fulfillmentMode" value="digital" /> : mode === "quote" ? <input type="hidden" name="fulfillmentMode" value="quote" /> : <>
           <label>Forma de atendimento<select name="fulfillmentMode" value={fulfillmentMode} onChange={(event) => setFulfillmentMode(event.target.value)}><option value="made_to_order">Produzido sob encomenda</option><option value="ready_to_ship">Pronta entrega</option></select></label>
           {fulfillmentMode === "ready_to_ship" && <label>Unidades em estoque<input name="stockQuantity" type="number" min="0" max="1000000" step="1" defaultValue="1" required /><small>Informe 0 para pausar novas solicitações. O estoque não é reservado sem pagamento.</small></label>}
+          {mode === "fixed" && <label>Variações disponíveis (opcional)<textarea name="variantOptions" maxLength={500} rows={3} placeholder={"Cor: Preto, Branco, Vermelho\nTamanho: P, M, G"} /><small>Uma opção por linha. No carrinho, cada escolha mantém o preço e compartilha o estoque total do anúncio.</small></label>}
           <label>Prazo de preparação (dias)<input name="preparationDays" type="number" min="0" max="365" step="1" placeholder="Opcional" /></label>
         </>}
         <label>Imagem pública HTTPS (opcional)<input name="imageUrl" type="url" maxLength={1000} placeholder="https://" /></label>

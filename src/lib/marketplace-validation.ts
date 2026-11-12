@@ -1,11 +1,63 @@
 export type MakerApplicationInput = { businessName: string; description: string; portfolioUrl: string | null; city: string | null; stateCode: string | null };
-export type ProductDraftInput = { name: string; description: string; categoryId: string; media: string[]; tags: string[]; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; fulfillmentMode: "ready_to_ship" | "made_to_order" | "digital" | "quote"; stockQuantity: number | null; preparationDays: number | null };
+export type ProductVariantOptions = Record<string, string[]>;
+export type ProductDraftInput = { name: string; description: string; categoryId: string; media: string[]; tags: string[]; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; fulfillmentMode: "ready_to_ship" | "made_to_order" | "digital" | "quote"; stockQuantity: number | null; preparationDays: number | null; variantOptions: ProductVariantOptions };
 export type ProductInventoryInput = { fulfillmentMode: "ready_to_ship" | "made_to_order" | "quote"; stockQuantity: number | null; preparationDays: number | null };
 export type ProductQuoteRequestInput = { quantity: number; customization: string; dueDate: string | null };
 export type ProductQuoteOfferInput = { totalBrl: number; leadDays: number; terms: string };
 export type StoreNotificationContacts = { email: string; whatsapp: string | null; whatsappOptIn: boolean };
 
 const text = (value: unknown) => typeof value === "string" ? value.trim() : null;
+
+export function normalizeProductVariantOptions(value: unknown): ProductVariantOptions | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.length > 4) return null;
+  const options: ProductVariantOptions = {};
+  for (const [rawName, rawValues] of entries) {
+    const name = rawName.trim();
+    if (!/^[\p{L}\p{N}][\p{L}\p{N} _./()-]{0,31}$/u.test(name) || !Array.isArray(rawValues) || rawValues.length < 2 || rawValues.length > 12) return null;
+    const values = rawValues.map((value) => typeof value === "string" ? value.trim() : "");
+    if (values.some((value) => !value || value.length > 40 || /[\u0000-\u001f\u007f]/.test(value)) || new Set(values.map((value) => value.toLocaleLowerCase("pt-BR"))).size !== values.length) return null;
+    options[name] = values;
+  }
+  if (new Set(Object.keys(options).map((name) => name.toLocaleLowerCase("pt-BR"))).size !== entries.length) return null;
+  return options;
+}
+
+export function validateProductVariantOptions(value: unknown): ProductVariantOptions | null {
+  const raw = text(value) ?? "";
+  if (!raw) return {};
+  if (raw.length > 500) return null;
+  const options: Record<string, string[]> = {};
+  for (const line of raw.split(/\r?\n/)) {
+    const separator = line.indexOf(":");
+    if (separator < 1) return null;
+    const name = line.slice(0, separator).trim();
+    const values = line.slice(separator + 1).split(",").map((item) => item.trim());
+    if (!name || options[name] || values.length < 2) return null;
+    options[name] = values;
+  }
+  return normalizeProductVariantOptions(options);
+}
+
+export function validateProductVariantSelection(value: unknown, productProperties: unknown): Record<string, string> | null {
+  const properties = productProperties && typeof productProperties === "object" && !Array.isArray(productProperties)
+    ? productProperties as Record<string, unknown> : {};
+  const available = normalizeProductVariantOptions(properties.variant_options ?? {});
+  if (!available) return null;
+  const raw = text(value);
+  if (!raw || raw.length > 1000) return null;
+  let selected: unknown;
+  try { selected = JSON.parse(raw); } catch { return null; }
+  if (!selected || typeof selected !== "object" || Array.isArray(selected)) return null;
+  const entries = Object.entries(selected as Record<string, unknown>);
+  if (entries.length !== Object.keys(available).length) return null;
+  for (const [name, options] of Object.entries(available)) {
+    const choice = (selected as Record<string, unknown>)[name];
+    if (typeof choice !== "string" || !options.includes(choice)) return null;
+  }
+  return Object.fromEntries(entries.map(([name, choice]) => [name, choice as string]));
+}
 
 export function validateMakerApplication(values: Record<string, unknown>): MakerApplicationInput | null {
   const businessName = text(values.businessName);
@@ -39,11 +91,13 @@ export function validateProductDraft(values: Record<string, unknown>): ProductDr
   const fulfillmentMode = requestedFulfillment ?? (priceMode === "quote" ? "quote" : "made_to_order");
   const rawStock = text(values.stockQuantity);
   const rawPreparationDays = text(values.preparationDays);
-  if (!name || name.length < 3 || name.length > 100 || description.length > 2000 || !categoryId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(categoryId)) return null;
+  const variantOptions = validateProductVariantOptions(values.variantOptions);
+  if (!name || name.length < 3 || name.length > 100 || description.length > 2000 || !categoryId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(categoryId) || !variantOptions) return null;
   if (priceMode !== "fixed" && priceMode !== "from" && priceMode !== "quote") return null;
   const priceBrl = priceMode === "quote" ? null : rawPrice && /^\d{1,9}(?:\.\d{1,2})?$/.test(rawPrice) ? Number(rawPrice) : null;
   if (priceMode !== "quote" && (priceBrl == null || priceBrl <= 0 || !Number.isFinite(priceBrl))) return null;
   if (listingType === "digital" && (priceMode !== "fixed" || fulfillmentMode !== "digital")) return null;
+  if ((listingType !== "physical" || priceMode !== "fixed") && Object.keys(variantOptions).length > 0) return null;
   if (listingType === "physical" && ((priceMode === "quote" && fulfillmentMode !== "quote")
     || (priceMode !== "quote" && fulfillmentMode !== "ready_to_ship" && fulfillmentMode !== "made_to_order"))) return null;
   const stockQuantity = rawStock ? /^\d{1,7}$/.test(rawStock) ? Number(rawStock) : Number.NaN : null;
@@ -64,7 +118,7 @@ export function validateProductDraft(values: Record<string, unknown>): ProductDr
   }
   const tags = (text(values.tags) ?? "").split(",").map((tag) => tag.trim()).filter(Boolean);
   if (tags.length > 8 || tags.some((tag) => tag.length > 32)) return null;
-  return { name, description, categoryId, media, tags, listingType, priceMode, priceBrl, fulfillmentMode: fulfillmentMode as ProductDraftInput["fulfillmentMode"], stockQuantity: stockQuantity as number | null, preparationDays: preparationDays as number | null };
+  return { name, description, categoryId, media, tags, listingType, priceMode, priceBrl, fulfillmentMode: fulfillmentMode as ProductDraftInput["fulfillmentMode"], stockQuantity: stockQuantity as number | null, preparationDays: preparationDays as number | null, variantOptions };
 }
 
 export function validateProductInventory(values: Record<string, unknown>, priceMode: unknown): ProductInventoryInput | null {

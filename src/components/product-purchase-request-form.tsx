@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requestProductPurchase } from "@/app/orcamentos/actions";
+import { ProductVariantFields } from "@/components/product-variant-fields";
 
-export function ProductPurchaseRequestForm({ slug, authorized, result, stockQuantity = null }: { slug: string; authorized: boolean; result?: string; stockQuantity?: number | null }) {
+export function ProductPurchaseRequestForm({ slug, authorized, result, stockQuantity = null, variantOptions = {} }: { slug: string; authorized: boolean; result?: string; stockQuantity?: number | null; variantOptions?: Record<string, string[]> }) {
   return <div className="product-detail-note quote-request-card">
     <strong>Solicitar compra</strong>
     {stockQuantity === 0 && <p className="quote-inline-error" role="status">Sem unidades disponíveis no momento.</p>}
@@ -9,6 +10,7 @@ export function ProductPurchaseRequestForm({ slug, authorized, result, stockQuan
     {result === "indisponivel" && <p className="quote-inline-error" role="alert">Este produto não está disponível para solicitação no momento.</p>}
     {stockQuantity !== 0 && (authorized ? <form className="auth-form" action={requestProductPurchase}>
       <input type="hidden" name="slug" value={slug} />
+      <ProductVariantFields options={variantOptions} />
       <label>Quantidade<input name="quantity" type="number" min="1" max={stockQuantity == null ? 100 : Math.min(100, stockQuantity)} defaultValue="1" required /></label>
       <label>Observações ou personalização<textarea name="customization" maxLength={2000} rows={3} placeholder="Detalhes para o fabricante (opcional)" /></label>
       <label>Prazo desejado (opcional)<input name="dueDate" type="date" /></label>
