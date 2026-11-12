@@ -17,7 +17,7 @@ import type { parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 import { mapThreeMfPlateToSlicerMetrics, type SavedSlicerMetrics } from "@/lib/saved-calculation";
 import type { ThreeMfSlicePlate } from "@/lib/model-file";
 
-type FormFields = Record<keyof Omit<PrintCostInput, "additionalCosts" | "productionComponents" | "pricingMode">, string>;
+type FormFields = Record<keyof Omit<PrintCostInput, "additionalCosts" | "productionComponents" | "filamentCosts" | "pricingMode">, string>;
 type ChannelFields = Omit<SalesChannel, "feePercent" | "fixedFee"> & { feePercent: string; fixedFee: string };
 type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
@@ -127,6 +127,9 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     material: fields.material.trim(),
     filamentGrams: numberValue(fields.filamentGrams),
     filamentPricePerKg: numberValue(fields.filamentPricePerKg),
+    filamentCosts: slicerMetrics?.filaments.length && slicerMetrics.filaments.every((filament) => filament.grams !== null && filament.pricePerKg !== null)
+      ? slicerMetrics.filaments.map(({ grams, pricePerKg, material, color }) => ({ grams: grams!, pricePerKg: pricePerKg!, name: material, color }))
+      : [],
     printHours: numberValue(fields.printHours),
     averagePowerWatts: numberValue(fields.averagePowerWatts),
     energyPricePerKwh: numberValue(fields.energyPricePerKwh),
@@ -142,7 +145,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     pricingMode,
     additionalCosts: extras.map(({ name, amount }) => ({ name, amount: numberValue(amount) })),
   };
-  const result = useMemo(() => calculatePrintPrice(input, parsedChannels), [fields, extras, productionComponents, channels, pricingMode]);
+  const result = useMemo(() => calculatePrintPrice(input, parsedChannels), [fields, extras, productionComponents, channels, pricingMode, slicerMetrics]);
   const hasProductionCost = Boolean(result.breakdown?.totalCostCents);
   const consignmentChannel = parsedChannels.find((channel) => channel.id === "consignacao");
   const consignmentChannelInput = channels.find((channel) => channel.id === "consignacao");
@@ -235,7 +238,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       filamentGrams: extraction.filamentGrams, derivedMass: extraction.derivedMass, lengthMeters: extraction.lengthMeters,
       printHours: extraction.printHours, filamentChanges: extraction.filamentChanges, estimatedCost: extraction.estimatedCost,
       materials: extraction.materials.slice(0, 20),
-      filaments: extraction.filaments.slice(0, 32).map(({ index, grams, material, color }) => ({ index, grams, material, color })),
+      filaments: extraction.filaments.slice(0, 32).map(({ index, grams, material, color }) => ({ index, grams, pricePerKg: null, material, color })),
       conflicts: extraction.conflicts.slice(0, 30),
     });
     return true;
@@ -254,12 +257,24 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     return true;
   }
 
+  function updateSlicerFilament(index: number, values: Partial<Pick<SavedSlicerMetrics["filaments"][number], "grams" | "pricePerKg">>) {
+    if (!slicerMetrics) return;
+    const filaments = slicerMetrics.filaments.map((item, itemIndex) => itemIndex === index ? { ...item, ...values } : item);
+    setSlicerMetrics({ ...slicerMetrics, filaments });
+    if ("grams" in values) setFields((fieldsNow) => ({
+      ...fieldsNow,
+      filamentGrams: filaments.length > 0 && filaments.every((item) => item.grams !== null)
+        ? String(filaments.reduce((sum, item) => sum + item.grams!, 0))
+        : "",
+    }));
+  }
+
   function duplicateCalculation(snapshot: string, title: string, productId: string | null, printerId: string | null, profileId: string | null) {
     if (hasCurrentValues && !window.confirm("Abrir esta cópia substituirá os valores atuais da calculadora. Deseja continuar?")) return;
     try {
       const saved = JSON.parse(snapshot) as { input?: PrintCostInput; channels?: SalesChannel[]; slicer?: SavedSlicerMetrics | null };
       if (!saved.input || !Array.isArray(saved.channels)) return;
-      setFields({ ...initialFields, ...Object.fromEntries(Object.entries(saved.input).filter(([key]) => key !== "additionalCosts" && key !== "productionComponents" && key !== "pricingMode").map(([key, value]) => [key, String(value)])) } as FormFields);
+      setFields({ ...initialFields, ...Object.fromEntries(Object.entries(saved.input).filter(([key]) => key !== "additionalCosts" && key !== "productionComponents" && key !== "filamentCosts" && key !== "pricingMode").map(([key, value]) => [key, String(value)])) } as FormFields);
       setPricingMode(saved.input.pricingMode === "markup" ? "markup" : "margin");
       setExtras(saved.input.additionalCosts.map((item) => ({ id: crypto.randomUUID(), name: item.name, amount: String(item.amount) })));
       setProductionComponents((saved.input.productionComponents ?? []).map((component) => ({
@@ -316,6 +331,16 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
               <CostField label="Material consumido no lote" suffix="g" hint="Inclua o consumo da execução completa, com suportes e purga quando disponíveis." value={fields.filamentGrams} onChange={(value) => updateField("filamentGrams", value)} />
               <CostField label="Preço de compra" suffix="R$/kg" hint="Informe seu preço de compra; o catálogo não presume um valor." value={fields.filamentPricePerKg} onChange={(value) => updateField("filamentPricePerKg", value)} />
             </div>
+            {slicerMetrics?.filaments.length ? <div className="price-ocr-filaments is-editable">
+              <strong>Consumo e custo por cor/material</strong>
+              <p className="price-field-hint">Edite a massa e o preço por quilo de cada filamento. O custo total por cor substitui o preço geral somente quando todas as linhas tiverem massa e preço preenchidos.</p>
+              <ul>{slicerMetrics.filaments.map((filament, index) => <li key={`${filament.index}-${index}`}>
+                <span>{filament.color && <i className="three-mf-filament-color" style={{ backgroundColor: `#${filament.color.replace(/^#/, "")}` }} aria-hidden="true" />}{filament.material || `Filamento ${filament.index}`}{filament.color ? ` · #${filament.color.replace(/^#/, "")}` : ""}</span>
+                <label><span className="sr-only">Massa em gramas do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.grams ?? ""} placeholder="g" onChange={(event) => updateSlicerFilament(index, { grams: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+                <label><span className="sr-only">Preço por quilo do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.pricePerKg ?? ""} placeholder="R$/kg" onChange={(event) => updateSlicerFilament(index, { pricePerKg: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+              </li>)}</ul>
+              {input.filamentCosts?.length ? <p className="price-ocr-note">O cálculo soma o custo de cada filamento informado.</p> : null}
+            </div> : null}
           </section>
 
           <section className="price-card">
@@ -464,6 +489,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
           ["Componentes adicionais", breakdown.additionalCents], ["Custos fixos rateados", breakdown.overheadCents],
           ["Custo fixo do lote", breakdown.batchFixedCents], ["Reserva para falhas", breakdown.failureReserveCents],
         ].map(([label, cents]) => <tr key={String(label)}><th>{String(label)}</th><td>{money(cents as number)}</td></tr>)}<tr><th>Total do lote</th><td>{money(breakdown.totalCostCents)}</td></tr></tbody></table>
+        {input.filamentCosts?.length ? <><h2>Custo por cor/material</h2><table><thead><tr><th>Filamento</th><th>Massa</th><th>Preço/kg</th><th>Subtotal</th></tr></thead><tbody>{input.filamentCosts.map((item, index) => <tr key={`${item.name ?? "filamento"}-${index}`}><th>{item.name || `Filamento ${index + 1}`}{item.color ? ` · ${item.color}` : ""}</th><td>{metric(item.grams, "g")}</td><td>{money(Math.round(item.pricePerKg * 100))}</td><td>{money(Math.round(item.grams * item.pricePerKg / 1000 * 100))}</td></tr>)}</tbody></table></> : null}
         <h2>Preços por canal</h2>
         <table><thead><tr><th>Canal</th><th>Taxa</th><th>Preço</th><th>Lucro</th><th>Margem</th></tr></thead><tbody>{result.channels.map((scenario) => <tr key={scenario.id}><th>{scenario.name}</th><td>{parsedChannels.find((channel) => channel.id === scenario.id)?.feePercent}% + {money(scenario.fixedFeeCents)}</td><td>{money(scenario.priceCents)}</td><td>{money(scenario.profitCents)}</td><td>{scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</td></tr>)}</tbody></table>
         <p className="price-print-note">Estimativa com base nos custos e taxas informados. Não inclui custos que ficaram em branco, impostos ou frete.</p>

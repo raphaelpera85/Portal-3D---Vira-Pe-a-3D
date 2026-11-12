@@ -23,6 +23,14 @@ describe("exportPrintCalculationCsv", () => {
     expect(csv).toContain("12/11/2026");
   });
 
+  it("exports a separate mass and price subtotal for each imported filament", () => {
+    const imported = { ...input, filamentCosts: [{ name: "PLA", color: "#ff0000", grams: 12, pricePerKg: 100 }] };
+    const csv = exportPrintCalculationCsv("Suporte", imported, channels, calculatePrintPrice(imported, channels));
+
+    expect(csv).toContain('"Custo por cor/material";"Massa (g)";"Preço (R$/kg)";"Subtotal (R$)"');
+    expect(csv).toContain('"PLA · #ff0000";"12";"100";"1,20"');
+  });
+
   it("neutralizes formula-like names and quotes delimiter and newline characters", () => {
     const maliciousChannels = [{ ...channels[0], name: '=HYPERLINK("https://bad")' }];
     const result = calculatePrintPrice(input, maliciousChannels);

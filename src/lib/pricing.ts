@@ -16,6 +16,7 @@ export type ProductionComponent = {
   laborRatePerHour: number;
 };
 export type SalesChannel = { id: string; name: string; feePercent: number; fixedFee: number };
+export type FilamentCost = { grams: number; pricePerKg: number; name?: string | null; color?: string | null };
 export const MAX_BATCH_QUANTITY = 1_000_000;
 export const MAX_PRODUCTION_COMPONENTS = 20;
 
@@ -24,6 +25,7 @@ export type PrintCostInput = {
   batchFixedCost?: number;
   material?: string;
   productionComponents?: ProductionComponent[];
+  filamentCosts?: FilamentCost[];
   filamentGrams: number;
   filamentPricePerKg: number;
   printHours: number;
@@ -72,6 +74,11 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
   const batchQuantity = input.batchQuantity ?? 1;
   const batchFixedCost = input.batchFixedCost ?? 0;
   const components = input.productionComponents ?? [];
+  const filamentCosts = input.filamentCosts ?? [];
+  if (!Array.isArray(filamentCosts) || filamentCosts.length > 32 || filamentCosts.some((filament) => !filament
+    || !Number.isFinite(filament.grams) || filament.grams < 0 || !Number.isFinite(filament.pricePerKg) || filament.pricePerKg < 0)) {
+    return { errors: ["Revise os custos e as massas dos filamentos."], breakdown: null, unitCostCents: null, channels: [] };
+  }
   const numericValues = [
     batchQuantity, batchFixedCost,
     input.filamentGrams, input.filamentPricePerKg, input.printHours, input.averagePowerWatts,
@@ -79,6 +86,7 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     input.maintenancePerHour, input.laborMinutes, input.laborRatePerHour,
     input.overheadPerUnit, input.failureReservePercent, input.targetMarginPercent, targetMarkupPercent,
     ...input.additionalCosts.map(({ amount }) => amount),
+    ...filamentCosts.flatMap(({ grams, pricePerKg }) => [grams, pricePerKg]),
     ...components.flatMap(({ piecesPerProduct, filamentGrams, filamentPricePerKg, printHours, averagePowerWatts, energyPricePerKwh, machineCostPerHour, depreciationPerHour, maintenancePerHour, laborMinutes, laborRatePerHour }) => [
       piecesPerProduct, filamentGrams, filamentPricePerKg, printHours, averagePowerWatts,
       energyPricePerKwh, machineCostPerHour, depreciationPerHour, maintenancePerHour, laborMinutes, laborRatePerHour,
@@ -124,7 +132,9 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     laborCents: sum.laborCents + roundCents(component.laborMinutes / 60 * component.laborRatePerHour),
   }), { materialCents: 0, energyCents: 0, machineCents: 0, depreciationCents: 0, maintenanceCents: 0, laborCents: 0 });
   const productionCosts = {
-    materialCents: roundCents(input.filamentGrams * input.filamentPricePerKg / 1000) + componentCosts.materialCents,
+    materialCents: (filamentCosts.length
+      ? filamentCosts.reduce((sum, filament) => sum + roundCents(filament.grams * filament.pricePerKg / 1000), 0)
+      : roundCents(input.filamentGrams * input.filamentPricePerKg / 1000)) + componentCosts.materialCents,
     energyCents: roundCents(input.averagePowerWatts / 1000 * input.printHours * input.energyPricePerKwh) + componentCosts.energyCents,
     machineCents: roundCents(input.printHours * input.machineCostPerHour) + componentCosts.machineCents,
     depreciationCents: roundCents(input.printHours * input.depreciationPerHour) + componentCosts.depreciationCents,

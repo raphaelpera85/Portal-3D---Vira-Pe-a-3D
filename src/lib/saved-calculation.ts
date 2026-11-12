@@ -1,4 +1,4 @@
-import { calculatePrintPrice, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "./pricing";
+import { calculatePrintPrice, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type FilamentCost, type PrintCostInput, type ProductionComponent, type SalesChannel } from "./pricing";
 import type { ThreeMfSlicePlate } from "./model-file";
 
 export const MAX_SAVED_CALCULATION_JSON = 20_000;
@@ -11,7 +11,7 @@ export type SavedSlicerMetrics = {
   slicer: string; modelGrams: number | null; supportGrams: number | null; totalGrams: number | null;
   purgeGrams: number | null; wipeTowerGrams: number | null; filamentGrams: number | null; derivedMass: boolean;
   lengthMeters: number | null; printHours: number | null; filamentChanges: number | null; estimatedCost: number | null;
-  materials: string[]; filaments: Array<{ index: number; grams: number; material: string | null; color: string | null }>;
+  materials: string[]; filaments: Array<{ index: number; grams: number | null; pricePerKg: number | null; material: string | null; color: string | null }>;
   conflicts: string[];
 };
 
@@ -36,9 +36,9 @@ export function mapThreeMfPlateToSlicerMetrics(plate: ThreeMfSlicePlate, plateNu
     filamentChanges: null,
     estimatedCost: null,
     materials: [...new Set(plate.filaments.map((filament) => filament.type).filter((type): type is string => Boolean(type)))].slice(0, 20),
-    filaments: plate.filaments.flatMap((filament, index) => filament.weightGrams === null ? [] : [{
-      index: index + 1, grams: filament.weightGrams, material: filament.type, color: filament.color,
-    }]).slice(0, 32),
+    filaments: plate.filaments.slice(0, 32).map((filament, index) => ({
+      index: index + 1, grams: filament.weightGrams, pricePerKg: null, material: filament.type, color: filament.color,
+    })),
     conflicts: [],
   };
 }
@@ -53,14 +53,15 @@ function parseSlicerMetrics(value: unknown): SavedSlicerMetrics | null | undefin
     || !Array.isArray(value.materials) || value.materials.length > 20 || value.materials.some((item) => typeof item !== "string" || item.length > 40)
     || !Array.isArray(value.conflicts) || value.conflicts.length > 30 || value.conflicts.some((item) => typeof item !== "string" || item.length > 80)
     || !Array.isArray(value.filaments) || value.filaments.length > 32 || value.filaments.some((item) => !isRecord(item)
-      || !Number.isSafeInteger(item.index) || (item.index as number) < 0 || !validNumber(item.grams)
+      || !Number.isSafeInteger(item.index) || (item.index as number) < 0 || !(item.grams === null || validNumber(item.grams))
+      || !(item.pricePerKg === undefined || item.pricePerKg === null || validNumber(item.pricePerKg))
       || !(item.material === null || typeof item.material === "string" && item.material.length <= 40)
       || !(item.color === null || typeof item.color === "string" && item.color.length <= 40))) return undefined;
   return {
     slicer: value.slicer, derivedMass: value.derivedMass,
     ...Object.fromEntries(metricFields.map((field) => [field, value[field]])),
     materials: value.materials as string[], conflicts: value.conflicts as string[],
-    filaments: value.filaments as SavedSlicerMetrics["filaments"],
+    filaments: value.filaments.map((item) => ({ ...item, pricePerKg: item.pricePerKg ?? null })) as SavedSlicerMetrics["filaments"],
   } as SavedSlicerMetrics;
 }
 
@@ -92,6 +93,14 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   const batchQuantity = rawInput.batchQuantity === undefined ? 1 : rawInput.batchQuantity;
   const batchFixedCost = rawInput.batchFixedCost === undefined ? 0 : rawInput.batchFixedCost;
   const rawComponents = rawInput.productionComponents === undefined ? [] : rawInput.productionComponents;
+  const rawFilamentCosts = rawInput.filamentCosts === undefined ? [] : rawInput.filamentCosts;
+  const filamentCosts = Array.isArray(rawFilamentCosts) && rawFilamentCosts.length <= 32
+    ? rawFilamentCosts.map((item): FilamentCost | null => isRecord(item) && validNumber(item.grams) && validNumber(item.pricePerKg)
+      && (item.name === undefined || item.name === null || typeof item.name === "string" && item.name.length <= 80)
+      && (item.color === undefined || item.color === null || typeof item.color === "string" && item.color.length <= 40)
+      ? { grams: item.grams, pricePerKg: item.pricePerKg, name: typeof item.name === "string" ? item.name : null, color: typeof item.color === "string" ? item.color : null }
+      : null)
+    : null;
   const componentNumberFields = ["filamentGrams", "filamentPricePerKg", "printHours", "averagePowerWatts", "energyPricePerKwh", "machineCostPerHour", "depreciationPerHour", "maintenancePerHour", "laborMinutes", "laborRatePerHour"] as const;
   const productionComponents = Array.isArray(rawComponents) && rawComponents.length <= MAX_PRODUCTION_COMPONENTS
     ? rawComponents.map((item): ProductionComponent | null => isRecord(item)
@@ -109,7 +118,8 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   if ((pricingMode !== "margin" && pricingMode !== "markup") || (pricingMode === "markup" && rawInput.targetMarkupPercent === undefined)
     || !validNumber(targetMarkupPercent) || material === undefined || !numberFields.every((field) => validNumber(rawInput[field])) || !validNumber(batchQuantity) || !Number.isSafeInteger(batchQuantity) || batchQuantity < 1 || batchQuantity > MAX_BATCH_QUANTITY
     || !validNumber(batchFixedCost) || !Array.isArray(rawInput.additionalCosts) || rawInput.additionalCosts.length > 30
-    || productionComponents === null || productionComponents.some((component) => component === null)) {
+    || productionComponents === null || productionComponents.some((component) => component === null)
+    || filamentCosts === null || filamentCosts.some((filament) => filament === null)) {
     return { calculation: null, error: "Revise os valores do cálculo antes de salvar." };
   }
 
@@ -118,7 +128,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
     : null);
   if (additionalCosts.some((item) => item === null)) return { calculation: null, error: "Há componentes adicionais inválidos." };
 
-  const input = { ...Object.fromEntries(numberFields.map((field) => [field, rawInput[field]])), material, batchQuantity, batchFixedCost, productionComponents, pricingMode, targetMarkupPercent } as unknown as Omit<PrintCostInput, "additionalCosts">;
+  const input = { ...Object.fromEntries(numberFields.map((field) => [field, rawInput[field]])), material, batchQuantity, batchFixedCost, productionComponents, filamentCosts: filamentCosts as FilamentCost[], pricingMode, targetMarkupPercent } as unknown as Omit<PrintCostInput, "additionalCosts">;
   const channels = parsed.channels.map((item) => isRecord(item) && typeof item.id === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(item.id)
     && typeof item.name === "string" && item.name.trim().length <= 80
     && validNumber(item.feePercent) && item.feePercent < 100 && validNumber(item.fixedFee)

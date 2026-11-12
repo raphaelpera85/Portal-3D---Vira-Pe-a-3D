@@ -65,6 +65,20 @@ describe("calculatePrintPrice", () => {
     expect(result.channels[0].priceCents).toBe(600);
   });
 
+  it("prices imported filament colors separately and adds their rounded subtotals", () => {
+    const result = calculatePrintPrice({
+      ...sample,
+      filamentGrams: 20,
+      filamentCosts: [{ grams: 12, pricePerKg: 100 }, { grams: 8, pricePerKg: 200 }],
+      printHours: 0, averagePowerWatts: 0, machineCostPerHour: 0, depreciationPerHour: 0,
+      maintenancePerHour: 0, laborMinutes: 0, overheadPerUnit: 0, failureReservePercent: 0,
+      additionalCosts: [], targetMarginPercent: 25,
+    }, []);
+
+    expect(result.errors).toEqual([]);
+    expect(result.breakdown?.materialCents).toBe(280);
+  });
+
   it("calculates markup over unit cost and finds the smallest cent price per channel", () => {
     const result = calculatePrintPrice({ ...sample, pricingMode: "markup", targetMarkupPercent: 50, targetMarginPercent: 0 }, [
       { id: "direct", name: "Venda direta", feePercent: 0, fixedFee: 0 },

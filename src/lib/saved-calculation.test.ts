@@ -27,7 +27,7 @@ describe("mapThreeMfPlateToSlicerMetrics", () => {
     expect(mapThreeMfPlateToSlicerMetrics({
       index: 1, weightGrams: 25, printTimeSeconds: null, supportUsed: null,
       filaments: [{ color: null, type: "PLA", weightGrams: 12, lengthMeters: null }, { color: null, type: "PETG", weightGrams: null, lengthMeters: null }],
-    }, 1)).toMatchObject({ filamentGrams: 25, derivedMass: false, lengthMeters: null, filaments: [{ grams: 12 }] });
+    }, 1)).toMatchObject({ filamentGrams: 25, derivedMass: false, lengthMeters: null, filaments: [{ grams: 12 }, { grams: null }] });
   });
 });
 
