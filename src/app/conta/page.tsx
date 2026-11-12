@@ -55,6 +55,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                 {isAdmin && <Link className="button button-secondary" href="/admin/fabricantes">Revisar marketplace</Link>}
                 {isAdmin && <Link className="button button-secondary" href="/admin/designers">Revisar designers</Link>}
                 {isAdmin && <Link className="button button-secondary" href="/admin/denuncias-digitais">Denúncias digitais</Link>}
+                <Link className="button button-secondary" href="/suporte">Central de atendimento</Link>
               </div>
               <form action={signOutAction}><button className="button button-secondary" type="submit">Sair da conta</button></form>
             </section>

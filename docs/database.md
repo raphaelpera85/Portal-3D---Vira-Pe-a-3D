@@ -2,6 +2,8 @@
 
 A migração `supabase/migrations/20261112035854_foundation.sql` cria `profiles` e `user_roles` vinculados a `auth.users`.
 
+O atendimento está em `supabase/migrations/20261112064930_admin_support_inbox.sql`. Tickets e mensagens são visíveis somente ao usuário proprietário e aos administradores. Criação, resposta e mudança de status passam por RPCs transacionais `SECURITY DEFINER`; a sessão autenticada não recebe permissão direta de escrita nas tabelas. A exclusão da conta remove os tickets e mensagens vinculados.
+
 - O perfil nasce automaticamente quando uma conta Supabase é criada.
 - Usuários autenticados só podem ler o próprio perfil e os próprios papéis.
 - O usuário pode alterar somente `display_name` e `avatar_url`.

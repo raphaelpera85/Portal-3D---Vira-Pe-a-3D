@@ -79,6 +79,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
         <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
         <div className="account-heading maker-dashboard-heading"><p className="eyebrow">ÁREA DO FABRICANTE</p><h1>{store?.name ?? "Sua loja"}</h1><p>Cadastre rascunhos e acompanhe a análise de publicação.</p></div>
         {store && <p className="maker-finance-link"><Link className="button button-secondary" href="/painel/maker/financeiro">Abrir financeiro e pagamentos →</Link></p>}
+        <p className="maker-finance-link"><Link className="button button-secondary" href="/suporte">Central de atendimento →</Link></p>
         {!store ? <section className="account-card"><h2>Loja não encontrada</h2><p>Solicite a aprovação da sua conta ou fale com a equipe.</p></section> : (
           <>
             <section className="store-status-card"><span className={`store-status-dot status-${store.status}`} /> <div><strong>Status da loja: {store.status === "published" ? "Publicada" : store.status === "pending" ? "Aguardando aprovação" : "Suspensa"}</strong><p>{store.city ? `${store.city}${store.state_code ? ` · ${store.state_code}` : ""} · ` : ""}{store.description}</p></div></section>

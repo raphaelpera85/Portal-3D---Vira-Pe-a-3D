@@ -7,7 +7,7 @@ O `.env.local` é ignorado pelo `.gitignore` e guarda credenciais apenas na máq
 - Nenhuma chave `service_role` ou chave secreta está no código ou no `.env.example`.
 - Clientes SSR são criados por requisição; `src/proxy.ts` valida claims e propaga todos os cookies e cabeçalhos de cache emitidos pelo Supabase.
 - RLS restringe perfis e papéis ao usuário autenticado. Papéis não podem ser atribuídos pelo próprio usuário.
-- O catálogo limita leitura pública a registros publicados e escrita ao papel administrativo; as 51 migrações versionadas estão aplicadas ao projeto remoto `drblsfcahfniwusfblfw`.
+- O catálogo limita leitura pública a registros publicados e escrita ao papel administrativo; as 54 migrações versionadas estão aplicadas ao projeto remoto `drblsfcahfniwusfblfw`.
 - Arquivos `.env.local` e demais `.env*` são ignorados pelo Git.
 
 O fluxo público de conta usa Supabase Auth, valida os campos no servidor e não aceita papel enviado pelo usuário. O papel comprador é concedido pelo trigger `SECURITY DEFINER`; RLS impede o usuário de alterar seus papéis. Ações de orçamento exigem o papel comprador ou maker, e o banco confere a propriedade e a transição de estado dentro de funções `SECURITY DEFINER` com `search_path` vazio.
@@ -45,3 +45,5 @@ O formulário de reembolso exige maker autenticado e consentimento explícito. U
 O extrato financeiro exige papel `maker`, resolve a loja do usuário autenticado e filtra os pagamentos por `store_id`; além disso, a tabela mantém RLS para participantes. Não exibe dados do comprador nem trata o total menos a comissão como repasse efetivo: tarifas, saldo e liquidação permanecem no Mercado Pago.
 
 A RPC `get_admin_marketplace_metrics` só concede execução ao `service_role`. A página `/admin` confirma o papel administrativo na sessão antes de chamá-la usando o cliente privilegiado, mantido no servidor. A função retorna somente agregados; não entrega IDs, dados pessoais, tokens ou registros individuais.
+
+Tickets e mensagens de atendimento são privados ao titular e à equipe administrativa por RLS. A sessão autenticada pode apenas ler as conversas permitidas; as RPCs verificam papel e propriedade antes de inserir mensagens ou alterar estado. Mensagens têm limite de 5.000 caracteres e são renderizadas como texto. Não há anexos nem envio de cópias por e-mail nesta versão.

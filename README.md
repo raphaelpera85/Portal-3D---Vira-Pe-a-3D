@@ -38,6 +38,10 @@ Sem Supabase configurado, a vitrine apresenta exemplos. Com o backend configurad
 
 O OCR da calculadora está disponível para fabricantes autenticados quando Cloud Vision estiver configurado; capturas de tela são enviadas somente após consentimento e não são persistidas pelo portal. Consulte [docs/integrations.md](docs/integrations.md) para preparar o projeto no Google Cloud. Os resultados precisam ser conferidos antes de alimentar o cálculo.
 
+## Atendimento
+
+Compradores, fabricantes e designers podem abrir e acompanhar conversas privadas em `/suporte`. A equipe responde e atualiza o status pela caixa de entrada `/admin/atendimento`. Mensagens por e-mail, anexos e prazo de resposta ainda não estão integrados.
+
 ## Supabase
 
 Crie um projeto Supabase e preencha `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `SUPABASE_SECRET_KEY` em `.env.local`. A chave secreta é exclusiva do servidor e nunca deve ser compartilhada, versionada ou exposta no browser. Projetos que ainda usam a chave legada podem preencher `SUPABASE_SERVICE_ROLE_KEY`. Para aplicar migrações pela Supabase CLI, informe `SUPABASE_DB_URL` com a conexão direta e senha do banco; essa URL fica somente no `.env.local`, ignorado pelo Git. Na Vercel, cadastre as variáveis de runtime em **Project Settings → Environment Variables**; a plataforma usa as variáveis do projeto, não o arquivo local. O `.env.example` versionado contém nomes sem valores secretos.

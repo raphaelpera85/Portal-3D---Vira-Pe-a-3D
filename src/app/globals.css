@@ -560,6 +560,21 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .admin-review-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-review-card .button { min-height: 38px; padding-inline: 11px; font-size: 10px; cursor: pointer; }
 .admin-review-card-compact { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.support-ticket-card { display: grid; gap: 16px; }
+.support-ticket-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.support-ticket-heading h2 { margin: 6px 0; font-family: Georgia, serif; font-size: 23px; font-weight: 400; }
+.support-ticket-heading p { margin: 0; color: var(--muted); font-size: 10px; }
+.support-status-form { display: flex; align-items: end; gap: 8px; }
+.support-status-form label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
+.support-status-form select { min-height: 38px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); color: var(--ink); }
+.support-message-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.support-message { padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+.support-message.is-admin { border-color: color-mix(in srgb, var(--brand) 30%, var(--line)); background: var(--blue-wash); }
+.support-message > div { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 9px; }
+.support-message > div strong { color: var(--muted-strong); }
+.support-message time { flex: 0 0 auto; }
+.support-message p { margin: 8px 0 0; color: var(--ink); font-size: 11px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.support-reply-form { padding-top: 12px; border-top: 1px solid var(--line); }
 .admin-empty { margin: 0; padding: 18px; border: 1px dashed var(--line-strong); color: var(--muted); font-size: 12px; }
 .designer-directory { padding-bottom: 90px; }
 .designer-card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
@@ -607,6 +622,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .digital-report-card input { min-height: 38px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); color: var(--ink); }
 @media (max-width: 680px) {
   .admin-review-card, .admin-review-card-compact { grid-template-columns: 1fr; }
+  .support-ticket-heading { flex-direction: column; }
+  .support-status-form { width: 100%; align-items: stretch; flex-direction: column; }
   .admin-section-title { align-items: flex-start; flex-direction: column; gap: 0; }
   .admin-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .maker-product-inventory { grid-template-columns: 1fr; }

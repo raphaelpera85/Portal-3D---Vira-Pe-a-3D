@@ -56,11 +56,12 @@ flowchart LR
 - `/visualizador` lê arquivos STL, OBJ, 3MF, GLB e GLTF localmente no navegador; compradores podem salvar conjuntos validados no Supabase Storage privado e reabri-los depois. `/calculadora` estima custos e preços por canal; makers salvam snapshots privados e, se Cloud Vision estiver configurado, leem capturas de tela com consentimento.
 - O histórico de custos pode ser associado a um anúncio e ao equipamento principal da própria loja sem alterar o snapshot recalculado; os vínculos são validados no servidor e na política RLS.
 - `/admin` reúne indicadores brutos do marketplace, contagens das filas pendentes (fabricantes, lojas, anúncios, perfis, designers, denúncias, avaliações e sugestões de impressora) e atalhos para as ferramentas administrativas existentes. As filas usam a sessão autenticada e as políticas RLS; a RPC financeira é acessada pelo servidor após verificar papel admin e só pode ser executada com `service_role`.
+- Compradores, fabricantes e designers abrem tickets privados em `/suporte`, acompanham mensagens e respondem; administradores gerenciam status e respondem em `/admin/atendimento`, com contagem de pendências no painel administrativo.
 
 ## Limites atuais
 
-- As 53 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
-- Preços e estoque por SKU, cotação automática de frete, compra de etiquetas, atualização automática de rastreio, cupons e atendimento não estão conectados. O endereço é compartilhado com a loja, mas não é enviado a um serviço de logística.
+- As 54 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
+- Preços e estoque por SKU, cotação automática de frete, compra de etiquetas, atualização automática de rastreio e cupons ainda estão pendentes. O atendimento atual funciona como caixa de entrada interna; alertas por e-mail/WhatsApp, anexos e SLA ainda não estão integrados. O endereço é compartilhado com a loja, mas não é enviado a um serviço de logística.
 - Lembretes de manutenção dependem de o fabricante registrar datas/horímetros; o portal não infere intervalos nem apresenta recomendações do fabricante do equipamento.
 - Banners aceitam mídia HTTPS externa com carregamento tardio e texto alternativo; upload gerenciado e otimização de imagem ainda não estão conectados.
 - O visualizador não preserva atribuições reais de filamento por cor nem importa resultados de fatiamento. O OCR da calculadora depende de Cloud Vision configurado e reconhecimento de rótulos comuns; imagens e texto OCR não entram no histórico.
@@ -76,4 +77,4 @@ flowchart LR
 4. Integrar cotação de frete ao checkout e validar pagamentos sandbox antes de qualquer cobrança real.
 5. Implementar cotação e rastreio de frete por loja.
 6. Criar pedidos de impressão associados aos arquivos privados e histórico persistente da calculadora.
-7. Completar o painel administrativo com indicadores financeiros confiáveis, atendimento, relatórios e auditoria.
+7. Completar o painel administrativo com conciliação financeira, relatórios detalhados e auditoria.

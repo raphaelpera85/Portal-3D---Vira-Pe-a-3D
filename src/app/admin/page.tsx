@@ -23,7 +23,7 @@ export default async function AdminPage() {
   if (!actor.supabase || !actor.authorized) redirect("/conta");
 
   const metricsAdmin = createSupabaseAdminClient();
-  const [metricsResult, applications, stores, products, printProfiles, designers, reports, reviews, printerSuggestions] = await Promise.all([
+  const [metricsResult, applications, stores, products, printProfiles, designers, reports, reviews, printerSuggestions, supportTickets] = await Promise.all([
     metricsAdmin ? metricsAdmin.rpc("get_admin_marketplace_metrics") : Promise.resolve({ data: null, error: new Error("Admin database key is not configured") }),
     actor.supabase.from("maker_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
     actor.supabase.from("stores").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -33,6 +33,7 @@ export default async function AdminPage() {
     actor.supabase.from("digital_asset_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
     actor.supabase.from("marketplace_reviews").select("id", { count: "exact", head: true }).eq("status", "pending"),
     actor.supabase.from("printer_model_suggestions").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    actor.supabase.from("support_tickets").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress", "waiting_user"]),
   ]);
 
   const queues = [
@@ -44,6 +45,7 @@ export default async function AdminPage() {
     { label: "Denúncias de conteúdo", href: "/admin/denuncias-digitais", result: reports },
     { label: "Avaliações para moderar", href: "/admin/avaliacoes", result: reviews },
     { label: "Sugestões de impressoras", href: "/admin/catalogos/impressoras", result: printerSuggestions },
+    { label: "Atendimentos pendentes", href: "/admin/atendimento", result: supportTickets },
   ];
   const metrics = metricsResult.data?.[0];
   const metricCards = [
@@ -89,6 +91,7 @@ export default async function AdminPage() {
         <Link className="button button-secondary" href="/admin/catalogos/bicos">Bicos e compatibilidade</Link>
         <Link className="button button-secondary" href="/admin/avaliacoes">Moderação de avaliações</Link>
         <Link className="button button-secondary" href="/admin/denuncias-digitais">Denúncias de conteúdo</Link>
+        <Link className="button button-secondary" href="/admin/atendimento">Central de atendimento</Link>
       </nav>
     </section>
   </main></>;
