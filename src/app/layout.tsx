@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body>
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {`try { if (localStorage.getItem("virapeca-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch {}`}

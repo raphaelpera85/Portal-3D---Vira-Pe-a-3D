@@ -19,7 +19,11 @@ Copie `.env.example` para `.env.local` e preencha a URL, a chave publicável e a
 npm test
 npm run typecheck
 npm run build
+npx playwright install chromium
+npm run test:e2e
 ```
+
+Os testes de ponta a ponta iniciam o Next.js localmente em `127.0.0.1:3100` e validam a navegação do catálogo e a largura do visualizador em celular.
 
 ## Estrutura
 
