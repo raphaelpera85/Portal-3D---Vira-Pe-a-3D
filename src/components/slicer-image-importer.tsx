@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ImageUp, LoaderCircle } from "lucide-react";
 import { MAX_SLICER_OCR_IMAGE_BYTES, MAX_SLICER_OCR_IMAGES, MAX_SLICER_OCR_TOTAL_BYTES } from "@/lib/ocr-image-validation";
-import { slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
+import { confirmSlicerOcrCostCurrency, slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 
 type Extraction = ReturnType<typeof parseSlicerOcrTexts>;
 
@@ -34,6 +34,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [extraction, setExtraction] = useState<Extraction | null>(null);
+  const [costCurrencyChoice, setCostCurrencyChoice] = useState<"" | "BRL" | "USD" | "ignore">("");
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
 
@@ -41,6 +42,8 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
     const validation = validateFiles(nextFiles);
     setFiles(validation ? [] : nextFiles);
     setExtraction(null);
+    setCostCurrencyChoice("");
+    setAgreed(false);
     setStatus("");
     setError(validation ?? "");
   }
@@ -52,6 +55,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
     setLoading(true);
     setError("");
     setStatus("");
+    setAgreed(false);
     try {
       const form = new FormData();
       files.forEach((file) => form.append("images", file));
@@ -59,6 +63,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
       const data = await response.json().catch(() => null) as { extraction?: Extraction; error?: string } | null;
       if (!response.ok || !data?.extraction) throw new Error(errorMessage(data?.error ?? "ocr_provider_failed"));
       setExtraction(data.extraction);
+      setCostCurrencyChoice("");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível ler as imagens.");
     } finally {
@@ -68,9 +73,16 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
 
   function apply() {
     if (!extraction) return;
-    const applied = onApply(extraction);
+    const reviewed = confirmSlicerOcrCostCurrency(extraction, costCurrencyChoice);
+    if (!reviewed) {
+      setError("Confirme a moeda do custo reconhecido ou escolha não usar esse valor.");
+      return;
+    }
+    const applied = onApply(reviewed);
     if (applied !== null) setStatus(applied ? "Dados reconhecidos adicionados à revisão. Confira tudo antes de calcular." : "Nenhum valor seguro para preencher; confira os dados reconhecidos ou informe manualmente.");
   }
+
+  const needsCostCurrencyChoice = extraction?.estimatedCost != null && extraction.estimatedCostCurrency == null;
 
   return <section className="price-card slicer-ocr-card" aria-labelledby="slicer-ocr-title">
     <div className="price-card-heading"><span className="price-step"><ImageUp size={15} aria-hidden="true" /></span><div><h2 id="slicer-ocr-title">Ler imagem do fatiador</h2><p>Extraia peso, tempo e outras informações para revisar antes de usar no cálculo.</p></div></div>
@@ -92,8 +104,10 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
           <div><dt>Comprimento</dt><dd>{extraction.lengthMeters == null ? "Não identificado" : `${extraction.lengthMeters.toLocaleString("pt-BR")} m`}</dd></div>
           <div><dt>Tempo</dt><dd>{extraction.printHours == null ? "Não identificado" : `${extraction.printHours.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} h`}</dd></div>
           <div><dt>Trocas</dt><dd>{extraction.filamentChanges ?? "Não identificado"}</dd></div>
-          <div><dt>Custo reconhecido</dt><dd>{extraction.estimatedCost == null ? "Não identificado" : `${extraction.estimatedCost.toLocaleString("pt-BR")} ${extraction.estimatedCostCurrency ?? "· moeda não identificada"} · confira no fatiador`}</dd></div>
+          <div><dt>Custo reconhecido</dt><dd>{extraction.estimatedCost == null ? "Não identificado" : `${extraction.estimatedCost.toLocaleString("pt-BR")} ${extraction.estimatedCostCurrency ?? (costCurrencyChoice === "ignore" ? "· será ignorado" : costCurrencyChoice || "· moeda não identificada")} · confira no fatiador`}</dd></div>
         </dl>
+        {extraction.estimatedCost != null && <p className="price-ocr-note">O custo mostrado pelo fatiador é apenas referência; ele não é somado automaticamente ao cálculo do portal.</p>}
+        {needsCostCurrencyChoice && <label className="price-ocr-currency">Confirme a moeda do custo reconhecido<select value={costCurrencyChoice} onChange={(event) => { const value = event.target.value; setCostCurrencyChoice(value === "BRL" || value === "USD" || value === "ignore" ? value : ""); setError(""); }}><option value="">Selecione a moeda</option><option value="BRL">Real brasileiro (BRL)</option><option value="USD">Dólar americano (USD)</option><option value="ignore">Não usar esse custo</option></select></label>}
         {extraction.filaments.length > 0 && <div className="price-ocr-filaments"><strong>Consumo por filamento</strong><ul>{extraction.filaments.map((filament) => {
           const color = slicerColorPresentation(filament.color);
           return (
@@ -107,7 +121,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
         {(extraction.purgeGrams != null || extraction.wipeTowerGrams != null) && <p className="price-ocr-note">Confira se purga e torre já estão incluídas no peso total do fatiador antes de usar o consumo no cálculo; o portal não as soma novamente.</p>}
         {extraction.conflicts.length > 0 && <p className="price-ocr-conflict" role="alert">Valores divergentes entre imagens: {extraction.conflicts.join(", ")}. Eles foram deixados sem preenchimento.</p>}
         {extraction.text && <details className="price-ocr-text"><summary>Conferir texto reconhecido</summary><pre>{extraction.text}</pre></details>}
-        <button className="button button-primary" type="button" onClick={apply}>Revisar e preencher dados</button>
+        <button className="button button-primary" type="button" onClick={apply} disabled={needsCostCurrencyChoice && !costCurrencyChoice}>Revisar e preencher dados</button>
       </div>}
     </>}
   </section>;

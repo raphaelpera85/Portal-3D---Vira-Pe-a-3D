@@ -1077,6 +1077,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .slicer-ocr-card .price-card-heading { margin-bottom: 0; }
 .price-ocr-file { display: grid; gap: 7px; color: var(--muted-strong); font-size: 9px; font-weight: 700; }
 .price-ocr-file input { max-width: 100%; min-height: 38px; padding: 7px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
+.price-ocr-currency { display: grid; gap: 6px; max-width: 320px; color: var(--muted-strong); font-size: 9px; font-weight: 700; }
+.price-ocr-currency select { min-height: 38px; padding: 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
 .price-ocr-file small, .price-ocr-note { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
 .price-ocr-consent { display: flex; align-items: flex-start; gap: 8px; color: var(--muted-strong); font-size: 9px; line-height: 1.5; cursor: pointer; }
 .price-ocr-consent input { width: 15px; height: 15px; flex: 0 0 15px; margin: 1px 0 0; accent-color: var(--brand); }

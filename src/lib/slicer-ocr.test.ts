@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasReviewableSlicerOcrData, parseSlicerOcrTexts, slicerColorPresentation } from "./slicer-ocr";
+import { confirmSlicerOcrCostCurrency, hasReviewableSlicerOcrData, parseSlicerOcrTexts, slicerColorPresentation } from "./slicer-ocr";
 
 describe("parseSlicerOcrTexts", () => {
   it("presents recognized color names safely and keeps hex swatches intact", () => {
@@ -34,6 +34,20 @@ describe("parseSlicerOcrTexts", () => {
     expect(parseSlicerOcrTexts(["Estimated cost: R$ 16,79"]).estimatedCostCurrency).toBe("BRL");
     expect(parseSlicerOcrTexts(["Estimated cost: USD 2.30"]).estimatedCostCurrency).toBe("USD");
     expect(parseSlicerOcrTexts(["Estimated cost: $2.30"]).estimatedCostCurrency).toBeNull();
+  });
+
+  it("requires a currency choice before retaining an unlabelled cost and can discard it", () => {
+    const extraction = parseSlicerOcrTexts(["OrcaSlicer\nEstimated cost: 16,79"]);
+    expect(confirmSlicerOcrCostCurrency(extraction, "")).toBeNull();
+    expect(confirmSlicerOcrCostCurrency(extraction, "BRL")).toMatchObject({ estimatedCost: 16.79, estimatedCostCurrency: "BRL" });
+    expect(confirmSlicerOcrCostCurrency(extraction, "ignore")).toMatchObject({ estimatedCost: null, estimatedCostCurrency: null });
+    expect(confirmSlicerOcrCostCurrency(extraction, "EUR")).toBeNull();
+  });
+
+  it("clears a currency conflict only after the user confirms the cost currency", () => {
+    const extraction = parseSlicerOcrTexts(["Cost: 10 BRL", "Cost: 10 USD"]);
+    expect(extraction.conflicts).toContain("moeda do custo");
+    expect(confirmSlicerOcrCostCurrency(extraction, "USD")?.conflicts).not.toContain("moeda do custo");
   });
 
   it("preserves full names for the filament and resin products in the technical catalog", () => {

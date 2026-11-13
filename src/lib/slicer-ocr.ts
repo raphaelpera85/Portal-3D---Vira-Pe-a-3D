@@ -232,3 +232,18 @@ export function hasReviewableSlicerOcrData(extraction: ReturnType<typeof parseSl
     extraction.estimatedCost].some((value) => value !== null)
     || extraction.materials.length > 0 || extraction.filaments.length > 0 || extraction.conflicts.length > 0;
 }
+
+export function confirmSlicerOcrCostCurrency(
+  extraction: ReturnType<typeof parseSlicerOcrTexts>,
+  choice: unknown,
+) {
+  if (extraction.estimatedCost === null || extraction.estimatedCostCurrency !== null) return extraction;
+  if (choice !== "BRL" && choice !== "USD" && choice !== "ignore") return null;
+  const currency: "BRL" | "USD" | null = choice === "BRL" ? "BRL" : choice === "USD" ? "USD" : null;
+  return {
+    ...extraction,
+    estimatedCost: currency === null ? null : extraction.estimatedCost,
+    estimatedCostCurrency: currency,
+    conflicts: extraction.conflicts.filter((conflict) => conflict !== "moeda do custo"),
+  };
+}
