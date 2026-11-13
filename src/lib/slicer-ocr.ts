@@ -50,6 +50,7 @@ function parseNumber(value: string) {
 
 function findMeasurement(lines: string[], labels: string, units: string, normalize: (value: number, unit: string) => number, exclude?: RegExp) {
   const expression = new RegExp(`${numberPattern}\\s*(${units})\\b`, "i");
+  const bracketedUnit = new RegExp(`\\[\\s*(${units})\\s*\\]\\s*[:=]\\s*${numberPattern}`, "i");
   const currencyPrefix = units.includes("r\\$") ? String.raw`(?:R\$|US\$|BRL|USD|\$)\s*` : "";
   const standalone = new RegExp(`^\\s*[:=\\-–]?\\s*${currencyPrefix}${numberPattern}\\s*(${units})\\b\\s*$`, "i");
   for (let index = 0; index < lines.length; index++) {
@@ -59,9 +60,10 @@ function findMeasurement(lines: string[], labels: string, units: string, normali
     if (!label) continue;
     const after = line.slice(label.index + label[0].length);
     const match = expression.exec(after) ?? expression.exec(line.slice(0, label.index)) ?? standalone.exec(lines[index + 1] ?? "");
-    if (!match) continue;
-    const value = parseNumber(match[1]);
-    if (Number.isFinite(value) && value >= 0) return normalize(value, match[2].toLowerCase());
+    const bracketedMatch = match ? null : bracketedUnit.exec(after);
+    const value = match ? parseNumber(match[1]) : bracketedMatch ? parseNumber(bracketedMatch[2]) : NaN;
+    const unit = match?.[2] ?? bracketedMatch?.[1];
+    if (unit && Number.isFinite(value) && value >= 0) return normalize(value, unit.toLowerCase());
   }
   return null;
 }
@@ -107,11 +109,15 @@ function findPrintHours(lines: string[]) {
     const clock = /\b(\d{1,3}):(\d{1,2})\b/.exec(tail);
     if (clock) return Number(clock[1]) + Number(clock[2]) / 60;
     const compound = /(?:(\d+(?:[.,]\d+)?)\s*d(?:ays?)?\s*)?(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?(?:\s*(\d+(?:[.,]\d+)?)\s*m?(?:in(?:utes?)?)?)?|(?:(\d+(?:[.,]\d+)?)\s*m(?:in(?:utes?)?)?))/i.exec(tail);
-    if (!compound) continue;
+    const seconds = /(?<![\d.,])(\d+(?:[.,]\d+)?)\s*s(?:ec(?:ond)?s?)?\b/i.exec(tail);
+    if (!compound) {
+      if (seconds) return parseNumber(seconds[1]) / 3600;
+      continue;
+    }
     const days = compound[1] ? parseNumber(compound[1]) : 0;
     const hours = compound[2] ? parseNumber(compound[2]) : 0;
     const minutes = compound[3] ? parseNumber(compound[3]) : compound[4] ? parseNumber(compound[4]) : 0;
-    return days * 24 + hours + minutes / 60;
+    return days * 24 + hours + minutes / 60 + (seconds ? parseNumber(seconds[1]) / 3600 : 0);
   }
   return null;
 }
@@ -133,7 +139,7 @@ function findCostCurrency(lines: string[]): "BRL" | "USD" | null {
 function parseOne(text: string) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
-  const length = findMeasurement(lines, String.raw`(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value);
+  const length = findMeasurement(lines, String.raw`(?:(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?|filament\s+used)`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value);
   const cost = findCost(lines);
   const materials = [...new Set(lines.flatMap((line) => {
     const match = new RegExp(`(?<![a-z0-9])${materialPattern}(?![a-z0-9])`, "i").exec(line);

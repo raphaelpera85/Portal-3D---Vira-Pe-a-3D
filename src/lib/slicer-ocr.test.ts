@@ -21,6 +21,20 @@ describe("parseSlicerOcrTexts", () => {
     expect(result).toMatchObject({ slicer: "OrcaSlicer", modelGrams: 211.63, supportGrams: 12.17, totalGrams: 223.8, filamentGrams: 223.8, lengthMeters: 75.65, printHours: 13 + 40 / 60, filamentChanges: 1, materials: ["PLA"], estimatedCost: 16.799 });
   });
 
+  it("reads OrcaSlicer G-code statistics with bracketed units before values", () => {
+    const result = parseSlicerOcrTexts([`OrcaSlicer
+; filament used [mm] = 1182.01
+; filament used [g] = 3.53
+; filament cost = 14.10
+; estimated printing time (normal mode) = 23m 46s`]);
+
+    expect(result).toMatchObject({
+      slicer: "OrcaSlicer", lengthMeters: 1.18201, totalGrams: 3.53, filamentGrams: 3.53,
+      estimatedCost: 14.1, estimatedCostCurrency: null, printHours: 23 / 60 + 46 / 3600,
+    });
+    expect(parseSlicerOcrTexts(["OrcaSlicer\nPrint time: 45s"]).printHours).toBe(45 / 3600);
+  });
+
   it("reads values placed on the line after their labels in slicer summaries", () => {
     const result = parseSlicerOcrTexts(["Anycubic Slicer Next\nModel\n211,63 g\nSupports\n12,17 g\nTotal filament\n223,80 g\nFilament length\n75,65 m\nPrint time\n13h40\nFilament changes\n1\nEstimated cost\nR$ 16,799"]);
     expect(result).toMatchObject({
