@@ -8,7 +8,7 @@ import { exportPrintCalculationCsv } from "@/lib/pricing-export";
 import { deriveEquipmentRates, type EquipmentRateInput } from "@/lib/printer-equipment";
 import { evaluateMaterialCompatibility, type CatalogPrinter } from "@/lib/compatibility";
 import type { MaterialEntry, NozzleEntry } from "@/lib/technical-catalog";
-import { deleteMakerCalculation, saveMakerCalculation } from "@/app/calculadora/actions";
+import { applyCalculatedProductPrice, deleteMakerCalculation, saveMakerCalculation } from "@/app/calculadora/actions";
 import { createMakerConsignmentItem } from "@/app/painel/maker/actions";
 import { MAX_CONSIGNMENT_QUANTITY } from "@/lib/consignment";
 import { SlicerImageImporter } from "@/components/slicer-image-importer";
@@ -25,7 +25,7 @@ type ChannelFields = Omit<SalesChannel, "feePercent" | "fixedFee" | "logisticsCo
 type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
 type CalculatorEquipment = EquipmentRateInput & { id: string; label: string; catalogPrinter?: CatalogPrinter | null };
-type CalculatorProduct = { id: string; name: string; slug: string; published: boolean };
+export type CalculatorProduct = { id: string; name: string; slug: string; published: boolean; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; canApplyPrice: boolean };
 type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics };
 type CalculatorMaterial = MaterialEntry;
 type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string };
@@ -119,11 +119,13 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const [calculationTitle, setCalculationTitle] = useState("");
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedPriceProductId, setSelectedPriceProductId] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [profileApplyNotice, setProfileApplyNotice] = useState("");
   const [slicerMetrics, setSlicerMetrics] = useState<SavedSlicerMetrics | null>(null);
   const [calculationOrigin, setCalculationOrigin] = useState<CalculationOrigin>("manual");
   const [saveState, saveAction, saving] = useActionState(saveMakerCalculation, { message: "", success: false });
+  const [priceApplyState, applyPriceAction, applyingPrice] = useActionState(applyCalculatedProductPrice, { message: "", success: false });
   const parsedChannels: SalesChannel[] = channels.map((channel) => ({
     ...channel,
     feePercent: numberValue(channel.feePercent),
@@ -176,6 +178,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const consignmentChannelInput = channels.find((channel) => channel.id === "consignacao");
   const consignmentPrice = result.channels.find((channel) => channel.id === "consignacao");
   const consignmentProduct = products.find((product) => product.id === selectedProductId && product.published);
+  const priceProduct = products.find((product) => product.id === selectedPriceProductId && product.canApplyPrice);
   const consignmentQuantity = numberValue(fields.batchQuantity);
   const canRegisterConsignment = canSaveCalculations && result.errors.length === 0 && hasProductionCost
     && consignmentQuantity <= MAX_CONSIGNMENT_QUANTITY && Boolean(consignmentChannelInput?.feePercent !== "")
@@ -511,6 +514,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             ].map(([label, value]) => <div className="price-breakdown-row" key={String(label)}><span>{label}</span><strong>{hasProductionCost ? money(value as number) : "—"}</strong></div>)}
           </div>
           <div className="price-scenario-heading"><h2>Preço unitário por canal</h2><span>{pricingMode === "markup" ? "markup" : "margem"}: {(pricingMode === "markup" ? fields.targetMarkupPercent : fields.targetMarginPercent) ? `${pricingMode === "markup" ? fields.targetMarkupPercent : fields.targetMarginPercent}%` : "—"}</span></div>
+          {canSaveCalculations && products.some((product) => product.canApplyPrice) && <label className="price-apply-product"><span>Aplicar um preço calculado a um anúncio</span><select value={selectedPriceProductId} onChange={(event) => setSelectedPriceProductId(event.target.value)}><option value="">Selecione um produto físico sem variações</option>{products.filter((product) => product.canApplyPrice).map((product) => <option key={product.id} value={product.id}>{product.name} · {product.published ? "publicado" : "rascunho"} · atual {money(product.priceBrl == null ? null : Math.round(product.priceBrl * 100))}</option>)}</select><small>O preço de lista será atualizado; descontos configurados no canal continuam simulados à parte.</small></label>}
           <div className="price-scenario-list">
             {channels.map((channel) => {
               const scenario = result.channels.find((item) => item.id === channel.id);
@@ -520,9 +524,20 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
               return <article className="price-scenario" key={channel.id}>
                 <div className="price-scenario-top"><span>{channel.name || "Canal sem nome"}</span><strong>{ready && !result.errors.length ? money(scenario?.priceCents) : "—"}</strong></div>
                 <p>{ready && scenario?.profitCents != null ? `Desconto ${money(scenario.discountCents)} · logística ${money(scenario.logisticsCostCents)} · lucro ${money(scenario.profitCents)} · margem ${scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%${pricingMode === "markup" && actualMarkup ? ` · markup ${actualMarkup}%` : ""}` : "Informe a meta e as taxas deste canal."}</p>
+                {priceProduct && scenario?.priceCents != null && !result.errors.length && <form action={applyPriceAction} onSubmit={(event) => {
+                  if (priceProduct.published && !window.confirm(`Atualizar o preço publicado de “${priceProduct.name}” de ${money(Math.round((priceProduct.priceBrl ?? 0) * 100))} para ${money(scenario.priceCents)}?`)) event.preventDefault();
+                  else if (priceProduct.published) event.currentTarget.querySelector<HTMLInputElement>('input[name="confirmedPublishedPrice"]')!.value = "yes";
+                }}>
+                  <input type="hidden" name="productId" value={priceProduct.id} />
+                  <input type="hidden" name="priceCents" value={scenario.priceCents} />
+                  <input type="hidden" name="expectedPriceCents" value={Math.round((priceProduct.priceBrl ?? 0) * 100)} />
+                  <input type="hidden" name="confirmedPublishedPrice" value="" />
+                  <button className="price-apply-button" type="submit" disabled={applyingPrice || Math.round((priceProduct.priceBrl ?? 0) * 100) === scenario.priceCents}>{applyingPrice ? "Aplicando…" : Math.round((priceProduct.priceBrl ?? 0) * 100) === scenario.priceCents ? "Preço já aplicado" : "Aplicar no anúncio"}</button>
+                </form>}
               </article>;
             })}
           </div>
+          {priceApplyState.message && <p className={`auth-notice ${priceApplyState.success ? "is-success" : "is-error"}`} role="status">{priceApplyState.message}</p>}
           <p className="price-disclaimer">Estimativa manual: não inclui impostos, frete cobrado à parte, tarifas não informadas ou custos de produção não preenchidos.</p>
           {canRegisterConsignment && consignmentChannel && consignmentPrice?.priceCents != null && result.unitCostCents != null && <form action={createMakerConsignmentItem} className="consignment-create-form calculator-consignment-form">
             <div><p className="eyebrow">PRÓXIMO PASSO</p><h3>Registrar preço em consignação</h3><p>Usa o custo, a comissão e o preço calculado deste canal. A venda e o repasse continuam sendo registrados manualmente.</p></div>

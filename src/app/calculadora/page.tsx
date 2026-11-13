@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PriceCalculator } from "@/components/price-calculator";
+import { PriceCalculator, type CalculatorProduct } from "@/components/price-calculator";
 import { SiteHeader } from "@/components/site-header";
 import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
@@ -22,7 +22,7 @@ export default async function CalculatorPage() {
   const canUseOcr = Boolean(actor.supabase && actor.user && actor.authorized);
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
   let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string; catalogPrinterId: string | null }> = [];
-  let products: Array<{ id: string; name: string; slug: string; published: boolean }> = [];
+  let products: CalculatorProduct[] = [];
   let profiles: Array<{ id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics }> = [];
   let equipmentNotice: string | null = null;
   let productNotice: string | null = null;
@@ -40,7 +40,7 @@ export default async function CalculatorPage() {
           .eq("store_id", store.id).neq("operational_status", "inactive").order("nickname"),
         actor.supabase.from("maker_cost_calculations").select("id, title, input_snapshot, product_id, printer_id, profile_id, created_at")
           .eq("store_id", store.id).order("created_at", { ascending: false }).limit(20),
-        actor.supabase.from("marketplace_products").select("id, name, slug, catalog_status")
+        actor.supabase.from("marketplace_products").select("id, name, slug, catalog_status, listing_type, price_mode, price_brl, product_properties")
           .eq("store_id", store.id).order("name"),
         actor.supabase.from("maker_print_profiles").select("id, product_id, profile_name, quantity, material_snapshot, print_hours, material_grams, material_by_color, maker_printer_id")
           .eq("store_id", store.id).order("profile_name"),
@@ -70,7 +70,21 @@ export default async function CalculatorPage() {
         energyTariffPerKwh: printer.energy_tariff_per_kwh, maintenanceCostBrl: maintenanceCosts.get(printer.id) ?? null,
         accumulatedHours: printer.accumulated_hours, catalogPrinterId: printer.catalog_model_id,
       }));
-      products = (productResult.data ?? []).map((product) => ({ id: product.id, name: product.name, slug: product.slug, published: product.catalog_status === "published" }));
+      products = (productResult.data ?? []).map((product) => {
+        const properties = product.product_properties && typeof product.product_properties === "object" && !Array.isArray(product.product_properties)
+          ? product.product_properties as Record<string, unknown> : {};
+        const options = properties.variant_options;
+        const hasVariants = options !== null && typeof options === "object" && !Array.isArray(options) && Object.keys(options).length > 0;
+        const priceMode = product.price_mode as CalculatorProduct["priceMode"];
+        const listingType = product.listing_type as CalculatorProduct["listingType"];
+        const published = product.catalog_status === "published";
+        const priceBrl = product.price_brl == null ? null : Number(product.price_brl);
+        return {
+          id: product.id, name: product.name, slug: product.slug, published, listingType, priceMode, priceBrl,
+          canApplyPrice: (product.catalog_status === "draft" || published) && listingType === "physical"
+            && (priceMode === "fixed" || priceMode === "from") && !hasVariants && Number.isFinite(priceBrl) && (priceBrl ?? 0) > 0,
+        };
+      });
       const makerProfiles = (profileResult.data ?? []).map((profile) => ({
         id: profile.id, name: profile.profile_name, productId: profile.product_id, quantity: profile.quantity,
         materialName: profile.material_snapshot, printHours: profile.print_hours == null ? null : Number(profile.print_hours),

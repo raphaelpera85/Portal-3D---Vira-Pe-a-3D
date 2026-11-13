@@ -11,7 +11,7 @@ A rota `/calculadora` calcula um lote por vez no navegador. O cálculo manual fu
 - Tempo de impressão, potência média medida e tarifa por kWh.
 - Custo operacional da máquina, depreciação e manutenção por hora.
 - Tempo e valor da mão de obra, custos fixos rateados, componentes e reserva para falhas.
-- Método de precificação: margem sobre preço de venda ou markup sobre custo unitário; taxas percentuais, taxas fixas, custo logístico e desconto percentual ou fixo informados por canal. A calculadora traz venda direta, ViraPeça 3D, Shopee, Mercado Livre, atacado e consignação sem taxas presumidas; também aceita canais personalizados. O preço calculado no canal de consignação pode iniciar o registro de um lote no controle comercial.
+- Método de precificação: margem sobre preço de venda ou markup sobre custo unitário; taxas percentuais, taxas fixas, custo logístico e desconto percentual ou fixo informados por canal. A calculadora traz venda direta, ViraPeça 3D, Shopee, Mercado Livre, atacado e consignação sem taxas presumidas; também aceita canais personalizados. O preço de um canal pode ser aplicado a um anúncio físico sem variações da própria loja. Anúncios publicados pedem confirmação e a atualização confere se o preço atual não mudou desde que o formulário foi carregado. Produtos com variações, digitais ou sob orçamento continuam sendo atualizados no painel do fabricante. O preço calculado no canal de consignação pode iniciar o registro de um lote no controle comercial.
 
 ## Cálculo
 

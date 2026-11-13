@@ -1133,6 +1133,12 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .price-scenario-top { display: flex; align-items: center; justify-content: space-between; gap: 9px; font-size: 9px; }
 .price-scenario-top strong { color: var(--brand); font-family: Georgia, serif; font-size: 18px; font-weight: 400; }
 .price-scenario p { margin: 3px 0 0; color: var(--muted); font-size: 8px; }
+.price-apply-product { display: grid; gap: 5px; margin-top: 12px; color: var(--muted-strong); font-size: 9px; font-weight: 700; }
+.price-apply-product select { width: 100%; min-height: 38px; padding: 0 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--ink); font-size: 10px; }
+.price-apply-product small { color: var(--muted); font-size: 8px; font-weight: 400; line-height: 1.45; }
+.price-apply-button { margin-top: 7px; padding: 7px 10px; border: 1px solid var(--brand); border-radius: 4px; background: var(--paper); color: var(--brand); font-size: 9px; font-weight: 700; cursor: pointer; }
+.price-apply-button:hover:not(:disabled) { background: var(--brand); color: #fff; }
+.price-apply-button:disabled { opacity: .55; cursor: default; }
 .price-history { display: grid; gap: 16px; margin-top: 18px; padding: 22px; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 8px 28px var(--shadow-wash); }
 .price-history-heading h2 { margin: 3px 0; font-family: Georgia, serif; font-size: 27px; font-weight: 400; }
 .price-history-heading .eyebrow { margin: 0; }
