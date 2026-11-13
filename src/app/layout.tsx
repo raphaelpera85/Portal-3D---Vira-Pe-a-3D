@@ -7,7 +7,7 @@ const siteUrl = getSiteUrl();
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 
 export const metadata: Metadata = {
-  ...(siteUrl ? { metadataBase: siteUrl } : {}),
+  metadataBase: siteUrl ?? new URL("https://virapeca3d.vercel.app"),
   title: "ViraPeça 3D — Sua ideia vira realidade",
   description:
     "Encontre peças feitas por fabricantes independentes ou transforme seu modelo 3D em uma peça real.",
