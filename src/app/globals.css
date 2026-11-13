@@ -357,6 +357,8 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .favorite-card-copy p, .favorite-unavailable p { margin: 0; color: var(--muted); font-size: 12px; }
 .favorite-unavailable { min-height: 160px; grid-column: 1 / -1; padding: 22px; }
 .favorite-unavailable > .favorite-form { top: 18px; right: 18px; }
+.favorite-recommendations { margin-top: 56px; }
+.favorite-recommendations .section-heading { margin-bottom: 22px; }
 .art-blue { background: color-mix(in srgb, var(--blue-wash) 55%, var(--surface)); }
 .art-green { background: color-mix(in srgb, var(--green-light) 13%, var(--surface)); }
 .art-sand { background: color-mix(in srgb, var(--sand) 50%, var(--surface)); }

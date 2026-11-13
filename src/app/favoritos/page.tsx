@@ -7,6 +7,7 @@ import { ProductIllustration } from "@/components/product-illustration";
 import { SiteHeader } from "@/components/site-header";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { mapMarketplaceProduct } from "@/lib/marketplace-data";
+import { loadFavoriteProductRecommendations } from "@/lib/marketplace.server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Favoritos | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -19,7 +20,7 @@ export default async function FavoritesPage() {
     .eq("buyer_id", actor.user.id).order("created_at", { ascending: false });
   const favoriteIds = favoritesResult.data?.map((item) => item.product_id) ?? [];
   const productsResult = favoriteIds.length ? await actor.supabase.from("marketplace_products")
-    .select("id, store_id, slug, name, description, price_mode, price_brl, media, tags, color_theme, visual, store:stores!inner(name, slug), category:product_categories!inner(name, slug)")
+    .select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, product_properties, media, video_url, tags, color_theme, visual, variants:marketplace_product_variants(id, variant_options, price_brl, stock_quantity), digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)")
     .in("id", favoriteIds).eq("catalog_status", "published").eq("store.status", "published").eq("category.active", true) : { data: [], error: null };
   const productsById = new Map((productsResult.data ?? []).map((row) => {
     const product = mapMarketplaceProduct(row as Record<string, unknown>);
@@ -27,6 +28,7 @@ export default async function FavoritesPage() {
   }));
   const products = favoriteIds.map((id) => productsById.get(id)).filter((product) => product !== undefined);
   const unavailableIds = favoriteIds.filter((id) => !productsById.has(id));
+  const recommendations = products.length ? await loadFavoriteProductRecommendations(products) : [];
 
   return <>
     <SiteHeader />
@@ -43,6 +45,15 @@ export default async function FavoritesPage() {
         </article>)}
         {unavailableIds.map((id) => <article className="favorite-card favorite-unavailable" key={id}><div><span className="account-kicker">INDISPONÍVEL</span><h2>Produto não publicado</h2><p>Este item não está disponível na vitrine. Você pode removê-lo dos favoritos.</p></div><FavoriteButton productId={id} slug="produto-indisponivel" initialFavorite /></article>)}
       </div>}
+      {recommendations.length > 0 && <section className="favorite-recommendations" aria-labelledby="favorite-recommendations-title"><div className="section-heading"><div><p className="eyebrow">A PARTIR DOS SEUS FAVORITOS</p><h2 id="favorite-recommendations-title">Peças que combinam com você</h2><p>Selecionadas pelas categorias e tags dos produtos que você salvou.</p></div></div><div className="favorite-grid">
+        {recommendations.map((product) => <article className="favorite-card" key={product.id}>
+          <Link className={`product-art art-${product.color}`} href={`/produtos/${product.slug}`} aria-label={`Ver ${product.name}`}>
+            {product.media[0] ? <img src={product.media[0]} alt={product.name} width="480" height="380" loading="lazy" /> : product.visual ? <ProductIllustration product={product} /> : <span className="product-placeholder" aria-hidden="true">3D</span>}
+          </Link>
+          <div className="favorite-card-copy"><span className="account-kicker">{product.category}</span><h2><Link href={`/produtos/${product.slug}`}>{product.name}</Link></h2><p>{product.maker} · {product.priceLabel}</p></div>
+          <FavoriteButton productId={product.id} slug={product.slug} initialFavorite={false} />
+        </article>)}
+      </div></section>}
     </main>
     <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Suas ideias favoritas, guardadas.</p><span>© 2026 ViraPeça 3D</span></div></footer>
   </>;

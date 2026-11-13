@@ -1,9 +1,10 @@
 import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { filterProducts } from "@/lib/catalog";
-import { products as demoProducts } from "@/lib/products";
+import { products as demoProducts, type Product } from "@/lib/products";
 import { mapMarketplaceProduct } from "@/lib/marketplace-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getFavoriteProductRecommendations } from "@/lib/favorite-product-recommendations";
 
 const pageSize = 24;
 const slugify = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -61,6 +62,22 @@ export async function loadRecommendedStores(): Promise<RecommendedStore[]> {
         ? [{ id: row.store_id, name: row.store_name, slug: row.store_slug, productCount, reviewCount, averageRating: rating }]
         : [];
     });
+}
+
+export async function loadFavoriteProductRecommendations(favorites: Product[]) {
+  const categories = [...new Set(favorites.filter(({ demo }) => !demo).map(({ category }) => category).filter(Boolean))];
+  if (!categories.length) return [];
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase.from("marketplace_products")
+    .select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, product_properties, media, video_url, tags, color_theme, visual, variants:marketplace_product_variants(id, variant_options, price_brl, stock_quantity), digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug, active)")
+    .in("category.name", categories).eq("catalog_status", "published").eq("store.status", "published").eq("category.active", true)
+    .order("published_at", { ascending: false }).limit(100);
+  if (error) return [];
+
+  const candidates = (data ?? []).map((row) => mapMarketplaceProduct(row as Record<string, unknown>));
+  return getFavoriteProductRecommendations(favorites, candidates);
 }
 
 export async function loadMarketplaceProduct(slug: string) {
