@@ -4,24 +4,26 @@ import { mapTechnicalCatalog, mergeTechnicalCatalogWithFallback } from "./techni
 import { materials, nozzles, printers } from "./technical-catalog";
 
 describe("mapTechnicalCatalog", () => {
-  it("fills missing database catalog records from the local catalog while keeping database values and links", () => {
+  it("deduplicates database catalog records by natural identity and remaps compatibility links", () => {
     const fallbackPrinter = printers.find((printer) => printer.id === "prusa-mk4s")!;
     const fallbackNozzle = nozzles.find((nozzle) => nozzle.id === "prusa-mk4s-hardened-0.4")!;
     const fallbackMaterial = materials.find((material) => material.id === "prusament-pla")!;
     const database = {
-      printers: [{ ...fallbackPrinter, name: "MK4S cadastrada", supportedMaterials: { "prusament-pla": { status: "conditional" as const, conditions: "Banco" } } }],
-      materials: [],
-      nozzles: [],
+      printers: [{ ...fallbackPrinter, id: "db-printer", name: "MK4S cadastrada", supportedMaterials: { "db-material": { status: "conditional" as const, conditions: "Banco" } } }],
+      materials: [{ ...fallbackMaterial, id: "db-material" }],
+      nozzles: [{ ...fallbackNozzle, id: "db-nozzle", printerCompatibility: { "db-printer": "compatible" as const } }],
     };
 
     const catalog = mergeTechnicalCatalogWithFallback(database, { printers, materials, nozzles });
 
-    expect(catalog.printers.find((printer) => printer.id === "prusa-mk4s")?.name).toBe("MK4S cadastrada");
-    expect(catalog.printers.find((printer) => printer.id === "prusa-mk4s")?.supportedMaterials["prusament-pla"])
+    expect(catalog.printers.filter((printer) => printer.brand === fallbackPrinter.brand && printer.model === fallbackPrinter.model && printer.variant === fallbackPrinter.variant)).toHaveLength(1);
+    expect(catalog.printers.find((printer) => printer.id === "db-printer")?.name).toBe("MK4S cadastrada");
+    expect(catalog.printers.find((printer) => printer.id === "db-printer")?.supportedMaterials["db-material"])
       .toEqual({ status: "conditional", conditions: "Banco" });
     expect(catalog.printers.some((printer) => printer.id === "bambu-a1")).toBe(true);
-    expect(catalog.materials).toContain(fallbackMaterial);
-    expect(catalog.nozzles).toContain(fallbackNozzle);
+    expect(catalog.materials.filter((material) => material.brand === fallbackMaterial.brand && material.name === fallbackMaterial.name)).toHaveLength(1);
+    expect(catalog.nozzles.filter((nozzle) => nozzle.brand === fallbackNozzle.brand && nozzle.name === fallbackNozzle.name && nozzle.diameterMm === fallbackNozzle.diameterMm)).toHaveLength(1);
+    expect(catalog.nozzles.find((nozzle) => nozzle.id === "db-nozzle")?.printerCompatibility).toEqual({ "db-printer": "compatible" });
   });
 
   it("preserves manufacturer resin ranges, colors and printer-specific exposure settings", () => {

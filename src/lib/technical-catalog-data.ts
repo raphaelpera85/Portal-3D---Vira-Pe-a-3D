@@ -97,27 +97,42 @@ export function mergeTechnicalCatalogWithFallback(
   database: { printers: PrinterEntry[]; materials: MaterialEntry[]; nozzles: NozzleEntry[] },
   fallback: { printers: PrinterEntry[]; materials: MaterialEntry[]; nozzles: NozzleEntry[] },
 ) {
-  const merge = <Entry extends { id: string }>(primary: Entry[], local: Entry[], combine?: (local: Entry, primary: Entry) => Entry) => {
-    const records = new Map(local.map((item) => [item.id, item]));
+  const key = (...parts: (string | number | null | undefined)[]) => parts
+    .map((part) => String(part ?? "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("pt-BR"))
+    .join("|");
+  const printerKey = (printer: PrinterEntry) => key(printer.brand, printer.model, printer.variant);
+  const materialKey = (material: MaterialEntry) => key(material.brand, material.name);
+  const nozzleKey = (nozzle: NozzleEntry) => key(nozzle.brand, nozzle.name, nozzle.diameterMm, nozzle.material);
+  const merge = <Entry extends { id: string }>(primary: Entry[], local: Entry[], identity: (entry: Entry) => string, combine: (local: Entry, primary: Entry) => Entry) => {
+    const records = new Map(local.map((item) => [identity(item), item]));
+    const ids = new Map(local.map((item) => [item.id, item.id]));
     primary.forEach((item) => {
-      const existing = records.get(item.id);
-      records.set(item.id, existing && combine ? combine(existing, item) : item);
+      const naturalKey = identity(item);
+      const existing = records.get(naturalKey);
+      records.set(naturalKey, existing ? combine(existing, item) : item);
+      if (existing) ids.set(existing.id, item.id);
     });
-    return [...records.values()];
+    return { records: [...records.values()], ids };
   };
+  const remap = <Value>(record: Record<string, Value> | null | undefined, ids: Map<string, string>) => record == null ? record :
+    Object.fromEntries(Object.entries(record).map(([id, value]) => [ids.get(id) ?? id, value]));
+
+  const materials = merge(database.materials, fallback.materials, materialKey, (local, primary) => ({ ...local, ...primary }));
+  const printers = merge(database.printers, fallback.printers, printerKey, (local, primary) => ({
+    ...local,
+    ...primary,
+    supportedMaterials: { ...remap(local.supportedMaterials, materials.ids), ...primary.supportedMaterials },
+  }));
+  const nozzles = merge(database.nozzles, fallback.nozzles, nozzleKey, (local, primary) => ({
+    ...local,
+    ...primary,
+    printerCompatibility: { ...remap(local.printerCompatibility, printers.ids), ...primary.printerCompatibility },
+    printerCompatibilityConditions: { ...remap(local.printerCompatibilityConditions, printers.ids), ...primary.printerCompatibilityConditions },
+  }));
 
   return {
-    printers: merge(database.printers, fallback.printers, (local, primary) => ({
-      ...local,
-      ...primary,
-      supportedMaterials: { ...local.supportedMaterials, ...primary.supportedMaterials },
-    })),
-    materials: merge(database.materials, fallback.materials),
-    nozzles: merge(database.nozzles, fallback.nozzles, (local, primary) => ({
-      ...local,
-      ...primary,
-      printerCompatibility: { ...local.printerCompatibility, ...primary.printerCompatibility },
-      printerCompatibilityConditions: { ...local.printerCompatibilityConditions, ...primary.printerCompatibilityConditions },
-    })),
+    printers: printers.records,
+    materials: materials.records,
+    nozzles: nozzles.records,
   };
 }
