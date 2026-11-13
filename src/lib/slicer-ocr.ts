@@ -84,6 +84,35 @@ function findGcodeFilamentTotal(lines: string[], units: string, normalize: (valu
   return undefined;
 }
 
+function findGcodeFilamentReadings(lines: string[]) {
+  const valuesFor = (label: string) => {
+    const match = lines.map((line) => new RegExp(`^;\\s*(?:${label})\\s*[:=]\\s*(.+)$`, "i").exec(line)).find(Boolean);
+    if (!match) return null;
+    const values = match[1].split(/;\s*|,\s+/).map((value) => value.trim().replace(/^['"]|['"]$/g, ""));
+    return values.length && values.every(Boolean) ? values : null;
+  };
+  const numbersFor = (unit: string, normalize: (value: number) => number) => {
+    const pattern = new RegExp(`^;\\s*filament\\s+used\\s*\\[\\s*(?:${unit})\\s*\\]\\s*[:=]\\s*(.+)$`, "i");
+    const match = lines.map((line) => pattern.exec(line)).find(Boolean);
+    if (!match) return null;
+    const values = match[1].split(/,\s+/);
+    return values.length && values.every((value) => /^\d+(?:\.\d+)?$/.test(value.trim()))
+      ? values.map((value) => normalize(Number(value))) : null;
+  };
+  const grams = numbersFor("g|gr|grams?", Number);
+  const millimeters = numbersFor("mm", (value) => value / 1000);
+  const meters = numbersFor("m", Number);
+  const lengths = millimeters ?? meters;
+  const colors = valuesFor("filament[_ ]colour|extruder[_ ]colour");
+  const materials = valuesFor("filament[_ ]type");
+  const arrays = [grams, lengths, colors, materials].filter((value): value is NonNullable<typeof value> => value !== null);
+  if (!arrays.some((value) => value === grams || value === lengths) || arrays.some((value) => value.length !== arrays[0].length)) return [];
+  return Array.from({ length: arrays[0].length }, (_, index) => ({
+    index: index + 1, grams: grams?.[index] ?? null, lengthMeters: lengths?.[index] ?? null,
+    material: materials?.[index]?.toUpperCase() ?? null, color: colors?.[index]?.toLowerCase() ?? null,
+  }));
+}
+
 function findFilamentLength(lines: string[]) {
   const curaLine = lines.find((line) => /^;?\s*filament\s+used\s*:/i.test(line));
   if (curaLine) {
@@ -215,7 +244,7 @@ function parseOne(text: string) {
     estimatedCost: cost,
     estimatedCostCurrency: findCostCurrency(lines),
     materials,
-    filamentReadings,
+    filamentReadings: [...filamentReadings, ...findGcodeFilamentReadings(lines)],
   };
 }
 
@@ -280,7 +309,7 @@ export function parseSlicerOcrTexts(texts: string[]) {
     filamentChanges: unique<number>("filamentChanges", "trocas de filamento"),
     estimatedCost: unique<number>("estimatedCost", "custo informado"),
     estimatedCostCurrency: costCurrencies.length === 1 ? costCurrencies[0] : null,
-    materials: [...new Set(parsed.flatMap((item) => item.materials))],
+    materials: [...new Set([...parsed.flatMap((item) => item.materials), ...parsed.flatMap((item) => item.filamentReadings.map((filament) => filament.material).filter((material): material is string => material !== null))])],
     filaments: [...filaments.values()].sort((left, right) => left.index - right.index),
     conflicts: [...new Set(conflicts)],
     text: fullText,
