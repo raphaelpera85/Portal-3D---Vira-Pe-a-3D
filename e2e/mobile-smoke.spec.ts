@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 test("mobile navigation opens the model catalog and a model detail", async ({ page }) => {
   await page.setViewportSize({ width: 400, height: 608 });
   await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Fabricantes recomendados" })).toBeVisible();
   await page.getByRole("button", { name: "Abrir menu" }).click();
   await page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "Modelos 3D" }).click();
 
