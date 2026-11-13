@@ -31,9 +31,13 @@ describe("parseSlicerOcrTexts", () => {
   });
 
   it("recognizes only explicit currency labels for slicer cost", () => {
+    expect(parseSlicerOcrTexts(["Estimated cost: R$ 16,79"]).estimatedCost).toBe(16.79);
     expect(parseSlicerOcrTexts(["Estimated cost: R$ 16,79"]).estimatedCostCurrency).toBe("BRL");
+    expect(parseSlicerOcrTexts(["Estimated cost: USD 2.30"]).estimatedCost).toBe(2.3);
     expect(parseSlicerOcrTexts(["Estimated cost: USD 2.30"]).estimatedCostCurrency).toBe("USD");
+    expect(parseSlicerOcrTexts(["Estimated cost: $2.30"]).estimatedCost).toBe(2.3);
     expect(parseSlicerOcrTexts(["Estimated cost: $2.30"]).estimatedCostCurrency).toBeNull();
+    expect(parseSlicerOcrTexts(["Cost: 10 BRL"]).estimatedCost).toBe(10);
   });
 
   it("requires a currency choice before retaining an unlabelled cost and can discard it", () => {

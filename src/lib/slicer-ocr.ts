@@ -66,6 +66,22 @@ function findMeasurement(lines: string[], labels: string, units: string, normali
   return null;
 }
 
+function findCost(lines: string[]) {
+  const labels = String.raw`(?:estimated\s+cost|material\s+cost|filament\s+cost|custo\s+(?:estimado|do\s+material)|\bcost\b)`;
+  const expression = /(?:(?:R\$|US\$|BRL|USD|\$)\s*)?(\d[\d.,]*)(?:\s*(?:BRL|R\$|USD|\$))?/i;
+  const standalone = new RegExp(`^\\s*[:=\\-–]?\\s*(?:(?:R\\$|US\\$|BRL|USD|\\$)\\s*)?${numberPattern}(?:\\s*(?:BRL|R\\$|USD|\\$))?\\s*$`, "i");
+  for (let index = 0; index < lines.length; index++) {
+    const label = new RegExp(labels, "i").exec(lines[index]);
+    if (!label) continue;
+    const sameLine = lines[index].slice(label.index + label[0].length);
+    const match = expression.exec(sameLine) ?? expression.exec(lines[index].slice(0, label.index)) ?? standalone.exec(lines[index + 1] ?? "");
+    if (!match) continue;
+    const value = parseNumber(match[1]);
+    if (Number.isFinite(value) && value >= 0) return value;
+  }
+  return null;
+}
+
 function findCount(lines: string[], labels: string) {
   const standalone = new RegExp(`^\\s*[:=\\-–]?\\s*${numberPattern}\\s*$`, "i");
   for (let index = 0; index < lines.length; index++) {
@@ -118,7 +134,7 @@ function parseOne(text: string) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
   const length = findMeasurement(lines, String.raw`(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value);
-  const cost = findMeasurement(lines, String.raw`(?:estimated\s+cost|material\s+cost|filament\s+cost|custo\s+(?:estimado|do\s+material)|\bcost\b)`, String.raw`(?:brl|r\$|usd|\$)?`, (value) => value);
+  const cost = findCost(lines);
   const materials = [...new Set(lines.flatMap((line) => {
     const match = new RegExp(`(?<![a-z0-9])${materialPattern}(?![a-z0-9])`, "i").exec(line);
     return match ? [match[0].toUpperCase()] : [];
