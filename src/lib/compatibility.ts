@@ -123,6 +123,8 @@ export function evaluateCompatibility(
       add("hotend-temperature", "Temperatura do hotend", "unverified", "A temperatura máxima do hotend não está cadastrada.");
     } else if (material.nozzleTemperatureC.min > printer.maxNozzleTemperatureC) {
       add("hotend-temperature", "Temperatura do hotend", "incompatible", "O hotend não atinge a faixa mínima recomendada pelo material.");
+    } else if (material.nozzleTemperatureC.max > printer.maxNozzleTemperatureC) {
+      add("hotend-temperature", "Temperatura do hotend", "conditional", `O hotend alcança parte da faixa (${material.nozzleTemperatureC.min}–${material.nozzleTemperatureC.max} °C), mas sua temperatura máxima é ${printer.maxNozzleTemperatureC} °C.`);
     } else {
       add("hotend-temperature", "Temperatura do hotend", "compatible", `Até ${printer.maxNozzleTemperatureC} °C; mínimo recomendado de ${material.nozzleTemperatureC.min} °C.`);
     }
@@ -138,6 +140,8 @@ export function evaluateCompatibility(
       add("heated-bed", "Mesa aquecida", "unverified", "O catálogo não confirma a mesa aquecida ou seu limite de temperatura.");
     } else if (material.bedTemperatureC.min > printer.maxBedTemperatureC) {
       add("heated-bed", "Temperatura da mesa", "incompatible", "A mesa não alcança a faixa mínima indicada para o material.");
+    } else if (material.bedTemperatureC.max > printer.maxBedTemperatureC) {
+      add("heated-bed", "Temperatura da mesa", "conditional", `A mesa alcança parte da faixa (${material.bedTemperatureC.min}–${material.bedTemperatureC.max} °C), mas sua temperatura máxima é ${printer.maxBedTemperatureC} °C.`);
     } else {
       add("heated-bed", "Temperatura da mesa", "compatible", `Limite da mesa: ${printer.maxBedTemperatureC} °C.`);
     }

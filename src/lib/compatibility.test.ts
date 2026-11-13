@@ -41,6 +41,16 @@ describe("evaluateCompatibility", () => {
     expect(result.checks.filter((check) => check.status === "incompatible")).toHaveLength(2);
   });
 
+  it("marks partially reachable material temperature ranges as conditional", () => {
+    const result = evaluateCompatibility(
+      { ...printer, maxNozzleTemperatureC: 290, maxBedTemperatureC: 110 },
+      { ...material, nozzleTemperatureC: { min: 275, max: 295 }, bedTemperatureC: { min: 100, max: 120 } },
+    );
+
+    expect(result.checks.find((check) => check.key === "hotend-temperature")).toMatchObject({ status: "conditional", detail: expect.stringContaining("temperatura máxima é 290 °C") });
+    expect(result.checks.find((check) => check.key === "heated-bed")).toMatchObject({ status: "conditional", detail: expect.stringContaining("temperatura máxima é 110 °C") });
+  });
+
   it("requires an external spool when AMS Lite cannot feed the selected material", () => {
     const result = evaluateCompatibility(printer, { ...material, multicolorCompatible: false }, nozzle, { useMulticolor: true });
 

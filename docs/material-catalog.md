@@ -8,3 +8,5 @@ O primeiro lote publicado em `material_catalog` contém dois materiais Bambu Lab
 As fontes foram conferidas em 13 nov. 2026. Administradores podem incluir materiais e resinas em `/admin/catalogos/materiais`; relações de suporte por impressora são mantidas em `/admin/catalogos/bicos`. Recomendações de exposição, lavagem e cura não são generalizadas entre produtos.
 
 A compatibilidade entre ELEGOO ABS-Like Resin V3.0 e Saturn 4 Ultra 12K está publicada a partir da declaração oficial de compatibilidade com a série Saturn. Os tempos exatos de exposição não foram preenchidos, pois a ficha do fabricante é uma planilha externa; consulte o guia oficial da resina e calibre a exposição para a máquina.
+
+A CORE One+ Gen 2 está vinculada aos materiais Prusa de família suportada pelo fabricante. ASA e PA ficam condicionados ao sistema opcional de filtragem; PA11 ainda tem faixa de câmara maior que o limite da impressora, e filamentos com fibra de carbono exigem bico endurecido. As faixas de temperatura parcialmente acima dos limites da máquina são sinalizadas como condicionais pelo motor.
