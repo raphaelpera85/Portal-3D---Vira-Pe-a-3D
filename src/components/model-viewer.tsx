@@ -206,7 +206,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
       const materials = mesh.isMesh ? Array.isArray(mesh.material) ? mesh.material : [mesh.material] : [];
       if (mesh.isMesh && materials.some((material) => material.vertexColors) && mesh.geometry.getAttribute("color")) {
         const colorAttribute = mesh.geometry.getAttribute("color");
-        const triangleIndexes = getModelColorMatchedTriangleIndexes(colorAttribute.array, [selected.r, selected.g, selected.b], mesh.geometry.index?.array);
+        const triangleIndexes = getModelColorMatchedTriangleIndexes(colorAttribute, [selected.r, selected.g, selected.b], mesh.geometry.index?.array);
         if (!triangleIndexes.length) return;
         const positionAttribute = mesh.geometry.getAttribute("position");
         const indices = mesh.geometry.index;

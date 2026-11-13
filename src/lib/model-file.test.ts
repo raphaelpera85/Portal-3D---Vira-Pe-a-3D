@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { strToU8, zipSync } from "fflate";
+import { BufferAttribute } from "three";
 import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelColorMatchedTriangleIndexes, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
 import { mapThreeMfPlateToSlicerMetrics } from "./saved-calculation";
 
@@ -59,6 +60,11 @@ describe("model color highlighting", () => {
   it("resolves matching faces through indexed geometry and tolerates color rounding", () => {
     const colors = [0.997, 0.002, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0];
     expect(getModelColorMatchedTriangleIndexes(colors, [1, 0, 0], [3, 0, 2])).toEqual([0]);
+  });
+
+  it("matches colors from normalized integer geometry attributes", () => {
+    const colors = new BufferAttribute(new Uint8Array([255, 255, 255, 255, 255, 255, 255, 255, 255]), 3, true);
+    expect(getModelColorMatchedTriangleIndexes(colors, [1, 1, 1])).toEqual([0]);
   });
 });
 

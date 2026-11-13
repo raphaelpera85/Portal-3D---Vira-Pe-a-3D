@@ -13,15 +13,20 @@ export function getModelColorMatchedComponentIds(components: Array<{ id: string;
   return color ? components.filter((component) => component.colors.includes(color)).map((component) => component.id) : [];
 }
 
-export function getModelColorMatchedTriangleIndexes(vertexColors: ArrayLike<number>, color: readonly [number, number, number], indices?: ArrayLike<number> | null, tolerance = 1 / 255) {
-  const triangleCount = Math.floor((indices?.length ?? vertexColors.length / 3) / 3);
+export function getModelColorMatchedTriangleIndexes(vertexColors: ArrayLike<number> | { count: number; getX(index: number): number; getY(index: number): number; getZ(index: number): number }, color: readonly [number, number, number], indices?: ArrayLike<number> | null, tolerance = 1 / 255) {
+  const attribute = "getX" in vertexColors ? vertexColors : null;
+  const values = vertexColors as ArrayLike<number>;
+  const triangleCount = Math.floor((indices?.length ?? (attribute ? attribute.count : values.length / 3)) / 3);
   const matches: number[] = [];
   for (let triangle = 0; triangle < triangleCount; triangle++) {
     const sameColor = [0, 1, 2].every((corner) => {
       const vertex = indices ? Number(indices[triangle * 3 + corner]) : triangle * 3 + corner;
       const offset = vertex * 3;
-      return offset + 2 < vertexColors.length && Math.abs(vertexColors[offset] - color[0]) <= tolerance
-        && Math.abs(vertexColors[offset + 1] - color[1]) <= tolerance && Math.abs(vertexColors[offset + 2] - color[2]) <= tolerance;
+      if (attribute ? vertex >= attribute.count : offset + 2 >= values.length) return false;
+      const red = attribute ? attribute.getX(vertex) : values[offset];
+      const green = attribute ? attribute.getY(vertex) : values[offset + 1];
+      const blue = attribute ? attribute.getZ(vertex) : values[offset + 2];
+      return Math.abs(red - color[0]) <= tolerance && Math.abs(green - color[1]) <= tolerance && Math.abs(blue - color[2]) <= tolerance;
     });
     if (sameColor) matches.push(triangle);
   }
