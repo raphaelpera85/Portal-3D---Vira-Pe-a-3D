@@ -48,6 +48,10 @@ function parseNumber(value: string) {
   return Number(clean.replace(",", "."));
 }
 
+function splitGcodeValues(value: string) {
+  return value.includes(".") ? value.split(/,\s*/) : value.split(/,\s+/);
+}
+
 function findMeasurement(lines: string[], labels: string, units: string, normalize: (value: number, unit: string) => number, exclude?: RegExp) {
   const expression = new RegExp(`${numberPattern}\\s*(${units})\\b`, "i");
   const bracketedUnit = new RegExp(`\\[\\s*(${units})\\s*\\]\\s*[:=]\\s*${numberPattern}`, "i");
@@ -73,7 +77,7 @@ function findGcodeFilamentTotal(lines: string[], units: string, normalize: (valu
   for (const line of lines) {
     const match = expression.exec(line);
     if (!match) continue;
-    const values = match[2].split(/,\s+/);
+    const values = splitGcodeValues(match[2]);
     if (values.length < 2) {
       if (match[2].includes(",")) return null;
       continue;
@@ -95,7 +99,7 @@ function findGcodeFilamentReadings(lines: string[]) {
     const pattern = new RegExp(`^;\\s*filament\\s+used\\s*\\[\\s*(?:${unit})\\s*\\]\\s*[:=]\\s*(.+)$`, "i");
     const match = lines.map((line) => pattern.exec(line)).find(Boolean);
     if (!match) return null;
-    const values = match[1].split(/,\s+/);
+    const values = splitGcodeValues(match[1]);
     return values.length && values.every((value) => /^\d+(?:\.\d+)?$/.test(value.trim()))
       ? values.map((value) => normalize(Number(value))) : null;
   };
