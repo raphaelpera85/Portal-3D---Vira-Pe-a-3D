@@ -71,15 +71,23 @@ export function mapTechnicalCatalog(
     };
   });
   const nozzleRelations = new Map<string, Record<string, CompatibilityStatus>>();
+  const nozzleConditions = new Map<string, Record<string, string>>();
   nozzleLinks.forEach((link) => {
-    const byPrinter = nozzleRelations.get(text(link.nozzle_id)) ?? {};
-    if (statuses.has(link.fit as CompatibilityStatus)) byPrinter[text(link.printer_id)] = status(link.fit);
-    nozzleRelations.set(text(link.nozzle_id), byPrinter);
+    const nozzleId = text(link.nozzle_id);
+    const printerId = text(link.printer_id);
+    const byPrinter = nozzleRelations.get(nozzleId) ?? {};
+    if (statuses.has(link.fit as CompatibilityStatus)) byPrinter[printerId] = status(link.fit);
+    nozzleRelations.set(nozzleId, byPrinter);
+    const condition = text(link.conditions).trim();
+    const byPrinterConditions = nozzleConditions.get(nozzleId) ?? {};
+    if (condition) byPrinterConditions[printerId] = condition;
+    nozzleConditions.set(nozzleId, byPrinterConditions);
   });
   const nozzles: NozzleEntry[] = nozzleRows.map((row) => ({
     id: text(row.id), name: text(row.model), brand: text(row.manufacturer), diameterMm: number(row.diameter_mm) ?? 0,
     material: text(row.body_material) || null, maxTemperatureC: number(row.max_temperature_c),
     abrasionResistant: boolean(row.abrasion_resistant), printerCompatibility: nozzleRelations.get(text(row.id)) ?? null,
+    printerCompatibilityConditions: nozzleConditions.get(text(row.id)) ?? null,
     original: boolean(row.original) ?? boolean(object(row.technical_properties).original) ?? false, sources: source(row),
   }));
   return { printers, materials, nozzles };

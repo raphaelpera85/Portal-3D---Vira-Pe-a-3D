@@ -40,6 +40,13 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   const [dimensions, setDimensions] = useState({ x: "", y: "", z: "" });
   const [useMulticolor, setUseMulticolor] = useState(false);
   const printer = printers.find((item) => item.id === printerId) ?? printers[0];
+  const printerProperties = printer.technicalProperties ?? {};
+  const supportedMaterials = Array.isArray(printerProperties.manufacturerSupportedMaterials)
+    ? printerProperties.manufacturerSupportedMaterials.filter((value): value is string => typeof value === "string") : [];
+  const materialNozzleConditions = printerProperties.materialNozzleConditions && typeof printerProperties.materialNozzleConditions === "object" && !Array.isArray(printerProperties.materialNozzleConditions)
+    ? Object.entries(printerProperties.materialNozzleConditions).filter((entry): entry is [string, string] => typeof entry[1] === "string") : [];
+  const specificationNotes = Array.isArray(printerProperties.manufacturerSpecificationNotes)
+    ? printerProperties.manufacturerSpecificationNotes.filter((value): value is string => typeof value === "string") : [];
   const multicolorSystem = printer.multicolorSystem ?? (typeof printer.technicalProperties?.multicolorUpgradeDescription === "string" ? printer.technicalProperties.multicolorUpgradeDescription : null);
   const material = materials.find((item) => item.id === materialId) ?? materials[0];
   const resinProperties = material.technicalProperties ?? {};
@@ -107,7 +114,10 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <div><dt>Potência média medida</dt><dd>{powerText(printer.measuredAveragePowerWatts)}</dd></div>
               <div><dt>Multicolorido</dt><dd>{multicolorSystem ? `${multicolorSystem}${printer.multicolorSlots == null ? "" : ` · até ${printer.multicolorSlots} filamentos`}` : "Não informado"}</dd></div>
             </dl>
-            {typeof printer.technicalProperties?.compatibilityNotes === "string" && <p className="catalog-source-note">Condições do fabricante: {printer.technicalProperties.compatibilityNotes}</p>}
+            {typeof printerProperties.compatibilityNotes === "string" && <p className="catalog-source-note">Condições do fabricante: {printerProperties.compatibilityNotes}</p>}
+            {supportedMaterials.length > 0 && <p className="catalog-source-note">Filamentos citados pelo fabricante: {supportedMaterials.join(" · ")}</p>}
+            {materialNozzleConditions.map(([name, conditions]) => <p className="catalog-source-note" key={name}>{name}: {conditions}</p>)}
+            {specificationNotes.map((note) => <p className="catalog-source-note" key={note}>{note}</p>)}
             <SourceLinks sources={printer.sources} />
           </section>
 
@@ -155,6 +165,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               </select>
             </label>
             <div className="nozzle-facts"><span>Material do bico</span><strong>{nozzle?.material ?? "Não informado para esta variante"}</strong></div>
+            {nozzle?.printerCompatibilityConditions?.[printer.id] && <p className="catalog-source-note">Condições do fabricante: {nozzle.printerCompatibilityConditions[printer.id]}</p>}
             <div className="nozzle-options" aria-label="Diâmetros listados pelo fabricante">
               {printerNozzles.map((item) => <button type="button" key={item.id} className={item.id === nozzle?.id ? "is-selected" : ""} onClick={() => setNozzleId(item.id)}>{item.diameterMm.toLocaleString("pt-BR")} <small>mm</small></button>)}
             </div>

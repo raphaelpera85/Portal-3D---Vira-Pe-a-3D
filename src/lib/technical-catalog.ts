@@ -29,6 +29,7 @@ export type MaterialEntry = CatalogMaterial & {
 export type NozzleEntry = CatalogNozzle & {
   brand: string;
   original: boolean;
+  printerCompatibilityConditions?: Record<string, string> | null;
   sources: CatalogSource[];
 };
 

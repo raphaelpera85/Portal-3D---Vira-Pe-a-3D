@@ -44,11 +44,12 @@ describe("mapTechnicalCatalog", () => {
       [{ id: "material-1", manufacturer: "Maker", product: "PLA", family: "PLA", process: "filament", filament_diameter_mm: 1.75, nozzle_temperature_min_c: 190, nozzle_temperature_max_c: 220, source_url: "https://example.com/material", verified_at: "2026-01-01" }],
       [{ id: "nozzle-1", manufacturer: "Maker", model: "M1 nozzle", diameter_mm: 0.4, original: true, catalog_status: "published", source_url: "https://example.com/nozzle", verified_at: "2026-01-01" }],
       [{ printer_id: "printer-1", material_id: "material-1", compatibility: "compatible" }],
-      [{ printer_id: "printer-1", nozzle_id: "nozzle-1", fit: "compatible" }],
+      [{ printer_id: "printer-1", nozzle_id: "nozzle-1", fit: "compatible", conditions: "Não usar TPU 95A pelo IFS." }],
     );
 
     expect(catalog.printers[0].supportedMaterials["material-1"]).toEqual({ status: "compatible", conditions: null });
     expect(catalog.nozzles[0].original).toBe(true);
+    expect(catalog.nozzles[0].printerCompatibilityConditions).toEqual({ "printer-1": "Não usar TPU 95A pelo IFS." });
     expect(catalog.printers[0].sources[0].url).toBe("https://example.com/printer");
     expect(evaluateCompatibility(catalog.printers[0], catalog.materials[0], catalog.nozzles[0]).status).toBe("compatible");
   });
