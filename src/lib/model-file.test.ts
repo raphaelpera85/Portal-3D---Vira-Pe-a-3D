@@ -147,6 +147,18 @@ describe("model dimensions", () => {
     expect(colors.paintPaletteColors).toEqual(["0000ff"]);
   });
 
+  it("skips triangle paint analysis when a model has no painted triangles", () => {
+    const colors = parseThreeMfColors(
+      '<model><resources><object id="2"><components><component objectid="3"/></components></object><object id="3"><mesh><triangles><triangle/></triangles></mesh></object></resources><build><item objectid="2"/></build></model>',
+      "",
+      JSON.stringify({ filament_colour: ["#ff0000"] }),
+      [{ path: "3D/3dmodel.model", xml: '<model><resources><object id="3"><mesh><triangles><triangle/></triangles></mesh></object></resources></model>' }],
+    );
+    expect(colors.componentPaintColors).toEqual([]);
+    expect(colors.componentTriangleColors).toEqual([]);
+    expect(colors.paintPaletteColors).toEqual([]);
+  });
+
   it("preserves per-triangle paint colors in geometry order", () => {
     const colors = parseThreeMfColors(
       '<model><resources><object id="2"><components><component objectid="3" p:path="/3D/Objects/paint.model"/></components></object></resources><build><item objectid="2"/></build></model>',

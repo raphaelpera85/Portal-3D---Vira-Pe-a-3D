@@ -183,11 +183,13 @@ export function parseThreeMfColors(modelXml: string, modelSettingsXml: string, p
     }
     if (id && colorsForParts.length) partColors.set(id, colorsForParts);
   }
-  const objectColors = [...modelXml.matchAll(/<item\b[^>]*\bobjectid=["']([^"']+)["'][^>]*\/?\s*>/gi)]
+  const buildItems = [...modelXml.matchAll(/<item\b[^>]*\bobjectid=["']([^"']+)["'][^>]*\/?\s*>/gi)];
+  const objectColors = buildItems
     .map((item) => objects.get(item[1])?.color ?? "");
-  const componentPartColors = [...modelXml.matchAll(/<item\b[^>]*\bobjectid=["']([^"']+)["'][^>]*\/?\s*>/gi)]
+  const componentPartColors = buildItems
     .map((item) => partColors.get(item[1]) ?? []);
   for (const { path, xml } of modelParts) {
+    if (!/\bpaint_color=["']/i.test(xml)) continue;
     for (const object of xml.matchAll(/<object\b([^>]*)>([\s\S]*?)<\/object>/gi)) {
       const id = object[1].match(/\bid=["']([^"']+)["']/i)?.[1];
       const counts = new Map<string, number>();
@@ -204,25 +206,29 @@ export function parseThreeMfColors(modelXml: string, modelSettingsXml: string, p
       if (id && counts.size) paintColors.set(`${path.toLowerCase()}#${id}`, { triangles, counts });
     }
   }
-  const rootObjects = new Map([...modelXml.matchAll(/<object\b([^>]*)>([\s\S]*?)<\/object>/gi)]
-    .map((object) => [object[1].match(/\bid=["']([^"']+)["']/i)?.[1] ?? "", object[2]]));
-  const componentPaintColors = [...modelXml.matchAll(/<item\b[^>]*\bobjectid=["']([^"']+)["'][^>]*\/?\s*>/gi)].map((item) => {
-    const body = rootObjects.get(item[1]) ?? "";
-    return [...body.matchAll(/<component\b([^>]*)\/?\s*>/gi)].map((component) => {
-      const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase() ?? "3d/3dmodel.model";
-      const id = component[1].match(/\bobjectid=["']([^"']+)["']/i)?.[1];
-      const counts = path && id ? paintColors.get(`${path}#${id}`)?.counts : undefined;
-      return counts?.size === 1 ? [...counts.keys()][0] : "";
+  let componentPaintColors: string[][] = [];
+  let componentTriangleColors: string[][][] = [];
+  if (paintColors.size) {
+    const rootObjects = new Map([...modelXml.matchAll(/<object\b([^>]*)>([\s\S]*?)<\/object>/gi)]
+      .map((object) => [object[1].match(/\bid=["']([^"']+)["']/i)?.[1] ?? "", object[2]]));
+    componentPaintColors = buildItems.map((item) => {
+      const body = rootObjects.get(item[1]) ?? "";
+      return [...body.matchAll(/<component\b([^>]*)\/?\s*>/gi)].map((component) => {
+        const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase() ?? "3d/3dmodel.model";
+        const id = component[1].match(/\bobjectid=["']([^"']+)["']/i)?.[1];
+        const counts = path && id ? paintColors.get(`${path}#${id}`)?.counts : undefined;
+        return counts?.size === 1 ? [...counts.keys()][0] : "";
+      });
     });
-  });
-  const componentTriangleColors = [...modelXml.matchAll(/<item\b[^>]*\bobjectid=["']([^"']+)[^>]*\/?\s*>/gi)].map((item) => {
-    const body = rootObjects.get(item[1]) ?? "";
-    return [...body.matchAll(/<component\b([^>]*)\/?\s*>/gi)].map((component) => {
-      const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase() ?? "3d/3dmodel.model";
-      const id = component[1].match(/\bobjectid=["']([^"']+)["']/i)?.[1];
-      return path && id ? paintColors.get(`${path}#${id}`)?.triangles ?? [] : [];
+    componentTriangleColors = buildItems.map((item) => {
+      const body = rootObjects.get(item[1]) ?? "";
+      return [...body.matchAll(/<component\b([^>]*)\/?\s*>/gi)].map((component) => {
+        const path = component[1].match(/(?:p:)?path=["']([^"']+)["']/i)?.[1]?.replace(/^\//, "").toLowerCase() ?? "3d/3dmodel.model";
+        const id = component[1].match(/\bobjectid=["']([^"']+)["']/i)?.[1];
+        return path && id ? paintColors.get(`${path}#${id}`)?.triangles ?? [] : [];
+      });
     });
-  });
+  }
   const paintPaletteColors = [...new Set([...paintColors.values()].flatMap(({ counts }) => [...counts.keys()]))];
   return { componentPaintColors, componentTriangleColors, componentPartColors, faceColors, objectColors, namedColors, palette: [...new Set(palette)], paintPaletteColors };
 }
