@@ -25,9 +25,10 @@ describe("visual image search", () => {
     const matches = rankVisualCandidates("0000000000000000", [
       { id: "far", name: "Distante", image: "/far.png", categorySlug: "chaveiros", tags: [], hash: "ffffffffffffffff" },
       { id: "near", name: "Próximo", image: "/near.png", categorySlug: "chaveiros", tags: [], hash: "0000000000000001" },
+      { id: "borderline", name: "No limite", image: "/borderline.png", categorySlug: "chaveiros", tags: [], hash: "00000000000fffff" },
       { id: "other", name: "Outra categoria", image: "/other.png", categorySlug: "infantil", tags: [], hash: "0000000000000000" },
-    ], "chaveiros", 2);
+    ], "chaveiros", 5);
 
-    expect(matches.map(({ id, distance }) => [id, distance])).toEqual([["near", 1], ["far", 64]]);
+    expect(matches.map(({ id, distance }) => [id, distance])).toEqual([["near", 1], ["borderline", 20]]);
   });
 });

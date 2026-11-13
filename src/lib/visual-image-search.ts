@@ -7,6 +7,8 @@ export type VisualImageCandidate = {
   hash: string;
 };
 export type RankedVisualCandidate = VisualImageCandidate & { distance: number };
+// shortcut: 64-bit dHash only matches similar previews; use Vision for different views of the same object.
+const MAX_VISUAL_DISTANCE = 20;
 
 export function differenceHash(pixels: ArrayLike<number>) {
   const bits: string[] = [];
@@ -40,7 +42,7 @@ export function rankVisualCandidates<T extends VisualImageCandidate>(hash: strin
   return candidates
     .filter((candidate) => !category || candidate.categorySlug === category)
     .map((candidate) => ({ ...candidate, distance: hammingDistance(hash, candidate.hash) }))
-    .filter((candidate) => Number.isFinite(candidate.distance))
+    .filter((candidate) => Number.isFinite(candidate.distance) && candidate.distance <= MAX_VISUAL_DISTANCE)
     .sort((left, right) => left.distance - right.distance || left.name.localeCompare(right.name, "pt-BR"))
     .slice(0, Math.max(0, limit));
 }
