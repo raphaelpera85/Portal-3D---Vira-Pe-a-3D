@@ -8,6 +8,7 @@ describe("getIntegrationHealth", () => {
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "publishable-secret-value",
       SUPABASE_SECRET_KEY: "sb_secret_private-value",
       GOOGLE_CLOUD_VISION_API_KEY: "vision-private-value",
+      NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: "google-verification-token",
       RESEND_API_KEY: "resend-private-value",
       RESEND_FROM_EMAIL: "mail@example.com",
       WHATSAPP_ACCESS_TOKEN: "whatsapp-private-value",
@@ -68,7 +69,18 @@ describe("getIntegrationHealth", () => {
     expect(result.whatsapp.status).toBe("missing");
     expect(result.mercadoPago.status).toBe("missing");
     expect(result.googleVision.status).toBe("missing");
+    expect(result.googleSearchConsole.status).toBe("missing");
+    expect(result.googleSearchConsole.missingVariables).toContain("NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION");
     expect(result.melhorEnvio.status).toBe("missing");
+  });
+
+  it("reports Google Search Console configured without returning its token", () => {
+    const result = getIntegrationHealth({ NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: "verification-token" })
+      .find((item) => item.id === "googleSearchConsole");
+
+    expect(result?.status).toBe("configured");
+    expect(JSON.stringify(result)).not.toContain("verification-token");
+    expect(result?.setupHref).toContain("google-search-console.md");
   });
 
   it("marks an invalid WhatsApp template language as missing", () => {

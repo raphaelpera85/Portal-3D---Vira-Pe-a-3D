@@ -52,6 +52,10 @@ export function getIntegrationHealth(env: Environment): IntegrationHealthItem[] 
       missing: present(env, "GOOGLE_CLOUD_VISION_API_KEY") ? [] : ["GOOGLE_CLOUD_VISION_API_KEY"],
     },
     {
+      id: "googleSearchConsole", title: "Google Search Console", description: "Verificação da propriedade do portal e envio do sitemap.", setupHref: "https://github.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/blob/main/docs/google-search-console.md",
+      missing: present(env, "NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION") ? [] : ["NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION"],
+    },
+    {
       id: "email", title: "E-mail · Resend", description: "Avisos de novos pedidos e solicitações às lojas.", setupHref: "https://github.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/blob/main/docs/integrations.md",
       missing: [
         ...(!present(env, "RESEND_API_KEY") ? ["RESEND_API_KEY"] : []),
