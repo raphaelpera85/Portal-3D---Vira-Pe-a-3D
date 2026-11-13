@@ -89,6 +89,8 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   if (!isRecord(parsed) || !isRecord(parsed.input) || !Array.isArray(parsed.channels) || parsed.channels.length < 1 || parsed.channels.length > 10) {
     return { calculation: null, error: "Informe ao menos um canal de venda válido." };
   }
+  const priceTargetId = optionalUuid(parsed.priceTargetId);
+  if (priceTargetId === undefined) return { calculation: null, error: "O anúncio selecionado para receber o preço é inválido." };
   const slicer = parseSlicerMetrics(parsed.slicer);
   if (slicer === undefined) return { calculation: null, error: "Os dados reconhecidos pelo OCR são inválidos." };
   const origin = parsed.origin === undefined ? "unknown" : parsed.origin;
@@ -163,7 +165,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
 
   return {
     calculation: {
-      title: rawTitle.trim(), productId, printerId, profileId, input: safeInput, channels: safeChannels,
+      title: rawTitle.trim(), productId, printerId, profileId, priceTargetId, input: safeInput, channels: safeChannels,
       slicer, origin: origin as CalculationOrigin,
       result: { breakdown: result.breakdown, unitCostCents: result.unitCostCents, channels: result.channels },
     },

@@ -115,7 +115,7 @@ export async function saveMakerCalculation(_previous: SaveCalculationState, form
     printer_id: validated.calculation.printerId,
     profile_id: validated.calculation.profileId,
     title: validated.calculation.title,
-    input_snapshot: { input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin },
+    input_snapshot: { input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin, priceTargetId: validated.calculation.priceTargetId },
     result_snapshot: validated.calculation.result,
   });
   if (error) return { message: "Não foi possível salvar. Confira se as migrações do histórico, produtos, equipamentos e perfis estão aplicadas.", success: false };
