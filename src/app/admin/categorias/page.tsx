@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { getAssignableCategoryParentIds } from "@/lib/product-category-hierarchy";
 import { saveProductCategoryAction, setProductCategoryActiveAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export default async function ProductCategoriesAdminPage({ searchParams }: { sea
   const { data: rows, error } = await actor.supabase.from("product_categories").select("id, parent_id, name, slug, active, sort_order").order("sort_order").order("name").limit(250);
   const categories = rows ?? [];
   const names = new Map(categories.map((category) => [category.id, category.name]));
+  const assignableParents = new Map(categories.map((category) => [category.id, new Set(getAssignableCategoryParentIds(category.id, categories))]));
 
   return <>
     <SiteHeader />
@@ -45,7 +47,7 @@ export default async function ProductCategoriesAdminPage({ searchParams }: { sea
           <div className="admin-banner-record-heading"><div><span className="account-kicker">{category.active ? "ATIVA" : "INATIVA"} · ORDEM {category.sort_order}</span><h3>{category.name}</h3><p>/{category.slug} · {category.parent_id ? `Subcategoria de ${names.get(category.parent_id) ?? "categoria removida"}` : "Categoria principal"}</p></div>
             <form action={setProductCategoryActiveAction}><input type="hidden" name="categoryId" value={category.id} /><input type="hidden" name="active" value={String(!category.active)} /><button className="button button-secondary" type="submit">{category.active ? "Desativar" : "Ativar"}</button></form>
           </div>
-          <details className="equipment-edit-form"><summary>Editar nome, slug ou ordem</summary><form action={saveProductCategoryAction} className="printer-model-form"><input type="hidden" name="categoryId" value={category.id} /><label>Nome<input name="name" minLength={2} maxLength={80} defaultValue={category.name} required /></label><label>Slug público<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={100} defaultValue={category.slug} required /></label><label>Ordem na vitrine<input name="sortOrder" type="number" min="0" max="32767" step="1" defaultValue={category.sort_order} required /></label><button className="button button-primary" type="submit">Salvar alterações</button></form></details>
+          <details className="equipment-edit-form"><summary>Editar nome, slug, categoria-pai ou ordem</summary><form action={saveProductCategoryAction} className="printer-model-form"><input type="hidden" name="categoryId" value={category.id} /><label>Nome<input name="name" minLength={2} maxLength={80} defaultValue={category.name} required /></label><label>Slug público<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={100} defaultValue={category.slug} required /></label><label>Categoria-pai<select name="parentId" defaultValue={category.parent_id ?? ""}><option value="">Sem categoria-pai</option>{categories.filter((parent) => parent.id === category.parent_id || assignableParents.get(category.id)?.has(parent.id)).map((parent) => <option value={parent.id} key={parent.id}>{parent.name}{parent.active ? "" : " (inativa)"}</option>)}</select></label><label>Ordem na vitrine<input name="sortOrder" type="number" min="0" max="32767" step="1" defaultValue={category.sort_order} required /></label><button className="button button-primary" type="submit">Salvar alterações</button></form></details>
         </article>)}
         {categories.length === 250 && <p className="model-library-note">Exibindo as primeiras 250 categorias. Contate a equipe técnica para administrar listas maiores.</p>}
       </section>
