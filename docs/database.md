@@ -74,7 +74,13 @@ Endereços de compradores estão em `supabase/migrations/20261112040116_buyer_ad
 
 Banners da página inicial estão em `supabase/migrations/20261112040123_homepage_banners.sql`. Visitantes leem apenas banners ativos; administradores gerenciam conteúdo, ordem e publicação em `/admin/banners`. O formulário exige destino local, URL de imagem HTTPS e texto alternativo quando houver imagem. A homepage exibe os seis primeiros banners ativos pela ordem definida; os demais podem ficar em fila e ser pausados no painel.
 
-Para provisionar o primeiro administrador, crie e confirme a conta pela aplicação e, após aplicar as migrações, atribua o papel uma única vez no SQL Editor do projeto escolhido:
+Para provisionar o primeiro administrador, crie e confirme a conta pela aplicação. Com `.env.local` configurado com `NEXT_PUBLIC_SUPABASE_URL` e `SUPABASE_SECRET_KEY` (ou a chave legada `SUPABASE_SERVICE_ROLE_KEY`), rode no terminal local:
+
+```sh
+npm run bootstrap:admin -- seu-email-confirmado@exemplo.com
+```
+
+O script procura o endereço confirmado no Supabase Auth, exige que ainda não exista outro administrador e atribui o papel pelo cliente administrativo no servidor. Não cria contas nem envia convites. Como alternativa manual, após aplicar as migrações, atribua o papel no SQL Editor do projeto escolhido:
 
 ```sql
 insert into public.user_roles (user_id, role)
