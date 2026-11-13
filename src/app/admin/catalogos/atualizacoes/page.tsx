@@ -54,7 +54,7 @@ export default async function CatalogUpdatesPage({ searchParams }: { searchParam
       </section>
 
       <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">MONITORAMENTO</span><h2>Últimas verificações</h2></div>
-        {!queriesFailed && !watchState.data?.length && <p className="admin-empty">A primeira verificação ocorrerá no dia configurado no deploy (segunda-feira por padrão), às 12h UTC.</p>}
+        {!queriesFailed && !watchState.data?.length && <p className="admin-empty">A primeira verificação será feita pelo próximo cron diário, às 12h UTC. Até 24 fontes podem ser verificadas por execução.</p>}
         {watchState.data?.map((item) => <article className="account-card admin-banner-record" key={`${item.catalog_type}:${item.record_id}`}>
           <div className="admin-banner-record-heading"><div><span className="account-kicker">{typeLabels[item.catalog_type] ?? "Catálogo"} · {stateLabels[item.watch_state] ?? item.watch_state} · {formatDate(item.last_checked_at)} UTC</span><h3>{item.record_label}</h3><p>{item.check_detail ?? "A fonte respondeu e os validadores não indicaram alteração."}{item.last_http_status ? ` · HTTP ${item.last_http_status}` : ""}</p></div></div>
         </article>)}
