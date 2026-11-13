@@ -8,4 +8,6 @@ Perfis privados aparecem somente no painel da loja. O fabricante pode enviar um 
 
 Perfis aprovados ficam somente para leitura pelo fabricante. Um perfil recusado pode ser corrigido e enviado novamente. A seleção na página do produto apresenta o lote e os valores informados sem tratá-los como previsão universal ou consumo geométrico.
 
-O recurso e as migrações 001–016 estão aplicados ao projeto Supabase configurado para o portal. Mudanças futuras devem continuar versionadas em `supabase/migrations/` e validadas antes do deploy.
+Os detalhes públicos de cada modelo também aceitam perfis particulares do autor e submissões comunitárias. A equipe pode aprovar uma submissão como comunitária ou oficial, ou recusá-la com nota; perfis publicados podem ser copiados para a conta de outro usuário. A view `visible_model_print_profiles` expõe apenas perfis próprios ou compartilhados publicados, oculta o identificador do autor e limita a nota de revisão ao autor e à equipe. A migration `20261113150000_model_print_profile_sharing.sql` implementa esse fluxo e está versionada no Git, mas ainda não foi aplicada ao Supabase.
+
+As migrations devem continuar versionadas em `supabase/migrations/` e aplicadas em ordem. Publicar alterações de código pelo Git/Vercel não aplica automaticamente o schema Supabase.
