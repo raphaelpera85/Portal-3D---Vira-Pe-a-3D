@@ -757,6 +757,20 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .designer-status.status-pending { border-color: #e5c58c; color: #8a5a09; }
 .designer-status.status-published { border-color: #9ac5a8; color: var(--green-deep); }
 .designer-status.status-suspended { border-color: #e8b2af; color: #a33029; }
+.designer-service-section { margin-top: 18px; }
+.designer-service-request { display: grid; gap: 12px; }
+.designer-service-request h2, .designer-service-request-card h3 { margin: 0; }
+.designer-service-request > p, .designer-service-request-card > p, .designer-service-quote-result p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.designer-service-request.auth-form { display: grid; gap: 12px; }
+.designer-service-request-card { display: grid; gap: 12px; }
+.designer-service-request-list { display: grid; gap: 14px; max-width: 860px; }
+.designer-service-brief { white-space: pre-wrap; overflow-wrap: anywhere; }
+.designer-service-request-card a { color: var(--brand); font-size: 12px; }
+.designer-service-request-card details { padding-top: 12px; border-top: 1px solid var(--line); }
+.designer-service-request-card summary { width: fit-content; color: var(--brand); cursor: pointer; font-size: 12px; font-weight: 700; }
+.designer-service-quote-result { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+.designer-service-quote-result h3 { margin: 0; font-size: 15px; }
+.designer-buyer-requests .designer-service-request-list { margin-top: 28px; }
 .digital-asset-manager { display: grid; gap: 10px; width: 100%; margin-top: 10px; padding: 15px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
 .digital-asset-manager > p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
 .digital-asset-manager .auth-form { display: grid; gap: 11px; }
