@@ -19,6 +19,24 @@ const decimal = (value: unknown): number | null | undefined => {
 };
 const nullableMetric = (value: unknown): value is number | null => value === null || typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
 
+function parseManualFilaments(value: unknown, materialName: string) {
+  const lines = text(value).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length > 32) return undefined;
+  if (!lines.length) return [];
+  const filaments = lines.map((line, index) => {
+    const match = line.match(/^\s*(#[0-9a-f]{6})?\s*;\s*([^;]{0,40})\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*$/i);
+    if (!match || !match[3] && !match[4]) return null;
+    const grams = match[3] ? Number(match[3].replace(",", ".")) : null;
+    const lengthMeters = match[4] ? Number(match[4].replace(",", ".")) : null;
+    if ([grams, lengthMeters].some((item) => item !== null && (!Number.isFinite(item) || item < 0))) return null;
+    return { index: index + 1, grams, lengthMeters, pricePerKg: null, material: match[2].trim() || materialName || null, color: match[1]?.toUpperCase() ?? null };
+  });
+  if (filaments.some((item) => item === null)) return undefined;
+  const validFilaments = filaments.filter((item): item is NonNullable<typeof item> => item !== null);
+  const colors = validFilaments.map((item) => item.color).filter((item): item is string => item !== null);
+  return new Set(colors).size === colors.length ? validFilaments : undefined;
+}
+
 function validateImportedMetrics(value: unknown): SavedSlicerMetrics | null {
   if (typeof value !== "string" || value.length > 20_000) return null;
   let parsed: unknown;
@@ -30,7 +48,7 @@ function validateImportedMetrics(value: unknown): SavedSlicerMetrics | null {
     || !metricFields.every((field) => nullableMetric(metrics[field]))
     || !Array.isArray(metrics.materials) || metrics.materials.length > 20 || metrics.materials.some((item) => typeof item !== "string" || item.length > 40)
     || !Array.isArray(metrics.conflicts) || metrics.conflicts.length > 30 || metrics.conflicts.some((item) => typeof item !== "string" || item.length > 80)
-    || !Array.isArray(metrics.filaments) || metrics.filaments.length > 12) return null;
+    || !Array.isArray(metrics.filaments) || metrics.filaments.length > 32) return null;
   const filaments = metrics.filaments as Record<string, unknown>[];
   if (filaments.some((item) => !item || !Number.isSafeInteger(item.index) || (item.index as number) < 0
     || !(item.grams === null || nullableMetric(item.grams))
@@ -77,27 +95,42 @@ export function validateModelPrintProfile(values: Record<string, unknown>): Mode
   if (imported) {
     const parsed = validateImportedMetrics(imported);
     if (!parsed) return null;
-    metrics = parsed;
+    const fieldNames = ["modelGrams", "supportGrams", "totalGrams", "purgeGrams", "wipeTowerGrams", "filamentGrams", "lengthMeters", "printHours", "filamentChanges"] as const;
+    const manualFields = new Set(text(values.manualOverrideFields).split(","));
+    const overrides: Partial<Record<typeof fieldNames[number], number | null>> = {};
+    let invalidOverride = false;
+    fieldNames.forEach((field) => {
+      if (!manualFields.has(field)) return;
+      const raw = text(values[field]);
+      if (!raw) { overrides[field] = null; return; }
+      const value = decimal(raw);
+      if (value === undefined) invalidOverride = true;
+      else overrides[field] = value;
+    });
+    const manualFilaments = manualFields.has("filamentLines") ? parseManualFilaments(values.filamentLines, materialName) : null;
+    if (invalidOverride
+      || overrides.filamentChanges !== undefined && !Number.isSafeInteger(overrides.filamentChanges)
+      || manualFilaments === undefined) return null;
+    const filaments = manualFilaments ?? parsed.filaments;
+    const hasFilamentGramsOverride = manualFields.has("filamentGrams");
+    const filamentGrams = hasFilamentGramsOverride ? overrides.filamentGrams ?? null : parsed.filamentGrams;
+    const colorGrams = filaments.reduce((sum, item) => sum + (item.grams ?? 0), 0);
+    if (filamentGrams !== null && colorGrams > filamentGrams + 0.001) return null;
+    metrics = {
+      ...parsed, ...overrides, filaments,
+      ...(manualFilaments ? { materials: [...new Set(manualFilaments.map((item) => item.material).filter((item): item is string => item !== null))].slice(0, 20) } : {}),
+      ...(hasFilamentGramsOverride ? { derivedMass: false } : {}),
+    };
   } else {
     const fieldNames = ["modelGrams", "supportGrams", "totalGrams", "purgeGrams", "wipeTowerGrams", "filamentGrams", "lengthMeters", "printHours", "filamentChanges"] as const;
     const valuesByField = Object.fromEntries(fieldNames.map((field) => [field, decimal(values[field])])) as Record<typeof fieldNames[number], number | null | undefined>;
     if (Object.values(valuesByField).some((value) => value === undefined)
       || valuesByField.filamentChanges !== null && !Number.isSafeInteger(valuesByField.filamentChanges)) return null;
-    const lines = text(values.filamentLines).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-    if (lines.length > 12) return null;
-    const filaments = lines.map((line, index) => {
-      const match = line.match(/^\s*(#[0-9a-f]{6})?\s*;\s*([^;]{0,40})\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*$/i);
-      if (!match || !match[3] && !match[4]) return null;
-      const grams = match[3] ? Number(match[3].replace(",", ".")) : null;
-      const lengthMeters = match[4] ? Number(match[4].replace(",", ".")) : null;
-      if ([grams, lengthMeters].some((item) => item !== null && (!Number.isFinite(item) || item < 0))) return null;
-      return { index: index + 1, grams, lengthMeters, pricePerKg: null, material: match[2].trim() || materialName || null, color: match[1]?.toUpperCase() ?? null };
-    });
-    if (filaments.some((item) => item === null)) return null;
-    const validFilaments = filaments.filter((item): item is NonNullable<typeof item> => item !== null);
-    const colors = validFilaments.map((item) => item.color).filter((item): item is string => item !== null);
+    const manualFilaments = parseManualFilaments(values.filamentLines, materialName);
+    if (manualFilaments === undefined) return null;
+    const validFilaments = manualFilaments ?? [];
     const colorGrams = validFilaments.reduce((sum, item) => sum + (item.grams ?? 0), 0);
-    if (new Set(colors).size !== colors.length || valuesByField.filamentGrams != null && colorGrams > valuesByField.filamentGrams + 0.001) return null;
+    if (valuesByField.filamentGrams != null && colorGrams > valuesByField.filamentGrams + 0.001) return null;
     const derivedMass = valuesByField.filamentGrams === null && validFilaments.length > 0 && validFilaments.every((item) => item.grams !== null);
     const filamentGrams = valuesByField.filamentGrams ?? (derivedMass ? colorGrams : null);
     metrics = {

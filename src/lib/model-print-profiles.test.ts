@@ -50,6 +50,11 @@ describe("validateModelPrintProfile", () => {
     expect(validateModelPrintProfile({ ...input, totalGrams: "10", filamentGrams: "10", filamentLines: "#336699; PLA; 11; 2" })).toBeNull();
   });
 
+  it("accepts up to 32 filament entries in manual profiles", () => {
+    const filamentLines = Array.from({ length: 13 }, (_, index) => `#${index.toString(16).padStart(6, "0")}; PLA; 1; 0,3`).join("\n");
+    expect(validateModelPrintProfile({ ...input, filamentGrams: "20", filamentLines })?.metrics.filaments).toHaveLength(13);
+  });
+
   it("accepts imported 3MF slicer metrics after validating the payload", () => {
     const slicerMetrics = {
       slicer: "Arquivo 3MF · placa 1", modelGrams: null, supportGrams: null, totalGrams: 8,
@@ -57,10 +62,37 @@ describe("validateModelPrintProfile", () => {
       printHours: 0.5, filamentChanges: null, estimatedCost: null, materials: ["PLA"],
       filaments: [{ index: 1, grams: 8, lengthMeters: 2.4, pricePerKg: null, material: "PLA", color: "#336699" }], conflicts: [],
     };
-    expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify(slicerMetrics) })?.metrics).toEqual(slicerMetrics);
+    expect(validateModelPrintProfile({ ...input, manualOverrideFields: "", importedMetrics: JSON.stringify(slicerMetrics) })?.metrics).toEqual(slicerMetrics);
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, filamentGrams: -8 }) })).toBeNull();
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, filamentChanges: 1.5 }) })).toBeNull();
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, estimatedCost: 12 }) })).toBeNull();
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, estimatedCostCurrency: "USD" }) })).toBeNull();
+  });
+
+  it("accepts imported 3MF metrics with up to 32 filaments", () => {
+    const filaments = Array.from({ length: 13 }, (_, index) => ({
+      index: index + 1, grams: 1, lengthMeters: 0.3, pricePerKg: null, material: "PLA", color: `#${index.toString(16).padStart(6, "0")}`,
+    }));
+    const importedMetrics = {
+      slicer: "Arquivo 3MF · placa 1", modelGrams: null, supportGrams: null, totalGrams: 13,
+      purgeGrams: null, wipeTowerGrams: null, filamentGrams: 13, derivedMass: false, lengthMeters: 3.9,
+      printHours: 0.5, filamentChanges: null, estimatedCost: null, materials: ["PLA"], filaments, conflicts: [],
+    };
+    expect(validateModelPrintProfile({ ...input, manualOverrideFields: "", importedMetrics: JSON.stringify(importedMetrics) })?.metrics.filaments).toHaveLength(13);
+  });
+
+  it("lets manual metrics and per-color consumption override imported 3MF values", () => {
+    const importedMetrics = {
+      slicer: "Arquivo 3MF · placa 1", modelGrams: null, supportGrams: null, totalGrams: 8,
+      purgeGrams: null, wipeTowerGrams: null, filamentGrams: 8, derivedMass: false, lengthMeters: 2.4,
+      printHours: 0.5, filamentChanges: null, estimatedCost: null, materials: ["PLA"],
+      filaments: [{ index: 1, grams: 8, lengthMeters: 2.4, pricePerKg: null, material: "PLA", color: "#336699" }], conflicts: [],
+    };
+    const result = validateModelPrintProfile({
+      ...input, modelGrams: "6", filamentGrams: "10", filamentLines: "#FFAA00; PETG; 10; 3",
+      manualOverrideFields: "modelGrams,filamentGrams,filamentLines",
+      importedMetrics: JSON.stringify(importedMetrics),
+    });
+    expect(result?.metrics).toMatchObject({ modelGrams: 6, filamentGrams: 10, filaments: [{ index: 1, grams: 10, material: "PETG", color: "#FFAA00" }] });
   });
 });

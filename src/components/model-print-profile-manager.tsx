@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { copyPublishedModelPrintProfile, deleteModelPrintProfile, saveModelPrintProfile } from "@/app/modelos/actions";
 import { mapThreeMfPlateToSlicerMetrics, type SavedSlicerMetrics } from "@/lib/saved-calculation";
 import type { ThreeMfSlicePlate } from "@/lib/model-file";
@@ -51,7 +51,12 @@ export function ModelPrintProfileManager({ modelSlug, profiles, plates, authenti
 
 function ModelPrintProfileForm({ modelSlug, profile, plates }: { modelSlug: string; profile?: ModelPrintProfileRecord; plates: ThreeMfSlicePlate[] }) {
   const [plateIndex, setPlateIndex] = useState("");
+  const [manualOverrideFields, setManualOverrideFields] = useState<string[]>([]);
   const metrics = profile?.slicer_metrics;
+  const markManualOverride = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const field = event.currentTarget.name;
+    setManualOverrideFields((current) => current.includes(field) ? current : [...current, field]);
+  };
   const importedMetrics = plateIndex === "" ? null : mapThreeMfPlateToSlicerMetrics(plates[Number(plateIndex)], Number(plateIndex) + 1);
   if (importedMetrics) importedMetrics.filaments = importedMetrics.filaments.map((item) => ({
     ...item, color: item.color && /^#?[0-9a-f]{6}$/i.test(item.color) ? `#${item.color.replace(/^#/, "").toUpperCase()}` : null,
@@ -73,17 +78,18 @@ function ModelPrintProfileForm({ modelSlug, profile, plates }: { modelSlug: stri
     <label>Escala (%)<input name="scalePercent" type="number" min="10" max="300" step="0.1" defaultValue={profile?.scale_percent ?? 100} /></label>
     <label>Quantidade neste perfil<input name="quantity" type="number" min="1" max="1000000" step="1" required defaultValue={profile?.quantity ?? 1} /></label>
     <label className="model-print-profile-checkbox"><input name="supports" type="checkbox" defaultChecked={profile?.supports ?? false} /> Usa suportes</label>
-    {plates.length > 0 && <label className="model-print-profile-import">Importar dados do arquivo 3MF<select name="plateIndex" value={plateIndex} onChange={(event) => setPlateIndex(event.target.value)}><option value="">Preencher manualmente</option>{plates.map((plate, index) => <option key={`${plate.index ?? index}-${index}`} value={index}>Placa {plate.index ?? index + 1}</option>)}</select><small>As informações importadas substituem os valores manuais de consumo enviados neste formulário.</small></label>}
-    <label>Peso do modelo (g)<input name="modelGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.modelGrams ?? null)} /></label>
-    <label>Peso dos suportes (g)<input name="supportGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.supportGrams ?? null)} /></label>
-    <label>Peso total (g)<input name="totalGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.totalGrams ?? null)} /></label>
-    <label>Purga (g)<input name="purgeGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.purgeGrams ?? null)} /></label>
-    <label>Torre de limpeza (g)<input name="wipeTowerGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.wipeTowerGrams ?? null)} /></label>
-    <label>Consumo total de filamento (g)<input name="filamentGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.filamentGrams ?? null)} /></label>
-    <label>Comprimento total (m)<input name="lengthMeters" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.lengthMeters ?? null)} /></label>
-    <label>Tempo de impressão (h)<input name="printHours" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.printHours ?? null)} /></label>
-    <label>Trocas de filamento<input name="filamentChanges" type="number" min="0" max="1000000000" step="1" defaultValue={metricNumber(metrics?.filamentChanges ?? null)} /></label>
-    <label className="model-print-profile-colors">Consumo por cor (opcional)<textarea name="filamentLines" rows={3} maxLength={1000} defaultValue={filamentLines(metrics?.filaments ?? [])} placeholder="#336699; PLA; 20; 6,2" /><small>Uma linha por filamento: cor hexadecimal; material; gramas; metros. Use cor vazia quando o arquivo não a identifica.</small></label>
+    {plates.length > 0 && <label className="model-print-profile-import">Importar dados do arquivo 3MF<select name="plateIndex" value={plateIndex} onChange={(event) => setPlateIndex(event.target.value)}><option value="">Preencher manualmente</option>{plates.map((plate, index) => <option key={`${plate.index ?? index}-${index}`} value={index}>Placa {plate.index ?? index + 1}</option>)}</select><small>A importação preenche a base; campos que você editar depois substituem somente os valores correspondentes.</small></label>}
+    <label>Peso do modelo (g)<input name="modelGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.modelGrams ?? null)} onChange={markManualOverride} /></label>
+    <label>Peso dos suportes (g)<input name="supportGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.supportGrams ?? null)} onChange={markManualOverride} /></label>
+    <label>Peso total (g)<input name="totalGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.totalGrams ?? null)} onChange={markManualOverride} /></label>
+    <label>Purga (g)<input name="purgeGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.purgeGrams ?? null)} onChange={markManualOverride} /></label>
+    <label>Torre de limpeza (g)<input name="wipeTowerGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.wipeTowerGrams ?? null)} onChange={markManualOverride} /></label>
+    <label>Consumo total de filamento (g)<input name="filamentGrams" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.filamentGrams ?? null)} onChange={markManualOverride} /></label>
+    <label>Comprimento total (m)<input name="lengthMeters" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.lengthMeters ?? null)} onChange={markManualOverride} /></label>
+    <label>Tempo de impressão (h)<input name="printHours" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.printHours ?? null)} onChange={markManualOverride} /></label>
+    <label>Trocas de filamento<input name="filamentChanges" type="number" min="0" max="1000000000" step="1" defaultValue={metricNumber(metrics?.filamentChanges ?? null)} onChange={markManualOverride} /></label>
+    <label className="model-print-profile-colors">Consumo por cor (opcional)<textarea name="filamentLines" rows={3} maxLength={4000} defaultValue={filamentLines(metrics?.filaments ?? [])} placeholder="#336699; PLA; 20; 6,2" onChange={markManualOverride} /><small>Até 32 linhas, uma por filamento: cor hexadecimal; material; gramas; metros. Use cor vazia quando o arquivo não a identifica.</small></label>
+    <input type="hidden" name="manualOverrideFields" value={manualOverrideFields.join(",")} />
     <input type="hidden" name="importedMetrics" value={importedMetrics ? JSON.stringify(importedMetrics) : ""} />
     <button className="button button-primary model-print-profile-submit" type="submit">{profile?.sharing_scope === "community" && profile.review_status === "published" ? "Atualizar e reenviar para revisão" : profile?.sharing_scope === "community" ? "Salvar e reenviar para revisão" : profile ? "Salvar como particular" : "Salvar perfil"}</button>
   </form>;
