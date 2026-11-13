@@ -158,3 +158,21 @@ export function aggregateMelhorEnvioShipmentStatus(statuses: string[], currentSt
   if (statuses.length && statuses.every((status) => status === "carted")) return "carted";
   return currentStatus;
 }
+
+export function parseMelhorEnvioShipmentTag(value: unknown) {
+  if (typeof value !== "string") return null;
+  const match = /^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})-([1-9]\d?)$/i.exec(value);
+  const packageIndex = Number(match?.[2]);
+  return match && packageIndex <= 50 ? { targetId: match[1], packageIndex } : null;
+}
+
+export function normalizeMelhorEnvioCartOrder(payload: unknown, expectedId: string) {
+  if (!payload || typeof payload !== "object") return null;
+  const outer = payload as Record<string, unknown>;
+  const order = outer.data && typeof outer.data === "object" ? outer.data as Record<string, unknown> : outer;
+  const rawPrice = order.price ?? order.custom_price ?? order.total;
+  if (typeof rawPrice !== "number" && (typeof rawPrice !== "string" || rawPrice.trim() === "")) return null;
+  const price = Number(rawPrice);
+  if (order.id !== expectedId || !Number.isFinite(price) || price < 0 || price > 1_000_000) return null;
+  return { shippingCostCents: Math.round(price * 100) };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateMelhorEnvioShipmentStatus, groupMelhorEnvioPackages, melhorEnvioRequiresOneVolumePerOrder, normalizeMelhorEnvioRates, validateMelhorEnvioPackage, validateMelhorEnvioShipment } from "./melhor-envio";
+import { aggregateMelhorEnvioShipmentStatus, groupMelhorEnvioPackages, melhorEnvioRequiresOneVolumePerOrder, normalizeMelhorEnvioCartOrder, normalizeMelhorEnvioRates, parseMelhorEnvioShipmentTag, validateMelhorEnvioPackage, validateMelhorEnvioShipment } from "./melhor-envio";
 
 const shipmentFields = {
   recipientPhone: "(11) 91234-5678",
@@ -67,6 +67,23 @@ describe("aggregateMelhorEnvioShipmentStatus", () => {
 
   it("does not advance a partially completed set past its slowest label", () => {
     expect(aggregateMelhorEnvioShipmentStatus(["generated", "paid"], "paid")).toBe("paid");
+  });
+});
+
+describe("Melhor Envio shipment recovery", () => {
+  it("parses only bounded package tags that point to a UUID target", () => {
+    expect(parseMelhorEnvioShipmentTag("9f9ca418-77f7-4a4c-a4f8-8f746386a9ab-12"))
+      .toEqual({ targetId: "9f9ca418-77f7-4a4c-a4f8-8f746386a9ab", packageIndex: 12 });
+    expect(parseMelhorEnvioShipmentTag("https://example.com/9f9ca418-77f7-4a4c-a4f8-8f746386a9ab-1")).toBeNull();
+    expect(parseMelhorEnvioShipmentTag("9f9ca418-77f7-4a4c-a4f8-8f746386a9ab-51")).toBeNull();
+  });
+
+  it("requires the exact provider order and a valid price before recovery", () => {
+    expect(normalizeMelhorEnvioCartOrder({ data: { id: "provider-1", price: "19.9" } }, "provider-1"))
+      .toEqual({ shippingCostCents: 1990 });
+    expect(normalizeMelhorEnvioCartOrder({ id: "other-order", price: 19.9 }, "provider-1")).toBeNull();
+    expect(normalizeMelhorEnvioCartOrder({ id: "provider-1", price: "invalid" }, "provider-1")).toBeNull();
+    expect(normalizeMelhorEnvioCartOrder({ id: "provider-1", price: null }, "provider-1")).toBeNull();
   });
 });
 

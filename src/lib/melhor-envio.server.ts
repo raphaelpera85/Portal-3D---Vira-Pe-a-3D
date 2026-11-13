@@ -77,15 +77,15 @@ export async function getMelhorEnvioAccessToken(storeId: string, requiredScopes:
   return token.access_token;
 }
 
-export async function requestMelhorEnvio(storeId: string, scopes: string[], path: string, body: unknown) {
+export async function requestMelhorEnvio(storeId: string, scopes: string[], path: string, body?: unknown, method: "GET" | "POST" = "POST") {
   const accessToken = await getMelhorEnvioAccessToken(storeId, scopes);
   const response = await fetch(`${baseUrl}${path}`, {
-    method: "POST",
+    method,
     headers: {
-      authorization: `Bearer ${accessToken}`, "content-type": "application/json", accept: "application/json",
+      authorization: `Bearer ${accessToken}`, ...(body === undefined ? {} : { "content-type": "application/json" }), accept: "application/json",
       "user-agent": "ViraPeca3D (suporte@virapeca3d.com.br)",
     },
-    body: JSON.stringify(body), signal: AbortSignal.timeout(12000), cache: "no-store", redirect: "error",
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(12000), cache: "no-store", redirect: "error",
   });
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) throw new Error("Não foi possível concluir a operação no Melhor Envio");

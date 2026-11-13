@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { aggregateMelhorEnvioShipmentStatus } from "@/lib/melhor-envio";
+import { aggregateMelhorEnvioShipmentStatus, groupMelhorEnvioPackages, normalizeMelhorEnvioCartOrder, normalizeMelhorEnvioPackages, parseMelhorEnvioShipmentTag } from "@/lib/melhor-envio";
+import { requestMelhorEnvio } from "@/lib/melhor-envio.server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -38,15 +39,64 @@ export async function POST(request: Request) {
     || typeof data.status !== "string" || data.status.length > 80) return Response.json({ error: "Invalid event data" }, { status: 400 });
   const admin = createSupabaseAdminClient();
   if (!admin) return Response.json({ error: "Webhook unavailable" }, { status: 503 });
-  const { data: shipment } = await admin.from("seller_order_shipping_label_packages").select("id, label_id, status, tracking_code")
+  let { data: shipment } = await admin.from("seller_order_shipping_label_packages").select("id, label_id, status, tracking_code")
     .eq("provider_order_id", data.id).maybeSingle();
-  if (!shipment) return Response.json({ received: true });
-  const { data: label } = await admin.from("seller_order_shipping_labels").select("id, order_id, custom_print_request_id, store_id, status, tracking_code, package_count")
-    .eq("id", shipment.label_id).maybeSingle();
+  const matchingTags = Array.isArray(data.tags) ? data.tags.flatMap((entry) => {
+    const tag = entry && typeof entry === "object" ? parseMelhorEnvioShipmentTag((entry as Record<string, unknown>).tag) : null;
+    return tag ? [tag] : [];
+  }) : [];
+  const recoveryTag = matchingTags.length === 1 ? matchingTags[0] : null;
+  let label: { id: string; order_id: string | null; custom_print_request_id: string | null; store_id: string; status: string; tracking_code: string | null; package_count: number; provider_order_id: string | null; shipping_cost_cents: number | null } | null = null;
+  if (shipment) {
+    const { data: savedLabel } = await admin.from("seller_order_shipping_labels").select("id, order_id, custom_print_request_id, store_id, status, tracking_code, package_count, provider_order_id, shipping_cost_cents")
+      .eq("id", shipment.label_id).maybeSingle();
+    label = savedLabel;
+  } else {
+    if (!recoveryTag) return Response.json({ received: true });
+    const [{ data: orderLabel }, { data: printLabel }] = await Promise.all([
+      admin.from("seller_order_shipping_labels").select("id, order_id, custom_print_request_id, store_id, status, tracking_code, package_count, provider_order_id, shipping_cost_cents")
+        .eq("order_id", recoveryTag.targetId).in("status", ["creating", "cart_partial_uncertain"]).maybeSingle(),
+      admin.from("seller_order_shipping_labels").select("id, order_id, custom_print_request_id, store_id, status, tracking_code, package_count, provider_order_id, shipping_cost_cents")
+        .eq("custom_print_request_id", recoveryTag.targetId).in("status", ["creating", "cart_partial_uncertain"]).maybeSingle(),
+    ]);
+    label = orderLabel ?? printLabel;
+    if (!label || (orderLabel && printLabel)) return Response.json({ received: true });
+  }
   if (!label) return Response.json({ received: true });
   const { data: connection } = await admin.from("store_melhor_envio_connections").select("provider_user_id")
     .eq("store_id", label.store_id).maybeSingle();
   if (!connection || connection.provider_user_id !== String(data.user_id)) return Response.json({ error: "Unknown sender" }, { status: 401 });
+  if (!shipment) {
+    const tag = recoveryTag;
+    if (!tag || tag.packageIndex > label.package_count) return Response.json({ received: true });
+    const targetResult = label.order_id
+      ? admin.from("seller_purchase_orders").select("shipping_provider_service_id, shipping_service, shipping_quote_packages").eq("id", label.order_id).maybeSingle()
+      : admin.from("custom_print_deliveries").select("shipping_provider_service_id, shipping_service, shipping_quote_packages").eq("request_id", label.custom_print_request_id!).maybeSingle();
+    const { data: target } = await targetResult;
+    const packages = normalizeMelhorEnvioPackages(target?.shipping_quote_packages);
+    if (!target || !packages || !target.shipping_provider_service_id || !target.shipping_service) return Response.json({ received: true });
+    const groups = groupMelhorEnvioPackages(Number(target.shipping_provider_service_id), target.shipping_service, packages);
+    if (groups.length !== label.package_count || tag.packageIndex > groups.length) return Response.json({ received: true });
+    let providerOrder: unknown;
+    try {
+      providerOrder = await requestMelhorEnvio(label.store_id, ["cart-read"], `/api/v2/me/cart/${encodeURIComponent(data.id as string)}`, undefined, "GET");
+    } catch {
+      return Response.json({ error: "Could not verify provider shipment" }, { status: 503 });
+    }
+    const normalizedOrder = normalizeMelhorEnvioCartOrder(providerOrder, data.id as string);
+    if (!normalizedOrder) return Response.json({ error: "Could not verify provider shipment" }, { status: 503 });
+    const { data: recovered, error: recoveryError } = await admin.from("seller_order_shipping_label_packages").insert({
+      label_id: label.id, package_index: tag.packageIndex, provider_order_id: data.id,
+      packages: groups[tag.packageIndex - 1], status: "carted", shipping_cost_cents: normalizedOrder.shippingCostCents,
+      provider_status: typeof data.status === "string" ? data.status.slice(0, 80).toLowerCase() : null,
+    }).select("id, label_id, status, tracking_code").maybeSingle();
+    if (recoveryError || !recovered) {
+      const { data: existing } = await admin.from("seller_order_shipping_label_packages").select("id, label_id, package_index, status, tracking_code")
+        .eq("provider_order_id", data.id).maybeSingle();
+      if (!existing || existing.label_id !== label.id || existing.package_index !== tag.packageIndex) return Response.json({ error: "Could not reconcile provider shipment" }, { status: 500 });
+      shipment = existing;
+    } else shipment = recovered;
+  }
 
   const trackingCode = typeof data.tracking === "string" && /^[^\u0000-\u001f\u007f]{1,100}$/.test(data.tracking)
     ? data.tracking : shipment.tracking_code;
@@ -66,16 +116,19 @@ export async function POST(request: Request) {
   }).eq("id", shipment.id);
   if (labelError) return Response.json({ error: "Could not update shipment" }, { status: 500 });
   const { data: allShipments } = await admin.from("seller_order_shipping_label_packages")
-    .select("status, tracking_code, tracking_url, provider_status").eq("label_id", label.id).order("package_index");
+    .select("status, tracking_code, tracking_url, provider_status, shipping_cost_cents, provider_order_id").eq("label_id", label.id).order("package_index");
   const shipments = allShipments ?? [];
   const aggregateStatus = shipments.length === label.package_count
     ? aggregateMelhorEnvioShipmentStatus(shipments.map((entry) => entry.status), label.status) : "cart_partial_uncertain";
+  const aggregateShippingCost = shipments.length === label.package_count && shipments.every((entry) => entry.shipping_cost_cents !== null)
+    ? shipments.reduce((sum, entry) => sum + Number(entry.shipping_cost_cents), 0) : label.shipping_cost_cents;
   const trackingCodes = shipments.map((entry) => entry.tracking_code).filter((value): value is string => Boolean(value));
   const aggregateTrackingCode = trackingCodes.join(", ").slice(0, 100) || label.tracking_code;
   const aggregateTrackingUrl = shipments.find((entry) => entry.tracking_url)?.tracking_url ?? null;
   const { error: parentError } = await admin.from("seller_order_shipping_labels").update({
     provider_status: providerStatus, status: aggregateStatus, tracking_code: aggregateTrackingCode,
-    tracking_url: aggregateTrackingUrl, updated_at: new Date().toISOString(),
+    tracking_url: aggregateTrackingUrl, shipping_cost_cents: aggregateShippingCost,
+    provider_order_id: label.provider_order_id ?? shipments[0]?.provider_order_id ?? null, updated_at: new Date().toISOString(),
   }).eq("id", label.id);
   if (parentError) return Response.json({ error: "Could not update shipment" }, { status: 500 });
 
