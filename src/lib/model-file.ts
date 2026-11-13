@@ -1,6 +1,6 @@
 export const MAX_MODEL_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_PUBLIC_MODEL_FILE_BYTES = 50 * 1024 * 1024;
-export const MAX_THREE_MF_UNCOMPRESSED_BYTES = 150 * 1024 * 1024;
+export const MAX_THREE_MF_UNCOMPRESSED_BYTES = 300 * 1024 * 1024;
 
 export type ModelUnit = "mm" | "cm" | "m";
 export type ModelSourceUnit = ModelUnit | "um" | "in" | "ft";

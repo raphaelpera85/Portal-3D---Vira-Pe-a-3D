@@ -191,8 +191,9 @@ describe("model dimensions", () => {
     expect(exceedsThreeMfExpansionLimit(MAX_THREE_MF_UNCOMPRESSED_BYTES - 10, 11)).toBe(true);
   });
 
-  it("allows the Batman 3MF package, which expands to 124 MiB", () => {
-    expect(exceedsThreeMfExpansionLimit(0, 124 * 1024 * 1024)).toBe(false);
+  it("allows real catalog packages up to 273 MiB while keeping the expansion cap", () => {
+    expect(exceedsThreeMfExpansionLimit(0, 273 * 1024 * 1024)).toBe(false);
+    expect(exceedsThreeMfExpansionLimit(MAX_THREE_MF_UNCOMPRESSED_BYTES - 1, 2)).toBe(true);
   });
 });
 
