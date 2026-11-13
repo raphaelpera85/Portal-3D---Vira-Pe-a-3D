@@ -13,6 +13,19 @@ describe("parseSlicerOcrTexts", () => {
     expect(parseSlicerOcrTexts(["Estimated cost: $2.30"]).estimatedCostCurrency).toBeNull();
   });
 
+  it("preserves full names for the filament and resin products in the technical catalog", () => {
+    const names = [
+      "PPA-CF", "Prusament PA11 Carbon Fiber", "Prusament PETG Carbon Fiber", "Prusament PC Blend", "PLA+",
+      "Prusament TPU 95A", "Anycubic Standard Resin V2", "Anycubic Water-Wash Resin 2.0", "ELEGOO ABS-Like Resin V3.0",
+    ];
+
+    for (const name of names) {
+      expect(parseSlicerOcrTexts([`Material: ${name}`]).materials).toEqual([name.toUpperCase()]);
+    }
+
+    expect(parseSlicerOcrTexts(["Filament 1: Prusament PA11 Carbon Fiber black 12 g"]).filaments[0].material).toBe("PRUSAMENT PA11 CARBON FIBER");
+  });
+
   it("leaves currency empty when screenshots disagree", () => {
     const result = parseSlicerOcrTexts(["Cost: R$ 10.00", "Cost: USD 10.00"]);
     expect(result.estimatedCostCurrency).toBeNull();

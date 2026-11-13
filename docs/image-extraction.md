@@ -27,6 +27,8 @@ O parser procura rótulos em português e inglês e só preenche valores associa
 
 Os nomes de fatiador reconhecidos são Anycubic Slicer Next, OrcaSlicer, Bambu Studio, Cura, UltiMaker Cura, PrusaSlicer, Creality Print, ElegooSlicer, FlashPrint e ideaMaker. Reconhecer o nome não garante que todos os campos daquele programa ou versão sejam extraídos.
 
+O reconhecimento textual de material preserva nomes de produtos do catálogo, incluindo variantes como PPA-CF, PA11 Carbon Fiber, PETG Carbon Fiber, PC Blend, Water-Wash Resin 2.0 e ABS-Like Resin V3.0. O OCR não associa automaticamente a leitura a um registro ou perfil do catálogo.
+
 ## Consolidação de várias imagens
 
 Imagens podem mostrar partes diferentes da mesma tela de resultado. O portal combina leituras do mesmo campo quando não há divergência; campos numéricos divergentes ficam vazios e entram na lista de conflitos. Leituras por filamento são combinadas pelo índice. Se massa, material ou cor do mesmo índice divergirem, o filamento é removido do resultado para revisão; comprimentos divergentes ficam vazios.

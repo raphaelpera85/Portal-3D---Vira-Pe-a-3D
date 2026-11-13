@@ -4,7 +4,7 @@ const massLabels = {
   support: String.raw`(?:supports?|suportes?)`,
   total: String.raw`(?:filament\s+(?:used|usage|total)|material\s+(?:used|usage|total)|(?:consumo|peso)\s+total|total(?:\s+(?:filament|material|weight|consumption))?)`,
 };
-const materialPattern = String.raw`(?:PLA(?:\+|\s*Silk|\s*Matte)?|PETG(?:-CF)?|ABS|ASA|TPU|PA(?:-CF)?|NYLON|PC|PVA|HIPS|RESIN|RESINA)`;
+const materialPattern = String.raw`(?:(?:Prusament|Anycubic|ELEGOO)\s+)?(?:Water[- ]Wash\s+Resin(?:\s+\d+(?:\.\d+)?)?|Standard\s+Resin(?:\s+V\d+(?:\.\d+)?)?|ABS[- ]?Like\s+Resin(?:\s+V?\d+(?:\.\d+)?)?|PPA[- ]CF|PA11(?:[- ](?:CF|Carbon[- ]?Fiber))?|PETG(?:[- ](?:CF|Carbon[- ]?Fiber))?|PC\s+Blend|TPU\s*95A|PLA(?:\+|\s*(?:Silk|Matte|Basic))?|PETG|ABS|ASA|TPU|PA(?:-CF)?|NYLON|PC|PVA|HIPS|RESIN|RESINA)`;
 const colorPattern = String.raw`(?:preto|branco|vermelho|azul|verde|amarelo|laranja|roxo|rosa|cinza|marrom|black|white|red|blue|green|yellow|orange|purple|pink|gray|grey|brown)`;
 const slicerPatterns: Array<[RegExp, string]> = [
   [/Anycubic\s+Slicer\s+Next/i, "Anycubic Slicer Next"],
@@ -93,8 +93,10 @@ function parseOne(text: string) {
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
   const length = findMeasurement(lines, String.raw`(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value);
   const cost = findMeasurement(lines, String.raw`(?:estimated\s+cost|material\s+cost|filament\s+cost|custo\s+(?:estimado|do\s+material)|\bcost\b)`, String.raw`(?:brl|r\$|usd|\$)?`, (value) => value);
-  const materialLines = lines.filter((line) => /\b(?:PLA|PETG|ABS|ASA|TPU|NYLON|PA(?:-CF)?|PC|PVA|HIPS|RESIN|RESINA)\b/i.test(line));
-  const materials = [...new Set(materialLines.map((line) => line.match(new RegExp(`\\b${materialPattern}\\b`, "i"))?.[0]?.toUpperCase()).filter((value): value is string => Boolean(value)))];
+  const materials = [...new Set(lines.flatMap((line) => {
+    const match = new RegExp(`(?<![a-z0-9])${materialPattern}(?![a-z0-9])`, "i").exec(line);
+    return match ? [match[0].toUpperCase()] : [];
+  }))];
   const filamentReadings = lines.flatMap((line) => {
     const row = /\b(?:filament|filamento)\s+#?(\d+)\s*[:=\-]?\s*(.*)$/i.exec(line);
     if (!row) return [];
@@ -105,7 +107,7 @@ function parseOne(text: string) {
     const gramsValue = massAmount === null ? null : mass![2].toLowerCase() === "kg" ? massAmount * 1000 : massAmount;
     const lengthAmount = lengthMatch ? parseNumber(lengthMatch[1]) : null;
     const lengthMeters = lengthAmount === null ? null : lengthMatch![2].toLowerCase() === "mm" ? lengthAmount / 1000 : lengthAmount;
-    const material = new RegExp(`\\b${materialPattern}\\b`, "i").exec(row[2])?.[0]?.toUpperCase() ?? null;
+    const material = new RegExp(`(?<![a-z0-9])${materialPattern}(?![a-z0-9])`, "i").exec(row[2])?.[0]?.toUpperCase() ?? null;
     const labeledColor = new RegExp(`(?:color|colour|cor)\\s*[:=]\\s*(#[0-9a-f]{3,8}|${colorPattern})`, "i").exec(row[2])?.[1];
     const namedColor = new RegExp(`\\b(${colorPattern})\\b`, "i").exec(row[2])?.[1];
     return (gramsValue === null || Number.isFinite(gramsValue)) && (lengthMeters === null || Number.isFinite(lengthMeters))
