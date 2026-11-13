@@ -25,7 +25,7 @@ function parseManualFilaments(value: unknown, materialName: string) {
   if (!lines.length) return [];
   const filaments = lines.map((line, index) => {
     const match = line.match(/^\s*(#[0-9a-f]{6})?\s*;\s*([^;]{0,40})\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*(?:;\s*(\d{1,3}))?\s*$/i);
-    if (!match || !match[3] && !match[4]) return null;
+    if (!match || !match[3] && !match[4] && !match[1] && !match[2].trim()) return null;
     const grams = match[3] ? Number(match[3].replace(",", ".")) : null;
     const lengthMeters = match[4] ? Number(match[4].replace(",", ".")) : null;
     const filamentIndex = match[5] ? Number(match[5]) : index + 1;

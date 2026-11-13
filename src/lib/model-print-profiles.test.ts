@@ -50,6 +50,13 @@ describe("validateModelPrintProfile", () => {
     });
   });
 
+  it("preserves filament color and material metadata before consumption is measured", () => {
+    expect(validateModelPrintProfile({ ...input, filamentLines: "#336699; PLA Basic; ; ; 3" })?.metrics.filaments).toEqual([
+      { index: 3, grams: null, lengthMeters: null, pricePerKg: null, material: "PLA Basic", color: "#336699" },
+    ]);
+    expect(validateModelPrintProfile({ ...input, filamentLines: "; ; ; ; 3" })).toBeNull();
+  });
+
   it("rejects duplicate colors and color totals above total filament use", () => {
     expect(validateModelPrintProfile({ ...input, filamentLines: "#336699; PLA; 10; 2\n#336699; PETG; 10; 2" })).toBeNull();
     expect(validateModelPrintProfile({ ...input, totalGrams: "10", filamentGrams: "10", filamentLines: "#336699; PLA; 11; 2" })).toBeNull();

@@ -20,7 +20,7 @@ const labelType: Record<string, string> = { economic: "Econômico", fast: "Rápi
 const scopeLabels = { private: "Particular", community: "Comunitário", official: "Oficial" };
 const statusLabels = { draft: "Privado", pending: "Aguardando revisão", published: "Publicado", rejected: "Precisa de ajustes" };
 const metricNumber = (value: number | null) => value == null ? "" : String(value);
-const filamentLines = (filaments: SavedSlicerMetrics["filaments"]) => filaments.filter((item) => item.grams !== null || item.lengthMeters !== null).map((item) => {
+const filamentLines = (filaments: SavedSlicerMetrics["filaments"]) => filaments.filter((item) => item.color !== null || item.material !== null || item.grams !== null || item.lengthMeters !== null).map((item) => {
   const color = item.color && /^#?[0-9a-f]{6}$/i.test(item.color) ? `#${item.color.replace(/^#/, "").toUpperCase()}` : "";
   return `${color}; ${item.material ?? ""}; ${metricNumber(item.grams)}; ${metricNumber(item.lengthMeters)}; ${item.index}`;
 }).join("\n");
