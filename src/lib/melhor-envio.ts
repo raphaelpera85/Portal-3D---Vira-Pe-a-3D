@@ -1,4 +1,5 @@
-export type MelhorEnvioRate = { id: number; name: string; company: string; price: number; deliveryDays: number };
+export type MelhorEnvioPackage = { height: number; width: number; length: number; weight: number; products?: { id: string; quantity: number }[]; insuranceValue?: number };
+export type MelhorEnvioRate = { id: number; name: string; company: string; price: number; deliveryDays: number; packages: MelhorEnvioPackage[] };
 export const melhorEnvioLabelScopes = ["cart-write", "cart-read", "shipping-checkout", "shipping-generate", "shipping-print", "shipping-tracking"] as const;
 
 export type MelhorEnvioSender = {
@@ -101,9 +102,59 @@ export function normalizeMelhorEnvioRates(payload: unknown): MelhorEnvioRate[] {
     const company = rate.company && typeof rate.company === "object" ? (rate.company as Record<string, unknown>).name : null;
     const price = Number(rate.custom_price);
     const deliveryDays = Number(rate.custom_delivery_time);
+    const packages = normalizeMelhorEnvioPackages(rate.packages);
     if (rate.error || !Number.isSafeInteger(Number(rate.id)) || Number(rate.id) < 1 || typeof rate.name !== "string"
       || typeof company !== "string" || !Number.isFinite(price) || price < 0
-      || !Number.isSafeInteger(deliveryDays) || deliveryDays < 1 || deliveryDays > 365) return [];
-    return [{ id: Number(rate.id), name: `${company} · ${rate.name}`.slice(0, 120), company, price, deliveryDays }];
+      || !Number.isSafeInteger(deliveryDays) || deliveryDays < 1 || deliveryDays > 365 || !packages) return [];
+    return [{ id: Number(rate.id), name: `${company} · ${rate.name}`.slice(0, 120), company, price, deliveryDays, packages }];
   }).sort((a, b) => a.price - b.price || a.deliveryDays - b.deliveryDays);
+}
+
+export function normalizeMelhorEnvioPackages(value: unknown): MelhorEnvioPackage[] | null {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 50) return null;
+  const packages = value.map((item): MelhorEnvioPackage | null => {
+    if (!item || typeof item !== "object") return null;
+    const record = item as Record<string, unknown>;
+    const dimensions = record.dimensions && typeof record.dimensions === "object" ? record.dimensions as Record<string, unknown> : record;
+    const height = Number(dimensions.height);
+    const width = Number(dimensions.width);
+    const length = Number(dimensions.length);
+    const weight = Number(record.weight);
+    const products = Array.isArray(record.products) ? record.products.map((product) => {
+      if (!product || typeof product !== "object") return null;
+      const line = product as Record<string, unknown>;
+      return typeof line.id === "string" && line.id.length <= 120 && Number.isSafeInteger(Number(line.quantity))
+        && Number(line.quantity) > 0 ? { id: line.id, quantity: Number(line.quantity) } : null;
+    }) : undefined;
+    const rawInsuranceValue = record.insurance_value ?? record.insuranceValue;
+    const insuranceValue = rawInsuranceValue === undefined ? undefined : Number(rawInsuranceValue);
+    if (![height, width, length].every((size) => Number.isFinite(size) && size >= 1 && size <= 1000)
+      || !Number.isFinite(weight) || weight < 0.01 || weight > 30000
+      || (products && (products.length < 1 || products.some((product) => !product)))
+      || (insuranceValue !== undefined && (!Number.isFinite(insuranceValue) || insuranceValue < 0 || insuranceValue > 1000000))) return null;
+    return {
+      height, width, length, weight,
+      ...(products ? { products: products as { id: string; quantity: number }[] } : {}),
+      ...(insuranceValue !== undefined ? { insuranceValue } : {}),
+    };
+  });
+  return packages.every((value): value is MelhorEnvioPackage => value !== null) ? packages : null;
+}
+
+export function melhorEnvioRequiresOneVolumePerOrder(serviceId: number, company: string) {
+  return [1, 2, 17, 27].includes(serviceId) || /j\s*&?\s*t|loggi/i.test(company);
+}
+
+export function groupMelhorEnvioPackages(serviceId: number, company: string, packages: MelhorEnvioPackage[]) {
+  return melhorEnvioRequiresOneVolumePerOrder(serviceId, company) ? packages.map((parcel) => [parcel]) : [packages];
+}
+
+export function aggregateMelhorEnvioShipmentStatus(statuses: string[], currentStatus: string) {
+  if (statuses.length && statuses.every((status) => status === "delivered")) return "delivered";
+  if (statuses.includes("posted")) return "posted";
+  if (statuses.length && statuses.every((status) => status === "generated")) return "generated";
+  if (statuses.length && statuses.every((status) => status === "paid")) return "paid";
+  if (statuses.length && statuses.every((status) => status === "cancelled")) return "cancelled";
+  if (statuses.length && statuses.every((status) => status === "carted")) return "carted";
+  return currentStatus;
 }
