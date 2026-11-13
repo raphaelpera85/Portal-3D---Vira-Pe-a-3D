@@ -206,6 +206,49 @@ function findCostCurrency(lines: string[]): "BRL" | "USD" | null {
   return null;
 }
 
+function findStackedFilamentReadings(lines: string[]) {
+  const headings = lines.flatMap((line, index) => {
+    const match = /^\s*(?:filament|filamento)\s+#?(\d+)\s*[:=\-–]?\s*(.*)$/i.exec(line);
+    return match ? [{ index, filament: Number(match[1]), remainder: match[2] }] : [];
+  });
+  return headings.flatMap((heading, index) => {
+    const end = Math.min(headings[index + 1]?.index ?? lines.length, heading.index + 5);
+    const section = [heading.remainder, ...lines.slice(heading.index + 1, end)].filter(Boolean);
+    const uniqueMeasurement = (pattern: RegExp, normalize: (value: number, unit: string) => number) => {
+      const values = section.flatMap((line) => {
+        const match = pattern.exec(line);
+        if (!match) return [];
+        const amount = parseNumber(match[1]);
+        return Number.isFinite(amount) && amount >= 0 ? [normalize(amount, match[2].toLowerCase())] : [];
+      });
+      const uniqueValues = [...new Set(values)];
+      return uniqueValues.length === 1 ? uniqueValues[0] : null;
+    };
+    const grams = uniqueMeasurement(
+      new RegExp(`^\\s*(?:(?:weight|peso|massa|filament\\s+weight)\\s*[:=]?\\s*)?${numberPattern}\\s*(kg|g|gr|grams?|gramas?)\\s*$`, "i"),
+      (value, unit) => unit === "kg" ? value * 1000 : value,
+    );
+    const lengthMeters = uniqueMeasurement(
+      new RegExp(`^\\s*(?:(?:length|comprimento|filament\\s+length)\\s*[:=]?\\s*)?${numberPattern}\\s*(mm|meters?|metros?|m)\\s*$`, "i"),
+      (value, unit) => unit === "mm" ? value / 1000 : value,
+    );
+    const material = [...new Set(section.flatMap((line) => {
+      const match = new RegExp(`^\\s*(${materialPattern})\\s*$`, "i").exec(line);
+      return match ? [match[1].toUpperCase()] : [];
+    }))];
+    const colors = [...new Set(section.flatMap((line) => {
+      const match = new RegExp(`^\\s*(?:(?:color|colour|cor)\\s*[:=]\\s*)?(#[0-9a-f]{3,8}|${colorPattern})\\s*$`, "i").exec(line);
+      return match ? [match[1].toLowerCase()] : [];
+    }))];
+    const reading = {
+      index: heading.filament, grams, lengthMeters,
+      material: material.length === 1 ? material[0] : null,
+      color: colors.length === 1 ? colors[0] : null,
+    };
+    return reading.grams !== null || reading.lengthMeters !== null || reading.material !== null || reading.color !== null ? [reading] : [];
+  });
+}
+
 function parseOne(text: string) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
@@ -248,7 +291,7 @@ function parseOne(text: string) {
     estimatedCost: cost,
     estimatedCostCurrency: findCostCurrency(lines),
     materials,
-    filamentReadings: [...filamentReadings, ...findGcodeFilamentReadings(lines)],
+    filamentReadings: [...filamentReadings, ...findStackedFilamentReadings(lines), ...findGcodeFilamentReadings(lines)],
   };
 }
 

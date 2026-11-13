@@ -209,6 +209,31 @@ describe("parseSlicerOcrTexts", () => {
     ]);
   });
 
+  it("reads stacked per-filament material, color, weight, and length lines without inventing a total", () => {
+    const result = parseSlicerOcrTexts([`OrcaSlicer
+Filament 1
+PLA
+red
+12,5 g
+4,8 m
+Filament 2
+PETG
+blue
+8 g
+3200 mm`]);
+
+    expect(result.filaments).toEqual([
+      { index: 1, grams: 12.5, lengthMeters: 4.8, material: "PLA", color: "red" },
+      { index: 2, grams: 8, lengthMeters: 3.2, material: "PETG", color: "blue" },
+    ]);
+    expect(result.totalGrams).toBeNull();
+    expect(result.filamentGrams).toBeNull();
+
+    expect(parseSlicerOcrTexts(["Filament 1\nPETG\n8 g\n3200 mm"]).filaments).toEqual([
+      { index: 1, grams: 8, lengthMeters: 3.2, material: "PETG", color: null },
+    ]);
+  });
+
   it("merges per-filament lengths with weights recognized in separate images", () => {
     const result = parseSlicerOcrTexts([
       "Filament 1: PLA red 12,5 g\nFilament 2: PETG blue 8 g",
