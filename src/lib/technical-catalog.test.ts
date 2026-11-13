@@ -94,6 +94,8 @@ describe("verified technical catalog records", () => {
   it("keeps CORE One+ Gen 2 and its official nozzle range available in the local fallback", () => {
     const printer = printers.find((item) => item.id === "prusa-core-one-plus-gen-2");
     const coreNozzles = nozzles.filter((item) => item.printerCompatibility?.["prusa-core-one-plus-gen-2"] === "compatible");
+    const originalNozzle = coreNozzles.find((nozzle) => nozzle.original)!;
+    const prusamentMaterials = materials.filter((item) => item.brand === "Prusa Polymers");
 
     expect(printer).toMatchObject({
       model: "CORE One+",
@@ -107,8 +109,20 @@ describe("verified technical catalog records", () => {
       technicalProperties: { chamberMaximumTemperatureC: 55, supportedNozzleDiametersMm: [0.25, 0.4, 0.6, 0.8] },
     });
     expect(coreNozzles.map((nozzle) => nozzle.diameterMm).sort((left, right) => left - right)).toEqual([0.25, 0.4, 0.6, 0.8]);
-    expect(coreNozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
+    expect(originalNozzle.diameterMm).toBe(0.4);
+    expect(prusamentMaterials.map((material) => material.id).sort()).toEqual([
+      "prusament-asa", "prusament-pa11", "prusament-pa11-cf", "prusament-pc-blend",
+      "prusament-petg", "prusament-petg-cf", "prusament-pla", "prusament-tpu-95a",
+    ]);
+    expect(printer?.supportedMaterials["prusament-pla"]).toMatchObject({ status: "compatible" });
+    expect(printer?.supportedMaterials["prusament-pa11"]).toMatchObject({ status: "conditional" });
+    expect(printer?.supportedMaterials["prusament-petg-cf"]).toMatchObject({ status: "conditional" });
     expect(printer?.sources[0].url).toBe("https://www.prusa3d.com/en/product/prusa-core-one-12/");
+    expect(prusamentMaterials.every((material) => material.sources.length > 0)).toBe(true);
+    expect(evaluateCompatibility(printer!, materials.find((item) => item.id === "prusament-pla")!, originalNozzle).status).toBe("compatible");
+    expect(evaluateCompatibility(printer!, materials.find((item) => item.id === "prusament-pa11")!, originalNozzle).status).toBe("conditional");
+    expect(evaluateCompatibility(printer!, materials.find((item) => item.id === "prusament-pa11-cf")!, originalNozzle).checks)
+      .toContainEqual(expect.objectContaining({ key: "hotend-temperature", status: "conditional" }));
   });
 
   it("includes confirmed P2S specifications while leaving unpublished values unknown", () => {
