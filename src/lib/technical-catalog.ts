@@ -73,6 +73,16 @@ const crealityEnder3V4Source = {
   url: "https://www.creality.com/products/ender-3-v4-3d-printer",
   checkedAt: "2026-11-13",
 };
+const crealityEnder5MaxProductSource = {
+  label: "Creality Brasil — Ender-5 Max official specifications",
+  url: "https://www.creality.com/br/products/creality-ender-5-max",
+  checkedAt: "2026-11-13",
+};
+const crealityEnder5MaxSupportSource = {
+  label: "Creality — Ender-5 Max nozzle specifications",
+  url: "https://www.creality.com/support/creality-ender-5-max",
+  checkedAt: "2026-11-13",
+};
 const plaSource = {
   label: "Bambu Lab — PLA Basic",
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
@@ -403,6 +413,44 @@ export const printers: PrinterEntry[] = [{
   },
   sources: [crealityEnder3V4Source],
 }, {
+  id: "creality-ender-5-max",
+  name: "Creality Ender-5 Max",
+  brand: "Creality",
+  model: "Ender-5 Max",
+  variant: "standard",
+  buildVolumeDescription: null,
+  technology: "FDM",
+  buildVolumeMm: { x: 400, y: 400, z: 400 },
+  extruders: 1,
+  filamentDiameterMm: 1.75,
+  maxNozzleTemperatureC: 300,
+  maxBedTemperatureC: 100,
+  heatedBed: true,
+  enclosure: false,
+  maximumSpeedMmPerSecond: 700,
+  maximumPowerWatts: null,
+  measuredAveragePowerWatts: null,
+  multicolorSlots: null,
+  multicolorSystem: null,
+  technicalProperties: {
+    recommendedPrintSpeedMmPerSecond: 500,
+    maxAccelerationMmPerSecondSquared: 20000,
+    supportedNozzleDiametersMm: [0.4, 0.6, 0.8],
+    manufacturerSupportedMaterials: ["Hyper PLA", "PLA", "PETG", "TPU 95A", "ABS", "ASA", "PLA-CF", "PA", "PLA-Silk"],
+    manufacturerSpecificationNotes: [
+      "A potência nominal informada é 1.250 W; o consumo médio real não foi medido.",
+      "O fabricante oferece gabinete como acessório opcional; ele não está incluído nesta variante.",
+    ],
+  },
+  supportedMaterials: {
+    "creality-hyper-pla": { status: "compatible", conditions: "Compatível segundo a lista oficial de filamentos suportados." },
+    "creality-hyper-petg": { status: "compatible", conditions: "Compatível segundo a lista oficial de filamentos suportados." },
+    "creality-hyper-abs": { status: "compatible", conditions: "O fabricante oferece gabinete opcional para materiais de engenharia." },
+    "creality-hp-asa": { status: "compatible", conditions: "O fabricante oferece gabinete opcional para materiais de engenharia." },
+    "creality-hp-tpu": { status: "compatible", conditions: "TPU 95A consta na lista oficial de filamentos suportados." },
+  },
+  sources: [crealityEnder5MaxProductSource, crealityEnder5MaxSupportSource],
+}, {
   id: "elegoo-centauri-2",
   name: "ELEGOO Centauri 2",
   brand: "ELEGOO",
@@ -541,6 +589,18 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[0.4, 0.6, 0.8].map((diameter) => ({
+    id: `creality-ender-5-max-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · Ender-5 Max`,
+    brand: "Creality",
+    diameterMm: diameter,
+    material: "Cobre",
+    maxTemperatureC: 300,
+    abrasionResistant: null,
+    printerCompatibility: { "creality-ender-5-max": "compatible" as const },
+    original: diameter === 0.4,
+    sources: [crealityEnder5MaxSupportSource],
+  })),
   {
     id: "creality-ender-3-v4-0.4",
     name: "Bico 0,4 mm · Ender-3 V4",

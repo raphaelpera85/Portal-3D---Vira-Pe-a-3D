@@ -7,6 +7,7 @@ import { materials, nozzles, printers } from "./technical-catalog";
 const k2ProMigration = readFileSync(new URL("../../supabase/migrations/20261113223000_seed_creality_k2_pro.sql", import.meta.url), "utf8");
 const centauri2Migration = readFileSync(new URL("../../supabase/migrations/20261114000000_seed_elegoo_centauri_2.sql", import.meta.url), "utf8");
 const ender3V4Migration = readFileSync(new URL("../../supabase/migrations/20261114010000_seed_creality_ender_3_v4_combo.sql", import.meta.url), "utf8");
+const ender5MaxMigration = readFileSync(new URL("../../supabase/migrations/20261114020000_seed_creality_ender_5_max.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("marks the manufacturer-listed A1 mini, PLA Basic, and original nozzle setup compatible", () => {
@@ -161,6 +162,25 @@ describe("verified technical catalog records", () => {
     expect(printer?.sources[0].url).toBe("https://www.creality.com/products/ender-3-v4-3d-printer");
     expect(ender3V4Migration).toContain("'Ender-3 V4', 'Combo'");
     expect(ender3V4Migration).toContain("o CFS é incompatível com TPU");
+  });
+
+  it("includes the 400 mm Ender-5 Max and its three verified nozzle diameters", () => {
+    const printer = printers.find((item) => item.id === "creality-ender-5-max");
+    const compatibleNozzles = nozzles.filter((item) => item.printerCompatibility?.["creality-ender-5-max"] === "compatible");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: { x: 400, y: 400, z: 400 },
+      maxNozzleTemperatureC: 300,
+      maxBedTemperatureC: 100,
+      maximumSpeedMmPerSecond: 700,
+      enclosure: false,
+      multicolorSlots: null,
+      technicalProperties: { maxAccelerationMmPerSecondSquared: 20000 },
+    });
+    expect(compatibleNozzles.map((item) => item.diameterMm).sort()).toEqual([0.4, 0.6, 0.8]);
+    expect(compatibleNozzles.find((item) => item.original)?.diameterMm).toBe(0.4);
+    expect(ender5MaxMigration).toContain("'Ender-5 Max', 'standard'");
+    expect(ender5MaxMigration).not.toContain("Creality CFS");
   });
 
   it("includes official H2S build and chamber data without treating toolhead speed as print speed", () => {
