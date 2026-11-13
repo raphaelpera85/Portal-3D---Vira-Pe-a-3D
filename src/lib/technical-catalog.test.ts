@@ -13,6 +13,7 @@ const qidiMax4Migration = readFileSync(new URL("../../supabase/migrations/202611
 const qidiQ2Migration = readFileSync(new URL("../../supabase/migrations/20261114120000_seed_qidi_q2.sql", import.meta.url), "utf8");
 const qidiPlus5Migration = readFileSync(new URL("../../supabase/migrations/20261114130000_seed_qidi_plus5.sql", import.meta.url), "utf8");
 const qidiQ2cMigration = readFileSync(new URL("../../supabase/migrations/20261114140000_seed_qidi_q2c.sql", import.meta.url), "utf8");
+const qidiQ2cPowerMigration = readFileSync(new URL("../../supabase/migrations/20261114150000_fix_qidi_q2c_rated_power.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -162,6 +163,8 @@ describe("verified technical catalog records", () => {
       && nozzle.printerCompatibility?.["qidi-plus5"] === "compatible")).toBe(true);
     expect(qidiQ2cMigration).toContain("'QIDI Tech', 'Q2C', 'QIDI Box Combo'");
     expect(qidiQ2cMigration).toContain("products/q2-bimetal-nozzles2pc");
+    expect(qidiQ2cPowerMigration).toContain("maximum_power_w = null");
+    expect(qidiQ2cPowerMigration).toContain('"ratedPowerWatts":350');
   });
 
   it("keeps the Bambu Lab A1 and A1 mini variants in the local fallback with exact hotend compatibility", () => {

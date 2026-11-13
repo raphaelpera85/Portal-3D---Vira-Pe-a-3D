@@ -28,4 +28,29 @@ describe("TechnicalCatalog manufacturer conditions", () => {
     expect(markup).toContain("A fonte classifica o conjunto de bico a 280 °C.");
     expect(markup).toContain("TPU 95A apenas em cor única; não usar pelo IFS.");
   });
+
+  it("shows the Q2C's chamber, camera, filter and rated power without calling it measured consumption", () => {
+    const catalog = mapTechnicalCatalog(
+      [{
+        id: "q2c", manufacturer: "QIDI Tech", model: "Q2C", variant: "standard", technology: "FDM",
+        build_volume_x_mm: 270, build_volume_y_mm: 270, build_volume_z_mm: 256,
+        maximum_power_w: null,
+        technical_properties: { activeChamberHeating: false, camera: "Opcional", airFilter: "Opcional", ratedPowerWatts: 350 },
+        source_url: "https://example.com/q2c", verified_at: "2026-11-13",
+      }],
+      [{ id: "pla", manufacturer: "QIDI Tech", product: "PLA", family: "PLA", process: "filament", source_url: "https://example.com/pla", verified_at: "2026-11-13" }],
+      [{ id: "nozzle", manufacturer: "QIDI Tech", model: "Q2 nozzle", diameter_mm: 0.4, original: true, source_url: "https://example.com/nozzle", verified_at: "2026-11-13" }],
+      [],
+      [{ printer_id: "q2c", nozzle_id: "nozzle", fit: "compatible" }],
+    );
+
+    const markup = renderToStaticMarkup(<TechnicalCatalog {...catalog} notice={null} />);
+    expect(markup).toContain("Aquecimento ativo da câmara");
+    expect(markup).toContain(">Não<");
+    expect(markup).toContain("Câmera");
+    expect(markup).toContain("Filtro de ar");
+    expect(markup).toContain("Potência nominal");
+    expect(markup).toContain("350 W");
+    expect(markup).not.toContain("Potência média medida</dt><dd>350 W");
+  });
 });

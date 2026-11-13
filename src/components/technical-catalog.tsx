@@ -44,6 +44,11 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   const printerProperties = printer.technicalProperties ?? {};
   const chamberTemperature = typeof printerProperties.activeChamberMaximumTemperatureC === "number"
     && Number.isFinite(printerProperties.activeChamberMaximumTemperatureC) ? printerProperties.activeChamberMaximumTemperatureC : null;
+  const activeChamberHeating = typeof printerProperties.activeChamberHeating === "boolean" ? printerProperties.activeChamberHeating : null;
+  const ratedPowerWatts = typeof printerProperties.ratedPowerWatts === "number" && Number.isFinite(printerProperties.ratedPowerWatts)
+    ? printerProperties.ratedPowerWatts : null;
+  const camera = typeof printerProperties.camera === "string" ? printerProperties.camera : null;
+  const airFilter = typeof printerProperties.airFilter === "string" ? printerProperties.airFilter : null;
   const supportedMaterials = Array.isArray(printerProperties.manufacturerSupportedMaterials)
     ? printerProperties.manufacturerSupportedMaterials.filter((value): value is string => typeof value === "string") : [];
   const materialNozzleConditions = printerProperties.materialNozzleConditions && typeof printerProperties.materialNozzleConditions === "object" && !Array.isArray(printerProperties.materialNozzleConditions)
@@ -119,8 +124,12 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <div><dt>Hotend máximo</dt><dd>{printer.maxNozzleTemperatureC ? `${printer.maxNozzleTemperatureC} °C` : "Não informado"}</dd></div>
               <div><dt>Mesa máxima</dt><dd>{printer.maxBedTemperatureC ? `${printer.maxBedTemperatureC} °C` : "Não informado"}</dd></div>
               {chamberTemperature !== null && <div><dt>Câmara ativa máxima</dt><dd>{chamberTemperature} °C</dd></div>}
+              {activeChamberHeating !== null && <div><dt>Aquecimento ativo da câmara</dt><dd>{activeChamberHeating ? "Sim" : "Não"}</dd></div>}
+              {camera !== null && <div><dt>Câmera</dt><dd>{camera}</dd></div>}
+              {airFilter !== null && <div><dt>Filtro de ar</dt><dd>{airFilter}</dd></div>}
               <div><dt>Velocidade máxima</dt><dd>{printer.maximumSpeedDescription ?? (printer.maximumSpeedMmPerSecond ? `${printer.maximumSpeedMmPerSecond} mm/s` : "Não informado")}</dd></div>
               <div><dt>Potência máxima</dt><dd>{powerText(printer.maximumPowerWatts)}</dd></div>
+              {ratedPowerWatts !== null && <div><dt>Potência nominal</dt><dd>{ratedPowerWatts} W</dd></div>}
               <div><dt>Potência média medida</dt><dd>{powerText(printer.measuredAveragePowerWatts)}</dd></div>
               <div><dt>Multicolorido</dt><dd>{multicolorSystem ? `${multicolorSystem}${printer.multicolorSlots == null ? "" : ` · até ${printer.multicolorSlots} filamentos`}` : "Não informado"}</dd></div>
             </dl>

@@ -92,4 +92,13 @@ test("technical catalog shows Flashforge AD5X conditions after selecting it", as
   await expect(page.locator(".technical-facts").first()).toContainText("600 mm/s de deslocamento do cabeçote");
   await printer.selectOption({ label: "QIDI Tech · Q2 · QIDI Box Combo" });
   await expect(page.locator(".technical-facts").first()).toContainText("QIDI Box · até 4 filamentos");
+
+  await printer.selectOption({ label: "QIDI Tech · Q2C · standard" });
+  await expect(page.locator(".technical-facts").first()).toContainText("Aquecimento ativo da câmara");
+  await expect(page.locator(".technical-facts").first()).toContainText("Câmera");
+  await expect(page.locator(".technical-facts").first()).toContainText("Filtro de ar");
+  await expect(page.locator(".technical-facts").first()).toContainText("Potência nominal");
+  await expect(page.locator(".technical-facts").first()).toContainText("350 W");
+  await printer.selectOption({ label: "QIDI Tech · Q2C · QIDI Box Combo" });
+  await expect(page.locator(".technical-facts").first()).toContainText("QIDI Box · até 4 filamentos");
 });
