@@ -90,6 +90,7 @@ test("technical catalog shows Flashforge AD5X conditions after selecting it", as
   await printer.selectOption({ label: "QIDI Tech · Q2 · standard" });
   await expect(page.locator(".technical-facts").first()).toContainText("270 × 270 × 256 mm");
   await expect(page.locator(".technical-facts").first()).toContainText("600 mm/s de deslocamento do cabeçote");
+  await expect(page.locator(".technical-facts").first()).toContainText("Até 16 filamentos com caixas adicionais");
   await printer.selectOption({ label: "QIDI Tech · Q2 · QIDI Box Combo" });
   await expect(page.locator(".technical-facts").first()).toContainText("QIDI Box · até 4 filamentos");
 
@@ -101,4 +102,8 @@ test("technical catalog shows Flashforge AD5X conditions after selecting it", as
   await expect(page.locator(".technical-facts").first()).toContainText("350 W");
   await printer.selectOption({ label: "QIDI Tech · Q2C · QIDI Box Combo" });
   await expect(page.locator(".technical-facts").first()).toContainText("QIDI Box · até 4 filamentos");
+
+  await printer.selectOption({ label: "Bambu Lab · H2S · standard" });
+  await expect(page.locator(".technical-facts").first()).toContainText("Câmara ativa máxima");
+  await expect(page.locator(".technical-facts").first()).toContainText("65 °C");
 });

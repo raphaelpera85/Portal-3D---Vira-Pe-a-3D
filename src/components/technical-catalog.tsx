@@ -42,13 +42,16 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   const [useMulticolor, setUseMulticolor] = useState(false);
   const printer = printers.find((item) => item.id === printerId) ?? printers[0];
   const printerProperties = printer.technicalProperties ?? {};
-  const chamberTemperature = typeof printerProperties.activeChamberMaximumTemperatureC === "number"
-    && Number.isFinite(printerProperties.activeChamberMaximumTemperatureC) ? printerProperties.activeChamberMaximumTemperatureC : null;
+  const chamberTemperature = [printerProperties.activeChamberMaximumTemperatureC, printerProperties.maximumChamberTemperatureC, printerProperties.chamberMaximumTemperatureC]
+    .find((value): value is number => typeof value === "number" && Number.isFinite(value)) ?? null;
   const activeChamberHeating = typeof printerProperties.activeChamberHeating === "boolean" ? printerProperties.activeChamberHeating : null;
   const ratedPowerWatts = typeof printerProperties.ratedPowerWatts === "number" && Number.isFinite(printerProperties.ratedPowerWatts)
     ? printerProperties.ratedPowerWatts : null;
   const camera = typeof printerProperties.camera === "string" ? printerProperties.camera : null;
   const airFilter = typeof printerProperties.airFilter === "string" ? printerProperties.airFilter : null;
+  const extraBoxFilamentLimit = typeof printerProperties.maximumMulticolorFilamentsWithExtraBoxes === "number"
+    && Number.isInteger(printerProperties.maximumMulticolorFilamentsWithExtraBoxes) && printerProperties.maximumMulticolorFilamentsWithExtraBoxes > 0
+    ? printerProperties.maximumMulticolorFilamentsWithExtraBoxes : null;
   const supportedMaterials = Array.isArray(printerProperties.manufacturerSupportedMaterials)
     ? printerProperties.manufacturerSupportedMaterials.filter((value): value is string => typeof value === "string") : [];
   const materialNozzleConditions = printerProperties.materialNozzleConditions && typeof printerProperties.materialNozzleConditions === "object" && !Array.isArray(printerProperties.materialNozzleConditions)
@@ -132,6 +135,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               {ratedPowerWatts !== null && <div><dt>Potência nominal</dt><dd>{ratedPowerWatts} W</dd></div>}
               <div><dt>Potência média medida</dt><dd>{powerText(printer.measuredAveragePowerWatts)}</dd></div>
               <div><dt>Multicolorido</dt><dd>{multicolorSystem ? `${multicolorSystem}${printer.multicolorSlots == null ? "" : ` · até ${printer.multicolorSlots} filamentos`}` : "Não informado"}</dd></div>
+              {extraBoxFilamentLimit !== null && <div><dt>Expansão multicolorida</dt><dd>Até {extraBoxFilamentLimit} filamentos com caixas adicionais</dd></div>}
             </dl>
             {typeof printerProperties.compatibilityNotes === "string" && <p className="catalog-source-note">Condições do fabricante: {printerProperties.compatibilityNotes}</p>}
             {supportedMaterials.length > 0 && <p className="catalog-source-note">Filamentos citados pelo fabricante: {supportedMaterials.join(" · ")}</p>}
