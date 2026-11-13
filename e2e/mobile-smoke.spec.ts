@@ -5,7 +5,15 @@ test("mobile navigation opens the model catalog and a model detail", async ({ pa
   await page.setViewportSize({ width: 400, height: 608 });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Fabricantes recomendados" })).toBeVisible();
-  await page.getByRole("button", { name: "Abrir menu" }).click();
+  const menuButton = page.locator(".menu-button");
+  await expect(menuButton).toHaveAttribute("aria-controls", "primary-navigation");
+  await menuButton.click();
+  await expect(menuButton).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "Explorar" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(menuButton).toHaveAttribute("aria-expanded", "false");
+  await expect(menuButton).toBeFocused();
+  await menuButton.click();
   await page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "Modelos 3D" }).click();
 
   await expect(page).toHaveURL(/\/modelos$/);
