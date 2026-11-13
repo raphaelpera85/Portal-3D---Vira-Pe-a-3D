@@ -9,6 +9,7 @@ const centauri2Migration = readFileSync(new URL("../../supabase/migrations/20261
 const ender3V4Migration = readFileSync(new URL("../../supabase/migrations/20261114010000_seed_creality_ender_3_v4_combo.sql", import.meta.url), "utf8");
 const ender5MaxMigration = readFileSync(new URL("../../supabase/migrations/20261114020000_seed_creality_ender_5_max.sql", import.meta.url), "utf8");
 const bambuPetgHfMigration = readFileSync(new URL("../../supabase/migrations/20261114030000_seed_bambu_petg_hf.sql", import.meta.url), "utf8");
+const qidiMax4Migration = readFileSync(new URL("../../supabase/migrations/20261114110000_seed_qidi_max4.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -38,6 +39,7 @@ describe("verified technical catalog records", () => {
       ["Flashforge", "Adventurer 5M", "standard"],
       ["Sovol", "SV08", "standard"],
       ["QIDI Tech", "Plus4", "standard"],
+      ["QIDI Tech", "Max4", "standard"],
       ["Artillery", "M1 Pro", "standard"],
       ["FLSUN", "V400 Max", "standard"],
       ["Raise3D", "Pro3 HS", "standard"],
@@ -68,9 +70,30 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(50);
+    expect(printers).toHaveLength(51);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("keeps the QIDI Max4's verified specifications without presenting toolhead speed as print speed", () => {
+    const max4 = printers.find((printer) => printer.id === "qidi-max4");
+
+    expect(max4).toMatchObject({
+      brand: "QIDI Tech", model: "Max4", variant: "standard", buildVolumeMm: { x: 390, y: 390, z: 340 },
+      filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370,
+      maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: null,
+      multicolorSystem: "QIDI Box (vendido separadamente)",
+      technicalProperties: { maxToolheadSpeedMmPerSecond: 800, activeChamberMaximumTemperatureC: 65 },
+    });
+    expect(max4?.maximumSpeedDescription).toContain("velocidade de impressão não informada");
+    expect(nozzles.filter((nozzle) => nozzle.printerCompatibility?.["qidi-max4"] === "compatible").map((nozzle) => nozzle.diameterMm))
+      .toEqual([0.2, 0.4, 0.6, 0.8]);
+    expect(mapTechnicalCatalog([{
+      id: "qidi-max4", manufacturer: "QIDI Tech", model: "Max4", variant: "standard", technology: "FDM",
+      technical_properties: { maxToolheadSpeedMmPerSecond: 800, activeChamberMaximumTemperatureC: 65 },
+    }], [], [], [], []).printers[0].maximumSpeedDescription).toBe("800 mm/s de deslocamento do cabeçote; velocidade de impressão não informada");
+    expect(qidiMax4Migration).toContain("'QIDI Tech', 'Max4', 'standard'");
+    expect(qidiMax4Migration).toContain("select 'QIDI Tech', 'Max4 nozzle'");
   });
 
   it("keeps the Bambu Lab A1 and A1 mini variants in the local fallback with exact hotend compatibility", () => {

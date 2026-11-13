@@ -80,4 +80,10 @@ test("technical catalog shows Flashforge AD5X conditions after selecting it", as
 
   await page.getByRole("button", { name: "0,6 mm" }).click();
   await expect(page.locator(".technical-panel").nth(2)).toContainText("Aço endurecido indicado para filamentos abrasivos");
+
+  await printer.selectOption({ label: "QIDI Tech · Max4 · standard" });
+  await expect(page.locator(".technical-facts").first()).toContainText("390 × 390 × 340 mm");
+  await expect(page.locator(".technical-facts").first()).toContainText("Câmara ativa máxima");
+  await expect(page.locator(".technical-facts").first()).toContainText("65 °C");
+  await expect(page.locator(".technical-facts").first()).toContainText("800 mm/s de deslocamento do cabeçote");
 });
