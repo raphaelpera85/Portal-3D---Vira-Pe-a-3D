@@ -76,4 +76,4 @@ flowchart LR
 2. O primeiro lote de 14 novos modelos de impressora está em `20261112130331_seed_official_printer_catalog.sql`; relações entre os novos modelos, materiais e bicos ainda precisam de curadoria antes de serem anunciadas como compatíveis.
 3. Ligar históricos de manutenção a materiais/produtos; a calculadora identifica filamentos e resinas pelo catálogo e avalia as condições técnicas do material para o modelo de impressora vinculado. O preço de compra continua informado pelo fabricante, e a manutenção usa a média dos custos registrados por hora acumulada.
 4. Configurar e validar em sandbox o aplicativo e o webhook Melhor Envio; homologar pedido com NF-e, compra de etiqueta, impressão privada e atualização de rastreio.
-5. Validar pagamentos sandbox antes de qualquer cobrança real e completar conciliação financeira, relatórios administrativos e auditoria.
+5. Validar pagamentos sandbox antes de qualquer cobrança real e completar conciliação financeira e relatórios administrativos detalhados; `/admin/auditoria` registra mudanças de status moderadas pelo portal.
