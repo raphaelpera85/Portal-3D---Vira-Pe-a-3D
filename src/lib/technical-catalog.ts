@@ -114,7 +114,13 @@ export const printers: PrinterEntry[] = [{
     comboDimensionsMm: { x: 495, y: 515, z: 916 },
     supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8],
   },
-  supportedMaterials: {},
+  supportedMaterials: {
+    "creality-hyper-pla": { status: "compatible", conditions: "Perfil K2 Plus: bico 220 °C, mesa 50 °C, câmara 35 °C, velocidade volumétrica máxima 23 mm³/s, flow ratio 0,95." },
+    "creality-hyper-abs": { status: "compatible", conditions: "Perfil K2 Plus: bico 260 °C, mesa 80 °C, câmara 50 °C, velocidade volumétrica máxima 23 mm³/s, flow ratio 0,95. Use a impressora totalmente fechada." },
+    "creality-hyper-petg": { status: "compatible", conditions: "Perfil K2 Plus: bico 240 °C, mesa 70 °C, câmara 35 °C, velocidade volumétrica máxima 23 mm³/s, flow ratio 0,98." },
+    "creality-hp-asa": { status: "compatible", conditions: "Perfil K2 Plus: bico 260 °C, mesa 90 °C, câmara 50 °C, velocidade volumétrica máxima 14 mm³/s, flow ratio 0,95. Use a impressora totalmente fechada." },
+    "creality-hp-tpu": { status: "conditional", conditions: "Perfil K2 Plus: bico 220 °C, mesa 40 °C, câmara 35 °C, velocidade volumétrica máxima 3 mm³/s. Não use CFS; use TPU com dureza mínima 85A e alimente diretamente o extrusor." },
+  },
   sources: [crealityK2PlusSource],
 }];
 
@@ -166,6 +172,20 @@ export const materials: MaterialEntry[] = [
     colors: [{ name: "Preto", hex: "#000000" }],
     sources: [ppaSource],
   },
+  ...[
+    { id: "creality-hyper-pla", name: "Hyper PLA", family: "PLA", enclosureRequired: null, multicolorCompatible: null, url: "https://store.creality.com/eu/products/hyper-1-75mm-pla-3d-printing-filament-1kg" },
+    { id: "creality-hyper-abs", name: "Hyper ABS", family: "ABS", enclosureRequired: true, multicolorCompatible: null, url: "https://store.creality.com/eu/products/hyper-abs-3d-printing-filament" },
+    { id: "creality-hyper-petg", name: "Hyper PETG", family: "PETG", enclosureRequired: null, multicolorCompatible: null, url: "https://store.creality.com/eu/products/hyper-petg-filament-1-75mm-1kg" },
+    { id: "creality-hp-asa", name: "HP ASA", family: "ASA", enclosureRequired: true, multicolorCompatible: null, url: "https://store.creality.com/eu/products/creality-hp-asa" },
+    { id: "creality-hp-tpu", name: "HP-TPU", family: "TPU", enclosureRequired: null, multicolorCompatible: false, url: "https://store.creality.com/de/products/hp-tpu-fdm-3d-drucker-filament-1-75mm-1kg" },
+  ].map(({ id, name, family, enclosureRequired, multicolorCompatible, url }) => ({
+    id, name, brand: "Creality", family, process: "filament" as const,
+    filamentDiameterMm: 1.75, densityGPerCm3: null, nozzleTemperatureC: null,
+    bedTemperatureC: null, nozzleDiametersMm: null, enclosureRequired, abrasive: null,
+    multicolorCompatible, printSpeedMaximumMmPerSecond: null, drying: null,
+    resinWavelengthNm: null, resinExposureSeconds: null, colors: [],
+    sources: [{ label: `Creality — ${name}`, url, checkedAt: "2026-11-13" }],
+  })),
 ];
 
 const nozzleDiameters = [
