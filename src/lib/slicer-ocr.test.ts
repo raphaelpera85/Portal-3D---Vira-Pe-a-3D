@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { parseSlicerOcrTexts } from "./slicer-ocr";
+import { hasReviewableSlicerOcrData, parseSlicerOcrTexts } from "./slicer-ocr";
 
 describe("parseSlicerOcrTexts", () => {
+  it("keeps partial recognized data available for manual review", () => {
+    expect(hasReviewableSlicerOcrData(parseSlicerOcrTexts(["Estimated cost: R$ 16,79"]))).toBe(true);
+    expect(hasReviewableSlicerOcrData(parseSlicerOcrTexts(["Purge: 3 g\nMaterial: PLA"]))).toBe(true);
+    expect(hasReviewableSlicerOcrData(parseSlicerOcrTexts(["OrcaSlicer\nNo readable measurements"]))).toBe(false);
+  });
+
   it("extracts only labeled slicer values and converts Brazilian decimals and time", () => {
     const result = parseSlicerOcrTexts([`OrcaSlicer\nModel: 211,63 g\nSupports: 12,17 g\nTotal filament: 223,80 g\nFilament length: 75,65 m\nPrint time: 13h40\nFilament changes: 1\nMaterial: PLA\nCost: 16,799`]);
     expect(result).toMatchObject({ slicer: "OrcaSlicer", modelGrams: 211.63, supportGrams: 12.17, totalGrams: 223.8, filamentGrams: 223.8, lengthMeters: 75.65, printHours: 13 + 40 / 60, filamentChanges: 1, materials: ["PLA"], estimatedCost: 16.799 });

@@ -207,3 +207,10 @@ export function parseSlicerOcrTexts(texts: string[]) {
     text: fullText,
   };
 }
+
+export function hasReviewableSlicerOcrData(extraction: ReturnType<typeof parseSlicerOcrTexts>) {
+  return [extraction.modelGrams, extraction.supportGrams, extraction.totalGrams, extraction.purgeGrams,
+    extraction.wipeTowerGrams, extraction.lengthMeters, extraction.printHours, extraction.filamentChanges,
+    extraction.estimatedCost].some((value) => value !== null)
+    || extraction.materials.length > 0 || extraction.filaments.length > 0 || extraction.conflicts.length > 0;
+}

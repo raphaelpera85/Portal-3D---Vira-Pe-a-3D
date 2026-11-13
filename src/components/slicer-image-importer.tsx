@@ -69,7 +69,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
   function apply() {
     if (!extraction) return;
     const applied = onApply(extraction);
-    if (applied !== null) setStatus(applied ? "Valores identificados preenchidos. Revise tudo antes de calcular." : "Nenhum valor seguro para preencher; confira os dados reconhecidos ou informe manualmente.");
+    if (applied !== null) setStatus(applied ? "Dados reconhecidos adicionados à revisão. Confira tudo antes de calcular." : "Nenhum valor seguro para preencher; confira os dados reconhecidos ou informe manualmente.");
   }
 
   return <section className="price-card slicer-ocr-card" aria-labelledby="slicer-ocr-title">

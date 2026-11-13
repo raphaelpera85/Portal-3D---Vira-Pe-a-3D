@@ -13,7 +13,7 @@ import { createMakerConsignmentItem } from "@/app/painel/maker/actions";
 import { MAX_CONSIGNMENT_QUANTITY } from "@/lib/consignment";
 import { SlicerImageImporter } from "@/components/slicer-image-importer";
 import { ThreeMfSlicerImporter } from "@/components/three-mf-slicer-importer";
-import type { parseSlicerOcrTexts } from "@/lib/slicer-ocr";
+import { hasReviewableSlicerOcrData, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 import { mapThreeMfPlateToSlicerMetrics, type CalculationOrigin, type SavedSlicerMetrics } from "@/lib/saved-calculation";
 import { mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "@/lib/calculator-profile";
 import type { ThreeMfSlicePlate } from "@/lib/model-file";
@@ -252,8 +252,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   }
 
   function applyOcr(extraction: ReturnType<typeof parseSlicerOcrTexts>): boolean | null {
-    if (extraction.filamentGrams == null && extraction.printHours == null && !extraction.filaments.some((item) => item.grams !== null || item.lengthMeters !== null)) return false;
-    if ((fields.filamentGrams !== "" || fields.printHours !== "" || slicerMetrics?.filaments.length) && !window.confirm("Preencher com os dados reconhecidos substituirá os valores atuais de peso, tempo e consumo por filamento. Continuar?")) return null;
+    if (!hasReviewableSlicerOcrData(extraction)) return false;
+    if ((fields.filamentGrams !== "" || fields.printHours !== "" || slicerMetrics) && !window.confirm("Aplicar OCR pode substituir os valores atuais de peso, tempo, consumo por filamento e dados reconhecidos. Continuar?")) return null;
     setFields((current) => ({
       ...current,
       ...(extraction.filamentGrams == null ? {} : { filamentGrams: String(extraction.filamentGrams) }),
