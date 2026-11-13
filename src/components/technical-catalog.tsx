@@ -11,6 +11,7 @@ const statusText = {
   incompatible: "Incompatível",
   unverified: "Não verificado",
 };
+const processForPrinter = (printer: PrinterEntry) => printer.technology === "FDM" ? "filament" : "resin";
 
 const powerText = (watts: number | null) => watts == null ? "Não medida" : `${watts} W`;
 const numericRange = (value: unknown) => {
@@ -35,7 +36,7 @@ export function TechnicalCatalog(props: TechnicalCatalogProps) {
 
 function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatalogProps) {
   const [printerId, setPrinterId] = useState(printers[0].id);
-  const [materialId, setMaterialId] = useState(materials[0].id);
+  const [materialId, setMaterialId] = useState(materials.find((item) => item.process === processForPrinter(printers[0]))?.id ?? materials[0].id);
   const [nozzleId, setNozzleId] = useState(nozzles.find((item) => item.original)?.id ?? nozzles[0].id);
   const [dimensions, setDimensions] = useState({ x: "", y: "", z: "" });
   const [useMulticolor, setUseMulticolor] = useState(false);
@@ -99,7 +100,13 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
           <section className="technical-panel">
             <div className="technical-panel-heading"><span className="technical-panel-icon"><Printer size={17} /></span><div><p>01 / IMPRESSORA</p><h2>Modelo e especificações</h2></div></div>
             <label className="technical-select">Fabricante, modelo e variante
-              <select value={printerId} onChange={(event) => setPrinterId(event.target.value)}>
+              <select value={printerId} onChange={(event) => {
+                const nextPrinter = printers.find((item) => item.id === event.target.value);
+                setPrinterId(event.target.value);
+                if (nextPrinter && materials.find((item) => item.id === materialId)?.process !== processForPrinter(nextPrinter)) {
+                  setMaterialId(materials.find((item) => item.process === processForPrinter(nextPrinter))?.id ?? materialId);
+                }
+              }}>
                 {printers.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.model} · {item.variant}</option>)}
               </select>
             </label>

@@ -23,7 +23,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Os testes de ponta a ponta iniciam o Next.js localmente em `127.0.0.1:3100` e validam a navegação, busca visual local e abertura de modelos, além da largura do visualizador em celular.
+Os testes de ponta a ponta iniciam o Next.js localmente em `127.0.0.1:3100` e validam navegação, busca visual local, abertura de modelos, o catálogo técnico da AD5X e a largura do visualizador em celular.
 
 ## Estrutura
 

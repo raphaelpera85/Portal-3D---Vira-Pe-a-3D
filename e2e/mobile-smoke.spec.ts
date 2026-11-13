@@ -46,3 +46,16 @@ test("mobile 3D viewer fits the viewport without horizontal scrolling", async ({
   expect(layout.right).toBeLessThanOrEqual(layout.viewport + 1);
   expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewport);
 });
+
+test("technical catalog shows Flashforge AD5X conditions after selecting it", async ({ page }) => {
+  await page.goto("/catalogos");
+
+  await page.getByLabel("Fabricante, modelo e variante").selectOption({ label: "Flashforge · AD5X · standard" });
+  await expect(page.locator(".technical-panel").nth(2)).toContainText("Diâmetros cadastrados");
+  await expect(page.locator(".technical-panel").first()).toContainText("Filamentos citados pelo fabricante:");
+  await expect(page.locator(".technical-panel").first()).toContainText("TPU 95A: 0,4/0,6/0,8 mm; não compatível com IFS");
+  await expect(page.locator(".technical-panel").first()).toContainText("A Flashforge informa que o TPU 95A deve ser impresso em modo de cor única");
+
+  await page.getByRole("button", { name: "0,6 mm" }).click();
+  await expect(page.locator(".technical-panel").nth(2)).toContainText("Aço endurecido indicado para filamentos abrasivos");
+});
