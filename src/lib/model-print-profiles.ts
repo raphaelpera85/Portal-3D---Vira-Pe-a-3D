@@ -1,7 +1,7 @@
 import type { SavedSlicerMetrics } from "./saved-calculation";
 
 export const modelProfileTypes = ["economic", "fast", "detailed", "multicolor", "custom"] as const;
-export const modelProfileSlicers = ["Arquivo 3MF", "Anycubic Slicer Next", "OrcaSlicer", "Bambu Studio", "Cura", "PrusaSlicer", "Manual"] as const;
+export const modelProfileSlicers = ["Arquivo 3MF", "Anycubic Slicer Next", "OrcaSlicer", "Bambu Studio", "PrusaSlicer", "Creality Print", "ElegooSlicer", "FlashPrint", "ideaMaker", "Simplify3D", "UltiMaker Cura", "Cura", "Manual"] as const;
 export type ModelPrintProfileInput = {
   id: string | null; modelSlug: string; name: string; profileType: typeof modelProfileTypes[number];
   slicer: string; sharingScope: "private" | "community"; printerName: string; materialName: string; nozzleName: string;

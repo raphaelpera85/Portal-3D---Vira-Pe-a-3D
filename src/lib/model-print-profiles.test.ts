@@ -35,6 +35,11 @@ describe("validateModelPrintProfile", () => {
     expect(validateModelPrintProfile({ ...input, sharingScope: "official" })).toBeNull();
   });
 
+  it("accepts every slicer recognized by the OCR for saved model profiles", () => {
+    const slicers = ["Anycubic Slicer Next", "OrcaSlicer", "Bambu Studio", "PrusaSlicer", "Creality Print", "ElegooSlicer", "FlashPrint", "ideaMaker", "UltiMaker Cura", "Cura", "Simplify3D"];
+    for (const slicer of slicers) expect(validateModelPrintProfile({ ...input, slicer })?.slicer).toBe(slicer);
+  });
+
   it("normalizes a manually entered per-color print profile", () => {
     expect(validateModelPrintProfile(input)).toMatchObject({
       modelSlug: "70bda315e46e", name: "PLA 0.20 mm", quantity: 1,
