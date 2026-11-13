@@ -27,7 +27,7 @@ export function slicerColorPresentation(color: unknown) {
 const slicerPatterns: Array<[RegExp, string]> = [
   [/Anycubic\s+Slicer\s+Next/i, "Anycubic Slicer Next"],
   [/OrcaSlicer/i, "OrcaSlicer"],
-  [/Bambu\s+Studio/i, "Bambu Studio"],
+  [/Bambu\s*Studio/i, "Bambu Studio"],
   [/PrusaSlicer/i, "PrusaSlicer"],
   [/Creality\s+Print/i, "Creality Print"],
   [/Elegoo\s*Slicer/i, "ElegooSlicer"],
@@ -68,6 +68,22 @@ function findMeasurement(lines: string[], labels: string, units: string, normali
   return null;
 }
 
+function findGcodeFilamentTotal(lines: string[], units: string, normalize: (value: number, unit: string) => number) {
+  const expression = new RegExp(String.raw`^;\s*(?:total\s+)?filament\s+(?:used|length|weight)\s*\[\s*(${units})\s*\]\s*[:=]\s*(.+)$`, "i");
+  for (const line of lines) {
+    const match = expression.exec(line);
+    if (!match) continue;
+    const values = match[2].split(/,\s+/);
+    if (values.length < 2) {
+      if (match[2].includes(",")) return null;
+      continue;
+    }
+    if (!values.every((value) => /^\d+(?:\.\d+)?$/.test(value))) return null;
+    return values.reduce((total, value) => total + normalize(Number(value), match[1].toLowerCase()), 0);
+  }
+  return undefined;
+}
+
 function findFilamentLength(lines: string[]) {
   const curaLine = lines.find((line) => /^;?\s*filament\s+used\s*:/i.test(line));
   if (curaLine) {
@@ -77,6 +93,8 @@ function findFilamentLength(lines: string[]) {
       return total + (match[2].toLowerCase() === "mm" ? value / 1000 : value);
     }, 0);
   }
+  const gcodeTotal = findGcodeFilamentTotal(lines, String.raw`(?:mm|m)`, (value, unit) => unit === "mm" ? value / 1000 : value);
+  if (gcodeTotal !== undefined) return gcodeTotal;
   return findMeasurement(lines, String.raw`(?:(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?|filament\s+used)`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value);
 }
 
@@ -114,12 +132,17 @@ function findCount(lines: string[], labels: string) {
 function findPrintHours(lines: string[]) {
   const curaTime = lines.find((line) => /^;\s*time\s*:\s*\d[\d.,]*\s*$/i.test(line));
   if (curaTime) return parseNumber(curaTime.replace(/^;\s*time\s*:\s*/i, "")) / 3600;
-  const labels = /(?:print(?:ing)?\s*time|tempo\s+(?:total\s+de\s+)?impress[aã]o|tempo\s+estimado|dura[cç][aã]o|^time)\s*[:=\-]?/i;
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index];
+  const totalEstimated = lines.flatMap((line) => {
+    const label = /total\s+estimated\s+time\s*[:=]\s*/i.exec(line);
+    return label ? [`estimated time: ${line.slice(label.index + label[0].length)}`] : [];
+  });
+  const labels = /(?:estimated\s+(?:printing\s+)?time|print(?:ing)?\s*time|tempo\s+(?:total\s+de\s+)?impress[aã]o|tempo\s+estimado|dura[cç][aã]o|^time)\s*[:=\-]?/i;
+  for (const [lineIndex, line] of [...totalEstimated, ...lines].entries()) {
+    const nextLine = lineIndex >= totalEstimated.length ? lines[lineIndex - totalEstimated.length + 1] ?? "" : "";
+    if (lineIndex >= totalEstimated.length && /model\s+printing\s+time/i.test(line)) continue;
     const label = labels.exec(line);
     if (!label) continue;
-    const tail = line.slice(label.index + label[0].length).trim() ? line.slice(label.index + label[0].length) : lines[index + 1] ?? "";
+    const tail = line.slice(label.index + label[0].length).trim() ? line.slice(label.index + label[0].length) : nextLine;
     const clock = /\b(\d{1,3}):(\d{1,2})\b/.exec(tail);
     if (clock) return Number(clock[1]) + Number(clock[2]) / 60;
     const compound = /(?:(\d+(?:[.,]\d+)?)\s*d(?:ays?)?\s*)?(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?(?:\s*(\d+(?:[.,]\d+)?)\s*m?(?:in(?:utes?)?)?)?|(?:(\d+(?:[.,]\d+)?)\s*m(?:in(?:utes?)?)?))/i.exec(tail);
@@ -154,6 +177,7 @@ function parseOne(text: string) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
   const length = findFilamentLength(lines);
+  const gcodeTotalGrams = findGcodeFilamentTotal(lines, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams);
   const cost = findCost(lines);
   const materials = [...new Set(lines.flatMap((line) => {
     const match = new RegExp(`(?<![a-z0-9])${materialPattern}(?![a-z0-9])`, "i").exec(line);
@@ -181,7 +205,8 @@ function parseOne(text: string) {
     slicer,
     modelGrams: findMeasurement(lines, massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
     supportGrams: findMeasurement(lines, massLabels.support, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
-    totalGrams: findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
+    totalGrams: gcodeTotalGrams !== undefined ? gcodeTotalGrams
+      : findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
     purgeGrams: findMeasurement(lines, String.raw`(?:purge|flush|purga|filamento\s+descartado)`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, /(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza)/i),
     wipeTowerGrams: findMeasurement(lines, String.raw`(?:(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza))`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
     lengthMeters: length,

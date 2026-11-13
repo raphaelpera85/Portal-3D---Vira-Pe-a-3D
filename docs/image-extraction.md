@@ -19,7 +19,7 @@ O parser procura rótulos em português e inglês e só preenche valores associa
 | Peso do modelo, suportes e total | Gramas; kg é convertido para g |
 | Purga e torre de limpeza | Gramas, mantidas em campos separados |
 | Comprimento de filamento | Metros; mm é convertido para m |
-| Tempo de impressão | Horas decimais a partir de `hh:mm`, dias, horas ou minutos |
+| Tempo de impressão | Horas decimais a partir de `hh:mm`, dias, horas, minutos e segundos; comentários Cura `TIME` são lidos como segundos |
 | Trocas de filamento/cor | Número inteiro |
 | Material e fatiador | Nomes reconhecidos no texto |
 | Linhas por filamento | Índice, massa, comprimento, material e cor, quando legíveis |
@@ -27,7 +27,7 @@ O parser procura rótulos em português e inglês e só preenche valores associa
 
 Os nomes de fatiador reconhecidos são Anycubic Slicer Next, OrcaSlicer, Bambu Studio, Cura, UltiMaker Cura, PrusaSlicer, Creality Print, ElegooSlicer, FlashPrint e ideaMaker. Reconhecer o nome não garante que todos os campos daquele programa ou versão sejam extraídos.
 
-O parser também lê valores apresentados na linha logo abaixo do rótulo, como em resumos que mostram “Model” e “211,63 g” em linhas separadas. A regra exige que a linha seguinte contenha apenas o valor e a unidade esperada; moeda explícita continua associada ao custo e não é inferida de `$` isolado.
+O parser também lê comentários de estatísticas G-code do OrcaSlicer e PrusaSlicer com unidades entre colchetes, somando listas de comprimento e massa por filamento. No Bambu Studio, reconhece `BambuStudio`, o tempo total estimado, comprimento e peso; ignora o tempo do modelo quando não há estimativa total. No Cura, soma comprimentos por extrusor e interpreta `TIME` como segundos. Não estima massa a partir do comprimento. Também lê valores apresentados na linha logo abaixo do rótulo, como em resumos que mostram “Model” e “211,63 g” em linhas separadas. A regra exige que a linha seguinte contenha apenas o valor e a unidade esperada; moeda explícita continua associada ao custo e não é inferida de `$` isolado.
 
 O reconhecimento textual de material preserva nomes de produtos do catálogo, incluindo Bambu Lab PLA Basic e PPA-CF, Creality Hyper PLA/ABS/PETG e HP ASA/TPU, além de PA11 Carbon Fiber, PETG Carbon Fiber, PC Blend, Water-Wash Resin 2.0 e ABS-Like Resin V3.0. O OCR não associa automaticamente a leitura a um registro ou perfil do catálogo.
 
