@@ -4,7 +4,7 @@ import { PriceCalculator } from "@/components/price-calculator";
 import { SiteHeader } from "@/components/site-header";
 import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
-import { validateCalculationToSave, type SavedSlicerMetrics } from "@/lib/saved-calculation";
+import { validateCalculationToSave, type CalculationOrigin, type SavedSlicerMetrics } from "@/lib/saved-calculation";
 import { readPrintProfileColors } from "@/lib/print-profile-colors";
 import { loadTechnicalCatalog } from "@/lib/technical-catalog.server";
 import { getShowcaseModel } from "@/lib/model-showcase";
@@ -28,7 +28,7 @@ export default async function CalculatorPage() {
   let productNotice: string | null = null;
   let profileNotice: string | null = null;
   let canSaveCalculations = false;
-  let savedCalculations: Array<{ id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; snapshot: string }> = [];
+  let savedCalculations: Array<{ id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string }> = [];
   let savedCalculationsError = false;
   if (actor.supabase && actor.user && actor.authorized) {
     const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
@@ -108,7 +108,8 @@ export default async function CalculatorPage() {
           profileId: validated.calculation.profileId,
           profileName: linkedProfile?.name ?? null,
           slicer: validated.calculation.slicer,
-          snapshot: JSON.stringify({ input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer }),
+          origin: validated.calculation.origin,
+          snapshot: JSON.stringify({ input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin }),
         }];
       });
     }

@@ -41,6 +41,15 @@ describe("validateCalculationToSave", () => {
     expect(result.calculation?.result.channels[0].priceCents).toBeGreaterThan(0);
   });
 
+  it("preserves the calculation data source and marks legacy snapshots as unknown", () => {
+    const imported = validateCalculationToSave("OCR", JSON.stringify({ ...snapshot, origin: "ocr" }));
+    expect(imported.calculation?.origin).toBe("ocr");
+
+    const legacy = validateCalculationToSave("Antigo", JSON.stringify(snapshot));
+    expect(legacy.calculation?.origin).toBe("unknown");
+    expect(validateCalculationToSave("Inválido", JSON.stringify({ ...snapshot, origin: "external" })).calculation).toBeNull();
+  });
+
   it("preserves the selected catalog material in the saved snapshot", () => {
     const material = "Bambu Lab · PLA Basic (PLA)";
     const result = validateCalculationToSave("Suporte de mesa", JSON.stringify({

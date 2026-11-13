@@ -2,6 +2,8 @@ import { calculatePrintPrice, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, typ
 import type { ThreeMfSlicePlate } from "./model-file";
 
 export const MAX_SAVED_CALCULATION_JSON = 20_000;
+export const calculationOrigins = ["manual", "ocr", "3mf", "profile", "unknown"] as const;
+export type CalculationOrigin = typeof calculationOrigins[number];
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -89,6 +91,8 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   }
   const slicer = parseSlicerMetrics(parsed.slicer);
   if (slicer === undefined) return { calculation: null, error: "Os dados reconhecidos pelo OCR são inválidos." };
+  const origin = parsed.origin === undefined ? "unknown" : parsed.origin;
+  if (!calculationOrigins.includes(origin as CalculationOrigin)) return { calculation: null, error: "A origem dos dados do cálculo é inválida." };
 
   const rawInput = parsed.input;
   const pricingMode = rawInput.pricingMode === undefined ? "margin" : rawInput.pricingMode;
@@ -153,7 +157,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   return {
     calculation: {
       title: rawTitle.trim(), productId, printerId, profileId, input: safeInput, channels: safeChannels,
-      slicer,
+      slicer, origin: origin as CalculationOrigin,
       result: { breakdown: result.breakdown, unitCostCents: result.unitCostCents, channels: result.channels },
     },
     error: null,
