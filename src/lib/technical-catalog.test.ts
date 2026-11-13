@@ -1,7 +1,10 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { evaluateCompatibility } from "./compatibility";
 import { mapTechnicalCatalog } from "./technical-catalog-data";
 import { materials, nozzles, printers } from "./technical-catalog";
+
+const k2ProMigration = readFileSync(new URL("../../supabase/migrations/20261113223000_seed_creality_k2_pro.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("marks the manufacturer-listed A1 mini, PLA Basic, and original nozzle setup compatible", () => {
@@ -34,6 +37,32 @@ describe("verified technical catalog records", () => {
     expect(k2Nozzles.map((nozzle) => nozzle.diameterMm).sort()).toEqual([0.2, 0.4, 0.6, 0.8]);
     expect(k2Nozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
     expect(printer?.sources[0].url).toBe("https://www.creality.com/eu/products/k2-series-3d-printer");
+  });
+
+  it("distinguishes the K2 Pro from its CFS Combo and records the supported nozzle sizes", () => {
+    const printer = printers.find((item) => item.id === "creality-k2-pro");
+    const combo = printers.find((item) => item.id === "creality-k2-pro-cfs-combo");
+    const proNozzles = nozzles.filter((item) => item.printerCompatibility?.["creality-k2-pro"] === "compatible");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: { x: 300, y: 300, z: 300 },
+      maxNozzleTemperatureC: 300,
+      maxBedTemperatureC: 110,
+      maximumSpeedMmPerSecond: 600,
+      maximumPowerWatts: 1300,
+      multicolorSlots: null,
+    });
+    expect(combo).toMatchObject({
+      variant: "CFS Combo",
+      multicolorSystem: "Creality CFS",
+      multicolorSlots: 4,
+      technicalProperties: { includedCfsUnits: 1, maximumCfsUnits: 4 },
+    });
+    expect(proNozzles.map((nozzle) => nozzle.diameterMm).sort()).toEqual([0.2, 0.4, 0.6, 0.8]);
+    expect(proNozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
+    expect(k2ProMigration).toContain("'K2 Pro', 'standard'");
+    expect(k2ProMigration).toContain("'K2 Pro', 'CFS Combo'");
+    expect(k2ProMigration).toContain('"includedCfsUnits":1');
   });
 
   it("includes confirmed P2S specifications while leaving unpublished values unknown", () => {
