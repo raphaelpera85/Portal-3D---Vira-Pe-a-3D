@@ -148,6 +148,27 @@ describe("calculatePrintPrice", () => {
     expect(result.channels[1].actualMarginPercent).toBeGreaterThanOrEqual(25);
   });
 
+  it("adds named active-work stages to the manual labor cost for the main run and each component", () => {
+    const result = calculatePrintPrice({
+      ...sample,
+      laborMinutes: 5,
+      laborPreparationMinutes: 10, laborSupportRemovalMinutes: 5, laborFinishingMinutes: 10,
+      laborPaintingMinutes: 5, laborAssemblyMinutes: 10, laborPackagingMinutes: 15,
+      additionalCosts: [],
+      failureReservePercent: 0,
+      productionComponents: [{
+        name: "Base", material: "PLA", printer: "Impressora B", piecesPerProduct: 1,
+        filamentGrams: 0, filamentPricePerKg: 0, printHours: 0, averagePowerWatts: 0,
+        energyPricePerKwh: 0, machineCostPerHour: 0, depreciationPerHour: 0, maintenancePerHour: 0,
+        laborMinutes: 5, laborRatePerHour: 60,
+        laborAssemblyMinutes: 10,
+      }],
+    }, []);
+
+    expect(result.errors).toEqual([]);
+    expect(result.breakdown?.laborCents).toBe(3900);
+  });
+
   it("rounds fractional material cost to cents and calculates margin without channel fees", () => {
     const result = calculatePrintPrice({
       ...sample,

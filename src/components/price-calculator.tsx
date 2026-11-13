@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 import { CirclePlus, Calculator, Trash2 } from "lucide-react";
-import { calculatePrintPrice, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "@/lib/pricing";
+import { calculatePrintPrice, laborActivityFields, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "@/lib/pricing";
 import { exportPrintCalculationCsv } from "@/lib/pricing-export";
 import { deriveEquipmentRates, type EquipmentRateInput } from "@/lib/printer-equipment";
 import { evaluateMaterialCompatibility, type CatalogPrinter } from "@/lib/compatibility";
@@ -29,11 +29,16 @@ export type CalculatorProduct = { id: string; name: string; slug: string; publis
 type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics };
 type CalculatorMaterial = MaterialEntry;
 type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string };
+const laborActivityLabel = (field: typeof laborActivityFields[number]) => ({
+  laborPreparationMinutes: "Preparação", laborSupportRemovalMinutes: "Remoção de suportes", laborFinishingMinutes: "Acabamento",
+  laborPaintingMinutes: "Pintura", laborAssemblyMinutes: "Montagem", laborPackagingMinutes: "Embalagem",
+}[field]);
 
 const initialFields: FormFields = {
   batchQuantity: "1", batchFixedCost: "", material: "", filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "",
   energyPricePerKwh: "", machineCostPerHour: "", depreciationPerHour: "",
   maintenancePerHour: "", laborMinutes: "", laborRatePerHour: "", overheadPerUnit: "",
+  laborPreparationMinutes: "", laborSupportRemovalMinutes: "", laborFinishingMinutes: "", laborPaintingMinutes: "", laborAssemblyMinutes: "", laborPackagingMinutes: "",
   failureReservePercent: "", targetMarginPercent: "", targetMarkupPercent: "",
 };
 
@@ -152,6 +157,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       maintenancePerHour: numberValue(component.maintenancePerHour),
       laborMinutes: numberValue(component.laborMinutes),
       laborRatePerHour: numberValue(component.laborRatePerHour),
+      ...Object.fromEntries(laborActivityFields.map((field) => [field, numberValue(component[field])])) as Record<typeof laborActivityFields[number], number>,
     })),
     material: fields.material.trim(),
     filamentGrams: numberValue(fields.filamentGrams),
@@ -167,6 +173,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     maintenancePerHour: numberValue(fields.maintenancePerHour),
     laborMinutes: numberValue(fields.laborMinutes),
     laborRatePerHour: numberValue(fields.laborRatePerHour),
+    ...Object.fromEntries(laborActivityFields.map((field) => [field, numberValue(fields[field])])) as Record<typeof laborActivityFields[number], number>,
     overheadPerUnit: numberValue(fields.overheadPerUnit),
     failureReservePercent: numberValue(fields.failureReservePercent),
     targetMarginPercent: pricingMode === "margin" ? numberValue(fields.targetMarginPercent) : 0,
@@ -214,7 +221,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       id, equipmentId: "", name: "", material: "", printer: "", piecesPerProduct: "1",
       filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "", energyPricePerKwh: "",
       machineCostPerHour: "", depreciationPerHour: "", maintenancePerHour: "", laborMinutes: "", laborRatePerHour: "",
-    }]);
+      ...Object.fromEntries(laborActivityFields.map((field) => [field, ""])) as Record<typeof laborActivityFields[number], string>,
+    } as ProductionComponentFields]);
     setComponentNozzleIds((current) => ({ ...current, [id]: "" }));
   }
 
@@ -350,6 +358,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       setExtras(saved.input.additionalCosts.map((item) => ({ id: crypto.randomUUID(), name: item.name, amount: String(item.amount) })));
       const restoredComponents = (saved.input.productionComponents ?? []).map((component, index) => ({
         id: crypto.randomUUID(), equipmentId: equipment.some((item) => item.id === saved.compatibilityNozzles?.components?.[index]?.equipmentId) ? saved.compatibilityNozzles?.components?.[index]?.equipmentId ?? "" : "", ...Object.fromEntries(Object.entries(component).map(([key, value]) => [key, String(value)])),
+        ...Object.fromEntries(laborActivityFields.map((field) => [field, String(component[field] ?? 0)])),
       } as ProductionComponentFields));
       setProductionComponents(restoredComponents);
       setComponentNozzleIds(Object.fromEntries(restoredComponents.map((component, index) => {
@@ -471,7 +480,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
                 <CostField label="Operação da máquina" suffix="R$/h" value={component.machineCostPerHour} onChange={(value) => updateProductionComponent(component.id, "machineCostPerHour", value)} idSuffix={component.id} />
                 <CostField label="Depreciação" suffix="R$/h" value={component.depreciationPerHour} onChange={(value) => updateProductionComponent(component.id, "depreciationPerHour", value)} idSuffix={component.id} />
                 <CostField label="Manutenção rateada" suffix="R$/h" hint="Sugestão histórica da impressora selecionada; você pode ajustar." value={component.maintenancePerHour} onChange={(value) => updateProductionComponent(component.id, "maintenancePerHour", value)} idSuffix={component.id} />
-                <CostField label="Mão de obra total" suffix="min" value={component.laborMinutes} onChange={(value) => updateProductionComponent(component.id, "laborMinutes", value)} idSuffix={component.id} />
+                <CostField label="Outra mão de obra" suffix="min" value={component.laborMinutes} onChange={(value) => updateProductionComponent(component.id, "laborMinutes", value)} idSuffix={component.id} />
+                {laborActivityFields.map((field) => <CostField key={field} label={laborActivityLabel(field)} suffix="min" value={component[field]} onChange={(value) => updateProductionComponent(component.id, field, value)} idSuffix={component.id} />)}
                 <CostField label="Valor da mão de obra" suffix="R$/h" value={component.laborRatePerHour} onChange={(value) => updateProductionComponent(component.id, "laborRatePerHour", value)} idSuffix={component.id} />
               </div>
               <p className="price-field-hint">Este componente exige {numberValue(component.piecesPerProduct) * (input.batchQuantity ?? 1)} unidade(s) no lote. O peso e o tempo acima são os totais já medidos para essas unidades.</p>
@@ -481,7 +491,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
           <section className="price-card">
             <div className="price-card-heading"><span className="price-step">03</span><div><h2>Trabalho e outros custos</h2><p>Informe a mão de obra da execução, componentes por peça e um custo fixo único do lote.</p></div></div>
             <div className="price-fields-grid">
-              <CostField label="Mão de obra do lote" suffix="min" value={fields.laborMinutes} onChange={(value) => updateField("laborMinutes", value)} />
+              <CostField label="Outra mão de obra do lote" suffix="min" value={fields.laborMinutes} onChange={(value) => updateField("laborMinutes", value)} />
+              {laborActivityFields.map((field) => <CostField key={field} label={laborActivityLabel(field)} suffix="min" value={fields[field]} onChange={(value) => updateField(field, value)} />)}
               <CostField label="Valor da mão de obra" suffix="R$/h" value={fields.laborRatePerHour} onChange={(value) => updateField("laborRatePerHour", value)} />
               <CostField label="Custo rateado por peça" suffix="R$/peça" value={fields.overheadPerUnit} onChange={(value) => updateField("overheadPerUnit", value)} />
               <CostField label="Custo fixo do lote" suffix="R$/lote" value={fields.batchFixedCost} onChange={(value) => updateField("batchFixedCost", value)} />

@@ -1,4 +1,4 @@
-import { calculatePrintPrice, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type FilamentCost, type PrintCostInput, type ProductionComponent, type SalesChannel } from "./pricing";
+import { calculatePrintPrice, laborActivityFields, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type FilamentCost, type PrintCostInput, type ProductionComponent, type SalesChannel } from "./pricing";
 import type { ThreeMfSlicePlate } from "./model-file";
 
 export const MAX_SAVED_CALCULATION_JSON = 20_000;
@@ -138,14 +138,17 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
       && typeof item.printer === "string" && item.printer.length <= 120
       && validNumber(item.piecesPerProduct) && Number.isSafeInteger(item.piecesPerProduct) && item.piecesPerProduct > 0 && item.piecesPerProduct <= MAX_BATCH_QUANTITY
       && componentNumberFields.every((field) => validNumber(item[field]))
+      && laborActivityFields.every((field) => item[field] === undefined || validNumber(item[field]))
       ? {
         name: item.name.trim(), material: item.material.trim(), printer: item.printer.trim(), piecesPerProduct: item.piecesPerProduct,
         ...Object.fromEntries(componentNumberFields.map((field) => [field, item[field]])),
+        ...Object.fromEntries(laborActivityFields.filter((field) => item[field] !== undefined).map((field) => [field, item[field]])),
       } as ProductionComponent
       : null)
     : null;
   if ((pricingMode !== "margin" && pricingMode !== "markup") || (pricingMode === "markup" && rawInput.targetMarkupPercent === undefined)
     || !validNumber(targetMarkupPercent) || material === undefined || !numberFields.every((field) => validNumber(rawInput[field])) || !validNumber(batchQuantity) || !Number.isSafeInteger(batchQuantity) || batchQuantity < 1 || batchQuantity > MAX_BATCH_QUANTITY
+    || !laborActivityFields.every((field) => rawInput[field] === undefined || validNumber(rawInput[field]))
     || !validNumber(batchFixedCost) || !Array.isArray(rawInput.additionalCosts) || rawInput.additionalCosts.length > 30
     || productionComponents === null || productionComponents.some((component) => component === null)
     || filamentCosts === null || filamentCosts.some((filament) => filament === null)) {
@@ -157,7 +160,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
     : null);
   if (additionalCosts.some((item) => item === null)) return { calculation: null, error: "Há componentes adicionais inválidos." };
 
-  const input = { ...Object.fromEntries(numberFields.map((field) => [field, rawInput[field]])), material, batchQuantity, batchFixedCost, productionComponents, filamentCosts: filamentCosts as FilamentCost[], pricingMode, targetMarkupPercent } as unknown as Omit<PrintCostInput, "additionalCosts">;
+  const input = { ...Object.fromEntries(numberFields.map((field) => [field, rawInput[field]])), ...Object.fromEntries(laborActivityFields.map((field) => [field, rawInput[field] ?? 0])), material, batchQuantity, batchFixedCost, productionComponents, filamentCosts: filamentCosts as FilamentCost[], pricingMode, targetMarkupPercent } as unknown as Omit<PrintCostInput, "additionalCosts">;
   const channels = parsed.channels.map((item) => isRecord(item) && typeof item.id === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(item.id)
     && typeof item.name === "string" && item.name.trim().length <= 80
     && validNumber(item.feePercent) && item.feePercent < 100 && validNumber(item.fixedFee)

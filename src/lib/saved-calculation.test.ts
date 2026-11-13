@@ -195,6 +195,26 @@ describe("validateCalculationToSave", () => {
     })).calculation).toBeNull();
   });
 
+  it("validates, recalculates, and preserves categorized active labor", () => {
+    const labor = { laborPreparationMinutes: 10, laborSupportRemovalMinutes: 5, laborFinishingMinutes: 10, laborPaintingMinutes: 5, laborAssemblyMinutes: 10, laborPackagingMinutes: 15 };
+    const result = validateCalculationToSave("Acabamento", JSON.stringify({
+      ...snapshot,
+      input: { ...snapshot.input, ...labor, productionComponents: [{
+        name: "Base", material: "PLA", printer: "Impressora B", piecesPerProduct: 1,
+        filamentGrams: 0, filamentPricePerKg: 0, printHours: 0, averagePowerWatts: 0, energyPricePerKwh: 0,
+        machineCostPerHour: 0, depreciationPerHour: 0, maintenancePerHour: 0, laborMinutes: 0, laborRatePerHour: 60,
+        laborAssemblyMinutes: 10,
+      }] },
+    }));
+
+    expect(result.error).toBeNull();
+    expect(result.calculation?.input).toMatchObject({ ...labor, productionComponents: [{ laborAssemblyMinutes: 10 }] });
+    expect(result.calculation?.result.breakdown.laborCents).toBe(4400);
+    expect(validateCalculationToSave("Acabamento", JSON.stringify({
+      ...snapshot, input: { ...snapshot.input, laborPaintingMinutes: "dez" },
+    })).calculation).toBeNull();
+  });
+
   it("rejects malformed, oversized, and incomplete calculations", () => {
     expect(validateCalculationToSave("Teste", "{" ).calculation).toBeNull();
     expect(validateCalculationToSave("Teste", "x".repeat(24_001)).calculation).toBeNull();

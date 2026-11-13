@@ -1,4 +1,7 @@
 export type AdditionalCost = { name: string; amount: number };
+export const laborActivityFields = ["laborPreparationMinutes", "laborSupportRemovalMinutes", "laborFinishingMinutes", "laborPaintingMinutes", "laborAssemblyMinutes", "laborPackagingMinutes"] as const;
+type LaborActivityField = typeof laborActivityFields[number];
+const activityMinutes = (values: Partial<Record<LaborActivityField, number>>) => laborActivityFields.reduce((sum, field) => sum + (values[field] ?? 0), 0);
 export type ProductionComponent = {
   name: string;
   material: string;
@@ -14,7 +17,7 @@ export type ProductionComponent = {
   maintenancePerHour: number;
   laborMinutes: number;
   laborRatePerHour: number;
-};
+} & Partial<Record<LaborActivityField, number>>;
 export type SalesChannel = {
   id: string; name: string; feePercent: number; fixedFee: number; logisticsCost?: number;
   discountPercent?: number; discountFixed?: number;
@@ -45,7 +48,7 @@ export type PrintCostInput = {
   targetMarginPercent: number;
   pricingMode?: "margin" | "markup";
   targetMarkupPercent?: number;
-};
+} & Partial<Record<LaborActivityField, number>>;
 
 export type CostBreakdown = {
   materialCents: number;
@@ -89,12 +92,14 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     input.filamentGrams, input.filamentPricePerKg, input.printHours, input.averagePowerWatts,
     input.energyPricePerKwh, input.machineCostPerHour, input.depreciationPerHour,
     input.maintenancePerHour, input.laborMinutes, input.laborRatePerHour,
+    ...laborActivityFields.map((field) => input[field] ?? 0),
     input.overheadPerUnit, input.failureReservePercent, input.targetMarginPercent, targetMarkupPercent,
     ...input.additionalCosts.map(({ amount }) => amount),
     ...filamentCosts.flatMap(({ grams, pricePerKg }) => [grams, pricePerKg]),
-    ...components.flatMap(({ piecesPerProduct, filamentGrams, filamentPricePerKg, printHours, averagePowerWatts, energyPricePerKwh, machineCostPerHour, depreciationPerHour, maintenancePerHour, laborMinutes, laborRatePerHour }) => [
-      piecesPerProduct, filamentGrams, filamentPricePerKg, printHours, averagePowerWatts,
-      energyPricePerKwh, machineCostPerHour, depreciationPerHour, maintenancePerHour, laborMinutes, laborRatePerHour,
+    ...components.flatMap((component) => [
+      component.piecesPerProduct, component.filamentGrams, component.filamentPricePerKg, component.printHours, component.averagePowerWatts,
+      component.energyPricePerKwh, component.machineCostPerHour, component.depreciationPerHour, component.maintenancePerHour,
+      component.laborMinutes, component.laborRatePerHour, ...laborActivityFields.map((field) => component[field] ?? 0),
     ]),
     ...channels.flatMap(({ feePercent, fixedFee, logisticsCost = 0, discountPercent = 0, discountFixed = 0 }) => [feePercent, fixedFee, logisticsCost, discountPercent, discountFixed]),
   ];
@@ -137,7 +142,7 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     machineCents: sum.machineCents + roundCents(component.printHours * component.machineCostPerHour),
     depreciationCents: sum.depreciationCents + roundCents(component.printHours * component.depreciationPerHour),
     maintenanceCents: sum.maintenanceCents + roundCents(component.printHours * component.maintenancePerHour),
-    laborCents: sum.laborCents + roundCents(component.laborMinutes / 60 * component.laborRatePerHour),
+    laborCents: sum.laborCents + roundCents((component.laborMinutes + activityMinutes(component)) / 60 * component.laborRatePerHour),
   }), { materialCents: 0, energyCents: 0, machineCents: 0, depreciationCents: 0, maintenanceCents: 0, laborCents: 0 });
   const productionCosts = {
     materialCents: (filamentCosts.length
@@ -147,7 +152,7 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     machineCents: roundCents(input.printHours * input.machineCostPerHour) + componentCosts.machineCents,
     depreciationCents: roundCents(input.printHours * input.depreciationPerHour) + componentCosts.depreciationCents,
     maintenanceCents: roundCents(input.printHours * input.maintenancePerHour) + componentCosts.maintenanceCents,
-    laborCents: roundCents(input.laborMinutes / 60 * input.laborRatePerHour) + componentCosts.laborCents,
+    laborCents: roundCents((input.laborMinutes + activityMinutes(input)) / 60 * input.laborRatePerHour) + componentCosts.laborCents,
     additionalCents: input.additionalCosts.reduce((sum, item) => sum + roundCents(item.amount) * batchQuantity, 0),
     overheadCents: roundCents(input.overheadPerUnit) * batchQuantity,
     batchFixedCents: roundCents(batchFixedCost),
