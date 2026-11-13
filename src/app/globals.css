@@ -1036,6 +1036,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .price-input-wrap:focus-within, .price-channel-input:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; }
 .price-input-wrap input, .price-channel-input input, .extra-cost-row input, .price-channel-row > label > input { width: 100%; min-width: 0; min-height: 38px; padding: 0 10px; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 12px; }
 .price-input-wrap small, .price-channel-input small { flex: 0 0 auto; padding-inline: 8px; color: var(--muted); font-size: 9px; font-weight: 600; }
+.price-channel-input select { min-height: 36px; padding: 0 5px; border: 0; background: transparent; color: var(--muted); font-size: 9px; }
 .price-field-hint { color: var(--muted); font-size: 9px; font-weight: 400; line-height: 1.4; }
 .calculator-compatibility { display: grid; gap: 6px; margin-block: 12px; padding: 11px 13px; border: 1px solid var(--line); border-left: 3px solid var(--muted); border-radius: 4px; background: var(--surface); color: var(--muted-strong); font-size: 11px; }
 .calculator-compatibility.is-compatible { border-left-color: #16a34a; }
@@ -1068,7 +1069,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .extra-cost-row > button:hover, .price-remove-channel:hover { border-color: #dc2626; color: #b91c1c; }
 .price-margin-field { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 640px; margin-bottom: 18px; }
 .price-channels { display: grid; gap: 8px; margin-bottom: 11px; }
-.price-channel-row { display: grid; grid-template-columns: minmax(90px, 1fr) 90px 90px 100px 32px; align-items: end; gap: 8px; }
+.price-channel-row { display: grid; grid-template-columns: minmax(0, 1fr) 32px; align-items: end; gap: 6px; }
+.price-channel-fees { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .price-channel-row > label > input { min-height: 38px; border: 1px solid var(--line); border-radius: 4px; font-size: 10px; font-weight: 700; }
 .price-channel-input { min-height: 38px; }
 .price-channel-input input { min-height: 36px; padding-inline: 7px; font-size: 10px; }
@@ -1275,7 +1277,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .maker-aside { display: none; }
   .price-layout { grid-template-columns: minmax(0, 1fr) 310px; gap: 13px; }
   .price-card { padding: 20px 18px; }
-  .price-channel-row { grid-template-columns: minmax(80px, 1fr) 70px 70px 80px 30px; gap: 6px; }
+  .price-channel-row { grid-template-columns: minmax(0, 1fr) 30px; gap: 5px; }
+  .price-channel-fees { gap: 6px; }
   .technical-layout { grid-template-columns: minmax(0, 1fr) 310px; gap: 12px; }
   .technical-panel { padding: 19px 16px; }
   .technical-facts > div { padding: 9px 8px; }
@@ -1348,7 +1351,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .price-ocr-result dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .price-fields-grid { gap: 13px 10px; }
   .price-card { padding: 18px 15px; }
-  .price-channel-row { grid-template-columns: minmax(70px, 1fr) 60px 60px 70px 29px; gap: 5px; }
+  .price-channel-row { grid-template-columns: minmax(0, 1fr) 29px; gap: 5px; }
+  .price-channel-fees { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .price-channel-row > label > input, .price-channel-input input { padding-inline: 5px; font-size: 9px; }
   .price-channel-input small { padding-inline: 5px; }
   .extra-cost-row { grid-template-columns: minmax(0, 1fr) 110px 30px; gap: 5px; }

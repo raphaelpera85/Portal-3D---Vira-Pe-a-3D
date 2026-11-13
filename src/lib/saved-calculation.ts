@@ -142,7 +142,13 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
     && typeof item.name === "string" && item.name.trim().length <= 80
     && validNumber(item.feePercent) && item.feePercent < 100 && validNumber(item.fixedFee)
     && (item.logisticsCost === undefined || validNumber(item.logisticsCost))
-    ? { id: item.id, name: item.name.trim(), feePercent: item.feePercent, fixedFee: item.fixedFee, logisticsCost: item.logisticsCost ?? 0 }
+    && (item.discountPercent === undefined || validNumber(item.discountPercent) && item.discountPercent <= 99.99)
+    && (item.discountFixed === undefined || validNumber(item.discountFixed))
+    && !((item.discountPercent ?? 0) > 0 && (item.discountFixed ?? 0) > 0)
+    ? {
+      id: item.id, name: item.name.trim(), feePercent: item.feePercent, fixedFee: item.fixedFee,
+      logisticsCost: item.logisticsCost ?? 0, discountPercent: item.discountPercent ?? 0, discountFixed: item.discountFixed ?? 0,
+    }
     : null);
   if (channels.some((item) => item === null) || new Set(channels.map((item) => item?.id)).size !== channels.length) {
     return { calculation: null, error: "Há canais de venda inválidos ou repetidos." };

@@ -19,6 +19,83 @@ const sample = {
 };
 
 describe("calculatePrintPrice", () => {
+  it("applies a fixed channel discount before calculating the percentage fee", () => {
+    const result = calculatePrintPrice({
+      ...sample,
+      filamentGrams: 100,
+      filamentPricePerKg: 100,
+      printHours: 0,
+      averagePowerWatts: 0,
+      machineCostPerHour: 0,
+      depreciationPerHour: 0,
+      maintenancePerHour: 0,
+      laborMinutes: 0,
+      overheadPerUnit: 0,
+      failureReservePercent: 0,
+      additionalCosts: [],
+      targetMarginPercent: 20,
+    }, [{ id: "marketplace", name: "Marketplace", feePercent: 10, fixedFee: 1, logisticsCost: 2, discountFixed: 1 }]);
+
+    expect(result.errors).toEqual([]);
+    expect(result.channels[0]).toMatchObject({
+      discountCents: 100,
+      feeCents: 186,
+      priceCents: 1958,
+      profitCents: 372,
+    });
+    expect(result.channels[0].actualMarginPercent).toBeGreaterThanOrEqual(20);
+  });
+
+  it("applies a percentage channel discount to the commission base", () => {
+    const result = calculatePrintPrice({
+      ...sample,
+      filamentGrams: 100,
+      filamentPricePerKg: 100,
+      printHours: 0,
+      averagePowerWatts: 0,
+      machineCostPerHour: 0,
+      depreciationPerHour: 0,
+      maintenancePerHour: 0,
+      laborMinutes: 0,
+      overheadPerUnit: 0,
+      failureReservePercent: 0,
+      additionalCosts: [],
+      targetMarginPercent: 20,
+    }, [{ id: "marketplace", name: "Marketplace", feePercent: 10, fixedFee: 0, discountPercent: 10 }]);
+
+    expect(result.channels[0]).toMatchObject({ discountCents: 158, feeCents: 143, priceCents: 1587, profitCents: 286 });
+    expect(result.channels[0].actualMarginPercent).toBeGreaterThanOrEqual(20);
+  });
+
+  it("keeps the requested markup after a channel discount and percentage fee", () => {
+    const result = calculatePrintPrice({
+      ...sample,
+      filamentGrams: 100,
+      filamentPricePerKg: 100,
+      printHours: 0,
+      averagePowerWatts: 0,
+      machineCostPerHour: 0,
+      depreciationPerHour: 0,
+      maintenancePerHour: 0,
+      laborMinutes: 0,
+      overheadPerUnit: 0,
+      failureReservePercent: 0,
+      additionalCosts: [],
+      targetMarginPercent: 0,
+      targetMarkupPercent: 20,
+      pricingMode: "markup",
+    }, [{ id: "marketplace", name: "Marketplace", feePercent: 10, fixedFee: 0, discountPercent: 10 }]);
+
+    expect(result.channels[0]).toMatchObject({ discountCents: 148, feeCents: 133, priceCents: 1481, profitCents: 200 });
+  });
+
+  it("requires one discount type per channel and limits percentage discounts below 100%", () => {
+    const channels = [{ id: "marketplace", name: "Marketplace", feePercent: 0, fixedFee: 0, discountPercent: 10, discountFixed: 1 }];
+    expect(calculatePrintPrice(sample, channels).errors).toContain("Escolha desconto percentual ou fixo em cada canal, não os dois.");
+    expect(calculatePrintPrice(sample, [{ ...channels[0], discountFixed: 0, discountPercent: 100 }]).errors)
+      .toContain("Margens, taxas, descontos e reservas devem ficar entre 0% e 100%.");
+  });
+
   it("includes seller logistics cost in channel pricing and reports it separately", () => {
     const result = calculatePrintPrice({
       ...sample,

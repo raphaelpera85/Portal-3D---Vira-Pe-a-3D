@@ -9,7 +9,7 @@ const input: PrintCostInput = {
   overheadPerUnit: 0, failureReservePercent: 0, targetMarginPercent: 20,
   additionalCosts: [{ name: 'Embalagem; =HYPERLINK("https://bad")', amount: 1 }],
 };
-const channels: SalesChannel[] = [{ id: "marketplace", name: "Marketplace", feePercent: 10, fixedFee: 1, logisticsCost: 2.5 }];
+const channels: SalesChannel[] = [{ id: "marketplace", name: "Marketplace", feePercent: 10, fixedFee: 1, logisticsCost: 2.5, discountPercent: 5 }];
 
 describe("exportPrintCalculationCsv", () => {
   it("exports cost breakdown and channel prices in a spreadsheet-friendly Brazilian CSV", () => {
@@ -19,7 +19,7 @@ describe("exportPrintCalculationCsv", () => {
     expect(csv.startsWith("\uFEFFsep=;\r\n")).toBe(true);
     expect(csv).toContain('"Cálculo";"Suporte de mesa"');
     expect(csv).toContain('"Custo total do lote (R$)"');
-    expect(csv).toContain('"Marketplace";"10";"1,00";"2,50"');
+    expect(csv).toContain('"Marketplace";"10";"1,00";"5%";');
     expect(csv).toContain("12/11/2026");
   });
 

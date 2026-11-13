@@ -45,14 +45,20 @@ describe("validateCalculationToSave", () => {
     const legacy = validateCalculationToSave("Antigo", JSON.stringify(snapshot));
     const current = validateCalculationToSave("Atual", JSON.stringify({
       ...snapshot,
-      channels: [{ ...snapshot.channels[0], logisticsCost: 4.25 }],
+      channels: [{ ...snapshot.channels[0], logisticsCost: 4.25, discountPercent: 12.5 }],
     }));
 
     expect(legacy.calculation?.channels[0].logisticsCost).toBe(0);
+    expect(legacy.calculation?.channels[0].discountPercent).toBe(0);
     expect(current.calculation?.channels[0].logisticsCost).toBe(4.25);
+    expect(current.calculation?.channels[0].discountPercent).toBe(12.5);
     expect(validateCalculationToSave("Inválido", JSON.stringify({
       ...snapshot,
       channels: [{ ...snapshot.channels[0], logisticsCost: -1 }],
+    })).calculation).toBeNull();
+    expect(validateCalculationToSave("Inválido", JSON.stringify({
+      ...snapshot,
+      channels: [{ ...snapshot.channels[0], discountPercent: 10, discountFixed: 1 }],
     })).calculation).toBeNull();
   });
 

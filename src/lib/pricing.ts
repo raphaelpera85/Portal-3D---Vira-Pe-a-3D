@@ -15,7 +15,10 @@ export type ProductionComponent = {
   laborMinutes: number;
   laborRatePerHour: number;
 };
-export type SalesChannel = { id: string; name: string; feePercent: number; fixedFee: number; logisticsCost?: number };
+export type SalesChannel = {
+  id: string; name: string; feePercent: number; fixedFee: number; logisticsCost?: number;
+  discountPercent?: number; discountFixed?: number;
+};
 export type FilamentCost = { grams: number; pricePerKg: number; name?: string | null; color?: string | null };
 export const MAX_BATCH_QUANTITY = 1_000_000;
 export const MAX_PRODUCTION_COMPONENTS = 20;
@@ -64,6 +67,7 @@ export type ChannelPrice = {
   feeCents: number;
   fixedFeeCents: number;
   logisticsCostCents: number;
+  discountCents: number;
   priceCents: number | null;
   profitCents: number | null;
   actualMarginPercent: number | null;
@@ -92,7 +96,7 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
       piecesPerProduct, filamentGrams, filamentPricePerKg, printHours, averagePowerWatts,
       energyPricePerKwh, machineCostPerHour, depreciationPerHour, maintenancePerHour, laborMinutes, laborRatePerHour,
     ]),
-    ...channels.flatMap(({ feePercent, fixedFee, logisticsCost = 0 }) => [feePercent, fixedFee, logisticsCost]),
+    ...channels.flatMap(({ feePercent, fixedFee, logisticsCost = 0, discountPercent = 0, discountFixed = 0 }) => [feePercent, fixedFee, logisticsCost, discountPercent, discountFixed]),
   ];
 
   if (numericValues.some((value) => !Number.isFinite(value))) {
@@ -115,9 +119,12 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
   )) {
     return { errors: ["Revise os nomes, as quantidades e o limite de componentes por lote."], breakdown: null, unitCostCents: null, channels: [] };
   }
-  if (input.failureReservePercent > 100 || channels.some((channel) => channel.feePercent >= 100)
+  if (input.failureReservePercent > 100 || channels.some((channel) => channel.feePercent >= 100 || (channel.discountPercent ?? 0) > 99.99)
     || (pricingMode === "margin" && input.targetMarginPercent >= 100)) {
-    return { errors: ["Margens, taxas e reservas devem ficar entre 0% e 100%."], breakdown: null, unitCostCents: null, channels: [] };
+    return { errors: ["Margens, taxas, descontos e reservas devem ficar entre 0% e 100%."], breakdown: null, unitCostCents: null, channels: [] };
+  }
+  if (channels.some((channel) => (channel.discountPercent ?? 0) > 0 && (channel.discountFixed ?? 0) > 0)) {
+    return { errors: ["Escolha desconto percentual ou fixo em cada canal, não os dois."], breakdown: null, unitCostCents: null, channels: [] };
   }
   if (pricingMode === "margin" && channels.some((channel) => input.targetMarginPercent + channel.feePercent >= 100)) {
     return { errors: ["A margem desejada somada às taxas precisa ser menor que 100%."], breakdown: null, unitCostCents: null, channels: [] };
@@ -159,11 +166,14 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     return { errors: ["Os valores excedem o limite seguro do cálculo."], breakdown: null, unitCostCents: null, channels: [] };
   }
   if (channels.some((channel) => {
-    const denominator = 1 - channel.feePercent / 100 - (pricingMode === "margin" ? input.targetMarginPercent / 100 : 0);
-    const baseCents = (unitCostCents ?? 0) + roundCents(channel.fixedFee) + roundCents(channel.logisticsCost ?? 0)
-      + (pricingMode === "markup" ? targetMarkupProfitCents : 0);
-    return !Number.isSafeInteger(roundCents(channel.fixedFee) + roundCents(channel.logisticsCost ?? 0))
-      || (unitCostCents != null && !Number.isSafeInteger(Math.ceil((baseCents + 1) / denominator) + 1));
+    const discountPercentBps = Math.round((channel.discountPercent ?? 0) * 100);
+    const denominator = (1 - discountPercentBps / 10_000)
+      * (1 - channel.feePercent / 100 - (pricingMode === "margin" ? input.targetMarginPercent / 100 : 0));
+    const fixedChannelCosts = roundCents(channel.fixedFee) + roundCents(channel.logisticsCost ?? 0);
+    const fixedDiscountCents = roundCents(channel.discountFixed ?? 0);
+    const baseCents = (unitCostCents ?? 0) + fixedChannelCosts + (pricingMode === "markup" ? targetMarkupProfitCents : 0);
+    return !Number.isSafeInteger(fixedChannelCosts + fixedDiscountCents)
+      || (unitCostCents != null && !Number.isSafeInteger(fixedDiscountCents + Math.ceil((baseCents + 1) / denominator) + 1));
   })) {
     return { errors: ["Os valores excedem o limite seguro do cálculo."], breakdown: null, unitCostCents: null, channels: [] };
   }
@@ -173,18 +183,27 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     const feeCents = roundCents(channel.fixedFee);
     const logisticsCostCents = roundCents(channel.logisticsCost ?? 0);
     if (unitCostCents == null) {
-      return { id: channel.id, name: channel.name, feeCents: 0, fixedFeeCents: feeCents, logisticsCostCents, priceCents: null, profitCents: null, actualMarginPercent: null };
+      return { id: channel.id, name: channel.name, feeCents: 0, fixedFeeCents: feeCents, logisticsCostCents, discountCents: 0, priceCents: null, profitCents: null, actualMarginPercent: null };
     }
 
     const feeRate = channel.feePercent / 100;
     const marginRate = pricingMode === "margin" ? input.targetMarginPercent / 100 : 0;
-    const denominator = 1 - feeRate - marginRate;
+    const discountPercentBps = Math.round((channel.discountPercent ?? 0) * 100);
+    const discountRate = discountPercentBps / 10_000;
+    const fixedDiscountCents = roundCents(channel.discountFixed ?? 0);
+    const denominator = (1 - discountRate) * (1 - feeRate - marginRate);
     const baseCents = unitCostCents + feeCents + logisticsCostCents;
-    let high = Math.max(baseCents, Math.ceil((baseCents + (pricingMode === "markup" ? targetMarkupProfitCents : 0) + 1) / denominator) + 1);
+    let high = Math.max(baseCents + fixedDiscountCents, fixedDiscountCents
+      + Math.ceil((baseCents + (pricingMode === "markup" ? targetMarkupProfitCents : 0) + 1) / denominator) + 1);
+    const discountFor = (priceCents: number) => discountPercentBps
+      ? Number(BigInt(priceCents) * BigInt(discountPercentBps) / BigInt(10_000))
+      : Math.min(fixedDiscountCents, Math.max(priceCents - 1, 0));
     const meetsTarget = (priceCents: number) => {
-      const roundedPercentageFee = roundCents(priceCents / 100 * channel.feePercent / 100);
-      const profit = priceCents - unitCostCents - feeCents - logisticsCostCents - roundedPercentageFee;
-      return pricingMode === "markup" ? profit >= targetMarkupProfitCents : profit / priceCents * 100 >= input.targetMarginPercent;
+      const discountCents = discountFor(priceCents);
+      const discountedPriceCents = priceCents - discountCents;
+      const roundedPercentageFee = roundCents(discountedPriceCents / 100 * channel.feePercent / 100);
+      const profit = discountedPriceCents - unitCostCents - feeCents - logisticsCostCents - roundedPercentageFee;
+      return pricingMode === "markup" ? profit >= targetMarkupProfitCents : profit / discountedPriceCents * 100 >= input.targetMarginPercent;
     };
 
     let low = baseCents;
@@ -194,17 +213,20 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
       else low = middle + 1;
     }
 
-    const roundedPercentageFee = roundCents(low / 100 * channel.feePercent / 100);
-    const profitCents = low - unitCostCents - feeCents - logisticsCostCents - roundedPercentageFee;
+    const discountCents = discountFor(low);
+    const discountedPriceCents = low - discountCents;
+    const roundedPercentageFee = roundCents(discountedPriceCents / 100 * channel.feePercent / 100);
+    const profitCents = discountedPriceCents - unitCostCents - feeCents - logisticsCostCents - roundedPercentageFee;
     return {
       id: channel.id,
       name: channel.name,
       feeCents: roundedPercentageFee,
       fixedFeeCents: feeCents,
       logisticsCostCents,
+      discountCents,
       priceCents: low,
       profitCents,
-      actualMarginPercent: profitCents / low * 100,
+      actualMarginPercent: profitCents / discountedPriceCents * 100,
     };
   });
 
