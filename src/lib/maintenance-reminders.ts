@@ -1,6 +1,7 @@
 export type MaintenanceScheduleEvent = {
   component: string;
   performed_at: string;
+  created_at?: string;
   next_due_at: string | null;
   next_due_hours: number | string | null;
 };
@@ -18,7 +19,8 @@ export function getMaintenanceReminders(events: MaintenanceScheduleEvent[], accu
   for (const event of events) {
     const key = event.component.trim().toLocaleLowerCase("pt-BR");
     const existing = latestByComponent.get(key);
-    if (!existing || event.performed_at > existing.performed_at) latestByComponent.set(key, event);
+    if (!existing || event.performed_at > existing.performed_at
+      || event.performed_at === existing.performed_at && event.created_at && (!existing.created_at || event.created_at > existing.created_at)) latestByComponent.set(key, event);
   }
 
   const todayMs = Date.parse(`${today}T00:00:00Z`);

@@ -3,7 +3,7 @@ import { formatBrl } from "@/lib/money";
 import { getBrazilianCalendarDate, getMaintenanceReminders } from "@/lib/maintenance-reminders";
 
 type PrinterModel = { id: string; manufacturer: string; model: string; variant: string };
-type MaintenanceEvent = { id: string; performed_at: string; maintenance_type: string; component: string; cost_brl: number | string; hours_at_event: number | string | null; notes: string; next_due_at: string | null; next_due_hours: number | string | null };
+type MaintenanceEvent = { id: string; performed_at: string; created_at: string; maintenance_type: string; component: string; cost_brl: number | string; hours_at_event: number | string | null; notes: string; next_due_at: string | null; next_due_hours: number | string | null };
 type MakerPrinter = {
   id: string; catalog_model_id: string | null; manufacturer_snapshot: string; model_snapshot: string; variant_snapshot: string;
   custom_manufacturer: string | null; custom_model: string | null; nickname: string; purchased_at: string | null;

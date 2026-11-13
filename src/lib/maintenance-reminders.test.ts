@@ -17,6 +17,13 @@ describe("getMaintenanceReminders", () => {
     ]);
   });
 
+  it("uses the most recently recorded schedule when a component has same-day maintenance events", () => {
+    expect(getMaintenanceReminders([
+      { component: "Bico", performed_at: "2026-11-12", created_at: "2026-11-12T15:00:00Z", next_due_at: "2027-01-01", next_due_hours: null },
+      { component: "bico", performed_at: "2026-11-12", created_at: "2026-11-12T18:00:00Z", next_due_at: "2027-06-01", next_due_hours: null },
+    ], 10, "2026-11-12")).toMatchObject([{ component: "bico", nextDueAt: "2027-06-01" }]);
+  });
+
   it("keeps future dates visible as scheduled and hides components without a next service", () => {
     expect(getMaintenanceReminders([
       { component: "Mesa", performed_at: "2026-09-01", next_due_at: "2027-01-01", next_due_hours: null },
