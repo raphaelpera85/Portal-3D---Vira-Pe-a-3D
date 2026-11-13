@@ -30,6 +30,14 @@ export function FeaturedModelShowcase({ models }: { models: ShowcaseModel[] }) {
   </section>;
 }
 
+export function ModelRecommendations({ models }: { models: ShowcaseModel[] }) {
+  if (!models.length) return null;
+  return <section className="model-showcase shell" aria-labelledby="related-models-title">
+    <div className="section-heading"><div><p className="eyebrow">NA MESMA COLEÇÃO</p><h2 id="related-models-title">Mais modelos para <em>explorar.</em></h2></div><Link className="button button-secondary" href="/modelos">Ver todos →</Link></div>
+    <ModelCards models={models} />
+  </section>;
+}
+
 export function ModelShowcase({ models, query, category, page, pages }: { models: ShowcaseModel[]; query: string; category: string; page: number; pages: number }) {
   return <section className="model-showcase shell" id="modelos">
     <div className="account-heading"><p className="eyebrow">ARQUIVOS 3D · COLEÇÃO RAPHAEL</p><h1>Modelos para <em>inspirar.</em></h1><p>Prévia visual dos arquivos 3MF, com categorias e tags para facilitar a descoberta.</p></div>

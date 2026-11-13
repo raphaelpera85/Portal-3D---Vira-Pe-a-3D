@@ -25,6 +25,22 @@ export function getModelAssetUrl(filePath: string) {
 
 const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+// shortcut: category and tags only; personalize after users opt in to behavioral recommendations.
+export function getRecommendedModels(model: ShowcaseModel, items: ShowcaseModel[] = modelShowcase) {
+  const tags = new Set(model.tags.map(normalize));
+  return items.filter((candidate) => candidate.id !== model.id)
+    .map((candidate, index) => ({
+      candidate,
+      index,
+      sameCategory: candidate.categorySlug === model.categorySlug,
+      matchingTags: candidate.tags.filter((tag) => tags.has(normalize(tag))).length,
+    }))
+    .filter(({ sameCategory, matchingTags }) => sameCategory || matchingTags > 0)
+    .sort((a, b) => Number(b.sameCategory) - Number(a.sameCategory) || b.matchingTags - a.matchingTags || a.index - b.index)
+    .slice(0, 4)
+    .map(({ candidate }) => candidate);
+}
+
 export function filterModelShowcase(items: ShowcaseModel[], query = "", category = "") {
   const groups = query.split(/\s+OR\s+/i).map((group) => normalize(group.replace(/["']/g, "")).trim().split(/\s+/).filter(Boolean)).filter((group) => group.length > 0);
   return items.filter((model) => {

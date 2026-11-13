@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ModelDetailContent } from "@/components/model-detail-content";
+import { ModelRecommendations } from "@/components/model-showcase";
 import { SiteHeader } from "@/components/site-header";
-import { getModelAssetUrl, getShowcaseModel, modelShowcase } from "@/lib/model-showcase";
+import { getModelAssetUrl, getRecommendedModels, getShowcaseModel, modelShowcase } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -30,6 +31,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   if (!model) notFound();
   const previewUrl = getModelAssetUrl(model.filePath);
   const downloadUrl = previewUrl;
+  const recommendations = getRecommendedModels(model);
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   const profileResult = supabase && auth.user ? await supabase.from("model_print_profiles")
@@ -48,6 +50,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={`/modelos?q=${encodeURIComponent(tag)}#modelos`}>{tag}</Link></li>)}</ul>
       </div>
       <ModelDetailContent modelId={model.id} modelName={model.name} previewUrl={previewUrl} today={new Date().toISOString().slice(0, 10)} profiles={profiles} authenticated={Boolean(auth.user)} notice={notice} />
+      <ModelRecommendations models={recommendations} />
       <section className="shell model-detail-download" aria-label="Download do modelo">
         <div><p className="eyebrow">ARQUIVO ORIGINAL</p><h2>{model.name}.3mf</h2><p>Baixe o arquivo 3MF para abrir no seu fatiador ou programa de modelagem.</p></div>
         {downloadUrl ? <a className="button button-primary" href={downloadUrl} download={`${model.name}.3mf`}>Baixar arquivo 3MF</a> : <span className="button button-primary" aria-disabled="true">Download indisponível</span>}
