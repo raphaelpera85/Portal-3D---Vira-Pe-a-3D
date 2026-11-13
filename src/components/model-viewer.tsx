@@ -10,7 +10,8 @@ import { ModelUploadManager, type SavedModelUpload } from "@/components/model-up
 import { createMeterExportCopy } from "@/lib/model-export";
 import {
   formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
-  type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds, getModelFormat, readThreeMfPackage, validateModelFiles,
+  type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds,
+  getModelColorMatchedTriangleIndexes, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
 
 type ViewName = "frente" | "tras" | "topo" | "base" | "esquerda" | "direita";
@@ -33,7 +34,8 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
   const threeRef = useRef<typeof import("three") | null>(null);
   const modelRef = useRef<THREE.Group | null>(null);
   const componentObjectsRef = useRef<Map<string, THREE.Object3D>>(new Map());
-  const originalEmissivesRef = useRef<Map<string, Array<{ material: THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number }; color: THREE.Color; intensity: number }>>>(new Map());
+  const originalEmissivesRef = useRef<Map<string, Array<{ material: THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number }; color: THREE.Color; intensity: number; colorHex: string | null }>>>(new Map());
+  const colorHighlightObjectsRef = useRef<THREE.Mesh[]>([]);
   const resourceUrlsRef = useRef<string[]>([]);
   const sceneReadyRef = useRef<{ promise: Promise<void>; resolve: () => void } | null>(null);
   if (!sceneReadyRef.current) {
@@ -66,6 +68,15 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
       material.emissive?.copy(color);
       if (material.emissiveIntensity !== undefined) material.emissiveIntensity = intensity;
     }));
+  }
+
+  function clearColorHighlights() {
+    colorHighlightObjectsRef.current.forEach((highlight) => {
+      highlight.removeFromParent();
+      highlight.geometry.dispose();
+      (highlight.material as THREE.Material).dispose();
+    });
+    colorHighlightObjectsRef.current = [];
   }
 
   useEffect(() => {
@@ -184,11 +195,42 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
 
   useEffect(() => {
     restoreColorHighlight();
+    clearColorHighlights();
+    if (!selectedColor || !threeRef.current) return;
+    const THREE = threeRef.current;
+    const selected = new THREE.Color(`#${selectedColor}`);
     const matchedIds = new Set(getModelColorMatchedComponentIds(components, selectedColor));
-    matchedIds.forEach((id) => originalEmissivesRef.current.get(id)?.forEach(({ material }) => {
-      material.emissive?.set(`#${selectedColor}`);
-      if (material.emissiveIntensity !== undefined) material.emissiveIntensity = 0.65;
-    }));
+    matchedIds.forEach((id) => {
+      const object = componentObjectsRef.current.get(id);
+      const mesh = object as THREE.Mesh;
+      const materials = mesh.isMesh ? Array.isArray(mesh.material) ? mesh.material : [mesh.material] : [];
+      if (mesh.isMesh && materials.some((material) => material.vertexColors) && mesh.geometry.getAttribute("color")) {
+        const colorAttribute = mesh.geometry.getAttribute("color");
+        const triangleIndexes = getModelColorMatchedTriangleIndexes(colorAttribute.array, [selected.r, selected.g, selected.b], mesh.geometry.index?.array);
+        if (!triangleIndexes.length) return;
+        const positionAttribute = mesh.geometry.getAttribute("position");
+        const indices = mesh.geometry.index;
+        const vertices = triangleIndexes.flatMap((triangle) => [0, 1, 2].map((corner) => indices?.getX(triangle * 3 + corner) ?? triangle * 3 + corner));
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", positionAttribute);
+        geometry.setIndex(vertices);
+        const highlight = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+          color: 0x60a5fa, transparent: true, opacity: 0.55, depthWrite: false,
+          polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1, side: THREE.DoubleSide,
+        }));
+        highlight.name = "selected-color-highlight";
+        highlight.renderOrder = mesh.renderOrder + 1;
+        mesh.add(highlight);
+        colorHighlightObjectsRef.current.push(highlight);
+        return;
+      }
+      originalEmissivesRef.current.get(id)?.forEach(({ material, colorHex }) => {
+        if (colorHex !== selectedColor) return;
+        material.emissive?.set(`#${selectedColor}`);
+        if (material.emissiveIntensity !== undefined) material.emissiveIntensity = 0.65;
+      });
+    });
+    return clearColorHighlights;
   }, [components, selectedColor]);
 
   useEffect(() => {
@@ -313,10 +355,13 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
         const name = child.name.trim() || `Componente ${parts.length + 1}`;
         const mesh = child as THREE.Mesh;
         componentObjectsRef.current.set(id, child);
-        const originalEmissives: Array<{ material: THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number }; color: THREE.Color; intensity: number }> = [];
+        const originalEmissives: Array<{ material: THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number }; color: THREE.Color; intensity: number; colorHex: string | null }> = [];
         (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach((entry) => {
-          const material = entry as THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number };
-          if (material.emissive?.isColor) originalEmissives.push({ material, color: material.emissive.clone(), intensity: material.emissiveIntensity ?? 1 });
+          const material = entry as THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number; color?: THREE.Color; vertexColors?: boolean };
+          if (material.emissive?.isColor) originalEmissives.push({
+            material, color: material.emissive.clone(), intensity: material.emissiveIntensity ?? 1,
+            colorHex: !material.vertexColors && material.color?.isColor ? material.color.getHexString() : null,
+          });
         });
         originalEmissivesRef.current.set(id, originalEmissives);
         parts.push({ id, name, visible: true, colors: extractModelColors(mesh, kind, THREE) });

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { strToU8, zipSync } from "fflate";
-import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
+import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelColorMatchedTriangleIndexes, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
 import { mapThreeMfPlateToSlicerMetrics } from "./saved-calculation";
 
 describe("model upload validation", () => {
@@ -44,6 +44,21 @@ describe("model upload validation", () => {
     expect(MAX_MODEL_FILE_BYTES).toBe(20 * 1024 * 1024);
     expect(validateModelFiles([{ name: "catalog.3mf", size: 45 * 1024 * 1024 }], MAX_PUBLIC_MODEL_FILE_BYTES)).toBeNull();
     expect(validateModelFiles([{ name: "catalog.3mf", size: 51 * 1024 * 1024 }], MAX_PUBLIC_MODEL_FILE_BYTES)).toContain("50 MB");
+  });
+});
+
+describe("model color highlighting", () => {
+  it("matches only triangles whose three vertex colors correspond to the selected color", () => {
+    const colors = [
+      1, 0, 0, 1, 0, 0, 1, 0, 0,
+      0, 1, 0, 0, 1, 0, 0, 1, 0,
+    ];
+    expect(getModelColorMatchedTriangleIndexes(colors, [1, 0, 0])).toEqual([0]);
+  });
+
+  it("resolves matching faces through indexed geometry and tolerates color rounding", () => {
+    const colors = [0.997, 0.002, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0];
+    expect(getModelColorMatchedTriangleIndexes(colors, [1, 0, 0], [3, 0, 2])).toEqual([0]);
   });
 });
 
@@ -144,6 +159,12 @@ describe("model dimensions", () => {
     const { colors } = await readThreeMfPackage(new Uint8Array(file));
     expect(new Set(colors.palette).size).toBeGreaterThan(1);
     expect(new Set([...colors.objectColors, ...Object.values(colors.namedColors), ...colors.componentPartColors.flat()]).size).toBeGreaterThan(1);
+  });
+
+  it("reads triangle-painted colors from a local 3MF sample", async () => {
+    const file = readFileSync(path.join(process.cwd(), "models/painted.3mf"));
+    const { colors } = await readThreeMfPackage(new Uint8Array(file));
+    expect(colors.componentTriangleColors.flat().flat().filter(Boolean).length).toBeGreaterThan(0);
   });
 
   it("maps Bambu filament slots to build objects and named parts", () => {

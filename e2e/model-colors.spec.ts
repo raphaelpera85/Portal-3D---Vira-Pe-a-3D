@@ -8,11 +8,16 @@ test("public model details let keyboard users highlight parts by file color", as
 
   const palette = page.getByRole("region", { name: "Cores do modelo" });
   const color = palette.getByRole("button").first();
+  const canvas = page.locator(".viewer-stage canvas");
   await expect(color).toBeVisible();
+  await expect(canvas).toBeVisible();
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  const before = await canvas.screenshot();
   await color.focus();
   await page.keyboard.press("Enter");
   await expect(color).toHaveAttribute("aria-pressed", "true");
   await expect(palette.getByRole("status")).toContainText("destacados");
+  await expect.poll(async () => !(await canvas.screenshot()).equals(before)).toBe(true);
 
   await page.keyboard.press("Enter");
   await expect(color).toHaveAttribute("aria-pressed", "false");
@@ -20,4 +25,23 @@ test("public model details let keyboard users highlight parts by file color", as
   await page.setViewportSize({ width: 400, height: 608 });
   await expect(color).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("color selection visibly marks only matching painted faces in a public model", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.route("https://raw.githubusercontent.com/**", (route) => route.fulfill({ path: resolve("models/painted.3mf") }));
+  await page.goto("/modelos/ffcd1251d90c");
+
+  const palette = page.getByRole("region", { name: "Cores do modelo" });
+  const color = palette.getByRole("button").first();
+  const canvas = page.locator(".viewer-stage canvas");
+  await expect(color).toBeVisible();
+  await expect(canvas).toBeVisible();
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  const before = await canvas.screenshot();
+
+  await color.focus();
+  await page.keyboard.press("Enter");
+  await expect(color).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(async () => !(await canvas.screenshot()).equals(before)).toBe(true);
 });
