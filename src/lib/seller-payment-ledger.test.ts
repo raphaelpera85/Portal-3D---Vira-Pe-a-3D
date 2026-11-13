@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summarizeSellerPayments } from "./seller-payment-ledger";
+import { getSellerPaymentSource, summarizeSellerPayments } from "./seller-payment-ledger";
 
 describe("summarizeSellerPayments", () => {
   it("sums only confirmed payments and keeps refunds visible in status counts", () => {
@@ -11,5 +11,14 @@ describe("summarizeSellerPayments", () => {
       { status: "charged_back", total_cents: 2_000, marketplace_fee_cents: 200 },
       { status: "pending", total_cents: 4_000, marketplace_fee_cents: 400 },
     ])).toEqual({ paidCount: 2, paidTotalCents: 12_500, marketplaceFeeCents: 1_250, beforeProviderFeesCents: 11_250, refundedCount: 1, partiallyRefundedCount: 1, chargedBackCount: 1, pendingCount: 1 });
+  });
+});
+
+describe("getSellerPaymentSource", () => {
+  it("labels designer services distinctly from other marketplace payment sources", () => {
+    expect(getSellerPaymentSource({ designer_service_request_id: "service-1" })).toBe("Serviço de modelagem");
+    expect(getSellerPaymentSource({ custom_print_request_id: "print-1" })).toBe("Impressão personalizada");
+    expect(getSellerPaymentSource({ purchase_request_id: "purchase-1" })).toBe("Compra direta ou arquivo digital");
+    expect(getSellerPaymentSource({})).toBe("Pedido do carrinho");
   });
 });
