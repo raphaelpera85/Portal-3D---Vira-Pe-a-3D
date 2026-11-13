@@ -36,6 +36,22 @@ describe("verified technical catalog records", () => {
     expect(printer?.sources[0].url).toBe("https://www.creality.com/eu/products/k2-series-3d-printer");
   });
 
+  it("includes confirmed P2S specifications while leaving unpublished values unknown", () => {
+    const printer = printers.find((item) => item.id === "bambu-p2s");
+    const p2sNozzles = nozzles.filter((item) => item.printerCompatibility?.["bambu-p2s"] === "compatible");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: { x: 256, y: 256, z: 256 },
+      maxNozzleTemperatureC: 300,
+      maxBedTemperatureC: 110,
+      filamentDiameterMm: null,
+      maximumSpeedMmPerSecond: null,
+      maximumPowerWatts: null,
+    });
+    expect(p2sNozzles.map((nozzle) => nozzle.diameterMm).sort()).toEqual([0.2, 0.4, 0.6, 0.8]);
+    expect(p2sNozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
+  });
+
   it("keeps cylindrical build volume descriptive instead of treating it as a rectangular box", () => {
     const catalog = mapTechnicalCatalog([{
       id: "flsun-v400-max",

@@ -43,6 +43,11 @@ const crealityK2PlusSource = {
   url: "https://www.creality.com/eu/products/k2-series-3d-printer",
   checkedAt: "2026-11-13",
 };
+const bambuP2sSource = {
+  label: "Bambu Lab — P2S specifications",
+  url: "https://blog.bambulab.com/the-icon-redefined-meet-the-p2s-a-completely-reengineered-version-of-the-ultra-productive-p1-series/",
+  checkedAt: "2026-11-13",
+};
 const plaSource = {
   label: "Bambu Lab — PLA Basic",
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
@@ -123,6 +128,30 @@ export const printers: PrinterEntry[] = [{
     "creality-hp-tpu": { status: "conditional", conditions: "Perfil K2 Plus: bico 220 °C, mesa 40 °C, câmara 35 °C, velocidade volumétrica máxima 3 mm³/s. Não use CFS; use TPU com dureza mínima 85A e alimente diretamente o extrusor." },
   },
   sources: [crealityK2PlusSource],
+}, {
+  id: "bambu-p2s",
+  name: "Bambu Lab P2S",
+  brand: "Bambu Lab",
+  model: "P2S",
+  variant: "standard",
+  buildVolumeDescription: null,
+  technology: "FDM",
+  buildVolumeMm: { x: 256, y: 256, z: 256 },
+  extruders: null,
+  filamentDiameterMm: null,
+  maxNozzleTemperatureC: 300,
+  maxBedTemperatureC: 110,
+  heatedBed: true,
+  enclosure: true,
+  maximumSpeedMmPerSecond: null,
+  maximumSpeedDescription: null,
+  maximumPowerWatts: null,
+  measuredAveragePowerWatts: null,
+  multicolorSlots: null,
+  multicolorSystem: null,
+  technicalProperties: { supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8], quickSwapHotend: true },
+  supportedMaterials: {},
+  sources: [bambuP2sSource],
 }];
 
 export const materials: MaterialEntry[] = [
@@ -208,6 +237,18 @@ export const nozzles: NozzleEntry[] = [
     printerCompatibility: { "bambu-a1-mini-ams-lite": "compatible" as const },
     original: included,
     sources: [machineSource],
+  })),
+  ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
+    id: `bambu-p2s-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · P2S`,
+    brand: "Bambu Lab",
+    diameterMm: diameter,
+    material: null,
+    maxTemperatureC: null,
+    abrasionResistant: null,
+    printerCompatibility: { "bambu-p2s": "compatible" as const },
+    original: diameter === 0.4,
+    sources: [bambuP2sSource],
   })),
   ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `creality-k2-plus-${diameter}`,
