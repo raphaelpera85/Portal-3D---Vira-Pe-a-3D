@@ -1142,6 +1142,9 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .price-breakdown { display: grid; gap: 7px; margin-top: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--line); }
 .price-breakdown-row { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 9px; }
 .price-breakdown-row strong { color: var(--ink); font-weight: 600; }
+.price-labor-detail { margin-top: 9px; color: var(--muted); font-size: 9px; }
+.price-labor-detail summary { width: fit-content; cursor: pointer; color: var(--brand); font-weight: 700; }
+.price-labor-detail .price-breakdown { margin-top: 8px; padding-left: 10px; }
 .price-scenario-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 17px; }
 .price-scenario-heading h2 { margin: 0; font-family: Arial, sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0; }
 .price-scenario-heading > span { color: var(--muted); font-size: 8px; }

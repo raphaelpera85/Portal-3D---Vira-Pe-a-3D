@@ -1,4 +1,4 @@
-import type { PrintCostInput, SalesChannel } from "@/lib/pricing";
+import { laborActivityFields, laborActivityLabels, type PrintCostInput, type SalesChannel } from "@/lib/pricing";
 import type { calculatePrintPrice } from "@/lib/pricing";
 
 type CalculationResult = ReturnType<typeof calculatePrintPrice>;
@@ -56,6 +56,10 @@ export function exportPrintCalculationCsv(
     ["Custos fixos rateados", money(result.breakdown.overheadCents)],
     ["Custo fixo do lote", money(result.breakdown.batchFixedCents)],
     ["Reserva para falhas", money(result.breakdown.failureReserveCents)],
+    [],
+    ["Detalhamento da mão de obra", "Total do lote (R$)"],
+    ["Outras tarefas", money(result.breakdown.laborOtherCents)],
+    ...laborActivityFields.map((field) => [laborActivityLabels[field], money(result.breakdown.laborActivityCents[field])]),
     [],
     ["Canais de venda", "Taxa (%)", "Taxa fixa (R$)", "Desconto informado", "Desconto aplicado (R$)", "Logística por peça (R$)", "Taxa calculada (R$)", "Preço unitário (R$)", "Lucro unitário (R$)", "Margem alcançada (%)"],
     ...channels.map((channel) => {

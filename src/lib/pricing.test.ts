@@ -142,6 +142,8 @@ describe("calculatePrintPrice", () => {
       batchFixedCents: 0,
       failureReserveCents: 568,
       totalCostCents: 6247,
+      laborOtherCents: 1200,
+      laborActivityCents: { laborPreparationMinutes: 0, laborSupportRemovalMinutes: 0, laborFinishingMinutes: 0, laborPaintingMinutes: 0, laborAssemblyMinutes: 0, laborPackagingMinutes: 0 },
     });
     expect(result.channels[0].priceCents).toBe(10234);
     expect(result.channels[0].actualMarginPercent).toBeGreaterThanOrEqual(25);

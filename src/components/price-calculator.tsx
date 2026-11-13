@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 import { CirclePlus, Calculator, Trash2 } from "lucide-react";
-import { calculatePrintPrice, laborActivityFields, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "@/lib/pricing";
+import { calculatePrintPrice, laborActivityFields, laborActivityLabels, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "@/lib/pricing";
 import { exportPrintCalculationCsv } from "@/lib/pricing-export";
 import { deriveEquipmentRates, type EquipmentRateInput } from "@/lib/printer-equipment";
 import { evaluateMaterialCompatibility, type CatalogPrinter } from "@/lib/compatibility";
@@ -29,11 +29,6 @@ export type CalculatorProduct = { id: string; name: string; slug: string; publis
 type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics };
 type CalculatorMaterial = MaterialEntry;
 type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string };
-const laborActivityLabel = (field: typeof laborActivityFields[number]) => ({
-  laborPreparationMinutes: "Preparação", laborSupportRemovalMinutes: "Remoção de suportes", laborFinishingMinutes: "Acabamento",
-  laborPaintingMinutes: "Pintura", laborAssemblyMinutes: "Montagem", laborPackagingMinutes: "Embalagem",
-}[field]);
-
 const initialFields: FormFields = {
   batchQuantity: "1", batchFixedCost: "", material: "", filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "",
   energyPricePerKwh: "", machineCostPerHour: "", depreciationPerHour: "",
@@ -481,7 +476,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
                 <CostField label="Depreciação" suffix="R$/h" value={component.depreciationPerHour} onChange={(value) => updateProductionComponent(component.id, "depreciationPerHour", value)} idSuffix={component.id} />
                 <CostField label="Manutenção rateada" suffix="R$/h" hint="Sugestão histórica da impressora selecionada; você pode ajustar." value={component.maintenancePerHour} onChange={(value) => updateProductionComponent(component.id, "maintenancePerHour", value)} idSuffix={component.id} />
                 <CostField label="Outra mão de obra" suffix="min" value={component.laborMinutes} onChange={(value) => updateProductionComponent(component.id, "laborMinutes", value)} idSuffix={component.id} />
-                {laborActivityFields.map((field) => <CostField key={field} label={laborActivityLabel(field)} suffix="min" value={component[field]} onChange={(value) => updateProductionComponent(component.id, field, value)} idSuffix={component.id} />)}
+                {laborActivityFields.map((field) => <CostField key={field} label={laborActivityLabels[field]} suffix="min" value={component[field]} onChange={(value) => updateProductionComponent(component.id, field, value)} idSuffix={component.id} />)}
                 <CostField label="Valor da mão de obra" suffix="R$/h" value={component.laborRatePerHour} onChange={(value) => updateProductionComponent(component.id, "laborRatePerHour", value)} idSuffix={component.id} />
               </div>
               <p className="price-field-hint">Este componente exige {numberValue(component.piecesPerProduct) * (input.batchQuantity ?? 1)} unidade(s) no lote. O peso e o tempo acima são os totais já medidos para essas unidades.</p>
@@ -492,7 +487,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             <div className="price-card-heading"><span className="price-step">03</span><div><h2>Trabalho e outros custos</h2><p>Informe a mão de obra da execução, componentes por peça e um custo fixo único do lote.</p></div></div>
             <div className="price-fields-grid">
               <CostField label="Outra mão de obra do lote" suffix="min" value={fields.laborMinutes} onChange={(value) => updateField("laborMinutes", value)} />
-              {laborActivityFields.map((field) => <CostField key={field} label={laborActivityLabel(field)} suffix="min" value={fields[field]} onChange={(value) => updateField(field, value)} />)}
+              {laborActivityFields.map((field) => <CostField key={field} label={laborActivityLabels[field]} suffix="min" value={fields[field]} onChange={(value) => updateField(field, value)} />)}
               <CostField label="Valor da mão de obra" suffix="R$/h" value={fields.laborRatePerHour} onChange={(value) => updateField("laborRatePerHour", value)} />
               <CostField label="Custo rateado por peça" suffix="R$/peça" value={fields.overheadPerUnit} onChange={(value) => updateField("overheadPerUnit", value)} />
               <CostField label="Custo fixo do lote" suffix="R$/lote" value={fields.batchFixedCost} onChange={(value) => updateField("batchFixedCost", value)} />
@@ -547,6 +542,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
               ["Custo fixo do lote", breakdown?.batchFixedCents], ["Reserva para falhas", breakdown?.failureReserveCents],
             ].map(([label, value]) => <div className="price-breakdown-row" key={String(label)}><span>{label}</span><strong>{hasProductionCost ? money(value as number) : "—"}</strong></div>)}
           </div>
+          {breakdown && breakdown.laborCents > 0 && <details className="price-labor-detail"><summary>Detalhar mão de obra</summary><div className="price-breakdown">{[["Outras tarefas", breakdown.laborOtherCents], ...laborActivityFields.map((field) => [laborActivityLabels[field], breakdown.laborActivityCents[field]])].map(([label, value]) => <div className="price-breakdown-row" key={String(label)}><span>{label}</span><strong>{money(value as number)}</strong></div>)}</div></details>}
           <div className="price-scenario-heading"><h2>Preço unitário por canal</h2><span>{pricingMode === "markup" ? "markup" : "margem"}: {(pricingMode === "markup" ? fields.targetMarkupPercent : fields.targetMarginPercent) ? `${pricingMode === "markup" ? fields.targetMarkupPercent : fields.targetMarginPercent}%` : "—"}</span></div>
           {canSaveCalculations && products.some((product) => product.canApplyPrice) && <label className="price-apply-product"><span>Aplicar um preço calculado a um anúncio</span><select value={selectedPriceTargetId} onChange={(event) => setSelectedPriceTargetId(event.target.value)}><option value="">Selecione um produto físico ou uma variação</option>{products.filter((product) => product.canApplyPrice).map((product) => <optgroup key={product.id} label={`${product.name} · ${product.published ? "publicado" : "rascunho"}`}>{product.variants.length ? product.variants.map((variant) => <option key={variant.id} value={variant.id}>{Object.entries(variant.options).map(([name, value]) => `${name}: ${value}`).join(" · ")} · atual {money(Math.round(variant.priceBrl * 100))}</option>) : <option value={product.id}>Preço atual {money(product.priceBrl == null ? null : Math.round(product.priceBrl * 100))}</option>}</optgroup>)}</select><small>O preço de lista será atualizado; descontos configurados no canal continuam simulados à parte.</small></label>}
           <div className="price-scenario-list">
@@ -609,6 +605,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
           ["Componentes adicionais", breakdown.additionalCents], ["Custos fixos rateados", breakdown.overheadCents],
           ["Custo fixo do lote", breakdown.batchFixedCents], ["Reserva para falhas", breakdown.failureReserveCents],
         ].map(([label, cents]) => <tr key={String(label)}><th>{String(label)}</th><td>{money(cents as number)}</td></tr>)}<tr><th>Total do lote</th><td>{money(breakdown.totalCostCents)}</td></tr></tbody></table>
+        {breakdown.laborCents > 0 && <><h2>Detalhamento da mão de obra</h2><table><tbody>{[["Outras tarefas", breakdown.laborOtherCents], ...laborActivityFields.map((field) => [laborActivityLabels[field], breakdown.laborActivityCents[field]])].map(([label, cents]) => <tr key={String(label)}><th>{String(label)}</th><td>{money(cents as number)}</td></tr>)}</tbody></table></>}
         {input.filamentCosts?.length ? <><h2>Custo por cor/material</h2><table><thead><tr><th>Filamento</th><th>Massa</th><th>Preço/kg</th><th>Subtotal</th></tr></thead><tbody>{input.filamentCosts.map((item, index) => <tr key={`${item.name ?? "filamento"}-${index}`}><th>{item.name || `Filamento ${index + 1}`}{item.color ? ` · ${item.color}` : ""}</th><td>{metric(item.grams, "g")}</td><td>{money(Math.round(item.pricePerKg * 100))}</td><td>{money(Math.round(item.grams * item.pricePerKg / 1000 * 100))}</td></tr>)}</tbody></table></> : null}
         <h2>Preços por canal</h2>
         <table><thead><tr><th>Canal</th><th>Taxa</th><th>Fixa</th><th>Desconto</th><th>Logística/peça</th><th>Preço</th><th>Lucro</th><th>Margem</th></tr></thead><tbody>{result.channels.map((scenario) => <tr key={scenario.id}><th>{scenario.name}</th><td>{parsedChannels.find((channel) => channel.id === scenario.id)?.feePercent}%</td><td>{money(scenario.fixedFeeCents)}</td><td>{money(scenario.discountCents)}</td><td>{money(scenario.logisticsCostCents)}</td><td>{money(scenario.priceCents)}</td><td>{money(scenario.profitCents)}</td><td>{scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</td></tr>)}</tbody></table>

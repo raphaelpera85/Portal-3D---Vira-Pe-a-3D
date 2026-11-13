@@ -1,7 +1,10 @@
 export type AdditionalCost = { name: string; amount: number };
 export const laborActivityFields = ["laborPreparationMinutes", "laborSupportRemovalMinutes", "laborFinishingMinutes", "laborPaintingMinutes", "laborAssemblyMinutes", "laborPackagingMinutes"] as const;
 type LaborActivityField = typeof laborActivityFields[number];
-const activityMinutes = (values: Partial<Record<LaborActivityField, number>>) => laborActivityFields.reduce((sum, field) => sum + (values[field] ?? 0), 0);
+export const laborActivityLabels: Record<LaborActivityField, string> = {
+  laborPreparationMinutes: "Preparação", laborSupportRemovalMinutes: "Remoção de suportes", laborFinishingMinutes: "Acabamento",
+  laborPaintingMinutes: "Pintura", laborAssemblyMinutes: "Montagem", laborPackagingMinutes: "Embalagem",
+};
 export type ProductionComponent = {
   name: string;
   material: string;
@@ -57,6 +60,8 @@ export type CostBreakdown = {
   depreciationCents: number;
   maintenanceCents: number;
   laborCents: number;
+  laborOtherCents: number;
+  laborActivityCents: Record<LaborActivityField, number>;
   additionalCents: number;
   overheadCents: number;
   batchFixedCents: number;
@@ -136,14 +141,20 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
   }
 
   const roundCents = (amount: number) => Math.round(amount * 100);
+  const laborOtherCents = roundCents(input.laborMinutes / 60 * input.laborRatePerHour)
+    + components.reduce((sum, component) => sum + roundCents(component.laborMinutes / 60 * component.laborRatePerHour), 0);
+  const laborActivityCents = Object.fromEntries(laborActivityFields.map((field) => [field,
+    roundCents((input[field] ?? 0) / 60 * input.laborRatePerHour)
+      + components.reduce((sum, component) => sum + roundCents((component[field] ?? 0) / 60 * component.laborRatePerHour), 0),
+  ])) as Record<LaborActivityField, number>;
+  const laborCents = laborOtherCents + Object.values(laborActivityCents).reduce((sum, cents) => sum + cents, 0);
   const componentCosts = components.reduce((sum, component) => ({
     materialCents: sum.materialCents + roundCents(component.filamentGrams * component.filamentPricePerKg / 1000),
     energyCents: sum.energyCents + roundCents(component.averagePowerWatts / 1000 * component.printHours * component.energyPricePerKwh),
     machineCents: sum.machineCents + roundCents(component.printHours * component.machineCostPerHour),
     depreciationCents: sum.depreciationCents + roundCents(component.printHours * component.depreciationPerHour),
     maintenanceCents: sum.maintenanceCents + roundCents(component.printHours * component.maintenancePerHour),
-    laborCents: sum.laborCents + roundCents((component.laborMinutes + activityMinutes(component)) / 60 * component.laborRatePerHour),
-  }), { materialCents: 0, energyCents: 0, machineCents: 0, depreciationCents: 0, maintenanceCents: 0, laborCents: 0 });
+  }), { materialCents: 0, energyCents: 0, machineCents: 0, depreciationCents: 0, maintenanceCents: 0 });
   const productionCosts = {
     materialCents: (filamentCosts.length
       ? filamentCosts.reduce((sum, filament) => sum + roundCents(filament.grams * filament.pricePerKg / 1000), 0)
@@ -152,7 +163,7 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     machineCents: roundCents(input.printHours * input.machineCostPerHour) + componentCosts.machineCents,
     depreciationCents: roundCents(input.printHours * input.depreciationPerHour) + componentCosts.depreciationCents,
     maintenanceCents: roundCents(input.printHours * input.maintenancePerHour) + componentCosts.maintenanceCents,
-    laborCents: roundCents((input.laborMinutes + activityMinutes(input)) / 60 * input.laborRatePerHour) + componentCosts.laborCents,
+    laborCents,
     additionalCents: input.additionalCosts.reduce((sum, item) => sum + roundCents(item.amount) * batchQuantity, 0),
     overheadCents: roundCents(input.overheadPerUnit) * batchQuantity,
     batchFixedCents: roundCents(batchFixedCost),
@@ -183,7 +194,7 @@ export function calculatePrintPrice(input: PrintCostInput, channels: SalesChanne
     return { errors: ["Os valores excedem o limite seguro do cálculo."], breakdown: null, unitCostCents: null, channels: [] };
   }
 
-  const breakdown: CostBreakdown = { ...productionCosts, failureReserveCents, totalCostCents };
+  const breakdown: CostBreakdown = { ...productionCosts, laborOtherCents, laborActivityCents, failureReserveCents, totalCostCents };
   const channelPrices = channels.map((channel): ChannelPrice => {
     const feeCents = roundCents(channel.fixedFee);
     const logisticsCostCents = roundCents(channel.logisticsCost ?? 0);

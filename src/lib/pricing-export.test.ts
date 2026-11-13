@@ -31,6 +31,15 @@ describe("exportPrintCalculationCsv", () => {
     expect(csv).toContain('"PLA · #ff0000";"12";"100";"1,20"');
   });
 
+  it("exports named labor stages separately from the labor total", () => {
+    const laborInput = { ...input, laborPreparationMinutes: 10, laborPackagingMinutes: 5 };
+    const csv = exportPrintCalculationCsv("Suporte", laborInput, channels, calculatePrintPrice(laborInput, channels));
+
+    expect(csv).toContain('"Detalhamento da mão de obra";"Total do lote (R$)"');
+    expect(csv).toContain('"Preparação";"5,00"');
+    expect(csv).toContain('"Embalagem";"2,50"');
+  });
+
   it("neutralizes formula-like names and quotes delimiter and newline characters", () => {
     const maliciousChannels = [{ ...channels[0], name: '=HYPERLINK("https://bad")' }];
     const result = calculatePrintPrice(input, maliciousChannels);
