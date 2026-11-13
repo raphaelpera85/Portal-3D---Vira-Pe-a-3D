@@ -6,6 +6,17 @@ export type CatalogProduct = {
   description?: string;
 };
 
+export function getCatalogEmptyState({ source, unavailable, query, category }: {
+  source: "local" | "database";
+  unavailable: boolean;
+  query: string;
+  category: string;
+}) {
+  if (unavailable) return "unavailable";
+  if (query.trim() || category) return "no-results";
+  return source === "database" ? "no-published-products" : "no-results";
+}
+
 export function filterProducts<T extends CatalogProduct>(
   products: T[],
   query: string,

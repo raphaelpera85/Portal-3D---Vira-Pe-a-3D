@@ -792,6 +792,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 }
 .catalog-disclaimer { margin: 28px 0 0; color: var(--muted); font-size: 10px; }
 .empty-state { grid-column: 1 / -1; padding: 50px 0; color: var(--muted); text-align: center; }
+.empty-state a { color: var(--blue); font-weight: 700; }
 .art-shadow { fill: var(--shadow-wash); }
 .vase-front, .dragon-body, .organizer-front, .keychain-body { fill: var(--blue); }
 .vase-side, .dragon-wing, .organizer-dark, .keychain-side { fill: var(--blue-deep); }

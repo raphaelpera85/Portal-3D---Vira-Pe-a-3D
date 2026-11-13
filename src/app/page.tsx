@@ -129,7 +129,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
           </div>
         </section>
 
-        <ProductCatalog products={catalog.products} categories={catalog.categories} source={catalog.source} notice={catalog.error ?? (catalog.source === "local" ? "O catálogo conectado ainda não está configurado; veja produtos de demonstração." : null)} query={catalog.query} category={catalog.category} page={catalog.page} pages={catalog.pages} canFavorite={Boolean(buyer.user && buyer.authorized)} favoriteProductIds={favoriteProductIds} />
+        <ProductCatalog products={catalog.products} categories={catalog.categories} source={catalog.source} unavailable={Boolean(catalog.error)} notice={catalog.error ?? (catalog.source === "local" ? "O catálogo conectado ainda não está configurado; veja produtos de demonstração." : null)} query={catalog.query} category={catalog.category} page={catalog.page} pages={catalog.pages} canFavorite={Boolean(buyer.user && buyer.authorized)} favoriteProductIds={favoriteProductIds} />
 
         {modelPreviews.length > 0 && <FeaturedModelShowcase models={modelPreviews} />}
 
