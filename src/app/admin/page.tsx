@@ -85,7 +85,7 @@ export default async function AdminPage() {
       <p className="admin-metrics-note">GMV e comissão são valores brutos e incluem transações depois reembolsadas ou contestadas. A comissão é a registrada no checkout; liquidações e receita líquida não são sincronizadas.</p>
     </section>
     <section className="admin-overview-section" aria-labelledby="admin-period-metrics-title">
-      <div className="admin-section-title"><span className="account-kicker">JANELAS MÓVEIS</span><h2 id="admin-period-metrics-title">Atividade recente</h2></div>
+      <div className="admin-section-title"><span className="account-kicker">JANELAS MÓVEIS</span><h2 id="admin-period-metrics-title">Atividade recente</h2><a className="button button-secondary" href="/api/admin/reports">Baixar relatório CSV</a></div>
       {periodMetricsResult.error && <p className="auth-notice is-error" role="alert">Relatórios por período indisponíveis. Confira se a migração de métricas periódicas foi aplicada.</p>}
       {periodMetrics.map((period) => <div key={period.window_days}>
         <h3>{period.window_days} dias</h3>
