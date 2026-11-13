@@ -922,8 +922,11 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .viewer-toolbar { display: flex; min-height: 54px; align-items: center; flex-wrap: wrap; gap: 5px; padding: 8px 13px; border-top: 1px solid var(--line); }
 .viewer-readonly-colors { display: grid; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line); background: var(--paper); }
 .viewer-readonly-colors ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.viewer-readonly-colors li { display: inline-flex; min-height: 28px; align-items: center; gap: 7px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 16px; color: var(--muted-strong); font-size: 9px; font-variant-numeric: tabular-nums; }
+.viewer-readonly-colors li { display: inline-flex; }
+.viewer-readonly-color { display: inline-flex; min-height: 32px; align-items: center; gap: 7px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--muted-strong); font-size: 9px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.viewer-readonly-color:hover, .viewer-readonly-color:focus-visible, .viewer-readonly-color.is-selected { border-color: var(--brand); outline: 2px solid var(--brand); outline-offset: 2px; }
 .viewer-readonly-colors li i { width: 13px; height: 13px; flex: 0 0 13px; border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); border-radius: 50%; }
+.viewer-color-feedback { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .viewer-view-button { min-height: 31px; padding: 0 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--muted-strong); font-size: 9px; cursor: pointer; }
 .viewer-view-button:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
 .viewer-view-button:disabled { opacity: .45; cursor: not-allowed; }

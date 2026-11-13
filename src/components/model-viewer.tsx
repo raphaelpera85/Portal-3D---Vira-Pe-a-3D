@@ -531,7 +531,8 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
           </div>
           {readOnly && modelColors.length > 0 && <section className="viewer-readonly-colors" aria-label="Cores do modelo">
             <div className="inspector-section-head"><h2>Cores do arquivo</h2><span className="component-count">{modelColors.length}</span></div>
-            <ul>{modelColors.map((color) => <li key={color}><i style={{ backgroundColor: `#${color}` }} aria-hidden="true" /><span>#{color.toUpperCase()}</span></li>)}</ul>
+            <ul>{modelColors.map((color) => <li key={color}><button type="button" className={`viewer-readonly-color${selectedColor === color ? " is-selected" : ""}`} aria-label={`Destacar componentes da cor #${color}`} aria-pressed={selectedColor === color} onClick={() => setSelectedColor(selectedColor === color ? null : color)}><i style={{ backgroundColor: `#${color}` }} aria-hidden="true" /><span>#{color.toUpperCase()}</span></button></li>)}</ul>
+            {selectedColor && <p className="viewer-color-feedback" role="status">{getModelColorMatchedComponentIds(components, selectedColor).length > 0 ? `Componentes da cor #${selectedColor} destacados. Selecione novamente para limpar.` : `#${selectedColor} consta no arquivo, mas não está associada a um componente visível.`}</p>}
           </section>}
           {slicePlates.length > 0 && <section className="slice-info-panel" aria-label="Resultados registrados pelo fatiador">
             <h2>Consumo registrado pelo fatiador</h2>
