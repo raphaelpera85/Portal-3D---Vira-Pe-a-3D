@@ -21,6 +21,17 @@ export function SiteHeader() {
     if (menuOpen) firstMenuLinkRef.current?.focus();
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      menuButtonRef.current?.focus();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [menuOpen]);
+
   function toggleTheme() {
     const next = !dark;
     setDark(next);
@@ -40,7 +51,7 @@ export function SiteHeader() {
           <span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span>
           <span>vira<span className="brand-strong">peça</span><small>3D</small></span>
         </Link>
-        <nav className={`main-nav${menuOpen ? " is-open" : ""}`} aria-label="Navegação principal">
+        <nav id="primary-navigation" className={`main-nav${menuOpen ? " is-open" : ""}`} aria-label="Navegação principal">
           <Link ref={firstMenuLinkRef} href="/#produtos" onClick={closeMenu}>Explorar</Link>
           <Link href="/modelos" onClick={closeMenu}>Modelos 3D</Link>
           <Link href="/visualizador" onClick={closeMenu}>Visualizador 3D</Link>
@@ -59,7 +70,7 @@ export function SiteHeader() {
           <Link className="header-login" href="/conta">Minha conta</Link>
           <Link className="header-cart" href="/carrinho" aria-label="Abrir carrinho"><ShoppingCart size={16} aria-hidden="true" /> Carrinho</Link>
           <Link className="header-maker" href="/#fabricantes"><Box size={16} aria-hidden="true" /> Quero vender</Link>
-          <button ref={menuButtonRef} className="icon-button menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen}>
+          <button ref={menuButtonRef} className="icon-button menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} aria-controls="primary-navigation">
             {menuOpen ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
           </button>
         </div>
