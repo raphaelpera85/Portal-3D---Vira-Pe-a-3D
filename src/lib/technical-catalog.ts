@@ -68,6 +68,11 @@ const elegooCentauri2Source = {
   url: "https://us.elegoo.com/products/centauri-2",
   checkedAt: "2026-11-13",
 };
+const crealityEnder3V4Source = {
+  label: "Creality — Ender-3 V4 Combo official specifications",
+  url: "https://www.creality.com/products/ender-3-v4-3d-printer",
+  checkedAt: "2026-11-13",
+};
 const plaSource = {
   label: "Bambu Lab — PLA Basic",
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
@@ -358,6 +363,46 @@ export const printers: PrinterEntry[] = [{
   supportedMaterials: {},
   sources: [bambuH3cSource],
 }, {
+  id: "creality-ender-3-v4-combo",
+  name: "Creality Ender-3 V4 Combo",
+  brand: "Creality",
+  model: "Ender-3 V4",
+  variant: "Combo",
+  buildVolumeDescription: null,
+  technology: "FDM",
+  buildVolumeMm: { x: 220, y: 220, z: 235 },
+  extruders: 1,
+  filamentDiameterMm: 1.75,
+  maxNozzleTemperatureC: 300,
+  maxBedTemperatureC: 100,
+  heatedBed: true,
+  enclosure: null,
+  maximumSpeedMmPerSecond: 500,
+  maximumPowerWatts: null,
+  measuredAveragePowerWatts: null,
+  multicolorSlots: 4,
+  multicolorSystem: "Creality CFS",
+  technicalProperties: {
+    maxAccelerationMmPerSecondSquared: 12000,
+    includedCfsUnits: 1,
+    cfsExtensionsMaximum: 4,
+    maximumMulticolorSlotsWithExpansion: 16,
+    manufacturerSupportedMaterials: ["Hyper-PLA", "PLA", "PETG", "TPU 95A", "ABS", "ASA", "PLA-CF", "PA-CF"],
+    manufacturerSpecificationNotes: [
+      "O Combo inclui um CFS de quatro filamentos; o fabricante informa suporte a até quatro unidades CFS.",
+      "O CFS não aceita TPU; imprima TPU com alimentação direta, sem o CFS.",
+      "Potência nominal informada: 900 W; o consumo real depende do uso.",
+    ],
+  },
+  supportedMaterials: {
+    "creality-hyper-pla": { status: "compatible", conditions: "Compatível com CFS." },
+    "creality-hyper-petg": { status: "compatible", conditions: "Compatível com CFS." },
+    "creality-hyper-abs": { status: "compatible", conditions: "Compatível com CFS." },
+    "creality-hp-asa": { status: "compatible", conditions: "Compatível com CFS." },
+    "creality-hp-tpu": { status: "conditional", conditions: "A impressora aceita TPU 95A, mas o CFS é incompatível com TPU; use alimentação direta." },
+  },
+  sources: [crealityEnder3V4Source],
+}, {
   id: "elegoo-centauri-2",
   name: "ELEGOO Centauri 2",
   brand: "ELEGOO",
@@ -496,6 +541,18 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  {
+    id: "creality-ender-3-v4-0.4",
+    name: "Bico 0,4 mm · Ender-3 V4",
+    brand: "Creality",
+    diameterMm: 0.4,
+    material: "Liga de cobre",
+    maxTemperatureC: 300,
+    abrasionResistant: null,
+    printerCompatibility: { "creality-ender-3-v4-combo": "compatible" },
+    original: true,
+    sources: [crealityEnder3V4Source],
+  },
   ...nozzleDiameters.map(({ diameter, included, material }) => ({
     id: `bambu-a1-mini-${diameter}`,
     name: `Bico ${diameter.toLocaleString("pt-BR")} mm`,

@@ -6,17 +6,22 @@ import { materials, nozzles, printers } from "./technical-catalog";
 
 const k2ProMigration = readFileSync(new URL("../../supabase/migrations/20261113223000_seed_creality_k2_pro.sql", import.meta.url), "utf8");
 const centauri2Migration = readFileSync(new URL("../../supabase/migrations/20261114000000_seed_elegoo_centauri_2.sql", import.meta.url), "utf8");
+const ender3V4Migration = readFileSync(new URL("../../supabase/migrations/20261114010000_seed_creality_ender_3_v4_combo.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("marks the manufacturer-listed A1 mini, PLA Basic, and original nozzle setup compatible", () => {
-    const result = evaluateCompatibility(printers[0], materials[0], nozzles.find((item) => item.original)!);
+    const printer = printers.find((item) => item.id === "bambu-a1-mini-ams-lite")!;
+    const nozzle = nozzles.find((item) => item.original && item.printerCompatibility?.[printer.id] === "compatible")!;
+    const result = evaluateCompatibility(printer, materials[0], nozzle);
 
     expect(result.status).toBe("compatible");
     expect(result.checks.every((check) => check.status === "compatible")).toBe(true);
   });
 
   it("rejects PPA-CF on the A1 mini because the documented bed temperature is below the material range", () => {
-    const result = evaluateCompatibility(printers[0], materials[1], nozzles.find((item) => item.original)!);
+    const printer = printers.find((item) => item.id === "bambu-a1-mini-ams-lite")!;
+    const nozzle = nozzles.find((item) => item.original && item.printerCompatibility?.[printer.id] === "compatible")!;
+    const result = evaluateCompatibility(printer, materials[1], nozzle);
 
     expect(result.status).toBe("incompatible");
     expect(result.checks.find((check) => check.key === "heated-bed")?.status).toBe("incompatible");
@@ -126,6 +131,36 @@ describe("verified technical catalog records", () => {
     expect(standard?.sources[0].url).toBe("https://us.elegoo.com/products/centauri-2");
     expect(centauri2Migration).toContain("'Centauri 2', 'standard'");
     expect(centauri2Migration).toContain("'Centauri 2', 'CANVAS Combo'");
+  });
+
+  it("includes the official Ender-3 V4 Combo and keeps TPU out of its CFS", () => {
+    const printer = printers.find((item) => item.id === "creality-ender-3-v4-combo");
+    const nozzle = nozzles.find((item) => item.id === "creality-ender-3-v4-0.4");
+
+    expect(printer).toMatchObject({
+      model: "Ender-3 V4",
+      variant: "Combo",
+      buildVolumeMm: { x: 220, y: 220, z: 235 },
+      maxNozzleTemperatureC: 300,
+      maxBedTemperatureC: 100,
+      maximumSpeedMmPerSecond: 500,
+      multicolorSlots: 4,
+      technicalProperties: { maxAccelerationMmPerSecondSquared: 12000, cfsExtensionsMaximum: 4 },
+      supportedMaterials: {
+        "creality-hyper-pla": { status: "compatible" },
+        "creality-hyper-petg": { status: "compatible" },
+        "creality-hp-tpu": { status: "conditional", conditions: expect.stringContaining("CFS") },
+      },
+    });
+    expect(nozzle).toMatchObject({
+      diameterMm: 0.4,
+      original: true,
+      printerCompatibility: { "creality-ender-3-v4-combo": "compatible" },
+    });
+    expect(evaluateCompatibility(printer!, materials.find((item) => item.id === "creality-hp-tpu")!, nozzle!).status).toBe("conditional");
+    expect(printer?.sources[0].url).toBe("https://www.creality.com/products/ender-3-v4-3d-printer");
+    expect(ender3V4Migration).toContain("'Ender-3 V4', 'Combo'");
+    expect(ender3V4Migration).toContain("o CFS é incompatível com TPU");
   });
 
   it("includes official H2S build and chamber data without treating toolhead speed as print speed", () => {
