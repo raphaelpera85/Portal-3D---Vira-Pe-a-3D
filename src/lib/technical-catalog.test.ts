@@ -5,6 +5,7 @@ import { mapTechnicalCatalog } from "./technical-catalog-data";
 import { materials, nozzles, printers } from "./technical-catalog";
 
 const k2ProMigration = readFileSync(new URL("../../supabase/migrations/20261113223000_seed_creality_k2_pro.sql", import.meta.url), "utf8");
+const centauri2Migration = readFileSync(new URL("../../supabase/migrations/20261114000000_seed_elegoo_centauri_2.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("marks the manufacturer-listed A1 mini, PLA Basic, and original nozzle setup compatible", () => {
@@ -92,6 +93,39 @@ describe("verified technical catalog records", () => {
       multicolorSlots: null,
       technicalProperties: { ams2ProIncluded: true, amsFilamentDrying: true },
     });
+  });
+
+  it("includes Centauri 2 variants and keeps the CANVAS upgrade distinct from the included Combo", () => {
+    const standard = printers.find((item) => item.id === "elegoo-centauri-2");
+    const combo = printers.find((item) => item.id === "elegoo-centauri-2-canvas-combo");
+    const originalNozzle = nozzles.find((item) => item.id === "elegoo-centauri-2-0.4");
+
+    expect(standard).toMatchObject({
+      buildVolumeMm: { x: 256, y: 256, z: 256 },
+      filamentDiameterMm: 1.75,
+      maxNozzleTemperatureC: 350,
+      maxBedTemperatureC: 110,
+      maximumSpeedMmPerSecond: 500,
+      multicolorSlots: null,
+      multicolorSystem: "ELEGOO CANVAS (vendido separadamente)",
+      technicalProperties: { recommendedPrintSpeedMmPerSecond: 250, multicolorUpgradeAvailable: true },
+    });
+    expect(combo).toMatchObject({
+      model: "Centauri 2",
+      variant: "CANVAS Combo",
+      multicolorSystem: "ELEGOO CANVAS",
+      multicolorSlots: 4,
+      technicalProperties: { includedCanvas: true },
+    });
+    expect(originalNozzle).toMatchObject({
+      diameterMm: 0.4,
+      material: "Latão com ponta de aço endurecido",
+      original: true,
+      printerCompatibility: { "elegoo-centauri-2": "compatible", "elegoo-centauri-2-canvas-combo": "compatible" },
+    });
+    expect(standard?.sources[0].url).toBe("https://us.elegoo.com/products/centauri-2");
+    expect(centauri2Migration).toContain("'Centauri 2', 'standard'");
+    expect(centauri2Migration).toContain("'Centauri 2', 'CANVAS Combo'");
   });
 
   it("includes official H2S build and chamber data without treating toolhead speed as print speed", () => {
