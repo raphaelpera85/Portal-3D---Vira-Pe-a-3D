@@ -1,0 +1,40 @@
+insert into public.material_catalog (
+  manufacturer, product, family, process, catalog_status,
+  filament_diameter_mm, density_g_cm3, colors,
+  nozzle_temperature_min_c, nozzle_temperature_max_c,
+  bed_temperature_min_c, bed_temperature_max_c,
+  requires_enclosure, abrasive, multicolor_compatible,
+  drying_required, drying_temperature_c, drying_hours, max_print_speed_mm_s,
+  technical_properties, source_url, documentation_url, verified_at
+) values (
+  'Bambu Lab', 'PETG HF', 'PETG', 'filament', 'published',
+  1.75, 1.28,
+  '[{"name":"Amarelo","hex":"#FFD00B"},{"name":"Laranja","hex":"#F75403"},{"name":"Verde","hex":"#00AE42"},{"name":"Vermelho","hex":"#EB3A3A"},{"name":"Azul","hex":"#002E96"},{"name":"Preto","hex":"#000000"},{"name":"Branco","hex":"#FFFFFF"},{"name":"Creme","hex":"#F9DFB9"},{"name":"Verde Lima","hex":"#6EE53C"},{"name":"Verde Floresta","hex":"#39541A"},{"name":"Azul Lago","hex":"#1F79E5"},{"name":"Marrom Amendoim","hex":"#875718"},{"name":"Cinza","hex":"#ADB1B2"},{"name":"Cinza Escuro","hex":"#515151"}]'::jsonb,
+  230, 260, 60, 80, null, false, true, true, 65, 8, 300,
+  '{"printingSpeedLimitMmPerSecond":"< 300","bedTemperatureWithGlueC":{"min":65,"max":75},"dryingMustRemainMoistureFree":true}'::jsonb,
+  'https://bambu-lab-uk.myshopify.com/products/petg-hf',
+  'https://cdn1.bambulab.com/filament/filament-guide/wksdyyzd8n9/filament-guide-en.pdf',
+  date '2026-11-13'
+)
+on conflict (manufacturer, product) do update set
+  family = excluded.family,
+  process = excluded.process,
+  catalog_status = excluded.catalog_status,
+  filament_diameter_mm = excluded.filament_diameter_mm,
+  density_g_cm3 = excluded.density_g_cm3,
+  colors = excluded.colors,
+  nozzle_temperature_min_c = excluded.nozzle_temperature_min_c,
+  nozzle_temperature_max_c = excluded.nozzle_temperature_max_c,
+  bed_temperature_min_c = excluded.bed_temperature_min_c,
+  bed_temperature_max_c = excluded.bed_temperature_max_c,
+  requires_enclosure = excluded.requires_enclosure,
+  abrasive = excluded.abrasive,
+  multicolor_compatible = excluded.multicolor_compatible,
+  drying_required = excluded.drying_required,
+  drying_temperature_c = excluded.drying_temperature_c,
+  drying_hours = excluded.drying_hours,
+  max_print_speed_mm_s = excluded.max_print_speed_mm_s,
+  technical_properties = excluded.technical_properties,
+  source_url = excluded.source_url,
+  documentation_url = excluded.documentation_url,
+  verified_at = excluded.verified_at;

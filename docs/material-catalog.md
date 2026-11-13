@@ -4,6 +4,7 @@ O primeiro lote publicado em `material_catalog` contém dois materiais Bambu Lab
 
 - [PLA Basic](https://bambulab-us.myshopify.com/products/pla-basic-filament): 1,75 mm, densidade 1,24 g/cm³, bico 190–230 °C, mesa 35–45 °C e velocidade indicada abaixo de 300 mm/s. A secagem é opcional (55 °C por 8 h), conforme o [guia oficial de filamentos](https://cdn1.bambulab.com/filament/filament-guide/wksdyyzd8n9/filament-guide-en.pdf).
 - [PPA-CF](https://bambulab-us.myshopify.com/products/ppa-cf): 1,75 mm, densidade 1,25 g/cm³, bico 280–310 °C, mesa 100–120 °C, secagem obrigatória, câmara fechada e bico de aço temperado entre os requisitos publicados.
+- [PETG HF](https://bambu-lab-uk.myshopify.com/products/petg-hf): 1,75 mm, densidade 1,28 g/cm³, bico 230–260 °C, mesa 60–80 °C, velocidade abaixo de 300 mm/s, secagem obrigatória (65 °C por 8 h) e compatibilidade AMS/AMS lite. O catálogo mantém as 14 cores e os códigos hexadecimais publicados pelo fabricante; a faixa de 65–75 °C é identificada separadamente para uso com cola. A migration `20261114030000_seed_bambu_petg_hf.sql` adiciona o produto ao Supabase quando aplicada.
 
 As fontes foram conferidas em 13 nov. 2026. Administradores podem incluir materiais e resinas em `/admin/catalogos/materiais`; relações de suporte por impressora são mantidas em `/admin/catalogos/bicos`. Recomendações de exposição, lavagem e cura não são generalizadas entre produtos.
 

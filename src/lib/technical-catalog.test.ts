@@ -8,6 +8,7 @@ const k2ProMigration = readFileSync(new URL("../../supabase/migrations/202611132
 const centauri2Migration = readFileSync(new URL("../../supabase/migrations/20261114000000_seed_elegoo_centauri_2.sql", import.meta.url), "utf8");
 const ender3V4Migration = readFileSync(new URL("../../supabase/migrations/20261114010000_seed_creality_ender_3_v4_combo.sql", import.meta.url), "utf8");
 const ender5MaxMigration = readFileSync(new URL("../../supabase/migrations/20261114020000_seed_creality_ender_5_max.sql", import.meta.url), "utf8");
+const bambuPetgHfMigration = readFileSync(new URL("../../supabase/migrations/20261114030000_seed_bambu_petg_hf.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -108,6 +109,26 @@ describe("verified technical catalog records", () => {
 
       expect(materialCheck?.status).toBe("conditional");
     }
+  });
+
+  it("includes the source-verified PETG HF profile, colors, and published database seed", () => {
+    const petgHf = materials.find((material) => material.id === "bambu-petg-hf");
+
+    expect(petgHf).toMatchObject({
+      name: "PETG HF",
+      brand: "Bambu Lab",
+      densityGPerCm3: 1.28,
+      nozzleTemperatureC: { min: 230, max: 260 },
+      bedTemperatureC: { min: 60, max: 80 },
+      printSpeedMaximumMmPerSecond: 300,
+      drying: { required: true, temperatureC: 65, hours: 8 },
+      multicolorCompatible: true,
+    });
+    expect(petgHf?.colors).toHaveLength(14);
+    expect(petgHf?.colors.find((color) => color.name === "Azul Lago")?.hex).toBe("#1F79E5");
+    expect(petgHf?.sources.length).toBeGreaterThanOrEqual(2);
+    expect(bambuPetgHfMigration).toContain("'Bambu Lab', 'PETG HF', 'PETG', 'filament', 'published'");
+    expect(bambuPetgHfMigration).toContain('"#1F79E5"');
   });
 
   it("rejects PPA-CF on the A1 mini because the documented bed temperature is below the material range", () => {

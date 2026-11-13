@@ -181,6 +181,10 @@ const ppaSource = {
   url: "https://bambulab-us.myshopify.com/products/ppa-cf",
   checkedAt: "2026-11-12",
 };
+const bambuPetgHfSources = [
+  { label: "Bambu Lab — PETG HF", url: "https://bambu-lab-uk.myshopify.com/products/petg-hf", checkedAt: "2026-11-13" },
+  { label: "Bambu Lab — Filament Guide", url: "https://cdn1.bambulab.com/filament/filament-guide/wksdyyzd8n9/filament-guide-en.pdf", checkedAt: "2026-11-13" },
+];
 
 export const printers: PrinterEntry[] = [{
   id: "bambu-a1-mini-ams-lite",
@@ -809,6 +813,40 @@ export const materials: MaterialEntry[] = [
     resinExposureSeconds: null,
     colors: [{ name: "Preto", hex: "#000000" }],
     sources: [ppaSource],
+  },
+  {
+    id: "bambu-petg-hf",
+    name: "PETG HF",
+    brand: "Bambu Lab",
+    family: "PETG",
+    process: "filament",
+    filamentDiameterMm: 1.75,
+    densityGPerCm3: 1.28,
+    nozzleTemperatureC: { min: 230, max: 260 },
+    bedTemperatureC: { min: 60, max: 80 },
+    nozzleDiametersMm: null,
+    enclosureRequired: null,
+    abrasive: false,
+    multicolorCompatible: true,
+    printSpeedMaximumMmPerSecond: 300,
+    drying: { required: true, temperatureC: 65, hours: 8 },
+    resinWavelengthNm: null,
+    resinExposureSeconds: null,
+    technicalProperties: {
+      printingSpeedLimitMmPerSecond: "< 300",
+      bedTemperatureWithGlueC: { min: 65, max: 75 },
+      dryingMustRemainMoistureFree: true,
+    },
+    colors: [
+      { name: "Amarelo", hex: "#FFD00B" }, { name: "Laranja", hex: "#F75403" },
+      { name: "Verde", hex: "#00AE42" }, { name: "Vermelho", hex: "#EB3A3A" },
+      { name: "Azul", hex: "#002E96" }, { name: "Preto", hex: "#000000" },
+      { name: "Branco", hex: "#FFFFFF" }, { name: "Creme", hex: "#F9DFB9" },
+      { name: "Verde Lima", hex: "#6EE53C" }, { name: "Verde Floresta", hex: "#39541A" },
+      { name: "Azul Lago", hex: "#1F79E5" }, { name: "Marrom Amendoim", hex: "#875718" },
+      { name: "Cinza", hex: "#ADB1B2" }, { name: "Cinza Escuro", hex: "#515151" },
+    ],
+    sources: bambuPetgHfSources,
   },
   ...[
     { id: "creality-hyper-pla", name: "Hyper PLA", family: "PLA", enclosureRequired: null, multicolorCompatible: null, url: "https://store.creality.com/eu/products/hyper-1-75mm-pla-3d-printing-filament-1kg" },
