@@ -34,7 +34,7 @@ const slicerPatterns: Array<[RegExp, string]> = [
   [/Flash\s*Print/i, "FlashPrint"],
   [/idea\s*Maker/i, "ideaMaker"],
   [/UltiMaker\s+Cura/i, "UltiMaker Cura"],
-  [/\bCura\b/i, "Cura"],
+  [/\bCura(?:_SteamEngine)?\b/i, "Cura"],
 ];
 
 function parseNumber(value: string) {
@@ -66,6 +66,18 @@ function findMeasurement(lines: string[], labels: string, units: string, normali
     if (unit && Number.isFinite(value) && value >= 0) return normalize(value, unit.toLowerCase());
   }
   return null;
+}
+
+function findFilamentLength(lines: string[]) {
+  const curaLine = lines.find((line) => /^;?\s*filament\s+used\s*:/i.test(line));
+  if (curaLine) {
+    const measurements = [...curaLine.matchAll(/(\d[\d.,]*)\s*(mm|m)\b/gi)];
+    if (measurements.length) return measurements.reduce((total, match) => {
+      const value = parseNumber(match[1]);
+      return total + (match[2].toLowerCase() === "mm" ? value / 1000 : value);
+    }, 0);
+  }
+  return findMeasurement(lines, String.raw`(?:(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?|filament\s+used)`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value);
 }
 
 function findCost(lines: string[]) {
@@ -100,6 +112,8 @@ function findCount(lines: string[], labels: string) {
 }
 
 function findPrintHours(lines: string[]) {
+  const curaTime = lines.find((line) => /^;\s*time\s*:\s*\d[\d.,]*\s*$/i.test(line));
+  if (curaTime) return parseNumber(curaTime.replace(/^;\s*time\s*:\s*/i, "")) / 3600;
   const labels = /(?:print(?:ing)?\s*time|tempo\s+(?:total\s+de\s+)?impress[aã]o|tempo\s+estimado|dura[cç][aã]o|^time)\s*[:=\-]?/i;
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
@@ -139,7 +153,7 @@ function findCostCurrency(lines: string[]): "BRL" | "USD" | null {
 function parseOne(text: string) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
-  const length = findMeasurement(lines, String.raw`(?:(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?|filament\s+used)`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value);
+  const length = findFilamentLength(lines);
   const cost = findCost(lines);
   const materials = [...new Set(lines.flatMap((line) => {
     const match = new RegExp(`(?<![a-z0-9])${materialPattern}(?![a-z0-9])`, "i").exec(line);

@@ -35,6 +35,14 @@ describe("parseSlicerOcrTexts", () => {
     expect(parseSlicerOcrTexts(["OrcaSlicer\nPrint time: 45s"]).printHours).toBe(45 / 3600);
   });
 
+  it("reads Cura G-code time in seconds and totals per-extruder filament lengths", () => {
+    const single = parseSlicerOcrTexts([";TIME:7265\n;Filament used: 1.34122m\n;Generated with Cura_SteamEngine 5.8.0"]);
+    expect(single).toMatchObject({ slicer: "Cura", printHours: 7265 / 3600, lengthMeters: 1.34122, filamentGrams: null });
+
+    const multiple = parseSlicerOcrTexts([";TIME:5333\n;Filament used: 0m, 4.72721m, 0m, 0m\n;Generated with Cura_SteamEngine 5.5.0"]);
+    expect(multiple).toMatchObject({ slicer: "Cura", printHours: 5333 / 3600, lengthMeters: 4.72721, filamentGrams: null });
+  });
+
   it("reads values placed on the line after their labels in slicer summaries", () => {
     const result = parseSlicerOcrTexts(["Anycubic Slicer Next\nModel\n211,63 g\nSupports\n12,17 g\nTotal filament\n223,80 g\nFilament length\n75,65 m\nPrint time\n13h40\nFilament changes\n1\nEstimated cost\nR$ 16,799"]);
     expect(result).toMatchObject({
