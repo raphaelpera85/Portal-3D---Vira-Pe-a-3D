@@ -40,7 +40,7 @@ export default async function CalculatorPage() {
           .eq("store_id", store.id).neq("operational_status", "inactive").order("nickname"),
         actor.supabase.from("maker_cost_calculations").select("id, title, input_snapshot, product_id, printer_id, profile_id, created_at")
           .eq("store_id", store.id).order("created_at", { ascending: false }).limit(20),
-        actor.supabase.from("marketplace_products").select("id, name, slug, catalog_status, listing_type, price_mode, price_brl, product_properties")
+        actor.supabase.from("marketplace_products").select("id, name, slug, catalog_status, listing_type, price_mode, price_brl, product_properties, variants:marketplace_product_variants(id, variant_options, price_brl)")
           .eq("store_id", store.id).order("name"),
         actor.supabase.from("maker_print_profiles").select("id, product_id, profile_name, quantity, material_snapshot, print_hours, material_grams, material_by_color, maker_printer_id")
           .eq("store_id", store.id).order("profile_name"),
@@ -79,10 +79,19 @@ export default async function CalculatorPage() {
         const listingType = product.listing_type as CalculatorProduct["listingType"];
         const published = product.catalog_status === "published";
         const priceBrl = product.price_brl == null ? null : Number(product.price_brl);
+        const variants = Array.isArray(product.variants) ? product.variants.flatMap((variant: Record<string, unknown>) => {
+          const options = variant.variant_options && typeof variant.variant_options === "object" && !Array.isArray(variant.variant_options)
+            ? variant.variant_options as Record<string, unknown> : null;
+          const variantPrice = Number(variant.price_brl);
+          return typeof variant.id === "string" && options && Object.values(options).every((value) => typeof value === "string")
+            && Number.isFinite(variantPrice) && variantPrice > 0
+            ? [{ id: variant.id, options: options as Record<string, string>, priceBrl: variantPrice }]
+            : [];
+        }) : [];
         return {
-          id: product.id, name: product.name, slug: product.slug, published, listingType, priceMode, priceBrl,
+          id: product.id, name: product.name, slug: product.slug, published, listingType, priceMode, priceBrl, variants,
           canApplyPrice: (product.catalog_status === "draft" || published) && listingType === "physical"
-            && (priceMode === "fixed" || priceMode === "from") && !hasVariants && Number.isFinite(priceBrl) && (priceBrl ?? 0) > 0,
+            && (hasVariants ? priceMode === "fixed" && variants.length > 0 : (priceMode === "fixed" || priceMode === "from") && Number.isFinite(priceBrl) && (priceBrl ?? 0) > 0),
         };
       });
       const makerProfiles = (profileResult.data ?? []).map((profile) => ({

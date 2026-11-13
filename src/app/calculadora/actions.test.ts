@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ getUserWithRole: vi.fn(), revalidatePath: vi.fn(), product: null as null | Record<string, unknown>, updatePayload: null as null | Record<string, unknown>, updateFilters: {} as Record<string, unknown> }));
+const mocks = vi.hoisted(() => ({ getUserWithRole: vi.fn(), revalidatePath: vi.fn(), product: null as null | Record<string, unknown>, updatePayload: null as null | Record<string, unknown>, updateFilters: {} as Record<string, unknown>, rpc: vi.fn(), from: vi.fn() }));
 
 vi.mock("@/lib/auth-role.server", () => ({ getUserWithRole: mocks.getUserWithRole }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
@@ -8,6 +8,7 @@ vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 import { applyCalculatedProductPrice } from "./actions";
 
 const productId = "6eabced2-85c7-45fd-9c5a-946c530ab502";
+const variantId = "d9a6fcd3-2467-4f27-9ff3-92c85e0fa663";
 const storeId = "dc4e58d6-c782-4dc5-83c1-68d08072224d";
 const makerId = "maker-user";
 const form = (fields: Record<string, string>) => {
@@ -41,9 +42,27 @@ function configureMaker(product = {}) {
     };
     return builder;
   });
-  mocks.getUserWithRole.mockResolvedValue({ supabase: { from }, user: { id: makerId }, authorized: true });
+  mocks.from = from;
+  mocks.rpc.mockReset().mockResolvedValue({ error: null });
+  mocks.getUserWithRole.mockResolvedValue({ supabase: { from, rpc: mocks.rpc }, user: { id: makerId }, authorized: true });
   mocks.updatePayload = null;
   mocks.updateFilters = {};
+}
+
+function configureVariantMaker(variantPrice = "42.50") {
+  configureMaker({ product_properties: { variant_options: { Cor: ["Azul", "Preto"] } } });
+  const variantFrom = vi.fn(() => {
+    const builder = {
+      select: vi.fn(() => builder),
+      eq: vi.fn(() => builder),
+      maybeSingle: vi.fn(async () => ({ data: { id: variantId, price_brl: variantPrice }, error: null })),
+    };
+    return builder;
+  });
+  mocks.getUserWithRole.mockResolvedValueOnce({
+    supabase: { from: (table: string) => table === "marketplace_product_variants" ? variantFrom() : mocks.from(table), rpc: mocks.rpc },
+    user: { id: makerId }, authorized: true,
+  });
 }
 
 describe("applyCalculatedProductPrice", () => {
@@ -75,6 +94,35 @@ describe("applyCalculatedProductPrice", () => {
     const digital = await applyCalculatedProductPrice({ message: "", success: false }, form({ productId, priceCents: "4590", expectedPriceCents: "3000", confirmedPublishedPrice: "yes" }));
     expect(digital.success).toBe(false);
     expect(mocks.updatePayload).toBeNull();
+  });
+
+  it("updates an owned product variant through the atomic price RPC", async () => {
+    configureVariantMaker();
+    const result = await applyCalculatedProductPrice({ message: "", success: false }, form({
+      productId, variantId, priceCents: "4590", expectedPriceCents: "4250", confirmedPublishedPrice: "yes",
+    }));
+
+    expect(result).toEqual({ success: true, message: "Preço da variação atualizado no anúncio." });
+    expect(mocks.rpc).toHaveBeenCalledWith("apply_calculated_product_variant_price", {
+      p_product_id: productId, p_variant_id: variantId, p_expected_price_cents: 4250, p_price_cents: 4590,
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/produtos/suporte");
+  });
+
+  it("refuses stale variant prices and reports reservations without changing them", async () => {
+    configureVariantMaker();
+    const stale = await applyCalculatedProductPrice({ message: "", success: false }, form({
+      productId, variantId, priceCents: "4590", expectedPriceCents: "4200", confirmedPublishedPrice: "yes",
+    }));
+    expect(stale.message).toContain("preço da variação mudou");
+    expect(mocks.rpc).not.toHaveBeenCalled();
+
+    configureVariantMaker();
+    mocks.rpc.mockResolvedValueOnce({ error: { message: "VARIANT_RESERVED" } });
+    const reserved = await applyCalculatedProductPrice({ message: "", success: false }, form({
+      productId, variantId, priceCents: "4590", expectedPriceCents: "4250", confirmedPublishedPrice: "yes",
+    }));
+    expect(reserved.message).toContain("reservada em um pagamento pendente");
   });
 
   it("refuses stale product prices and unauthenticated updates", async () => {

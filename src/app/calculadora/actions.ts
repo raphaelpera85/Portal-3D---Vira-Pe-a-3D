@@ -9,11 +9,13 @@ export type ApplyCalculatedPriceState = { message: string; success: boolean };
 
 export async function applyCalculatedProductPrice(_previous: ApplyCalculatedPriceState, formData: FormData): Promise<ApplyCalculatedPriceState> {
   const productId = formData.get("productId");
+  const rawVariantId = formData.get("variantId");
   const rawPrice = formData.get("priceCents");
   const rawExpectedPrice = formData.get("expectedPriceCents");
   const priceCents = typeof rawPrice === "string" && /^\d{1,12}$/.test(rawPrice) ? Number(rawPrice) : NaN;
   const expectedPriceCents = typeof rawExpectedPrice === "string" && /^\d{1,12}$/.test(rawExpectedPrice) ? Number(rawExpectedPrice) : NaN;
   if (typeof productId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(productId)
+    || (rawVariantId !== null && rawVariantId !== "" && (typeof rawVariantId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawVariantId)))
     || !Number.isSafeInteger(priceCents) || priceCents < 1 || priceCents > 99_999_999_999
     || !Number.isSafeInteger(expectedPriceCents) || expectedPriceCents < 1 || expectedPriceCents > 99_999_999_999) {
     return { message: "Preço ou produto inválido. Recalcule antes de aplicar.", success: false };
@@ -32,8 +34,38 @@ export async function applyCalculatedProductPrice(_previous: ApplyCalculatedPric
     ? product.product_properties as Record<string, unknown> : {};
   const variantOptions = properties.variant_options;
   const hasVariants = variantOptions !== null && typeof variantOptions === "object" && !Array.isArray(variantOptions) && Object.keys(variantOptions).length > 0;
-  if (product.listing_type !== "physical" || (product.price_mode !== "fixed" && product.price_mode !== "from") || hasVariants
-    || (product.catalog_status !== "draft" && product.catalog_status !== "published")
+  const variantId = typeof rawVariantId === "string" && rawVariantId ? rawVariantId : null;
+  const validListing = product.listing_type === "physical" && (product.catalog_status === "draft" || product.catalog_status === "published");
+  if (variantId) {
+    if (!validListing || product.price_mode !== "fixed" || !hasVariants) {
+      return { message: "Esta variação não aceita preço automático. Confira o anúncio e tente novamente.", success: false };
+    }
+    if (product.catalog_status === "published" && formData.get("confirmedPublishedPrice") !== "yes") {
+      return { message: "Confirme a alteração do preço publicado.", success: false };
+    }
+    const { data: variant, error: variantError } = await actor.supabase.from("marketplace_product_variants")
+      .select("id, price_brl").eq("id", variantId).eq("product_id", product.id).maybeSingle();
+    if (variantError || !variant || (typeof variant.price_brl !== "number" && typeof variant.price_brl !== "string") || !Number.isFinite(Number(variant.price_brl)) || Number(variant.price_brl) <= 0) {
+      return { message: "Não foi possível localizar essa variação neste anúncio.", success: false };
+    }
+    const currentVariantPriceCents = Math.round(Number(variant.price_brl) * 100);
+    if (currentVariantPriceCents !== expectedPriceCents) return { message: "O preço da variação mudou. Atualize a página e calcule novamente antes de aplicar.", success: false };
+    const { error } = await actor.supabase.rpc("apply_calculated_product_variant_price", {
+      p_product_id: product.id, p_variant_id: variant.id,
+      p_expected_price_cents: expectedPriceCents, p_price_cents: priceCents,
+    });
+    if (error) return { message: error.message.includes("STALE_VARIANT_PRICE")
+      ? "O preço da variação mudou. Atualize a página e calcule novamente antes de aplicar."
+      : error.message.includes("VARIANT_RESERVED") || error.message.includes("Variant is reserved by an active checkout")
+        ? "Esta variação está reservada em um pagamento pendente e não pode ser alterada agora."
+        : "Não foi possível atualizar o preço. Recarregue o anúncio e tente novamente.", success: false };
+
+    revalidatePath(`/produtos/${product.slug}`);
+    revalidatePath(`/lojas/${store.slug}`);
+    revalidatePath("/");
+    return { message: "Preço da variação atualizado no anúncio.", success: true };
+  }
+  if (!validListing || (product.price_mode !== "fixed" && product.price_mode !== "from") || hasVariants
     || typeof product.price_brl !== "number" && typeof product.price_brl !== "string" || !Number.isFinite(Number(product.price_brl)) || Number(product.price_brl) <= 0) {
     return { message: "Este produto não aceita preço unitário automático. Produtos digitais, sob orçamento ou com variações precisam ser editados no painel.", success: false };
   }
