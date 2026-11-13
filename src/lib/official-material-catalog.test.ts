@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261113020000_expand_official_material_catalog.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261113014036_expand_official_material_catalog.sql", import.meta.url), "utf8");
 
 describe("official material catalog expansion", () => {
   it("adds TPU, PETG carbon fiber, and PC Blend with official references", () => {

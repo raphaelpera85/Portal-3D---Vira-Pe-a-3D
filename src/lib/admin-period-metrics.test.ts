@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261113053000_admin_period_metrics.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261113013250_admin_period_metrics.sql", import.meta.url), "utf8");
 
 describe("admin period metrics RPC", () => {
   it("restricts financial aggregates to the service role", () => {
