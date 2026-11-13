@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDesignerServiceRequestEmail, buildQuoteRequestEmail, buildSupportReplyEmail, buildWhatsAppQuoteRequestPayload, getNotificationPanelPath } from "./notification-messages";
+import { buildDesignerServiceRequestEmail, buildQuoteRequestEmail, buildSupportReplyEmail, buildWhatsAppDesignerServiceRequestPayload, buildWhatsAppQuoteRequestPayload, getNotificationPanelPath } from "./notification-messages";
 
 describe("quote request notifications", () => {
   it("escapes product names in email while linking to the maker panel", () => {
@@ -50,5 +50,17 @@ describe("designer service notifications", () => {
     expect(getNotificationPanelPath("designer_service_request")).toBe("/painel/designer");
     expect(getNotificationPanelPath("support_reply")).toBe("/suporte");
     expect(getNotificationPanelPath("purchase")).toBe("/painel/maker");
+  });
+
+  it("builds the approved WhatsApp service template with title and authenticated panel link", () => {
+    expect(buildWhatsAppDesignerServiceRequestPayload({
+      recipient: "+5511000000000", projectTitle: "Suporte", panelUrl: "https://virapeca.example/painel/designer",
+      templateName: "virapeca_nova_modelagem", language: "pt_BR",
+    })).toEqual({
+      messaging_product: "whatsapp", to: "5511000000000", type: "template",
+      template: { name: "virapeca_nova_modelagem", language: { code: "pt_BR" }, components: [{ type: "body", parameters: [
+        { type: "text", text: "Suporte" }, { type: "text", text: "https://virapeca.example/painel/designer" },
+      ] }] },
+    });
   });
 });

@@ -1,9 +1,11 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { getBrazilianCalendarDate } from "@/lib/maintenance-reminders";
 import { validateDesignerServiceRequest } from "@/lib/designer-service-request";
+import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 
 export type DesignerServiceRequestState = { message: string; success: boolean };
 
@@ -31,6 +33,7 @@ export async function createDesignerServiceRequest(
   });
   if (error) return { message: "Não foi possível enviar o pedido. Confira se o perfil ainda está publicado e tente novamente.", success: false };
 
+  after(dispatchNotificationQueue);
   revalidatePath(`/designers/${slug}`);
   revalidatePath("/painel/designer");
   revalidatePath("/conta/modelagem");

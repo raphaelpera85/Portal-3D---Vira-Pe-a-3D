@@ -48,3 +48,21 @@ export function buildWhatsAppQuoteRequestPayload({ recipient, productName, quant
     },
   };
 }
+
+export function buildWhatsAppDesignerServiceRequestPayload({ recipient, projectTitle, panelUrl, templateName, language }: {
+  recipient: string; projectTitle: string; panelUrl: string; templateName: string; language: string;
+}) {
+  return {
+    messaging_product: "whatsapp",
+    to: recipient.replace(/\D/g, ""),
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: language },
+      components: [{ type: "body", parameters: [
+        { type: "text", text: projectTitle.replace(/[\r\n\x00-\x1f\x7f]/g, " ").slice(0, 120) },
+        { type: "text", text: panelUrl },
+      ] }],
+    },
+  };
+}

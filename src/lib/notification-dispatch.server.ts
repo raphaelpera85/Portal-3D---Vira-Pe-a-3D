@@ -17,7 +17,7 @@ export async function dispatchNotificationQueue() {
   let failed = 0;
   let deferred = 0;
   await Promise.all(deliveries.map(async (delivery) => {
-    if (!isNotificationChannelConfigured(delivery.channel)) {
+    if (!isNotificationChannelConfigured(delivery.channel, process.env, delivery.payload.notification_type)) {
       const { error: deferError } = await supabase.rpc("defer_store_notification_delivery", { delivery_id: delivery.id });
       if (deferError) failed += 1;
       else deferred += 1;

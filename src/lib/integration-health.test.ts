@@ -15,6 +15,7 @@ describe("getIntegrationHealth", () => {
       WHATSAPP_PHONE_NUMBER_ID: "123456",
       WHATSAPP_GRAPH_API_VERSION: "v23.0",
       WHATSAPP_TEMPLATE_NAME: "virapeca_novo_orcamento",
+      WHATSAPP_DESIGNER_TEMPLATE_NAME: "virapeca_nova_modelagem",
       WHATSAPP_TEMPLATE_LANGUAGE: "pt_BR",
       NEXT_PUBLIC_SITE_URL: "https://virapeca.example",
       CRON_SECRET: "cron-private-value",
@@ -102,12 +103,14 @@ describe("getIntegrationHealth", () => {
       WHATSAPP_PHONE_NUMBER_ID: " 123456 ",
       WHATSAPP_GRAPH_API_VERSION: " v23.0 ",
       WHATSAPP_TEMPLATE_NAME: " virapeca_novo_orcamento ",
+      WHATSAPP_DESIGNER_TEMPLATE_NAME: " virapeca_nova_modelagem ",
     }).find((item) => item.id === "whatsapp");
 
     expect(result?.missingVariables).toEqual(expect.arrayContaining([
       "WHATSAPP_PHONE_NUMBER_ID",
       "WHATSAPP_GRAPH_API_VERSION",
       "WHATSAPP_TEMPLATE_NAME",
+      "WHATSAPP_DESIGNER_TEMPLATE_NAME",
     ]));
   });
 });

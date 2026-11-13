@@ -1,4 +1,4 @@
-import { buildDesignerServiceRequestEmail, buildQuoteRequestEmail, buildSupportReplyEmail, buildWhatsAppQuoteRequestPayload } from "./notification-messages";
+import { buildDesignerServiceRequestEmail, buildQuoteRequestEmail, buildSupportReplyEmail, buildWhatsAppDesignerServiceRequestPayload, buildWhatsAppQuoteRequestPayload } from "./notification-messages";
 
 export type NotificationDelivery = { id: string; channel: "email" | "whatsapp"; destination: string; payload: Record<string, unknown>; attempts: number };
 export type NotificationEnvironment = Record<string, string | undefined>;
@@ -6,9 +6,10 @@ export type NotificationSendResult = { ok: true; messageId: string | null } | { 
 
 const present = (value: string | undefined) => Boolean(value?.trim());
 
-export function isNotificationChannelConfigured(channel: NotificationDelivery["channel"], env: NotificationEnvironment = process.env) {
+export function isNotificationChannelConfigured(channel: NotificationDelivery["channel"], env: NotificationEnvironment = process.env, notificationType?: unknown) {
   if (channel === "email") return present(env.RESEND_API_KEY) && present(env.RESEND_FROM_EMAIL);
-  return Boolean(present(env.WHATSAPP_ACCESS_TOKEN) && env.WHATSAPP_PHONE_NUMBER_ID && /^\d+$/.test(env.WHATSAPP_PHONE_NUMBER_ID) && /^v\d+\.\d+$/.test(env.WHATSAPP_GRAPH_API_VERSION ?? "") && /^[a-z0-9_]+$/.test(env.WHATSAPP_TEMPLATE_NAME ?? "") && /^[a-z]{2}_[A-Z]{2}$/.test(env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR"));
+  const templateName = notificationType === "designer_service_request" ? env.WHATSAPP_DESIGNER_TEMPLATE_NAME : env.WHATSAPP_TEMPLATE_NAME;
+  return Boolean(present(env.WHATSAPP_ACCESS_TOKEN) && env.WHATSAPP_PHONE_NUMBER_ID && /^\d+$/.test(env.WHATSAPP_PHONE_NUMBER_ID) && /^v\d+\.\d+$/.test(env.WHATSAPP_GRAPH_API_VERSION ?? "") && /^[a-z0-9_]+$/.test(templateName ?? "") && /^[a-z]{2}_[A-Z]{2}$/.test(env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR"));
 }
 
 export async function sendNotificationDelivery(delivery: NotificationDelivery, actionUrl: string, env: NotificationEnvironment = process.env, fetcher: typeof fetch = fetch): Promise<NotificationSendResult> {
@@ -35,12 +36,17 @@ export async function sendNotificationDelivery(delivery: NotificationDelivery, a
       return response.ok ? { ok: true, messageId: data.id ?? null } : { ok: false, reason: `email_http_${response.status}` };
     }
 
-    if (isDesignerServiceRequest) return { ok: false, reason: "designer_whatsapp_template_not_configured" };
-    if (!isNotificationChannelConfigured("whatsapp", env)) return { ok: false, reason: "whatsapp_not_configured" };
-    const body = buildWhatsAppQuoteRequestPayload({
-      recipient: delivery.destination, productName, quantity, panelUrl: actionUrl,
-      templateName: env.WHATSAPP_TEMPLATE_NAME!, language: env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR", requestType,
-    });
+    if (!isNotificationChannelConfigured("whatsapp", env, delivery.payload.notification_type)) return { ok: false, reason: "whatsapp_not_configured" };
+    const body = isDesignerServiceRequest
+      ? buildWhatsAppDesignerServiceRequestPayload({
+        recipient: delivery.destination,
+        projectTitle: typeof delivery.payload.project_title === "string" ? delivery.payload.project_title : "Projeto de modelagem",
+        panelUrl: actionUrl, templateName: env.WHATSAPP_DESIGNER_TEMPLATE_NAME!, language: env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR",
+      })
+      : buildWhatsAppQuoteRequestPayload({
+        recipient: delivery.destination, productName, quantity, panelUrl: actionUrl,
+        templateName: env.WHATSAPP_TEMPLATE_NAME!, language: env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR", requestType,
+      });
     const response = await fetcher(`https://graph.facebook.com/${env.WHATSAPP_GRAPH_API_VERSION}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
       method: "POST", signal: AbortSignal.timeout(10000),
       headers: { Authorization: `Bearer ${env.WHATSAPP_ACCESS_TOKEN}`, "Content-Type": "application/json" },
