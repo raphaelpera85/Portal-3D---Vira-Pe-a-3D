@@ -49,4 +49,22 @@ describe("verified technical catalog records", () => {
     expect(catalog.printers[0].buildVolumeMm).toBeNull();
     expect(catalog.printers[0].buildVolumeDescription).toBe("Cilíndrico · Ø500 × 550 mm");
   });
+
+  it("keeps Raise3D single- and dual-extrusion volumes distinct", () => {
+    const catalog = mapTechnicalCatalog([{
+      id: "raise3d-pro3-plus-hs",
+      manufacturer: "Raise3D",
+      model: "Pro3 Plus HS",
+      variant: "standard",
+      technology: "FDM",
+      technical_properties: {
+        buildVolumeDescription: "300 × 300 × 605 mm (extrusão simples) · 255 × 300 × 605 mm (dupla)",
+        singleExtrusionVolumeMm: { x: 300, y: 300, z: 605 },
+        dualExtrusionVolumeMm: { x: 255, y: 300, z: 605 },
+      },
+    }], [], [], [], []);
+
+    expect(catalog.printers[0].buildVolumeMm).toBeNull();
+    expect(catalog.printers[0].buildVolumeDescription).toBe("300 × 300 × 605 mm (extrusão simples) · 255 × 300 × 605 mm (dupla)");
+  });
 });
