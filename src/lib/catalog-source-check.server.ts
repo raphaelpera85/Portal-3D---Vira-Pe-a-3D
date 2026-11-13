@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { classifyCatalogSourceResponse, getAllowedCatalogRedirect, isAllowedCatalogSourceUrl, isCatalogSourceCheckDay, type CatalogSourceEvent } from "./catalog-source-monitor";
+import { classifyCatalogSourceResponse, getAllowedCatalogRedirect, hasCatalogSourceBeenCheckedInCycle, isAllowedCatalogSourceUrl, type CatalogSourceEvent } from "./catalog-source-monitor";
 
 type CatalogType = "printer" | "material" | "nozzle";
 type SourceRecord = { catalog_type: CatalogType; id: string; record_label: string; source_url: string };
@@ -29,9 +29,6 @@ async function fetchSourceHeaders(url: string, allowedHosts: string) {
 }
 
 export async function runCatalogSourceCheck(now = new Date()) {
-  if (!isCatalogSourceCheckDay(now, process.env.CATALOG_SOURCE_CHECK_DAY_UTC)) {
-    return { ok: true, skipped: "not-scheduled-day", checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 0 };
-  }
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { ok: false, skipped: null, checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 1 };
 
@@ -55,11 +52,16 @@ export async function runCatalogSourceCheck(now = new Date()) {
   }));
   if (stateRows.some((rows) => rows == null)) return { ok: false, skipped: null, checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 1 };
   const states = new Map((stateRows.flat() as WatchState[]).map((row) => [`${row.catalog_type}:${row.record_id}`, row]));
-  const ordered = sourceRows.sort((left, right) => {
+  const ordered = sourceRows.filter((record) => {
+    const previous = states.get(`${record.catalog_type}:${record.id}`);
+    return previous?.source_url !== record.source_url || !hasCatalogSourceBeenCheckedInCycle(previous?.last_checked_at, now, process.env.CATALOG_SOURCE_CHECK_DAY_UTC);
+  }).sort((left, right) => {
     const a = states.get(`${left.catalog_type}:${left.id}`)?.last_checked_at ?? "";
     const b = states.get(`${right.catalog_type}:${right.id}`)?.last_checked_at ?? "";
     return a.localeCompare(b);
+  // shortcut: cap each daily batch at 24 for the 60s function budget; add resumable workers if sources exceed 168 per week.
   }).slice(0, 24);
+  if (!ordered.length) return { ok: true, skipped: "all-sources-checked-this-cycle", checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 0 };
   const extraHosts = process.env.CATALOG_SOURCE_ALLOWED_HOSTS ?? "";
   const counts = { ok: true, skipped: null as string | null, checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 0 };
 
@@ -67,7 +69,6 @@ export async function runCatalogSourceCheck(now = new Date()) {
     await Promise.all(ordered.slice(offset, offset + 8).map(async (record) => {
       const previous = states.get(`${record.catalog_type}:${record.id}`) ?? null;
       const priorCheck = previous?.source_url === record.source_url ? previous : null;
-      if (priorCheck?.last_checked_at.slice(0, 10) === now.toISOString().slice(0, 10)) return;
       counts.checked += 1;
       let status = 0;
       let etag: string | null = null;

@@ -51,7 +51,15 @@ export function classifyCatalogSourceResponse(
   return { state: "current", event: null, detail: null };
 }
 
-export function isCatalogSourceCheckDay(date: Date, configuredDay = "1") {
-  const day = /^\d$/.test(configuredDay) ? Number(configuredDay) : 1;
-  return day >= 0 && day <= 6 && date.getUTCDay() === day;
+export function getCatalogSourceCheckCycleStart(date: Date, configuredDay = "1") {
+  const parsedDay = /^\d$/.test(configuredDay) ? Number(configuredDay) : 1;
+  const day = parsedDay <= 6 ? parsedDay : 1;
+  const cycleStart = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  cycleStart.setUTCDate(cycleStart.getUTCDate() - ((date.getUTCDay() - day + 7) % 7));
+  return cycleStart;
+}
+
+export function hasCatalogSourceBeenCheckedInCycle(lastCheckedAt: string | null | undefined, date: Date, configuredDay = "1") {
+  const checkedAt = lastCheckedAt ? Date.parse(lastCheckedAt) : NaN;
+  return Number.isFinite(checkedAt) && checkedAt >= getCatalogSourceCheckCycleStart(date, configuredDay).getTime();
 }

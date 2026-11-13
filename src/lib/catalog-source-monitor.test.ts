@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyCatalogSourceResponse, getAllowedCatalogRedirect, isAllowedCatalogSourceUrl, isCatalogSourceCheckDay } from "./catalog-source-monitor";
+import { classifyCatalogSourceResponse, getAllowedCatalogRedirect, getCatalogSourceCheckCycleStart, hasCatalogSourceBeenCheckedInCycle, isAllowedCatalogSourceUrl } from "./catalog-source-monitor";
 
 describe("weekly catalog source checks", () => {
   it("only permits HTTPS sources on a known or explicitly approved manufacturer host", () => {
@@ -24,8 +24,12 @@ describe("weekly catalog source checks", () => {
     expect(classifyCatalogSourceResponse({ etag: '"a"', lastModified: null }, { status: 200, etag: null, lastModified: "Mon, 02 Nov 2026 10:00:00 GMT" }).state).toBe("uncheckable");
   });
 
-  it("runs only on the configured UTC weekday", () => {
-    expect(isCatalogSourceCheckDay(new Date("2026-11-16T12:00:00Z"), "1")).toBe(true);
-    expect(isCatalogSourceCheckDay(new Date("2026-11-17T12:00:00Z"), "1")).toBe(false);
+  it("spreads the weekly source check across daily batches from the configured UTC weekday", () => {
+    const monday = new Date("2026-11-16T12:00:00Z");
+    const tuesday = new Date("2026-11-17T12:00:00Z");
+    expect(getCatalogSourceCheckCycleStart(tuesday, "1").toISOString()).toBe("2026-11-16T00:00:00.000Z");
+    expect(getCatalogSourceCheckCycleStart(monday, "5").toISOString()).toBe("2026-11-13T00:00:00.000Z");
+    expect(hasCatalogSourceBeenCheckedInCycle("2026-11-16T12:00:00.000Z", tuesday, "1")).toBe(true);
+    expect(hasCatalogSourceBeenCheckedInCycle("2026-11-09T12:00:00.000Z", tuesday, "1")).toBe(false);
   });
 });
