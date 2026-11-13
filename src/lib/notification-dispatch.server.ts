@@ -13,6 +13,7 @@ export async function dispatchNotificationQueue() {
   if (error) return { status: 503, body: { error: "notification_queue_unavailable" } };
   const deliveries = (data ?? []) as NotificationDelivery[];
   const panelUrl = new URL("/painel/maker", siteUrl).toString();
+  const supportUrl = new URL("/suporte", siteUrl).toString();
   let sent = 0;
   let failed = 0;
   let deferred = 0;
@@ -23,7 +24,8 @@ export async function dispatchNotificationQueue() {
       else deferred += 1;
       return;
     }
-    const result = await sendNotificationDelivery(delivery, panelUrl);
+    const destinationUrl = delivery.payload.notification_type === "support_reply" ? supportUrl : panelUrl;
+    const result = await sendNotificationDelivery(delivery, destinationUrl);
     if (result.ok) {
       const { error: completeError } = await supabase.rpc("complete_store_notification_delivery", { delivery_id: delivery.id, message_id: result.messageId });
       if (completeError) failed += 1;

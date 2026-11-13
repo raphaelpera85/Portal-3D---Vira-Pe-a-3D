@@ -10,6 +10,14 @@ export function buildQuoteRequestEmail({ productName, quantity, panelUrl, reques
   return { subject, text, html };
 }
 
+export function buildSupportReplyEmail({ ticketSubject, supportUrl }: { ticketSubject: string; supportUrl: string }) {
+  const safeSubject = ticketSubject.replace(/[\r\n\x00-\x1f\x7f]/g, " ").slice(0, 120);
+  const subject = `A equipe respondeu à sua solicitação: ${safeSubject}`;
+  const text = `A equipe de atendimento respondeu à sua solicitação. Acesse o portal para ler a mensagem: ${supportUrl}`;
+  const html = `<p>A equipe de atendimento respondeu à sua solicitação <strong>${escapeHtml(safeSubject)}</strong>.</p><p>Entre no portal para ler a mensagem.</p><p><a href="${escapeHtml(supportUrl)}">Abrir atendimento</a></p>`;
+  return { subject, text, html };
+}
+
 export function buildWhatsAppQuoteRequestPayload({ recipient, productName, quantity, panelUrl, templateName, language, requestType = "quote" }: {
   recipient: string; productName: string; quantity: number; panelUrl: string; templateName: string; language: string; requestType?: "quote" | "purchase";
 }) {

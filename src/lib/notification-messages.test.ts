@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildQuoteRequestEmail, buildWhatsAppQuoteRequestPayload } from "./notification-messages";
+import { buildQuoteRequestEmail, buildSupportReplyEmail, buildWhatsAppQuoteRequestPayload } from "./notification-messages";
 
 describe("quote request notifications", () => {
   it("escapes product names in email while linking to the maker panel", () => {
@@ -24,5 +24,14 @@ describe("quote request notifications", () => {
         { type: "text", text: "Compra: Miniatura" }, { type: "text", text: "3" }, { type: "text", text: "https://virapeca.example/painel/maker" },
       ] }] },
     });
+  });
+
+  it("announces support replies without including private message text", () => {
+    const email = buildSupportReplyEmail({ ticketSubject: "Conta <bloqueada>", supportUrl: "https://virapeca.example/suporte" });
+    expect(email.subject).toContain("Conta <bloqueada>");
+    expect(email.subject).not.toContain("\n");
+    expect(email.html).toContain("Conta &lt;bloqueada&gt;");
+    expect(email.html).toContain("https://virapeca.example/suporte");
+    expect(email.text).not.toContain("<bloqueada>");
   });
 });

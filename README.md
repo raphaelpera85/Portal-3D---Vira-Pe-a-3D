@@ -45,7 +45,7 @@ O OCR da calculadora está disponível para fabricantes autenticados quando Clou
 
 ## Atendimento
 
-Compradores, fabricantes e designers podem abrir e acompanhar conversas privadas em `/suporte`. A equipe responde e atualiza o status pela caixa de entrada `/admin/atendimento`. Mensagens por e-mail, anexos e prazo de resposta ainda não estão integrados.
+Compradores, fabricantes e designers podem abrir e acompanhar conversas privadas em `/suporte`. A equipe responde e atualiza o status pela caixa de entrada `/admin/atendimento`; uma resposta gera um aviso por e-mail com link para o portal, quando o Resend está configurado. O conteúdo da conversa permanece no portal. Anexos privados estão disponíveis e o prazo de resposta ainda não é monitorado.
 
 ## Supabase
 

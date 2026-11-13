@@ -25,6 +25,19 @@ describe("notification delivery", () => {
     expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body)).subject).toContain("solicitação de compra");
   });
 
+  it("sends a support reply notice with a separate idempotency key", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ id: "email-support-1" }), { status: 200 }));
+    const supportDelivery = { ...delivery("email"), payload: { notification_type: "support_reply", ticket_subject: "Conta" } };
+    await sendNotificationDelivery(supportDelivery, "https://virapeca.example/suporte", { RESEND_API_KEY: "secret", RESEND_FROM_EMAIL: "ajuda@virapeca.example" }, fetcher);
+    const [url, init] = fetcher.mock.calls[0];
+    expect(url).toBe("https://api.resend.com/emails");
+    expect(new Headers(init?.headers).get("Idempotency-Key")).toBe("virapeca/support/delivery-1");
+    const body = JSON.parse(String(init?.body));
+    expect(body.subject).toContain("respondeu à sua solicitação");
+    expect(body.html).toContain("https://virapeca.example/suporte");
+    expect(body.text).not.toContain("Suporte");
+  });
+
   it("sends only an approved WhatsApp template to the registered number", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ messages: [{ id: "wamid-1" }] }), { status: 200 }));
     const env = { WHATSAPP_ACCESS_TOKEN: "secret", WHATSAPP_PHONE_NUMBER_ID: "12345", WHATSAPP_GRAPH_API_VERSION: "v23.0", WHATSAPP_TEMPLATE_NAME: "virapeca_novo_orcamento", WHATSAPP_TEMPLATE_LANGUAGE: "pt_BR" };

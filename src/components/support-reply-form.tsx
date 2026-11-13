@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { SUPPORT_ATTACHMENT_MAX_BYTES, SUPPORT_ATTACHMENT_MAX_COUNT, SUPPORT_ATTACHMENT_MAX_TOTAL_BYTES, validateSupportAttachments } from "@/lib/support-attachments";
+import { dispatchSupportReplyNotificationsAction } from "@/app/suporte/actions";
 
 const extensionByType: Record<string, string> = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
@@ -31,6 +32,7 @@ export function SupportReplyForm({ ticketId, admin = false }: { ticketId: string
 
       const { data: messageId, error: replyError } = await supabase.rpc("reply_support_ticket_with_id", { p_ticket_id: ticketId, p_message: message });
       if (replyError || typeof messageId !== "string") { setError(true); setStatus("Não foi possível enviar a resposta."); return; }
+      if (admin) await dispatchSupportReplyNotificationsAction();
 
       const uploaded: string[] = [];
       if (files.length) {

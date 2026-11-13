@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const categories = new Set(["account", "product", "order", "payment", "delivery", "technical", "other"]);
@@ -48,10 +50,17 @@ export async function replyAdminSupportTicketAction(formData: FormData): Promise
   if (!actor.supabase || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("reply_support_ticket", { p_ticket_id: ticketId, p_message: message.trim() });
   if (error) redirect("/admin/atendimento?resultado=erro");
+  after(dispatchNotificationQueue);
   revalidatePath("/admin");
   revalidatePath("/admin/atendimento");
   revalidatePath("/suporte");
   redirect("/admin/atendimento?resultado=resposta-enviada");
+}
+
+export async function dispatchSupportReplyNotificationsAction(): Promise<void> {
+  const actor = await getUserWithRole("admin");
+  if (!actor.supabase || !actor.authorized) return;
+  after(dispatchNotificationQueue);
 }
 
 export async function setSupportTicketStatusAction(formData: FormData): Promise<void> {
