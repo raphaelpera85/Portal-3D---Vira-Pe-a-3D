@@ -122,7 +122,7 @@ begin
       or not exists (select 1 from public.designer_service_delivery_uploads u
         where u.storage_path = file_row->>'path' and u.request_id = p_request_id and u.created_by = actor_id
           and u.file_name = file_row->>'name' and u.file_size = (file_row->>'size')::bigint
-          and u.extension = file_row->>'extension') then
+          and u.extension = file_row->>'extension' and u.created_at > now() - interval '24 hours') then
       raise exception using errcode = '22023', message = 'Designer service delivery upload is missing';
     end if;
   end loop;
@@ -135,7 +135,8 @@ begin
   insert into public.designer_service_delivery_files (delivery_id, request_id, storage_path, file_name, file_size, extension)
     select delivery_id, p_request_id, value->>'path', value->>'name', (value->>'size')::bigint, value->>'extension'
     from jsonb_array_elements(p_files);
-  delete from public.designer_service_delivery_uploads where request_id = p_request_id and created_by = actor_id;
+  delete from public.designer_service_delivery_uploads where request_id = p_request_id and created_by = actor_id
+    and storage_path in (select value->>'path' from jsonb_array_elements(p_files));
   update public.designer_service_requests set status = 'completed', work_completed_at = now(), updated_at = now()
     where id = p_request_id;
 end;

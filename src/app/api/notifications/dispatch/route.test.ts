@@ -4,12 +4,14 @@ const mocks = vi.hoisted(() => ({
   dispatchNotificationQueue: vi.fn(),
   reconcilePendingSellerRefunds: vi.fn(),
   cleanupStaleChargebackEvidenceUploads: vi.fn(),
+  cleanupStaleDesignerServiceDeliveryUploads: vi.fn(),
   runCatalogSourceCheck: vi.fn(),
 }));
 
 vi.mock("@/lib/notification-dispatch.server", () => ({ dispatchNotificationQueue: mocks.dispatchNotificationQueue }));
 vi.mock("@/lib/seller-payment-reconciliation.server", () => ({ reconcilePendingSellerRefunds: mocks.reconcilePendingSellerRefunds }));
 vi.mock("@/lib/chargeback-evidence-cleanup.server", () => ({ cleanupStaleChargebackEvidenceUploads: mocks.cleanupStaleChargebackEvidenceUploads }));
+vi.mock("@/lib/designer-service-delivery-cleanup.server", () => ({ cleanupStaleDesignerServiceDeliveryUploads: mocks.cleanupStaleDesignerServiceDeliveryUploads }));
 vi.mock("@/lib/catalog-source-check.server", () => ({ runCatalogSourceCheck: mocks.runCatalogSourceCheck }));
 
 import { GET } from "./route";
@@ -20,6 +22,7 @@ describe("scheduled privileged work", () => {
     mocks.dispatchNotificationQueue.mockReset().mockResolvedValue({ status: 200, body: { processed: 0 } });
     mocks.reconcilePendingSellerRefunds.mockReset().mockResolvedValue({ processed: 0 });
     mocks.cleanupStaleChargebackEvidenceUploads.mockReset().mockResolvedValue({ deleted: 0 });
+    mocks.cleanupStaleDesignerServiceDeliveryUploads.mockReset().mockResolvedValue({ scanned: 0, removed: 0 });
     mocks.runCatalogSourceCheck.mockReset().mockResolvedValue({ ok: true, checked: 0 });
   });
 
@@ -40,6 +43,7 @@ describe("scheduled privileged work", () => {
     expect(mocks.dispatchNotificationQueue).not.toHaveBeenCalled();
     expect(mocks.reconcilePendingSellerRefunds).not.toHaveBeenCalled();
     expect(mocks.cleanupStaleChargebackEvidenceUploads).not.toHaveBeenCalled();
+    expect(mocks.cleanupStaleDesignerServiceDeliveryUploads).not.toHaveBeenCalled();
     expect(mocks.runCatalogSourceCheck).not.toHaveBeenCalled();
   });
 
@@ -52,6 +56,7 @@ describe("scheduled privileged work", () => {
     expect(mocks.dispatchNotificationQueue).toHaveBeenCalledOnce();
     expect(mocks.reconcilePendingSellerRefunds).toHaveBeenCalledOnce();
     expect(mocks.cleanupStaleChargebackEvidenceUploads).toHaveBeenCalledOnce();
+    expect(mocks.cleanupStaleDesignerServiceDeliveryUploads).toHaveBeenCalledOnce();
     expect(mocks.runCatalogSourceCheck).toHaveBeenCalledOnce();
   });
 });

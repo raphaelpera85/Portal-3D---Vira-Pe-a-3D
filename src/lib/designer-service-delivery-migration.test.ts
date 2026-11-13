@@ -21,6 +21,8 @@ describe("designer service delivery migration", () => {
     expect(migration).toContain("storage_size is distinct from (file_row->>'size')::bigint");
     expect(migration).toContain("u.file_name = file_row->>'name'");
     expect(migration).toContain("u.created_by = actor_id");
+    expect(migration).toContain("u.created_at > now() - interval '24 hours'");
+    expect(migration).toContain("storage_path in (select value->>'path' from jsonb_array_elements(p_files))");
     expect(migration).toMatch(/revoke all on function public\.submit_designer_service_delivery\(uuid, text, jsonb\),[\s\S]*?from public, anon/);
   });
 });
