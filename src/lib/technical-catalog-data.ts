@@ -92,3 +92,32 @@ export function mapTechnicalCatalog(
   }));
   return { printers, materials, nozzles };
 }
+
+export function mergeTechnicalCatalogWithFallback(
+  database: { printers: PrinterEntry[]; materials: MaterialEntry[]; nozzles: NozzleEntry[] },
+  fallback: { printers: PrinterEntry[]; materials: MaterialEntry[]; nozzles: NozzleEntry[] },
+) {
+  const merge = <Entry extends { id: string }>(primary: Entry[], local: Entry[], combine?: (local: Entry, primary: Entry) => Entry) => {
+    const records = new Map(local.map((item) => [item.id, item]));
+    primary.forEach((item) => {
+      const existing = records.get(item.id);
+      records.set(item.id, existing && combine ? combine(existing, item) : item);
+    });
+    return [...records.values()];
+  };
+
+  return {
+    printers: merge(database.printers, fallback.printers, (local, primary) => ({
+      ...local,
+      ...primary,
+      supportedMaterials: { ...local.supportedMaterials, ...primary.supportedMaterials },
+    })),
+    materials: merge(database.materials, fallback.materials),
+    nozzles: merge(database.nozzles, fallback.nozzles, (local, primary) => ({
+      ...local,
+      ...primary,
+      printerCompatibility: { ...local.printerCompatibility, ...primary.printerCompatibility },
+      printerCompatibilityConditions: { ...local.printerCompatibilityConditions, ...primary.printerCompatibilityConditions },
+    })),
+  };
+}

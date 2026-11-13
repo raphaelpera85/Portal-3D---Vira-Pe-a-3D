@@ -1,8 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { evaluateCompatibility } from "./compatibility";
-import { mapTechnicalCatalog } from "./technical-catalog-data";
+import { mapTechnicalCatalog, mergeTechnicalCatalogWithFallback } from "./technical-catalog-data";
+import { materials, nozzles, printers } from "./technical-catalog";
 
 describe("mapTechnicalCatalog", () => {
+  it("fills missing database catalog records from the local catalog while keeping database values and links", () => {
+    const fallbackPrinter = printers.find((printer) => printer.id === "prusa-mk4s")!;
+    const fallbackNozzle = nozzles.find((nozzle) => nozzle.id === "prusa-mk4s-hardened-0.4")!;
+    const fallbackMaterial = materials.find((material) => material.id === "prusament-pla")!;
+    const database = {
+      printers: [{ ...fallbackPrinter, name: "MK4S cadastrada", supportedMaterials: { "prusament-pla": { status: "conditional" as const, conditions: "Banco" } } }],
+      materials: [],
+      nozzles: [],
+    };
+
+    const catalog = mergeTechnicalCatalogWithFallback(database, { printers, materials, nozzles });
+
+    expect(catalog.printers.find((printer) => printer.id === "prusa-mk4s")?.name).toBe("MK4S cadastrada");
+    expect(catalog.printers.find((printer) => printer.id === "prusa-mk4s")?.supportedMaterials["prusament-pla"])
+      .toEqual({ status: "conditional", conditions: "Banco" });
+    expect(catalog.printers.some((printer) => printer.id === "bambu-a1")).toBe(true);
+    expect(catalog.materials).toContain(fallbackMaterial);
+    expect(catalog.nozzles).toContain(fallbackNozzle);
+  });
+
   it("preserves manufacturer resin ranges, colors and printer-specific exposure settings", () => {
     const catalog = mapTechnicalCatalog([], [{
       id: "resin-1", manufacturer: "Anycubic", product: "Standard Resin V2", family: "standard resin", process: "resin",
