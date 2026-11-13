@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { deriveEquipmentRates, validateMaintenanceEntry, validateMakerPrinter } from "./printer-equipment";
 
 const modelId = "89abcdef-1234-4123-8123-123456789abc";
@@ -23,6 +23,18 @@ describe("printer equipment validation", () => {
     expect(validateMakerPrinter({ ...base, customManufacturer: "Minha marca", customModel: "M1" }, "2026-11-11"))
       .toMatchObject({ catalogModelId: null, manufacturer: "Minha marca", model: "M1" });
     expect(validateMakerPrinter({ ...base, catalogModelId: "id-inválido", customManufacturer: "X", customModel: "Y" }, "2026-11-11")).toBeNull();
+  });
+
+  it("uses the Brazilian calendar date when validating printer purchase dates", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-13T02:00:00.000Z"));
+    try {
+      expect(validateMakerPrinter({
+        nickname: "Minha máquina", customManufacturer: "Minha marca", customModel: "M1", purchasedAt: "2026-11-13", status: "available",
+      })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rejects invalid financial relationships and negative operating hours", () => {

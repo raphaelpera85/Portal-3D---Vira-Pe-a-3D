@@ -67,7 +67,7 @@ export function deriveEquipmentRates(values: EquipmentRateInput): EquipmentRates
   };
 }
 
-export function validateMakerPrinter(values: Record<string, unknown>, today = new Date().toISOString().slice(0, 10)): MakerPrinterInput | null {
+export function validateMakerPrinter(values: Record<string, unknown>, today = getBrazilianCalendarDate()): MakerPrinterInput | null {
   const nickname = text(values.nickname);
   const catalogModelId = text(values.catalogModelId) || null;
   const customManufacturer = text(values.customManufacturer);
