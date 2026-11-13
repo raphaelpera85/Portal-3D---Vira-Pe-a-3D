@@ -581,6 +581,11 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .seller-finance-table th { color: var(--muted); font-size: 9px; letter-spacing: .4px; text-transform: uppercase; }
 .seller-finance-table td { color: var(--ink); }
 .seller-finance-table td time { white-space: nowrap; }
+.seller-activity-report-table { min-width: 100%; table-layout: fixed; }
+.seller-activity-report-table thead th:first-child, .seller-activity-report-table tbody th { width: 42%; }
+.seller-activity-report-table thead th:not(:first-child), .seller-activity-report-table td { width: 29%; text-align: right; white-space: nowrap; }
+.seller-activity-report-table tbody th { color: var(--ink); font-size: 11px; letter-spacing: 0; text-transform: none; }
+@media (max-width: 420px) { .seller-activity-report-table th, .seller-activity-report-table td { padding-inline: 5px; font-size: 10px; } .seller-activity-report-table thead th { font-size: 9px; } }
 .seller-finance-ledger { overflow: hidden; }
 .seller-refund-list { display: grid; gap: 5px; margin: 0 0 8px; padding: 0; list-style: none; }
 .seller-refund-list li { display: grid; justify-items: start; gap: 3px; }
