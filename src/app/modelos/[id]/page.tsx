@@ -21,8 +21,23 @@ export async function generateMetadata({ params }: ModelPageProps): Promise<Meta
   return model ? {
     title: `${model.name} | Modelos 3D | ViraPeça 3D`,
     description: `Visualize o modelo 3D ${model.name} e baixe o arquivo 3MF original.`,
-    ...(getSiteUrl() ? { alternates: { canonical: `/modelos/${encodeURIComponent(model.id)}` } } : {}),
-  } : { title: "Modelo não encontrado | ViraPeça 3D" };
+    ...(getSiteUrl() ? {
+      alternates: { canonical: `/modelos/${encodeURIComponent(model.id)}` },
+      openGraph: {
+        title: `${model.name} | Modelo 3D ViraPeça 3D`,
+        description: `Visualize ${model.name} em 3D e baixe o arquivo 3MF original.`,
+        url: `/modelos/${encodeURIComponent(model.id)}`,
+        type: "website" as const,
+        images: [model.image],
+      },
+      twitter: {
+        card: "summary_large_image" as const,
+        title: `${model.name} | Modelo 3D ViraPeça 3D`,
+        description: `Visualize ${model.name} em 3D e baixe o arquivo 3MF original.`,
+        images: [model.image],
+      },
+    } : {}),
+  } : { title: "Modelo não encontrado | ViraPeça 3D", robots: { index: false, follow: false } };
 }
 
 export default async function ModelPage({ params, searchParams }: ModelPageProps) {
