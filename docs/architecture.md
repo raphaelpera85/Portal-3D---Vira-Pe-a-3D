@@ -62,7 +62,7 @@ flowchart LR
 
 ## Limites atuais
 
-- As 67 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
+- As 118 migrações versionadas foram aplicadas ao projeto Supabase `drblsfcahfniwusfblfw`; testes de ponta a ponta com contas sandbox ainda faltam. Pagamentos reais dependem de credenciais Mercado Pago, comissão configurada, webhook ativo e validação sandbox.
 - Pedidos aceitos e pagos do carrinho podem consultar tarifas Melhor Envio, criar uma etiqueta após o vendedor informar a chave NF-e, telefone/CPF do destinatário e uma embalagem, e sincronizar o rastreio pelo webhook HMAC. Impressões personalizadas também podem cotar pelo Melhor Envio e reutilizar o pacote salvo ao gerar a etiqueta; ambos os fluxos ainda dependem de credenciais, OAuth com escopos de checkout, configuração do webhook e validação sandbox. O portal processa a chave NF-e e o CPF para a chamada sem armazená-los; cada pedido aceita uma embalagem. O atendimento é uma caixa interna com anexos privados, tempo desde a última atualização e média administrativa da primeira resposta em períodos de 7/30 dias; metas de SLA e alertas ainda não foram definidos. Endereços são snapshots privados por pedido.
 - Lembretes de manutenção dependem de o fabricante registrar datas/horímetros; o portal não infere intervalos nem apresenta recomendações do fabricante do equipamento.
 - Banners aceitam mídia HTTPS externa com carregamento tardio e texto alternativo; upload gerenciado e otimização de imagem ainda não estão conectados.
