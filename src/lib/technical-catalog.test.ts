@@ -52,6 +52,19 @@ describe("verified technical catalog records", () => {
     expect(p2sNozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
   });
 
+  it("records the P2S AMS 2 Pro Combo without assuming a filament count", () => {
+    expect(printers.find((item) => item.id === "bambu-p2s-ams-2-pro-combo")).toMatchObject({
+      model: "P2S",
+      variant: "AMS 2 Pro Combo",
+      buildVolumeMm: { x: 256, y: 256, z: 256 },
+      maxNozzleTemperatureC: 300,
+      maxBedTemperatureC: 110,
+      multicolorSystem: "AMS 2 Pro",
+      multicolorSlots: null,
+      technicalProperties: { ams2ProIncluded: true, amsFilamentDrying: true },
+    });
+  });
+
   it("includes official H2S build and chamber data without treating toolhead speed as print speed", () => {
     const printer = printers.find((item) => item.id === "bambu-h2s");
 
