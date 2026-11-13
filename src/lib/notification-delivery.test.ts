@@ -9,6 +9,13 @@ describe("notification delivery", () => {
     expect(isNotificationChannelConfigured("whatsapp", { WHATSAPP_ACCESS_TOKEN: "token" })).toBe(false);
   });
 
+  it("does not treat whitespace-only credentials as configured", () => {
+    expect(isNotificationChannelConfigured("email", { RESEND_API_KEY: "  ", RESEND_FROM_EMAIL: "pedidos@example.com" })).toBe(false);
+    expect(isNotificationChannelConfigured("whatsapp", {
+      WHATSAPP_ACCESS_TOKEN: " ", WHATSAPP_PHONE_NUMBER_ID: "12345", WHATSAPP_GRAPH_API_VERSION: "v23.0", WHATSAPP_TEMPLATE_NAME: "virapeca_novo_orcamento",
+    })).toBe(false);
+  });
+
   it("sends an idempotent email through Resend", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ id: "email-1" }), { status: 200 }));
     const result = await sendNotificationDelivery(delivery("email"), "https://virapeca.example/painel/maker", { RESEND_API_KEY: "secret", RESEND_FROM_EMAIL: "pedidos@virapeca.example" }, fetcher);

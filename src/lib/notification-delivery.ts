@@ -4,9 +4,11 @@ export type NotificationDelivery = { id: string; channel: "email" | "whatsapp"; 
 export type NotificationEnvironment = Record<string, string | undefined>;
 export type NotificationSendResult = { ok: true; messageId: string | null } | { ok: false; reason: string };
 
+const present = (value: string | undefined) => Boolean(value?.trim());
+
 export function isNotificationChannelConfigured(channel: NotificationDelivery["channel"], env: NotificationEnvironment = process.env) {
-  if (channel === "email") return Boolean(env.RESEND_API_KEY && env.RESEND_FROM_EMAIL);
-  return Boolean(env.WHATSAPP_ACCESS_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID && /^\d+$/.test(env.WHATSAPP_PHONE_NUMBER_ID) && /^v\d+\.\d+$/.test(env.WHATSAPP_GRAPH_API_VERSION ?? "") && /^[a-z0-9_]+$/.test(env.WHATSAPP_TEMPLATE_NAME ?? "") && /^[a-z]{2}_[A-Z]{2}$/.test(env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR"));
+  if (channel === "email") return present(env.RESEND_API_KEY) && present(env.RESEND_FROM_EMAIL);
+  return Boolean(present(env.WHATSAPP_ACCESS_TOKEN) && env.WHATSAPP_PHONE_NUMBER_ID && /^\d+$/.test(env.WHATSAPP_PHONE_NUMBER_ID) && /^v\d+\.\d+$/.test(env.WHATSAPP_GRAPH_API_VERSION ?? "") && /^[a-z0-9_]+$/.test(env.WHATSAPP_TEMPLATE_NAME ?? "") && /^[a-z]{2}_[A-Z]{2}$/.test(env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR"));
 }
 
 export async function sendNotificationDelivery(delivery: NotificationDelivery, actionUrl: string, env: NotificationEnvironment = process.env, fetcher: typeof fetch = fetch): Promise<NotificationSendResult> {

@@ -27,7 +27,7 @@ export function ThreeMfSlicerImporter({ onApply }: {
     setLoading(true);
     try {
       const result = await readThreeMfPackage(new Uint8Array(await file.arrayBuffer()));
-      if (!result.slicePlates.length) throw new Error("Este arquivo 3MF não contém consumo ou tempo salvo pelo fatiador.");
+      if (!result.slicePlates.length) throw new Error("Este arquivo 3MF não tem consumo ou tempo do fatiador. Fatie o modelo e exporte novamente incluindo os dados de impressão.");
       setPlates(result.slicePlates);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível ler os dados do arquivo 3MF.");

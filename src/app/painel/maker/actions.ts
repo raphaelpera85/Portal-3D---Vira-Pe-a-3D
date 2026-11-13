@@ -736,6 +736,18 @@ export async function markCustomPrintShipped(formData: FormData): Promise<void> 
   redirect("/painel/maker?resultado=pedido-enviado");
 }
 
+export async function markCustomPrintReadyForPickup(formData: FormData): Promise<void> {
+  const requestId = formData.get("requestId");
+  if (typeof requestId !== "string" || !uuidPattern.test(requestId)) redirect("/painel/maker?resultado=envio-erro");
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("mark_custom_print_ready_for_pickup", { p_request_id: requestId });
+  if (error) redirect("/painel/maker?resultado=envio-erro");
+  revalidatePath("/painel/maker");
+  revalidatePath("/orcamentos");
+  redirect("/painel/maker?resultado=pedido-pronto-retirada");
+}
+
 export async function submitSellerOrderShippingQuote(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
   const quote = validateShippingQuote({ carrier: formData.get("carrier"), service: formData.get("service"), price: formData.get("price"), deliveryDays: formData.get("deliveryDays") });
@@ -767,6 +779,18 @@ export async function markSellerPurchaseOrderShipped(formData: FormData): Promis
   revalidatePath("/painel/maker");
   revalidatePath("/orcamentos");
   redirect("/painel/maker?resultado=pedido-enviado");
+}
+
+export async function markSellerPurchaseOrderReadyForPickup(formData: FormData): Promise<void> {
+  const orderId = formData.get("orderId");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect("/painel/maker?resultado=envio-erro");
+  const actor = await getUserWithRole("maker");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("mark_seller_purchase_order_ready_for_pickup", { p_order_id: orderId });
+  if (error) redirect("/painel/maker?resultado=envio-erro");
+  revalidatePath("/painel/maker");
+  revalidatePath("/orcamentos");
+  redirect("/painel/maker?resultado=pedido-pronto-retirada");
 }
 
 export async function retryCustomPrintNotificationDelivery(formData: FormData): Promise<void> {

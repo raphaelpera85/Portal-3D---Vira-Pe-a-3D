@@ -214,6 +214,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
     if (!kind) return false;
     setBusy(true);
     setMessage("Preparando a visualização…");
+    setModelColors([]);
     setSlicePlates([]);
     onSlicePlatesChange?.([]);
     resourceUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -226,10 +227,21 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
     });
     try {
       await sceneReadyRef.current?.promise;
-      if (!rendererRef.current) throw new Error("Este dispositivo não conseguiu iniciar a visualização WebGL.");
       const [THREE, buffer] = await Promise.all([import("three"), file.arrayBuffer()]);
-      let threeMfColors: ThreeMfColorData | null = null;
-      let threeMfSlicePlates: ThreeMfSlicePlate[] = [];
+      const packageData = kind === "3mf" ? await readThreeMfPackage(new Uint8Array(buffer)) : null;
+      if (packageData) {
+        const colors = packageData.colors;
+        setModelColors([...new Set([
+          ...colors.objectColors,
+          ...colors.componentPaintColors.flat(),
+          ...colors.componentPartColors.flat(),
+          ...Object.values(colors.namedColors),
+          ...colors.paintPaletteColors,
+        ])].filter(Boolean).slice(0, 12));
+      }
+      if (!rendererRef.current) throw new Error("Este dispositivo não conseguiu iniciar a visualização WebGL.");
+      const threeMfColors = packageData?.colors ?? null;
+      const threeMfSlicePlates = packageData?.slicePlates ?? [];
       const manager = new THREE.LoadingManager();
       manager.setURLModifier((resource) => {
         let filename = resource.split(/[?#]/)[0].split(/[\\/]/).pop()!;
@@ -260,15 +272,11 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
         }
         object = loader.parse(new TextDecoder().decode(buffer));
       } else if (kind === "3mf") {
-        const [{ ThreeMFLoader }, packageData] = await Promise.all([
-          import("three/examples/jsm/loaders/3MFLoader.js"),
-          readThreeMfPackage(new Uint8Array(buffer)),
-        ]);
+        if (!packageData) throw new Error("O pacote 3MF não pôde ser interpretado.");
+        const { ThreeMFLoader } = await import("three/examples/jsm/loaders/3MFLoader.js");
         modelUnit = packageData.unit;
-        threeMfColors = packageData.colors;
-        threeMfSlicePlates = packageData.slicePlates;
         object = new ThreeMFLoader(manager).parse(buffer);
-        applyThreeMfColors(object, threeMfColors, THREE);
+        applyThreeMfColors(object, packageData.colors, THREE);
         object.rotation.x = -Math.PI / 2;
       } else {
         const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
@@ -521,6 +529,10 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
             {views.map((view) => <button key={view.name} type="button" className="viewer-view-button" disabled={!rawDimensions} onClick={() => selectView(view.name)}>{view.label}</button>)}
             <span className="viewer-hint">Arraste para girar · scroll para zoom · botão direito para mover</span>
           </div>
+          {readOnly && modelColors.length > 0 && <section className="viewer-readonly-colors" aria-label="Cores do modelo">
+            <div className="inspector-section-head"><h2>Cores do arquivo</h2><span className="component-count">{modelColors.length}</span></div>
+            <ul>{modelColors.map((color) => <li key={color}><i style={{ backgroundColor: `#${color}` }} aria-hidden="true" /><span>#{color.toUpperCase()}</span></li>)}</ul>
+          </section>}
           {slicePlates.length > 0 && <section className="slice-info-panel" aria-label="Resultados registrados pelo fatiador">
             <h2>Consumo registrado pelo fatiador</h2>
             <p>Dados gravados no arquivo 3MF; placas separadas representam opções distintas.</p>

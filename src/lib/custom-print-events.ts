@@ -11,6 +11,7 @@ const labels: Record<string, string> = {
   shipping_quote_offered: "Cotação de frete enviada",
   shipping_quote_accepted: "Cotação de frete aceita",
   shipping_quote_declined: "Cotação de frete recusada",
+  shipment_ready_for_pickup: "Pedido pronto para retirada local",
   shipment_shipped: "Impressão enviada ao comprador",
   shipment_delivered: "Comprador confirmou o recebimento",
 };

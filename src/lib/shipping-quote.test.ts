@@ -16,6 +16,13 @@ describe("validateShippingQuote", () => {
       .toEqual({ carrier: "correios", service: "PAC", shippingCents: 2_490, deliveryDays: 7 });
   });
 
+  it("accepts local pickup only with zero cost and zero transit days", () => {
+    expect(validateShippingQuote({ carrier: "retirada_local", service: "Retirar na loja após combinar horário", price: "0", deliveryDays: "0" }))
+      .toEqual({ carrier: "retirada_local", service: "Retirar na loja após combinar horário", shippingCents: 0, deliveryDays: 0 });
+    expect(validateShippingQuote({ carrier: "retirada_local", service: "Retirar na loja", price: "0.01", deliveryDays: "0" })).toBeNull();
+    expect(validateShippingQuote({ carrier: "retirada_local", service: "Retirar na loja", price: "0", deliveryDays: "1" })).toBeNull();
+  });
+
   it.each([
     { carrier: "unknown", service: "PAC", price: "10", deliveryDays: "5" },
     { carrier: "correios", service: "", price: "10", deliveryDays: "5" },

@@ -1,4 +1,4 @@
-const carriers = ["correios", "melhor_envio", "transportadora"] as const;
+const carriers = ["correios", "melhor_envio", "transportadora", "retirada_local"] as const;
 
 export function validateShippingOriginPostalCode(value: unknown) {
   if (typeof value !== "string") return null;
@@ -11,8 +11,10 @@ export function validateShippingQuote(values: Record<string, unknown>) {
   const service = typeof values.service === "string" ? values.service.trim() : "";
   const rawPrice = typeof values.price === "string" ? values.price.trim().replace(",", ".") : "";
   const deliveryDays = typeof values.deliveryDays === "string" ? Number(values.deliveryDays) : NaN;
+  const localPickup = carrier === "retirada_local";
   if (!(carriers as readonly string[]).includes(carrier) || service.length < 2 || service.length > 120
-    || !/^(?:0|[1-9]\d{0,6})(?:\.\d{1,2})?$/.test(rawPrice) || !Number.isInteger(deliveryDays) || deliveryDays < 1 || deliveryDays > 365) return null;
+    || !/^(?:0|[1-9]\d{0,6})(?:\.\d{1,2})?$/.test(rawPrice) || !Number.isInteger(deliveryDays)
+    || (localPickup ? deliveryDays !== 0 || Number(rawPrice) !== 0 : deliveryDays < 1 || deliveryDays > 365)) return null;
   const shippingCents = Math.round(Number(rawPrice) * 100);
   if (!Number.isSafeInteger(shippingCents) || shippingCents < 0 || shippingCents > 100_000_000) return null;
   return { carrier, service, shippingCents, deliveryDays };

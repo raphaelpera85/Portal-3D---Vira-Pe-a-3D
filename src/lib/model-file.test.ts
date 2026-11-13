@@ -122,6 +122,13 @@ describe("model dimensions", () => {
     });
   });
 
+  it("reads multiple colors from a real two-color catalog 3MF", async () => {
+    const file = readFileSync(path.join(process.cwd(), "models/two-colours.3mf"));
+    const { colors } = await readThreeMfPackage(new Uint8Array(file));
+    expect(new Set(colors.palette).size).toBeGreaterThan(1);
+    expect(new Set([...colors.objectColors, ...Object.values(colors.namedColors), ...colors.componentPartColors.flat()]).size).toBeGreaterThan(1);
+  });
+
   it("maps Bambu filament slots to build objects and named parts", () => {
     const colors = parseThreeMfColors(
       '<model><resources><object id="2" name="Holder"><components><component objectid="3"/><component objectid="4"/></components></object></resources><build><item objectid="2" /></build></model>',
