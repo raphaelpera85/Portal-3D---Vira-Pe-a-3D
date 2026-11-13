@@ -22,6 +22,17 @@ export function normalizeProductVideoUrl(value: unknown): string | null {
   } catch { return null; }
 }
 
+export function normalizeProductImageUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (typeof item !== "string" || !item || item.length > 1000) return [];
+    try {
+      const url = new URL(item);
+      return url.protocol === "https:" && !url.username && !url.password ? [url.toString()] : [];
+    } catch { return []; }
+  }).filter((url, index, all) => all.indexOf(url) === index).slice(0, 8);
+}
+
 export function validateProductShippingPackage(values: Record<string, unknown>): ProductShippingPackage | null | undefined {
   const raw = [values.packageWeightG, values.packageLengthCm, values.packageWidthCm, values.packageHeightCm].map(text);
   if (raw.every((value) => !value)) return undefined;
@@ -183,13 +194,16 @@ export function validateProductDraft(values: Record<string, unknown>): ProductDr
     || (fulfillmentMode !== "ready_to_ship" && stockQuantity != null)
     || (preparationDays != null && (!Number.isSafeInteger(preparationDays) || preparationDays < 0 || preparationDays > 365))
     || (fulfillmentMode !== "made_to_order" && preparationDays != null)) return null;
-  const image = text(values.imageUrl);
+  const rawImages = text(values.imageUrls) ?? text(values.imageUrl) ?? "";
+  if (rawImages.length > 8007) return null;
+  const imageUrls = rawImages.split(/\r?\n/).map((image) => image.trim()).filter(Boolean);
+  if (imageUrls.length > 8) return null;
   const media: string[] = [];
-  if (image) {
+  for (const image of imageUrls) {
     try {
       const url = new URL(image);
       if (url.protocol !== "https:" || url.username || url.password || image.length > 1000) return null;
-      media.push(url.toString());
+      if (!media.includes(url.toString())) media.push(url.toString());
     } catch { return null; }
   }
   const rawVideoUrl = text(values.videoUrl);

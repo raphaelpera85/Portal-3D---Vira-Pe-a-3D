@@ -5,7 +5,7 @@ describe("mapMarketplaceProduct", () => {
   it("maps only valid image URLs and converts database prices from reais", () => {
     const product = mapMarketplaceProduct({
       id: "p1", slug: "vaso-aresta", name: "Vaso Aresta", description: "Vaso autoral", price_mode: "fixed", price_brl: "89.90",
-      tags: ["decoração", 3], media: ["https://cdn.example/vaso.webp", "javascript:alert(1)", 9], color: "blue",
+      tags: ["decoração", 3], media: ["https://cdn.example/vaso.webp", "https://user:password@cdn.example/private.webp", "javascript:alert(1)", 9], color: "blue",
       store: { name: "Oficina Norte", slug: "oficina-norte" }, category: { name: "Decoração", slug: "decoracao" },
     });
 

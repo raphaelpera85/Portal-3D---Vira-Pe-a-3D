@@ -16,6 +16,7 @@ import { DigitalAssetPurchaseForm } from "@/components/digital-asset-purchase-fo
 import { DigitalAssetReportForm } from "@/components/digital-asset-report-form";
 import { ModelViewer } from "@/components/model-viewer";
 import { ProductVariantChooser } from "@/components/product-variant-chooser";
+import { ProductImageGallery } from "@/components/product-image-gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -125,11 +126,10 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
         {query.denuncia === "enviada" && <p className="auth-notice is-success" role="status">Denúncia enviada à equipe para análise.</p>}
         {query.denuncia === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível registrar a denúncia.</p>}
         <div className="product-detail-grid">
-          <div>
-            <div className={`product-detail-art art-${product.color}`}>
-              {product.media[0] ? <img src={product.media[0]} alt={product.name} width="960" height="760" /> : product.visual ? <ProductIllustration product={product} /> : <span className="product-placeholder" aria-hidden="true">3D</span>}
-              {product.media.length > 1 && <p className="product-detail-gallery">+ {product.media.length - 1} imagens na galeria</p>}
-            </div>
+          <div className="product-detail-visual">
+            {product.media.length > 0 ? <ProductImageGallery key={product.id} images={product.media} name={product.name} color={product.color} /> : <div className={`product-detail-art art-${product.color}`}>
+              {product.visual ? <ProductIllustration product={product} /> : <span className="product-placeholder" aria-hidden="true">3D</span>}
+            </div>}
             {product.videoUrl && <video className="product-detail-video" controls preload="metadata" playsInline aria-label={`Vídeo de demonstração de ${product.name}`}><source src={product.videoUrl} /></video>}
           </div>
           <section className="product-detail-copy">

@@ -1,13 +1,10 @@
 import type { Product, ProductVisual } from "./products";
-import { normalizeProductVideoUrl, normalizeProductVariantOptions, validateProductVariantSelection } from "./marketplace-validation";
+import { normalizeProductImageUrls, normalizeProductVideoUrl, normalizeProductVariantOptions, validateProductVariantSelection } from "./marketplace-validation";
 
 type Row = Record<string, unknown>;
 const asObject = (value: unknown): Row => Array.isArray(value) ? asObject(value[0]) : value && typeof value === "object" ? value as Row : {};
 const asText = (value: unknown, fallback = "") => typeof value === "string" ? value : fallback;
 const asTextList = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-const asSecureUrls = (value: unknown) => asTextList(value).filter((url) => {
-  try { return new URL(url).protocol === "https:"; } catch { return false; }
-});
 const visuals = new Set<ProductVisual>(["vase", "dragon", "organizer", "keychain"]);
 const themes = new Set(["blue", "green", "sand", "pink"]);
 
@@ -25,7 +22,7 @@ export function mapMarketplaceProduct(row: Row): Product {
   const stockQuantity = rawStock != null && Number.isSafeInteger(rawStock) && rawStock >= 0 ? rawStock : null;
   const rawPreparation = row.preparation_days == null ? null : Number(row.preparation_days);
   const preparationDays = rawPreparation != null && Number.isSafeInteger(rawPreparation) && rawPreparation >= 0 ? rawPreparation : null;
-  const media = asSecureUrls(row.media);
+  const media = normalizeProductImageUrls(row.media);
   const visual = visuals.has(row.visual as ProductVisual) ? row.visual as ProductVisual : null;
   const rawTheme = asText(row.color_theme);
   const variantOptions = normalizeProductVariantOptions(properties.variant_options ?? {}) ?? {};

@@ -131,7 +131,7 @@ export async function calculateAndOfferSellerOrderShippingQuote(formData: FormDa
 export async function createProductDraft(_previous: MakerProductState, formData: FormData): Promise<MakerProductState> {
   const product = validateProductDraft({
     name: formData.get("name"), description: formData.get("description"), categoryId: formData.get("categoryId"), listingType: formData.get("listingType"),
-    priceMode: formData.get("priceMode"), priceBrl: formData.get("priceBrl"), imageUrl: formData.get("imageUrl"), tags: formData.get("tags"),
+    priceMode: formData.get("priceMode"), priceBrl: formData.get("priceBrl"), imageUrls: formData.get("imageUrls"), imageUrl: formData.get("imageUrl"), tags: formData.get("tags"),
     fulfillmentMode: formData.get("fulfillmentMode"), stockQuantity: formData.get("stockQuantity"), preparationDays: formData.get("preparationDays"),
     variantOptions: formData.get("variantOptions"), variantPricing: formData.get("variantPricing"),
     packageWeightG: formData.get("packageWeightG"), packageLengthCm: formData.get("packageLengthCm"),

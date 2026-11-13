@@ -91,6 +91,16 @@ describe("marketplace form validation", () => {
     expect(validateProductDraft({ ...base, tags: "a,b,c,d,e,f,g,h,i" })).toBeNull();
   });
 
+  it("accepts up to eight unique HTTPS product images without breaking the legacy single URL", () => {
+    const base = { name: "Vaso modular", categoryId: "7b383334-110a-4dc3-9000-6c7e0c2ad491", priceMode: "quote" };
+    expect(validateProductDraft({ ...base, imageUrls: "https://cdn.example/front.webp\nhttps://cdn.example/side.webp\nhttps://cdn.example/front.webp" })?.media)
+      .toEqual(["https://cdn.example/front.webp", "https://cdn.example/side.webp"]);
+    expect(validateProductDraft({ ...base, imageUrl: "https://cdn.example/legacy.webp" })?.media)
+      .toEqual(["https://cdn.example/legacy.webp"]);
+    expect(validateProductDraft({ ...base, imageUrls: Array.from({ length: 9 }, (_, i) => `https://cdn.example/${i}.webp`).join("\n") })).toBeNull();
+    expect(validateProductDraft({ ...base, imageUrls: "https://cdn.example/front.webp\nhttp://cdn.example/side.webp" })).toBeNull();
+  });
+
   it("accepts only public HTTPS MP4/WebM video URLs", () => {
     expect(normalizeProductVideoUrl("https://cdn.example/demo.MP4?token=abc")).toBe("https://cdn.example/demo.MP4?token=abc");
     expect(normalizeProductVideoUrl("https://cdn.example/demo.webm")).toBe("https://cdn.example/demo.webm");

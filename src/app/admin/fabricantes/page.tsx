@@ -3,8 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { getUserWithRole } from "@/lib/auth-role.server";
-import { normalizeProductVideoUrl } from "@/lib/marketplace-validation";
 import { readPrintProfileColors } from "@/lib/print-profile-colors";
+import { normalizeProductImageUrls, normalizeProductVideoUrl } from "@/lib/marketplace-validation";
+import { ProductImageGallery } from "@/components/product-image-gallery";
 import { publishProductAction, publishStoreAction, reviewMakerApplicationAction, reviewPrintProfileAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
   const [applications, stores, products, printProfiles] = await Promise.all([
     actor.supabase.from("maker_applications").select("id, business_name, contact_email, description, portfolio_url, city, state_code, created_at").eq("status", "pending").order("created_at"),
     actor.supabase.from("stores").select("id, name, slug, description, city, state_code, created_at").eq("status", "pending").order("created_at"),
-    actor.supabase.from("marketplace_products").select("id, name, slug, description, listing_type, price_mode, price_brl, video_url, created_at, digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl), store:stores!inner(name, status)").eq("catalog_status", "draft").eq("store.status", "published").order("created_at"),
+    actor.supabase.from("marketplace_products").select("id, name, slug, description, listing_type, price_mode, price_brl, media, video_url, created_at, digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl), store:stores!inner(name, status)").eq("catalog_status", "draft").eq("store.status", "published").order("created_at"),
     actor.supabase.from("maker_print_profiles").select("id, profile_name, profile_type, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, print_hours, material_grams, material_by_color, product:marketplace_products!inner(name), store:stores!inner(name)").eq("sharing_scope", "community").eq("review_status", "pending").order("created_at"),
   ]);
 
@@ -58,8 +59,9 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
             const store = Array.isArray(product.store) ? product.store[0] : product.store;
             const asset = Array.isArray(product.digital_asset) ? product.digital_asset[0] : product.digital_asset;
             const digitalReady = product.listing_type !== "digital" || Boolean(asset?.file_name && asset.has_preview);
+            const images = normalizeProductImageUrls(product.media);
             const videoUrl = normalizeProductVideoUrl(product.video_url);
-            return <article className="admin-review-card admin-review-card-compact" key={product.id}><div><h3>{product.name}</h3><p>{store?.name} · {product.listing_type === "digital" ? "Arquivo digital 3D" : product.price_mode === "quote" ? "Sob orçamento" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(product.price_brl))}</p><p>{product.description}</p>{videoUrl && <video className="admin-review-video" controls preload="none" playsInline aria-label={`Vídeo de demonstração de ${product.name}`}><source src={videoUrl} /></video>}{asset && <p>Arquivo privado: {asset.file_name} · prévia GLB {asset.has_preview ? "cadastrada" : "pendente"} · licença pessoal {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(asset.personal_price_brl))}{asset.commercial_price_brl ? ` · comercial ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(asset.commercial_price_brl))}` : ""}</p>}{!digitalReady && <p>O anúncio digital precisa do arquivo original, da prévia GLB e da licença pessoal.</p>}</div><form action={publishProductAction}><input type="hidden" name="productId" value={product.id} /><button className="button button-primary" type="submit" disabled={!digitalReady}>Publicar anúncio</button></form></article>;
+            return <article className="admin-review-card admin-review-card-compact" key={product.id}><div><h3>{product.name}</h3><p>{store?.name} · {product.listing_type === "digital" ? "Arquivo digital 3D" : product.price_mode === "quote" ? "Sob orçamento" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(product.price_brl))}</p><p>{product.description}</p>{images.length > 0 && <ProductImageGallery images={images} name={product.name} color="blue" />}{videoUrl && <video className="admin-review-video" controls preload="none" playsInline aria-label={`Vídeo de demonstração de ${product.name}`}><source src={videoUrl} /></video>}{asset && <p>Arquivo privado: {asset.file_name} · prévia GLB {asset.has_preview ? "cadastrada" : "pendente"} · licença pessoal {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(asset.personal_price_brl))}{asset.commercial_price_brl ? ` · comercial ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(asset.commercial_price_brl))}` : ""}</p>}{!digitalReady && <p>O anúncio digital precisa do arquivo original, da prévia GLB e da licença pessoal.</p>}</div><form action={publishProductAction}><input type="hidden" name="productId" value={product.id} /><button className="button button-primary" type="submit" disabled={!digitalReady}>Publicar anúncio</button></form></article>;
           })}
         </section>
         <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">ETAPA 4</span><h2>Perfis de impressão para revisar</h2></div>
