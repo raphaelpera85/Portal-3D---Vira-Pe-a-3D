@@ -191,6 +191,6 @@ export function evaluateCompatibility(
   return { status: overallStatus(checks), checks };
 }
 
-export function evaluateMaterialCompatibility(printer: CatalogPrinter, material: CatalogMaterial) {
-  return evaluateCompatibility(printer, material);
+export function evaluateMaterialCompatibility(printer: CatalogPrinter, material: CatalogMaterial, nozzle?: CatalogNozzle) {
+  return evaluateCompatibility(printer, material, nozzle);
 }

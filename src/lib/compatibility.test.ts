@@ -25,6 +25,12 @@ describe("evaluateCompatibility", () => {
     expect(result.checks.some(({ key }) => key.startsWith("nozzle"))).toBe(false);
   });
 
+  it("includes the selected catalog nozzle in the material compatibility result", () => {
+    const result = evaluateMaterialCompatibility(printer, material, nozzle);
+
+    expect(result.checks.find(({ key }) => key === "nozzle-fit")).toMatchObject({ status: "compatible" });
+  });
+
   it("confirms a sourced setup when its material, nozzle, and dimensions meet known limits", () => {
     expect(evaluateCompatibility(printer, material, nozzle, { partDimensionsMm: { x: 100, y: 100, z: 100 } }).status).toBe("compatible");
   });

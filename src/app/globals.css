@@ -1044,6 +1044,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .calculator-compatibility.is-unverified { border-left-color: #64748b; }
 .calculator-compatibility small, .calculator-compatibility p, .calculator-compatibility ul { margin: 0; color: var(--muted); font-size: 10px; font-weight: 400; line-height: 1.45; }
 .calculator-compatibility ul { padding-left: 17px; }
+.calculator-compatibility label { display: grid; gap: 5px; color: var(--ink); font-size: 11px; }
+.calculator-compatibility select { width: 100%; min-height: 38px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--ink); font: inherit; }
 .price-subheading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); }
 .price-subheading h3 { margin: 0; font-size: 10px; font-weight: 800; }
 .price-add-button { display: inline-flex; min-height: 31px; align-items: center; gap: 6px; padding: 0 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--brand); font-size: 9px; font-weight: 700; cursor: pointer; }
