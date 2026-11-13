@@ -22,7 +22,7 @@
 - A exportação cria um GLB com a geometria, materiais e componentes visíveis compatíveis com glTF; metadados específicos de impressão ou do formato de origem podem não ser preservados. O arquivo original permanece intacto.
 - A biblioteca usa bucket privado, limita os arquivos e o conjunto a 20 MB e verifica a propriedade antes de registrar o upload. A migração `20261112040057_private_model_uploads.sql` está aplicada ao projeto Supabase configurado.
 - Com a migração `20261112040236_custom_print_requests.sql`, o comprador pode pedir impressão para um modelo salvo. As dimensões calculadas pelo visualizador após confirmação da unidade são salvas e ficam bloqueadas no formulário; se estiverem ausentes, é necessário reabrir o modelo com a unidade correta e salvá-lo novamente. O banco compara as dimensões enviadas com as armazenadas, mas elas ainda dependem do cliente e devem ser conferidas pelo fabricante no fatiador. O acesso do fabricante aos arquivos depende de convite e usa links assinados de 2 minutos.
-- Pacotes 3MF são limitados a 100 MB de conteúdo descompactado para reduzir risco de arquivos ZIP desproporcionais.
+- Uploads locais aceitam até 20 MiB por conjunto; arquivos 3MF do catálogo podem ter até 50 MiB comprimidos. A extração de qualquer pacote 3MF é limitada a 150 MiB descompactados para reduzir risco de arquivos ZIP desproporcionais.
 
 ## Implementação
 
