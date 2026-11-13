@@ -59,6 +59,16 @@ test("technical catalog shows Flashforge AD5X conditions after selecting it", as
   await page.goto("/catalogos");
 
   const printer = page.getByLabel("Fabricante, modelo e variante");
+  await printer.selectOption({ label: "Bambu Lab · A1 · standard" });
+  await expect(page.locator(".technical-facts").first()).toContainText("256 × 256 × 256 mm");
+  await expect(page.locator(".technical-facts").first()).toContainText("deslocamento do cabeçote");
+
+  await printer.selectOption({ label: "Bambu Lab · A1 · Combo" });
+  await expect(page.locator(".technical-facts").first()).toContainText("AMS lite · até 4 filamentos");
+
+  await printer.selectOption({ label: "Bambu Lab · A1 mini · standard" });
+  await expect(page.locator(".technical-facts").first()).toContainText("180 × 180 × 180 mm");
+
   await printer.selectOption({ label: "Anycubic · Photon Mono M7 · standard" });
   await expect(page.locator(".technical-panel").nth(2)).toContainText("Processo de cura");
 

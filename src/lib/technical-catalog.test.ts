@@ -10,6 +10,25 @@ const ender3V4Migration = readFileSync(new URL("../../supabase/migrations/202611
 const ender5MaxMigration = readFileSync(new URL("../../supabase/migrations/20261114020000_seed_creality_ender_5_max.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
+  it("keeps the Bambu Lab A1 and A1 mini variants in the local fallback with exact hotend compatibility", () => {
+    const a1 = printers.filter((item) => item.model === "A1");
+    const a1Mini = printers.filter((item) => item.model === "A1 mini");
+    const a1Nozzles = nozzles.filter((item) => item.printerCompatibility
+      && Object.keys(item.printerCompatibility).some((id) => id === "bambu-a1" || id === "bambu-a1-ams-lite-combo" || id === "bambu-a1-mini-ams-lite" || id === "bambu-a1-mini-standard"));
+
+    expect(a1.map((item) => item.variant)).toEqual(["standard", "Combo"]);
+    expect(a1Mini.map((item) => item.variant)).toEqual(["Combo", "standard"]);
+    expect(a1).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "bambu-a1", buildVolumeMm: { x: 256, y: 256, z: 256 }, maximumSpeedMmPerSecond: null }),
+      expect.objectContaining({ id: "bambu-a1-ams-lite-combo", multicolorSlots: 4, multicolorSystem: "AMS lite" }),
+    ]));
+    expect(a1Nozzles.map((item) => item.diameterMm).sort()).toEqual([0.2, 0.2, 0.4, 0.4, 0.6, 0.6, 0.8, 0.8]);
+    expect(a1Nozzles.find((item) => item.name.includes("A1 hotend") && item.diameterMm === 0.4)?.printerCompatibility)
+      .toEqual({ "bambu-a1": "compatible", "bambu-a1-ams-lite-combo": "compatible" });
+    expect(a1Nozzles.find((item) => item.id === "bambu-a1-mini-0.4")?.printerCompatibility)
+      .toEqual({ "bambu-a1-mini-ams-lite": "compatible", "bambu-a1-mini-standard": "compatible" });
+  });
+
   it("marks the manufacturer-listed A1 mini, PLA Basic, and original nozzle setup compatible", () => {
     const printer = printers.find((item) => item.id === "bambu-a1-mini-ams-lite")!;
     const nozzle = nozzles.find((item) => item.original && item.printerCompatibility?.[printer.id] === "compatible")!;
