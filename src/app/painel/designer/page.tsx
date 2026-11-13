@@ -16,8 +16,8 @@ export default async function DesignerDashboard() {
     .select("id, slug, display_name, biography, portfolio_url, city, state_code, specialties, status, response_note")
     .eq("user_id", actor.user!.id).maybeSingle();
   const requestsResult = profile ? await actor.supabase.from("designer_service_requests")
-    .select("id, title, brief, due_date, reference_url, created_at")
-    .eq("designer_profile_id", profile.id).eq("status", "pending").order("created_at", { ascending: true }).limit(100) : null;
+    .select("id, title, brief, due_date, reference_url, created_at, status, quote_amount_cents, quote_lead_days, quote_notes")
+    .eq("designer_profile_id", profile.id).in("status", ["pending", "quoted", "accepted", "paid"]).order("created_at", { ascending: true }).limit(100) : null;
 
   return <><SiteHeader /><main className="account-page shell"><Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">ESPAÇO DO CRIADOR</p><h1>Seu perfil, <em>seu trabalho.</em></h1><p>Atualize as informações que aparecem no diretório público de designers.</p></div>
