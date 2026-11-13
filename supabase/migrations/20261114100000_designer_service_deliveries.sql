@@ -42,6 +42,34 @@ revoke all on public.designer_service_deliveries, public.designer_service_delive
   public.designer_service_delivery_uploads from anon, authenticated;
 grant select on public.designer_service_deliveries, public.designer_service_delivery_files to authenticated;
 
+create function public.guard_designer_service_delivery_upload()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  assigned_designer uuid;
+  request_status text;
+  staged_count integer;
+  staged_bytes bigint;
+begin
+  select q.status, d.user_id into request_status, assigned_designer
+    from public.designer_service_requests q
+    join public.designer_profiles d on d.id = q.designer_profile_id
+    where q.id = new.request_id for update of q;
+  if not found or request_status <> 'in_progress' or assigned_designer is distinct from new.created_by then
+    raise exception using errcode = '42501', message = 'Designer service delivery upload unavailable';
+  end if;
+  select count(*), coalesce(sum(u.file_size), 0) into staged_count, staged_bytes
+    from public.designer_service_delivery_uploads u where u.request_id = new.request_id;
+  if staged_count >= 10 or staged_bytes + new.file_size > 104857600 then
+    raise exception using errcode = '22023', message = 'Designer service delivery upload limit exceeded';
+  end if;
+  return new;
+end;
+$$;
+create trigger guard_designer_service_delivery_upload_before_insert
+  before insert on public.designer_service_delivery_uploads
+  for each row execute function public.guard_designer_service_delivery_upload();
+revoke all on function public.guard_designer_service_delivery_upload() from public, anon, authenticated;
+
 create policy "Participants can read designer service deliveries" on public.designer_service_deliveries
 for select to authenticated using (
   exists (select 1 from public.designer_service_requests q

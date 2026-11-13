@@ -12,6 +12,10 @@ describe("designer service delivery migration", () => {
     expect(migration).toContain("q.buyer_id = (select auth.uid()) or d.user_id = (select auth.uid())");
     expect(migration).toContain("revoke all on public.designer_service_deliveries, public.designer_service_delivery_files,");
     expect(migration).toContain("designer_service_delivery_uploads from anon, authenticated");
+    expect(migration).toContain("create trigger guard_designer_service_delivery_upload_before_insert");
+    expect(migration).toContain("for update of q");
+    expect(migration).toContain("if staged_count >= 10 or staged_bytes + new.file_size > 104857600");
+    expect(migration).toContain("assigned_designer is distinct from new.created_by");
   });
 
   it("checks file count, extension, size, ownership, and storage existence at completion", () => {
