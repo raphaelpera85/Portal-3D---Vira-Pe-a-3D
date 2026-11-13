@@ -107,6 +107,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <div><dt>Potência média medida</dt><dd>{powerText(printer.measuredAveragePowerWatts)}</dd></div>
               <div><dt>Multicolorido</dt><dd>{multicolorSystem ? `${multicolorSystem}${printer.multicolorSlots == null ? "" : ` · até ${printer.multicolorSlots} filamentos`}` : "Não informado"}</dd></div>
             </dl>
+            {typeof printer.technicalProperties?.compatibilityNotes === "string" && <p className="catalog-source-note">Condições do fabricante: {printer.technicalProperties.compatibilityNotes}</p>}
             <SourceLinks sources={printer.sources} />
           </section>
 
