@@ -37,6 +37,11 @@ const machineSource = {
   url: "https://cdn1.bambulab.com/documentation/Quick%20Start%20Guide%20for%20A1%20mini%20Combo.pdf",
   checkedAt: "2026-11-12",
 };
+const crealityK2PlusSource = {
+  label: "Creality — K2 Plus specifications",
+  url: "https://www.creality.com/eu/products/k2-series-3d-printer",
+  checkedAt: "2026-11-13",
+};
 const plaSource = {
   label: "Bambu Lab — PLA Basic",
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
@@ -82,6 +87,35 @@ export const printers: PrinterEntry[] = [{
     "PPA-CF": "not-recommended",
   } satisfies Record<string, MaterialSupport>,
   sources: [machineSource],
+}, {
+  id: "creality-k2-plus",
+  name: "Creality K2 Plus",
+  brand: "Creality",
+  model: "K2 Plus",
+  variant: "standard",
+  buildVolumeDescription: null,
+  technology: "FDM",
+  buildVolumeMm: { x: 350, y: 350, z: 350 },
+  extruders: 1,
+  filamentDiameterMm: 1.75,
+  maxNozzleTemperatureC: 350,
+  maxBedTemperatureC: 120,
+  heatedBed: true,
+  enclosure: true,
+  maximumSpeedMmPerSecond: 600,
+  maximumPowerWatts: 1200,
+  measuredAveragePowerWatts: null,
+  multicolorSlots: 16,
+  multicolorSystem: "Creality CFS (até quatro unidades)",
+  technicalProperties: {
+    maxAccelerationMmPerSecondSquared: 30000,
+    maximumChamberTemperatureC: 60,
+    activeChamberHeater: true,
+    comboDimensionsMm: { x: 495, y: 515, z: 916 },
+    supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8],
+  },
+  supportedMaterials: {},
+  sources: [crealityK2PlusSource],
 }];
 
 export const materials: MaterialEntry[] = [
@@ -141,15 +175,29 @@ const nozzleDiameters = [
   { diameter: 0.8, included: false, material: null },
 ];
 
-export const nozzles: NozzleEntry[] = nozzleDiameters.map(({ diameter, included, material }) => ({
-  id: `bambu-a1-mini-${diameter}`,
-  name: `Bico ${diameter.toLocaleString("pt-BR")} mm`,
-  brand: "Bambu Lab",
-  diameterMm: diameter,
-  material,
-  maxTemperatureC: null,
-  abrasionResistant: null,
-  printerCompatibility: { "bambu-a1-mini-ams-lite": "compatible" },
-  original: included,
-  sources: [machineSource],
-}));
+export const nozzles: NozzleEntry[] = [
+  ...nozzleDiameters.map(({ diameter, included, material }) => ({
+    id: `bambu-a1-mini-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm`,
+    brand: "Bambu Lab",
+    diameterMm: diameter,
+    material,
+    maxTemperatureC: null,
+    abrasionResistant: null,
+    printerCompatibility: { "bambu-a1-mini-ams-lite": "compatible" as const },
+    original: included,
+    sources: [machineSource],
+  })),
+  ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
+    id: `creality-k2-plus-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · K2 Plus`,
+    brand: "Creality",
+    diameterMm: diameter,
+    material: null,
+    maxTemperatureC: null,
+    abrasionResistant: null,
+    printerCompatibility: { "creality-k2-plus": "compatible" as const },
+    original: diameter === 0.4,
+    sources: [crealityK2PlusSource],
+  })),
+];

@@ -19,6 +19,23 @@ describe("verified technical catalog records", () => {
     expect(materials.every((material) => material.sources.length > 0)).toBe(true);
   });
 
+  it("includes the officially documented K2 Plus volume, limits and supported nozzle diameters", () => {
+    const printer = printers.find((item) => item.id === "creality-k2-plus");
+    const k2Nozzles = nozzles.filter((item) => item.printerCompatibility?.["creality-k2-plus"] === "compatible");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: { x: 350, y: 350, z: 350 },
+      maxNozzleTemperatureC: 350,
+      maxBedTemperatureC: 120,
+      maximumSpeedMmPerSecond: 600,
+      maximumPowerWatts: 1200,
+      multicolorSlots: 16,
+    });
+    expect(k2Nozzles.map((nozzle) => nozzle.diameterMm).sort()).toEqual([0.2, 0.4, 0.6, 0.8]);
+    expect(k2Nozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
+    expect(printer?.sources[0].url).toBe("https://www.creality.com/eu/products/k2-series-3d-printer");
+  });
+
   it("keeps cylindrical build volume descriptive instead of treating it as a rectangular box", () => {
     const catalog = mapTechnicalCatalog([{
       id: "flsun-v400-max",
