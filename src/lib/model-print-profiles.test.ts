@@ -117,4 +117,8 @@ describe("validateModelPrintProfile", () => {
   it("rejects duplicate filament slot ids in manual profile data", () => {
     expect(validateModelPrintProfile({ ...input, filamentLines: "#000000; PLA; 3; 1; 3\n#00AE42; PLA; 5; 2; 3" })).toBeNull();
   });
+
+  it("preserves zero-based filament slot ids when present", () => {
+    expect(validateModelPrintProfile({ ...input, filamentLines: "; PLA; 2; 1; 0" })?.metrics.filaments).toMatchObject([{ index: 0 }]);
+  });
 });

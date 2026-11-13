@@ -29,7 +29,7 @@ function parseManualFilaments(value: unknown, materialName: string) {
     const grams = match[3] ? Number(match[3].replace(",", ".")) : null;
     const lengthMeters = match[4] ? Number(match[4].replace(",", ".")) : null;
     const filamentIndex = match[5] ? Number(match[5]) : index + 1;
-    if (!Number.isSafeInteger(filamentIndex) || filamentIndex < 1) return null;
+    if (!Number.isSafeInteger(filamentIndex) || filamentIndex < 0) return null;
     if ([grams, lengthMeters].some((item) => item !== null && (!Number.isFinite(item) || item < 0))) return null;
     return { index: filamentIndex, grams, lengthMeters, pricePerKg: null, material: match[2].trim() || materialName || null, color: match[1]?.toUpperCase() ?? null };
   });

@@ -121,6 +121,16 @@ describe("model dimensions", () => {
     ]);
   });
 
+  it("falls back to source order when 3MF filament slot ids are ambiguous", () => {
+    const [plate] = parseThreeMfSliceInfo('<plate><filament id="3" color="#000000" used_g="1"/><filament id="3" color="#00AE42" used_g="2"/></plate>');
+    expect(plate.filaments.map(({ index }) => index)).toEqual([null, null]);
+    expect(mapThreeMfPlateToSlicerMetrics(plate, 1).filaments.map(({ index }) => index)).toEqual([1, 2]);
+
+    const [partialIds] = parseThreeMfSliceInfo('<plate><filament id="invalid" color="#000000" used_g="1"/><filament id="1" color="#00AE42" used_g="2"/></plate>');
+    expect(partialIds.filaments.map(({ index }) => index)).toEqual([null, null]);
+    expect(mapThreeMfPlateToSlicerMetrics(partialIds, 1).filaments.map(({ index }) => index)).toEqual([1, 2]);
+  });
+
   it("keeps RGB values from slicer filament colors that include alpha", () => {
     expect(parseThreeMfSliceInfo('<plate><filament color="#1B1B1DFF" used_g="1"/></plate>'))
       .toEqual([{ index: null, weightGrams: null, printTimeSeconds: null, supportUsed: null, filaments: [{ index: null, color: "1b1b1d", type: null, weightGrams: 1, lengthMeters: null }] }]);

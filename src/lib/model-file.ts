@@ -134,6 +134,10 @@ export function parseThreeMfSliceInfo(xml: string): ThreeMfSlicePlate[] {
         lengthMeters: numeric(attribute(attrs, "used_m")),
       };
     }).filter((filament) => filament.color || filament.type || filament.weightGrams !== null || filament.lengthMeters !== null);
+    const filamentIndexes = filaments.map((filament) => filament.index).filter((filamentIndex): filamentIndex is number => filamentIndex !== null);
+    if (filaments.some((filament) => filament.index === null) || new Set(filamentIndexes).size !== filamentIndexes.length) {
+      filaments.forEach((filament) => { filament.index = null; });
+    }
     const index = numeric(values.get("index"));
     const weightGrams = numeric(values.get("weight"));
     const printTimeSeconds = numeric(values.get("prediction"));
