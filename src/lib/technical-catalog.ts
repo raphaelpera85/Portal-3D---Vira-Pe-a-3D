@@ -48,6 +48,11 @@ const bambuP2sSource = {
   url: "https://blog.bambulab.com/the-icon-redefined-meet-the-p2s-a-completely-reengineered-version-of-the-ultra-productive-p1-series/",
   checkedAt: "2026-11-13",
 };
+const bambuH2sSource = {
+  label: "Bambu Lab — H2S specifications",
+  url: "https://blog.bambulab.com/h2s-the-ultimate-single-nozzle-3d-printer-now-bigger-than-ever/",
+  checkedAt: "2026-11-13",
+};
 const plaSource = {
   label: "Bambu Lab — PLA Basic",
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
@@ -152,6 +157,35 @@ export const printers: PrinterEntry[] = [{
   technicalProperties: { supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8], quickSwapHotend: true },
   supportedMaterials: {},
   sources: [bambuP2sSource],
+}, {
+  id: "bambu-h2s",
+  name: "Bambu Lab H2S",
+  brand: "Bambu Lab",
+  model: "H2S",
+  variant: "standard",
+  buildVolumeDescription: null,
+  technology: "FDM",
+  buildVolumeMm: { x: 340, y: 320, z: 340 },
+  extruders: null,
+  filamentDiameterMm: null,
+  maxNozzleTemperatureC: 350,
+  maxBedTemperatureC: null,
+  heatedBed: null,
+  enclosure: true,
+  maximumSpeedMmPerSecond: null,
+  maximumSpeedDescription: "1.000 mm/s de deslocamento do cabeçote; velocidade de impressão não informada",
+  maximumPowerWatts: null,
+  measuredAveragePowerWatts: null,
+  multicolorSlots: null,
+  multicolorSystem: null,
+  technicalProperties: {
+    activeChamberHeating: true,
+    maximumChamberTemperatureC: 65,
+    maxToolheadSpeedMmPerSecond: 1000,
+    maxToolheadAccelerationMmPerSecondSquared: 20000,
+  },
+  supportedMaterials: {},
+  sources: [bambuH2sSource],
 }];
 
 export const materials: MaterialEntry[] = [

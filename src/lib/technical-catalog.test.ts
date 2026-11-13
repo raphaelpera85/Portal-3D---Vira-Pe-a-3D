@@ -52,6 +52,27 @@ describe("verified technical catalog records", () => {
     expect(p2sNozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
   });
 
+  it("includes official H2S build and chamber data without treating toolhead speed as print speed", () => {
+    const printer = printers.find((item) => item.id === "bambu-h2s");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: { x: 340, y: 320, z: 340 },
+      maxNozzleTemperatureC: 350,
+      maxBedTemperatureC: null,
+      heatedBed: null,
+      filamentDiameterMm: null,
+      maximumSpeedMmPerSecond: null,
+      enclosure: true,
+      technicalProperties: {
+        activeChamberHeating: true,
+        maximumChamberTemperatureC: 65,
+        maxToolheadSpeedMmPerSecond: 1000,
+        maxToolheadAccelerationMmPerSecondSquared: 20000,
+      },
+    });
+    expect(printer?.sources[0].url).toBe("https://blog.bambulab.com/h2s-the-ultimate-single-nozzle-3d-printer-now-bigger-than-ever/");
+  });
+
   it("keeps cylindrical build volume descriptive instead of treating it as a rectangular box", () => {
     const catalog = mapTechnicalCatalog([{
       id: "flsun-v400-max",
