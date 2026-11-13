@@ -91,6 +91,26 @@ describe("verified technical catalog records", () => {
     expect(k2ProMigration).toContain('"includedCfsUnits":1');
   });
 
+  it("keeps CORE One+ Gen 2 and its official nozzle range available in the local fallback", () => {
+    const printer = printers.find((item) => item.id === "prusa-core-one-plus-gen-2");
+    const coreNozzles = nozzles.filter((item) => item.printerCompatibility?.["prusa-core-one-plus-gen-2"] === "compatible");
+
+    expect(printer).toMatchObject({
+      model: "CORE One+",
+      variant: "Gen 2",
+      buildVolumeMm: { x: 250, y: 220, z: 270 },
+      filamentDiameterMm: 1.75,
+      maxNozzleTemperatureC: 290,
+      maxBedTemperatureC: 120,
+      enclosure: true,
+      maximumSpeedMmPerSecond: null,
+      technicalProperties: { chamberMaximumTemperatureC: 55, supportedNozzleDiametersMm: [0.25, 0.4, 0.6, 0.8] },
+    });
+    expect(coreNozzles.map((nozzle) => nozzle.diameterMm).sort((left, right) => left - right)).toEqual([0.25, 0.4, 0.6, 0.8]);
+    expect(coreNozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
+    expect(printer?.sources[0].url).toBe("https://www.prusa3d.com/en/product/prusa-core-one-12/");
+  });
+
   it("includes confirmed P2S specifications while leaving unpublished values unknown", () => {
     const printer = printers.find((item) => item.id === "bambu-p2s");
     const p2sNozzles = nozzles.filter((item) => item.printerCompatibility?.["bambu-p2s"] === "compatible");

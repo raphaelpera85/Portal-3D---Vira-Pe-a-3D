@@ -98,6 +98,11 @@ const crealityEnder5MaxSupportSource = {
   url: "https://www.creality.com/support/creality-ender-5-max",
   checkedAt: "2026-11-13",
 };
+const prusaCoreOneGen2Source = {
+  label: "Original Prusa — CORE One+ (Gen 2) technical specifications",
+  url: "https://www.prusa3d.com/en/product/prusa-core-one-12/",
+  checkedAt: "2026-11-13",
+};
 const plaSource = {
   label: "Bambu Lab — PLA Basic",
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
@@ -318,6 +323,33 @@ export const printers: PrinterEntry[] = [{
   },
   supportedMaterials: {},
   sources: [crealityK2ProSource],
+}, {
+  id: "prusa-core-one-plus-gen-2",
+  name: "Prusa Research CORE One+ Gen 2",
+  brand: "Prusa Research",
+  model: "CORE One+",
+  variant: "Gen 2",
+  buildVolumeDescription: null,
+  technology: "FDM",
+  buildVolumeMm: { x: 250, y: 220, z: 270 },
+  extruders: null,
+  filamentDiameterMm: 1.75,
+  maxNozzleTemperatureC: 290,
+  maxBedTemperatureC: 120,
+  heatedBed: true,
+  enclosure: true,
+  maximumSpeedMmPerSecond: null,
+  maximumPowerWatts: null,
+  measuredAveragePowerWatts: null,
+  multicolorSlots: null,
+  multicolorSystem: "INDX (upgrade opcional; quantidade de materiais não confirmada)",
+  technicalProperties: {
+    chamberMaximumTemperatureC: 55,
+    supportedNozzleDiametersMm: [0.25, 0.4, 0.6, 0.8],
+    maxNozzleTemperatureWithHighTempHotendC: 400,
+  },
+  supportedMaterials: {},
+  sources: [prusaCoreOneGen2Source],
 }, {
   id: "bambu-p2s",
   name: "Bambu Lab P2S",
@@ -686,6 +718,18 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[0.25, 0.4, 0.6, 0.8].map((diameter) => ({
+    id: `prusa-core-one-plus-gen-2-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · CORE One+ Gen 2`,
+    brand: "Prusa Research",
+    diameterMm: diameter,
+    material: diameter === 0.4 ? "Latão CHT" : null,
+    maxTemperatureC: 290,
+    abrasionResistant: null,
+    printerCompatibility: { "prusa-core-one-plus-gen-2": "compatible" as const },
+    original: diameter === 0.4,
+    sources: [prusaCoreOneGen2Source],
+  })),
   ...[0.4, 0.6, 0.8].map((diameter) => ({
     id: `creality-ender-5-max-${diameter}`,
     name: `Bico ${diameter.toLocaleString("pt-BR")} mm · Ender-5 Max`,
