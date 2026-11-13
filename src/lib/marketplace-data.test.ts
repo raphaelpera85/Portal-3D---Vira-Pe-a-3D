@@ -25,8 +25,18 @@ describe("mapMarketplaceProduct", () => {
     expect(product.priceBrl).toBeNull();
     expect(product.priceLabel).toBe("Sob orçamento");
     expect(product.media).toEqual([]);
+    expect(product.videoUrl).toBeNull();
     expect(product.fulfillmentMode).toBe("quote");
     expect(product.stockQuantity).toBeNull();
+  });
+
+  it("maps only safe direct video links from product rows", () => {
+    const product = mapMarketplaceProduct({
+      id: "p6", slug: "demo-video", name: "Produto com vídeo", price_mode: "quote",
+      video_url: "https://cdn.example/demo.webm?version=1",
+    });
+    expect(product.videoUrl).toBe("https://cdn.example/demo.webm?version=1");
+    expect(mapMarketplaceProduct({ id: "p7", video_url: "javascript:alert(1)" }).videoUrl).toBeNull();
   });
 
   it("preserves explicit zero stock and valid preparation time", () => {

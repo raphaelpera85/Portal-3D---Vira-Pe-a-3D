@@ -19,6 +19,7 @@ export type Product = {
   variants?: ProductVariant[];
   priceLabel: string;
   media: string[];
+  videoUrl: string | null;
   storeId: string | null;
   storeSlug: string | null;
   demo: boolean;
@@ -35,7 +36,7 @@ export const products: Product[] = [
     maker: "Design de bancada",
     color: "blue",
     visual: "vase",
-    priceBrl: null, priceMode: "quote", fulfillmentMode: "quote", stockQuantity: null, preparationDays: null, priceLabel: "Demonstração", media: [], storeId: null, storeSlug: null, demo: true,
+    priceBrl: null, priceMode: "quote", fulfillmentMode: "quote", stockQuantity: null, preparationDays: null, priceLabel: "Demonstração", media: [], videoUrl: null, storeId: null, storeSlug: null, demo: true,
   },
   {
     id: "demo-dragao-articulado", slug: "dragao-articulado", description: "Miniatura articulada de demonstração para a vitrine ViraPeça 3D.",
@@ -45,7 +46,7 @@ export const products: Product[] = [
     maker: "Peça de exemplo",
     color: "green",
     visual: "dragon",
-    priceBrl: null, priceMode: "quote", fulfillmentMode: "quote", stockQuantity: null, preparationDays: null, priceLabel: "Demonstração", media: [], storeId: null, storeSlug: null, demo: true,
+    priceBrl: null, priceMode: "quote", fulfillmentMode: "quote", stockQuantity: null, preparationDays: null, priceLabel: "Demonstração", media: [], videoUrl: null, storeId: null, storeSlug: null, demo: true,
   },
   {
     id: "demo-organizador-modular", slug: "organizador-modular", description: "Organizador modular de demonstração para a vitrine ViraPeça 3D.",
@@ -55,7 +56,7 @@ export const products: Product[] = [
     maker: "Ideia demonstrativa",
     color: "sand",
     visual: "organizer",
-    priceBrl: null, priceMode: "quote", fulfillmentMode: "quote", stockQuantity: null, preparationDays: null, priceLabel: "Demonstração", media: [], storeId: null, storeSlug: null, demo: true,
+    priceBrl: null, priceMode: "quote", fulfillmentMode: "quote", stockQuantity: null, preparationDays: null, priceLabel: "Demonstração", media: [], videoUrl: null, storeId: null, storeSlug: null, demo: true,
   },
   {
     id: "demo-chaveiro-monograma", slug: "chaveiro-monograma", description: "Chaveiro personalizado de demonstração para a vitrine ViraPeça 3D.",
@@ -65,6 +66,6 @@ export const products: Product[] = [
     maker: "Projeto de vitrine",
     color: "pink",
     visual: "keychain",
-    priceBrl: null, priceMode: "quote", fulfillmentMode: "quote", stockQuantity: null, preparationDays: null, priceLabel: "Demonstração", media: [], storeId: null, storeSlug: null, demo: true,
+    priceBrl: null, priceMode: "quote", fulfillmentMode: "quote", stockQuantity: null, preparationDays: null, priceLabel: "Demonstração", media: [], videoUrl: null, storeId: null, storeSlug: null, demo: true,
   },
 ];

@@ -1,5 +1,5 @@
 import type { Product, ProductVisual } from "./products";
-import { normalizeProductVariantOptions, validateProductVariantSelection } from "./marketplace-validation";
+import { normalizeProductVideoUrl, normalizeProductVariantOptions, validateProductVariantSelection } from "./marketplace-validation";
 
 type Row = Record<string, unknown>;
 const asObject = (value: unknown): Row => Array.isArray(value) ? asObject(value[0]) : value && typeof value === "object" ? value as Row : {};
@@ -50,7 +50,7 @@ export function mapMarketplaceProduct(row: Row): Product {
     priceBrl: priceMode === "quote" ? null : priceBrl, priceMode, fulfillmentMode, stockQuantity, preparationDays,
     variantOptions, variants,
     priceLabel: priceMode === "quote" ? "Sob orçamento" : priceBrl == null ? "Preço indisponível" : `${priceMode === "from" || variants.length > 0 ? "A partir de " : ""}${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(priceBrl)}`,
-    media, storeId: asText(row.store_id) || null, storeSlug: asText(store.slug) || null, demo: false, listingType,
+    media, videoUrl: normalizeProductVideoUrl(row.video_url), storeId: asText(row.store_id) || null, storeSlug: asText(store.slug) || null, demo: false, listingType,
     digitalAsset: listingType === "digital" && Number.isFinite(personalLicense) && personalLicense > 0
       ? { personalPriceBrl: personalLicense, commercialPriceBrl: Number.isFinite(commercialLicense) && commercialLicense > 0 ? commercialLicense : null }
       : null,

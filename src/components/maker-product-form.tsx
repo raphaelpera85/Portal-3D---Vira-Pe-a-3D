@@ -42,6 +42,7 @@ export function MakerProductForm({ storeId, categories }: { storeId: string; cat
           <label>Altura (cm)<input name="packageHeightCm" type="number" min="0.1" max="500" step="0.01" /></label>
         </div></fieldset>}
         <label>Imagem pública HTTPS (opcional)<input name="imageUrl" type="url" maxLength={1000} placeholder="https://" /></label>
+        <label>Vídeo público MP4 ou WebM (opcional)<input name="videoUrl" type="url" maxLength={1000} placeholder="https://.../demonstracao.mp4" /><small>Link direto para o arquivo, em HTTPS. O portal aceita MP4 e WebM.</small></label>
         <label>Tags separadas por vírgula (opcional)<input name="tags" maxLength={260} placeholder="miniatura, RPG, articulado" /></label>
         <button className="button button-primary" type="submit" disabled={pending || categories.length === 0 || state.success}>{pending ? "Salvando…" : "Salvar rascunho"}</button>
         <p className={`auth-notice${state.message ? state.success ? " is-success" : " is-error" : ""}`} aria-live="polite">{state.message || (categories.length === 0 ? "Não há categorias ativas para anúncios." : "")}</p>

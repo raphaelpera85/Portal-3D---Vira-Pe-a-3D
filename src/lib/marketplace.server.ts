@@ -21,7 +21,7 @@ export async function loadMarketplaceCatalog({ query = "", category = "", page =
   }
 
   const categoryQuery = supabase.from("product_categories").select("name, slug").eq("active", true).order("sort_order").order("name");
-  let productsQuery = supabase.from("marketplace_products").select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, media, tags, color_theme, visual, digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)", { count: "exact" }).eq("catalog_status", "published").eq("store.status", "published");
+  let productsQuery = supabase.from("marketplace_products").select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, media, video_url, tags, color_theme, visual, digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)", { count: "exact" }).eq("catalog_status", "published").eq("store.status", "published");
   if (category) productsQuery = productsQuery.eq("category.slug", category);
   if (term) productsQuery = productsQuery.textSearch("search_document", term, { config: "portuguese", type: "websearch" });
   productsQuery = productsQuery.order("published_at", { ascending: false }).range((selectedPage - 1) * pageSize, selectedPage * pageSize - 1);
@@ -66,7 +66,7 @@ export async function loadRecommendedStores(): Promise<RecommendedStore[]> {
 export async function loadMarketplaceProduct(slug: string) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return demoProducts.find((product) => product.slug === slug) ?? null;
-  const { data, error } = await supabase.from("marketplace_products").select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, product_properties, media, tags, color_theme, visual, variants:marketplace_product_variants(id, variant_options, price_brl, stock_quantity), digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)").eq("slug", slug).eq("catalog_status", "published").eq("store.status", "published").maybeSingle();
+  const { data, error } = await supabase.from("marketplace_products").select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, product_properties, media, video_url, tags, color_theme, visual, variants:marketplace_product_variants(id, variant_options, price_brl, stock_quantity), digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)").eq("slug", slug).eq("catalog_status", "published").eq("store.status", "published").maybeSingle();
   if (error || !data) return null;
   const product = mapMarketplaceProduct(data as Record<string, unknown>);
   if (product.listingType !== "digital" || !product.digitalAsset) return product;

@@ -136,6 +136,7 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     variantOptions: formData.get("variantOptions"), variantPricing: formData.get("variantPricing"),
     packageWeightG: formData.get("packageWeightG"), packageLengthCm: formData.get("packageLengthCm"),
     packageWidthCm: formData.get("packageWidthCm"), packageHeightCm: formData.get("packageHeightCm"),
+    videoUrl: formData.get("videoUrl"),
   });
   const storeId = formData.get("storeId");
   if (!product || typeof storeId !== "string" || !uuidPattern.test(storeId)) return { message: "Confira nome, categoria e preço do anúncio.", success: false };
@@ -150,7 +151,7 @@ export async function createProductDraft(_previous: MakerProductState, formData:
   const { data: createdProduct, error } = await actor.supabase.from("marketplace_products").insert({
     store_id: storeId, category_id: product.categoryId, name: product.name, slug: `${baseSlug}-${randomUUID().slice(0, 8)}`,
     description: product.description, listing_type: product.listingType, fulfillment_mode: product.fulfillmentMode,
-    price_mode: product.priceMode, price_brl: product.priceBrl, media: product.media, tags: product.tags,
+    price_mode: product.priceMode, price_brl: product.priceBrl, media: product.media, video_url: product.videoUrl, tags: product.tags,
     stock_quantity: product.stockQuantity, preparation_days: product.preparationDays,
     package_weight_g: product.shippingPackage?.weightG ?? null, package_length_cm: product.shippingPackage?.lengthCm ?? null,
     package_width_cm: product.shippingPackage?.widthCm ?? null, package_height_cm: product.shippingPackage?.heightCm ?? null,

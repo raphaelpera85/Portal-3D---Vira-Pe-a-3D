@@ -2,13 +2,25 @@ export type MakerApplicationInput = { businessName: string; description: string;
 export type ProductVariantOptions = Record<string, string[]>;
 export type ProductVariantPricing = { options: Record<string, string>; priceBrl: number; stockQuantity: number | null };
 export type ProductShippingPackage = { weightG: number; lengthCm: number; widthCm: number; heightCm: number };
-export type ProductDraftInput = { name: string; description: string; categoryId: string; media: string[]; tags: string[]; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; fulfillmentMode: "ready_to_ship" | "made_to_order" | "digital" | "quote"; stockQuantity: number | null; preparationDays: number | null; shippingPackage: ProductShippingPackage | null; variantOptions: ProductVariantOptions; variantPricing: ProductVariantPricing[] };
+export type ProductDraftInput = { name: string; description: string; categoryId: string; media: string[]; videoUrl: string | null; tags: string[]; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; fulfillmentMode: "ready_to_ship" | "made_to_order" | "digital" | "quote"; stockQuantity: number | null; preparationDays: number | null; shippingPackage: ProductShippingPackage | null; variantOptions: ProductVariantOptions; variantPricing: ProductVariantPricing[] };
 export type ProductInventoryInput = { fulfillmentMode: "ready_to_ship" | "made_to_order" | "quote"; stockQuantity: number | null; preparationDays: number | null };
 export type ProductQuoteRequestInput = { quantity: number; customization: string; dueDate: string | null };
 export type ProductQuoteOfferInput = { totalBrl: number; leadDays: number; terms: string };
 export type StoreNotificationContacts = { email: string; whatsapp: string | null; whatsappOptIn: boolean };
 
 const text = (value: unknown) => typeof value === "string" ? value.trim() : null;
+
+export function normalizeProductVideoUrl(value: unknown): string | null {
+  // shortcut: direct public links only; move to managed storage when vendors need uploads or retention guarantees.
+  const raw = text(value);
+  if (!raw || raw.length > 1000) return null;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" && !url.username && !url.password && /\.(?:mp4|webm)$/i.test(url.pathname)
+      ? url.toString()
+      : null;
+  } catch { return null; }
+}
 
 export function validateProductShippingPackage(values: Record<string, unknown>): ProductShippingPackage | null | undefined {
   const raw = [values.packageWeightG, values.packageLengthCm, values.packageWidthCm, values.packageHeightCm].map(text);
@@ -180,9 +192,12 @@ export function validateProductDraft(values: Record<string, unknown>): ProductDr
       media.push(url.toString());
     } catch { return null; }
   }
+  const rawVideoUrl = text(values.videoUrl);
+  const videoUrl = rawVideoUrl ? normalizeProductVideoUrl(rawVideoUrl) : null;
+  if (rawVideoUrl && !videoUrl) return null;
   const tags = (text(values.tags) ?? "").split(",").map((tag) => tag.trim()).filter(Boolean);
   if (tags.length > 8 || tags.some((tag) => tag.length > 32)) return null;
-  return { name, description, categoryId, media, tags, listingType, priceMode, priceBrl, fulfillmentMode: fulfillmentMode as ProductDraftInput["fulfillmentMode"], stockQuantity: stockQuantity as number | null, preparationDays: preparationDays as number | null, shippingPackage: shippingPackage ?? null, variantOptions, variantPricing: variantPricing ?? [] };
+  return { name, description, categoryId, media, videoUrl, tags, listingType, priceMode, priceBrl, fulfillmentMode: fulfillmentMode as ProductDraftInput["fulfillmentMode"], stockQuantity: stockQuantity as number | null, preparationDays: preparationDays as number | null, shippingPackage: shippingPackage ?? null, variantOptions, variantPricing: variantPricing ?? [] };
 }
 
 export function validateProductInventory(values: Record<string, unknown>, priceMode: unknown): ProductInventoryInput | null {

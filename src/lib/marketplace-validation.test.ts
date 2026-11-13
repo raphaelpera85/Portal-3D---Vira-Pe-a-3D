@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expandProductVariantOptions, validateMakerApplication, validateProductDraft, validateProductInventory, validateProductQuoteOffer, validateProductQuoteRequest, validateProductShippingPackage, validateProductVariantPricing, validateStoreNotificationContacts } from "./marketplace-validation";
+import { expandProductVariantOptions, normalizeProductVideoUrl, validateMakerApplication, validateProductDraft, validateProductInventory, validateProductQuoteOffer, validateProductQuoteRequest, validateProductShippingPackage, validateProductVariantPricing, validateStoreNotificationContacts } from "./marketplace-validation";
 
 describe("marketplace form validation", () => {
   it("expands product option groups into bounded, deterministic SKU combinations", () => {
@@ -89,6 +89,21 @@ describe("marketplace form validation", () => {
     const base = { name: "Vaso modular", categoryId: "7b383334-110a-4dc3-9000-6c7e0c2ad491", priceMode: "quote" };
     expect(validateProductDraft({ ...base, imageUrl: "javascript:alert(1)" })).toBeNull();
     expect(validateProductDraft({ ...base, tags: "a,b,c,d,e,f,g,h,i" })).toBeNull();
+  });
+
+  it("accepts only public HTTPS MP4/WebM video URLs", () => {
+    expect(normalizeProductVideoUrl("https://cdn.example/demo.MP4?token=abc")).toBe("https://cdn.example/demo.MP4?token=abc");
+    expect(normalizeProductVideoUrl("https://cdn.example/demo.webm")).toBe("https://cdn.example/demo.webm");
+    expect(normalizeProductVideoUrl("http://cdn.example/demo.mp4")).toBeNull();
+    expect(normalizeProductVideoUrl("https://user:pass@cdn.example/demo.mp4")).toBeNull();
+    expect(normalizeProductVideoUrl("https://cdn.example/watch?id=demo")).toBeNull();
+    expect(normalizeProductVideoUrl(`https://cdn.example/${"a".repeat(1000)}.mp4`)).toBeNull();
+  });
+
+  it("stores a valid product video link and rejects unsupported video inputs", () => {
+    const base = { name: "Miniatura articulada", categoryId: "7b383334-110a-4dc3-9000-6c7e0c2ad491", priceMode: "quote" };
+    expect(validateProductDraft({ ...base, videoUrl: "https://cdn.example/demo.mp4" })?.videoUrl).toBe("https://cdn.example/demo.mp4");
+    expect(validateProductDraft({ ...base, videoUrl: "https://example.com/video" })).toBeNull();
   });
 
   it("validates quote quantities, due dates, prices, and lead times", () => {
