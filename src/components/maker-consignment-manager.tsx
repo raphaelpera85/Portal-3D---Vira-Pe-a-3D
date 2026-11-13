@@ -43,6 +43,7 @@ export function MakerConsignmentManager({ items, products, error }: {
   return <section className="account-card maker-products-card" id="consignacoes">
     <span className="account-kicker">VENDAS EM CONSIGNAÇÃO</span>
     <h2>Controle por estabelecimento</h2>
+    {!error && <a className="button button-secondary" href="/api/maker/consignments/reports">Baixar relatório CSV</a>}
     <p>Registre entregas, vendas, devoluções e perdas. Valores a receber e resultados são estimativas; nenhum repasse é processado pelo portal.</p>
     {error && <p className="auth-notice is-error" role="alert">O controle de consignação ficará disponível após aplicar a migração 015.</p>}
     {establishments.length > 0 && <div className="consignment-reports" aria-label="Resumo de consignações por estabelecimento">
