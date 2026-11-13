@@ -28,6 +28,6 @@ Revisão em 13 de novembro de 2026. Esta página compara os requisitos de produt
 1. Configurar Google Vision, Resend e WhatsApp na Vercel e validar reconhecimento semântico de imagem, OCR e notificações externas sem expor segredos no Git.
 2. Configurar e testar o OAuth, compra de etiquetas e webhook Melhor Envio em sandbox; depois validar o fluxo de produção com vendedores reconectados.
 3. Ampliar consumo editável por modelo/perfil, campos de OCR para todos os slicers e histórico de origem dos dados; validar com imagens e fatiamentos reais.
-4. Expandir a curadoria oficial dos catálogos e estados de produção, depois testar compra e pós-venda ponta a ponta com contas sandbox.
+4. Expandir a curadoria oficial dos catálogos e estados de produção, confirmar a migration de fingerprints no Supabase de produção, depois testar compra e pós-venda ponta a ponta com contas sandbox.
 
 Os detalhes de instalação, banco, segurança, operação e integrações continuam nos documentos vinculados pelo [README](../README.md).

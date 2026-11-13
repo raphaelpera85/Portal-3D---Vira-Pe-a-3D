@@ -24,6 +24,26 @@ describe("weekly catalog source checks", () => {
     expect(classifyCatalogSourceResponse({ etag: '"a"', lastModified: null }, { status: 200, etag: null, lastModified: "Mon, 02 Nov 2026 10:00:00 GMT" }).state).toBe("uncheckable");
   });
 
+  it("uses a bounded content fingerprint when a source has no comparable HTTP validators", () => {
+    expect(classifyCatalogSourceResponse(null, { status: 200, etag: null, lastModified: null, contentSha256: "a".repeat(64) }).state).toBe("current");
+    expect(classifyCatalogSourceResponse(
+      { etag: null, lastModified: null, contentSha256: "a".repeat(64) },
+      { status: 200, etag: null, lastModified: null, contentSha256: "a".repeat(64) },
+    ).state).toBe("current");
+    expect(classifyCatalogSourceResponse(
+      { etag: null, lastModified: null, contentSha256: "a".repeat(64) },
+      { status: 200, etag: null, lastModified: null, contentSha256: "b".repeat(64) },
+    ).event).toBe("source_changed");
+    expect(classifyCatalogSourceResponse(
+      { etag: '"old"', lastModified: null },
+      { status: 405, etag: null, lastModified: null, contentSha256: "a".repeat(64) },
+    ).state).toBe("uncheckable");
+    expect(classifyCatalogSourceResponse(
+      { etag: null, lastModified: null },
+      { status: 200, etag: null, lastModified: null, contentSha256: null },
+    ).state).toBe("uncheckable");
+  });
+
   it("spreads the weekly source check across daily batches from the configured UTC weekday", () => {
     const monday = new Date("2026-11-16T12:00:00Z");
     const tuesday = new Date("2026-11-17T12:00:00Z");

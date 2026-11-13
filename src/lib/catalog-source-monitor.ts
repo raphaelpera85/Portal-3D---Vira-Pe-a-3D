@@ -30,25 +30,39 @@ export function getAllowedCatalogRedirect(currentUrl: string, location: string, 
 }
 
 export function classifyCatalogSourceResponse(
-  previous: { etag: string | null; lastModified: string | null } | null,
-  current: { status: number; etag: string | null; lastModified: string | null },
+  previous: { etag: string | null; lastModified: string | null; contentSha256?: string | null } | null,
+  current: { status: number; etag: string | null; lastModified: string | null; contentSha256?: string | null },
 ): { state: CatalogWatchState; event: CatalogSourceEvent | null; detail: string | null } {
   if (current.status === 404 || current.status === 410) return { state: "unavailable", event: "source_unavailable", detail: `A fonte retornou HTTP ${current.status}.` };
   if (current.status >= 300 && current.status < 400) return { state: "moved", event: "source_moved", detail: `A fonte redireciona (HTTP ${current.status}); a URL requer revisão.` };
-  if (current.status === 405 || current.status === 501) return { state: "uncheckable", event: null, detail: "O servidor não aceita HEAD; o conteúdo não foi baixado." };
-  if (current.status < 200 || current.status >= 300) return { state: "failed", event: null, detail: `A verificação retornou HTTP ${current.status}.` };
+  const hasContentFingerprint = Boolean(current.contentSha256);
+  if ((current.status < 200 || current.status >= 300) && !((current.status === 405 || current.status === 501) && hasContentFingerprint)) {
+    if (current.status === 405 || current.status === 501) return { state: "uncheckable", event: null, detail: "O servidor não aceita HEAD e não foi possível obter uma impressão digital do conteúdo." };
+    return { state: "failed", event: null, detail: `A verificação retornou HTTP ${current.status}.` };
+  }
 
   const hasValidator = current.etag != null || current.lastModified != null;
-  if (!hasValidator) return { state: "uncheckable", event: null, detail: "A fonte não fornece ETag nem Last-Modified; alterações de conteúdo não são detectáveis sem baixar a página." };
-  const hasComparableValidator = Boolean(previous?.etag && current.etag) || Boolean(previous?.lastModified && current.lastModified);
-  if (previous && (previous.etag != null || previous.lastModified != null) && !hasComparableValidator) {
-    return { state: "uncheckable", event: null, detail: "Os validadores anteriores não estão disponíveis nesta resposta; a fonte precisa de conferência manual." };
+  if (hasValidator) {
+    const hasComparableValidator = Boolean(previous?.etag && current.etag) || Boolean(previous?.lastModified && current.lastModified);
+    if (previous && (previous.etag != null || previous.lastModified != null) && !hasComparableValidator) {
+      return { state: "uncheckable", event: null, detail: "Os validadores anteriores não estão disponíveis nesta resposta; a fonte precisa de conferência manual." };
+    }
+    if (previous && ((previous.etag != null && current.etag != null && previous.etag !== current.etag)
+      || (previous.lastModified != null && current.lastModified != null && previous.lastModified !== current.lastModified))) {
+      return { state: "changed", event: "source_changed", detail: "ETag ou Last-Modified mudou; as especificações precisam de conferência humana." };
+    }
+    return { state: "current", event: null, detail: null };
   }
-  if (previous && ((previous.etag != null && current.etag != null && previous.etag !== current.etag)
-    || (previous.lastModified != null && current.lastModified != null && previous.lastModified !== current.lastModified))) {
-    return { state: "changed", event: "source_changed", detail: "ETag ou Last-Modified mudou; as especificações precisam de conferência humana." };
+
+  if (!current.contentSha256) return { state: "uncheckable", event: null, detail: "A fonte não fornece validadores HTTP e o conteúdo excedeu o limite seguro de leitura; alterações não podem ser detectadas." };
+  if (previous && (previous.etag != null || previous.lastModified != null) && !previous.contentSha256) {
+    return { state: "uncheckable", event: null, detail: "A fonte deixou de fornecer validadores HTTP; esta verificação registra a impressão digital inicial para comparações futuras." };
   }
-  return { state: "current", event: null, detail: null };
+  if (previous?.contentSha256 && previous.contentSha256 !== current.contentSha256) {
+    return { state: "changed", event: "source_changed", detail: "A impressão digital SHA-256 do conteúdo mudou; as especificações precisam de conferência humana." };
+  }
+  if (!previous?.contentSha256) return { state: "current", event: null, detail: "Impressão digital SHA-256 inicial registrada; o conteúdo não foi publicado nem aplicado ao catálogo." };
+  return { state: "current", event: null, detail: "Conteúdo comparado por impressão digital SHA-256; nenhum conteúdo foi publicado automaticamente." };
 }
 
 export function getCatalogSourceCheckCycleStart(date: Date, configuredDay = "1") {

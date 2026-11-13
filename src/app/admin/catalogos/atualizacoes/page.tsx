@@ -37,7 +37,7 @@ export default async function CatalogUpdatesPage({ searchParams }: { searchParam
     <main className="admin-dashboard shell">
       <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
       <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link href="/admin/catalogos/impressoras">Impressoras</Link><Link href="/admin/catalogos/materiais">Materiais e resinas</Link><Link href="/admin/catalogos/bicos">Bicos e compatibilidade</Link><Link aria-current="page" href="/admin/catalogos/atualizacoes">Atualizações</Link></nav>
-      <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Atualizações dos catálogos</h1><p>Uma vez por semana, o sistema consulta os cabeçalhos HTTP das fontes oficiais. Nenhuma especificação é atualizada sem conferência administrativa.</p></div>
+      <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Atualizações dos catálogos</h1><p>Uma vez por semana, o sistema consulta cabeçalhos HTTP e, quando faltam validadores, compara o conteúdo de fontes pequenas por SHA-256. Nenhuma especificação é atualizada sem conferência administrativa.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
       {queriesFailed && <p className="auth-notice is-error" role="alert">Não foi possível carregar o histórico. Confira se a migração de monitoramento foi aplicada.</p>}
 
