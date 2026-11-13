@@ -241,6 +241,7 @@ export const printers: PrinterEntry[] = [{
   supportedMaterials: {
     PLA: "recommended", PETG: "recommended", TPU: "recommended", PVA: "recommended",
     ABS: "not-recommended", ASA: "not-recommended", PC: "not-recommended", PA: "not-recommended", PET: "not-recommended",
+    "PPA-CF": "not-recommended",
   } satisfies Record<string, MaterialSupport>,
   sources: [bambuA1Source],
 }, {
@@ -268,6 +269,7 @@ export const printers: PrinterEntry[] = [{
   supportedMaterials: {
     PLA: "recommended", PETG: "recommended", TPU: "recommended", PVA: "recommended",
     ABS: "not-recommended", ASA: "not-recommended", PC: "not-recommended", PA: "not-recommended", PET: "not-recommended",
+    "PPA-CF": "not-recommended",
   } satisfies Record<string, MaterialSupport>,
   sources: [bambuA1ComboSource],
 }, {

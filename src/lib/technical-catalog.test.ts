@@ -100,6 +100,16 @@ describe("verified technical catalog records", () => {
     expect(result.checks.every((check) => check.status === "compatible")).toBe(true);
   });
 
+  it("marks PPA-CF as not recommended on both A1 variants instead of leaving it unverified", () => {
+    const ppaCf = materials.find((material) => material.name === "PPA-CF")!;
+    for (const id of ["bambu-a1", "bambu-a1-ams-lite-combo"]) {
+      const printer = printers.find((item) => item.id === id)!;
+      const materialCheck = evaluateCompatibility(printer, ppaCf).checks.find((check) => check.key === "material");
+
+      expect(materialCheck?.status).toBe("conditional");
+    }
+  });
+
   it("rejects PPA-CF on the A1 mini because the documented bed temperature is below the material range", () => {
     const printer = printers.find((item) => item.id === "bambu-a1-mini-ams-lite")!;
     const nozzle = nozzles.find((item) => item.original && item.printerCompatibility?.[printer.id] === "compatible")!;
