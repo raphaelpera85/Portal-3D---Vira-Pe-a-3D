@@ -19,7 +19,7 @@ import { mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "@
 import type { ThreeMfSlicePlate } from "@/lib/model-file";
 
 type FormFields = Record<keyof Omit<PrintCostInput, "additionalCosts" | "productionComponents" | "filamentCosts" | "pricingMode">, string>;
-type ChannelFields = Omit<SalesChannel, "feePercent" | "fixedFee"> & { feePercent: string; fixedFee: string };
+type ChannelFields = Omit<SalesChannel, "feePercent" | "fixedFee" | "logisticsCost"> & { feePercent: string; fixedFee: string; logisticsCost: string };
 type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
 type CalculatorEquipment = EquipmentRateInput & { id: string; label: string; catalogPrinter?: CatalogPrinter | null };
@@ -36,9 +36,9 @@ const initialFields: FormFields = {
 };
 
 const initialChannels: ChannelFields[] = [
-  { id: "marketplace", name: "Marketplace", feePercent: "", fixedFee: "" },
-  { id: "loja", name: "Loja própria", feePercent: "", fixedFee: "" },
-  { id: "consignacao", name: "Consignação", feePercent: "", fixedFee: "" },
+  { id: "marketplace", name: "Marketplace", feePercent: "", fixedFee: "", logisticsCost: "" },
+  { id: "loja", name: "Loja própria", feePercent: "", fixedFee: "", logisticsCost: "" },
+  { id: "consignacao", name: "Consignação", feePercent: "", fixedFee: "", logisticsCost: "" },
 ];
 
 const money = (cents: number | null | undefined) => cents == null
@@ -123,6 +123,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     ...channel,
     feePercent: numberValue(channel.feePercent),
     fixedFee: numberValue(channel.fixedFee),
+    logisticsCost: numberValue(channel.logisticsCost),
   }));
   const input: PrintCostInput = {
     batchQuantity: numberValue(fields.batchQuantity),
@@ -174,14 +175,14 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     && Boolean(consignmentChannelInput?.fixedFee !== "") && consignmentPrice?.priceCents != null && result.unitCostCents != null;
   const hasCurrentValues = Object.entries(fields).some(([key, value]) => value !== "" && key !== "batchQuantity" && key !== "batchFixedCost") || extras.length > 0
     || productionComponents.length > 0
-    || channels.some((channel) => channel.feePercent !== "" || channel.fixedFee !== "" || !initialChannels.some((initial) => initial.id === channel.id && initial.name === channel.name))
+    || channels.some((channel) => channel.feePercent !== "" || channel.fixedFee !== "" || channel.logisticsCost !== "" || !initialChannels.some((initial) => initial.id === channel.id && initial.name === channel.name))
     || pricingMode !== "margin";
 
   function updateField(field: keyof FormFields, value: string) {
     setFields((current) => ({ ...current, [field]: value }));
   }
 
-  function updateChannel(id: string, field: "name" | "feePercent" | "fixedFee", value: string) {
+  function updateChannel(id: string, field: "name" | "feePercent" | "fixedFee" | "logisticsCost", value: string) {
     setChannels((current) => current.map((channel) => channel.id === id ? { ...channel, [field]: value } : channel));
   }
 
@@ -220,7 +221,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   }
 
   function addChannel() {
-    setChannels((current) => [...current, { id: crypto.randomUUID(), name: "Novo canal", feePercent: "", fixedFee: "" }]);
+    setChannels((current) => [...current, { id: crypto.randomUUID(), name: "Novo canal", feePercent: "", fixedFee: "", logisticsCost: "" }]);
   }
 
   function selectEquipment(id: string) {
@@ -324,7 +325,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       setProductionComponents((saved.input.productionComponents ?? []).map((component) => ({
         id: crypto.randomUUID(), equipmentId: "", ...Object.fromEntries(Object.entries(component).map(([key, value]) => [key, String(value)])),
       } as ProductionComponentFields)));
-      setChannels(saved.channels.map((channel) => ({ ...channel, feePercent: String(channel.feePercent), fixedFee: String(channel.fixedFee) })));
+      setChannels(saved.channels.map((channel) => ({ ...channel, feePercent: String(channel.feePercent), fixedFee: String(channel.fixedFee), logisticsCost: String(channel.logisticsCost ?? 0) })));
       setCalculationTitle(`${title} (cópia)`.slice(0, 80));
       setSelectedEquipmentId(printerId ?? "");
       setSelectedProductId(productId ?? "");
@@ -469,11 +470,12 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
                 <label><span className="sr-only">Nome do canal de venda</span><input type="text" value={channel.name} onChange={(event) => updateChannel(channel.id, "name", event.target.value)} /></label>
                 <label><span>Taxa</span><span className="price-channel-input"><input type="number" min="0" max="99.99" step="0.01" inputMode="decimal" placeholder="0" value={channel.feePercent} onChange={(event) => updateChannel(channel.id, "feePercent", event.target.value)} /><small>%</small></span></label>
                 <label><span>Fixa</span><span className="price-channel-input"><input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0,00" value={channel.fixedFee} onChange={(event) => updateChannel(channel.id, "fixedFee", event.target.value)} /><small>R$</small></span></label>
+                <label><span>Logística/peça</span><span className="price-channel-input"><input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0,00" value={channel.logisticsCost} onChange={(event) => updateChannel(channel.id, "logisticsCost", event.target.value)} /><small>R$</small></span></label>
                 <button type="button" className="price-remove-channel" aria-label={`Remover canal ${channel.name}`} onClick={() => setChannels((current) => current.filter((item) => item.id !== channel.id))}><Trash2 size={15} /></button>
               </div>)}
             </div>
             <button type="button" className="price-add-button" onClick={addChannel}><CirclePlus size={15} /> Comparar outro canal</button>
-            <p className="price-disclaimer">Confirme taxas e tarifas fixas nos termos vigentes do seu canal. O ViraPeça não preenche essas condições automaticamente.</p>
+            <p className="price-disclaimer">Informe as taxas do canal e o custo logístico por peça pago por você. O portal não preenche esses valores automaticamente.</p>
           </section>
         </div>
 
@@ -500,11 +502,11 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
               const actualMarkup = result.unitCostCents ? ((scenario?.profitCents ?? 0) / result.unitCostCents * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) : null;
               return <article className="price-scenario" key={channel.id}>
                 <div className="price-scenario-top"><span>{channel.name || "Canal sem nome"}</span><strong>{ready && !result.errors.length ? money(scenario?.priceCents) : "—"}</strong></div>
-                <p>{ready && scenario?.profitCents != null ? `Lucro ${money(scenario.profitCents)} · margem ${scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%${pricingMode === "markup" && actualMarkup ? ` · markup ${actualMarkup}%` : ""}` : "Informe a meta e as taxas deste canal."}</p>
+                <p>{ready && scenario?.profitCents != null ? `Logística ${money(scenario.logisticsCostCents)} · lucro ${money(scenario.profitCents)} · margem ${scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%${pricingMode === "markup" && actualMarkup ? ` · markup ${actualMarkup}%` : ""}` : "Informe a meta e as taxas deste canal."}</p>
               </article>;
             })}
           </div>
-          <p className="price-disclaimer">Estimativa manual: não inclui impostos, frete, tarifas não informadas ou custos de produção não preenchidos.</p>
+          <p className="price-disclaimer">Estimativa manual: não inclui impostos, frete cobrado à parte, tarifas não informadas ou custos de produção não preenchidos.</p>
           {canRegisterConsignment && consignmentChannel && consignmentPrice?.priceCents != null && result.unitCostCents != null && <form action={createMakerConsignmentItem} className="consignment-create-form calculator-consignment-form">
             <div><p className="eyebrow">PRÓXIMO PASSO</p><h3>Registrar preço em consignação</h3><p>Usa o custo, a comissão e o preço calculado deste canal. A venda e o repasse continuam sendo registrados manualmente.</p></div>
             <input type="hidden" name="productId" value={consignmentProduct?.id ?? ""} />
@@ -542,8 +544,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
         ].map(([label, cents]) => <tr key={String(label)}><th>{String(label)}</th><td>{money(cents as number)}</td></tr>)}<tr><th>Total do lote</th><td>{money(breakdown.totalCostCents)}</td></tr></tbody></table>
         {input.filamentCosts?.length ? <><h2>Custo por cor/material</h2><table><thead><tr><th>Filamento</th><th>Massa</th><th>Preço/kg</th><th>Subtotal</th></tr></thead><tbody>{input.filamentCosts.map((item, index) => <tr key={`${item.name ?? "filamento"}-${index}`}><th>{item.name || `Filamento ${index + 1}`}{item.color ? ` · ${item.color}` : ""}</th><td>{metric(item.grams, "g")}</td><td>{money(Math.round(item.pricePerKg * 100))}</td><td>{money(Math.round(item.grams * item.pricePerKg / 1000 * 100))}</td></tr>)}</tbody></table></> : null}
         <h2>Preços por canal</h2>
-        <table><thead><tr><th>Canal</th><th>Taxa</th><th>Preço</th><th>Lucro</th><th>Margem</th></tr></thead><tbody>{result.channels.map((scenario) => <tr key={scenario.id}><th>{scenario.name}</th><td>{parsedChannels.find((channel) => channel.id === scenario.id)?.feePercent}% + {money(scenario.fixedFeeCents)}</td><td>{money(scenario.priceCents)}</td><td>{money(scenario.profitCents)}</td><td>{scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</td></tr>)}</tbody></table>
-        <p className="price-print-note">Estimativa com base nos custos e taxas informados. Não inclui custos que ficaram em branco, impostos ou frete.</p>
+        <table><thead><tr><th>Canal</th><th>Taxa</th><th>Fixa</th><th>Logística/peça</th><th>Preço</th><th>Lucro</th><th>Margem</th></tr></thead><tbody>{result.channels.map((scenario) => <tr key={scenario.id}><th>{scenario.name}</th><td>{parsedChannels.find((channel) => channel.id === scenario.id)?.feePercent}%</td><td>{money(scenario.fixedFeeCents)}</td><td>{money(scenario.logisticsCostCents)}</td><td>{money(scenario.priceCents)}</td><td>{money(scenario.profitCents)}</td><td>{scenario.actualMarginPercent?.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</td></tr>)}</tbody></table>
+        <p className="price-print-note">Estimativa com base nos custos, taxas e logística por peça informados. Não inclui custos que ficaram em branco, impostos ou frete cobrado à parte.</p>
       </section>}
 
       <section className="price-history" aria-labelledby="price-history-title">

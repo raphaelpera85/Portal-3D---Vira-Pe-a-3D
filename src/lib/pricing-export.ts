@@ -57,10 +57,10 @@ export function exportPrintCalculationCsv(
     ["Custo fixo do lote", money(result.breakdown.batchFixedCents)],
     ["Reserva para falhas", money(result.breakdown.failureReserveCents)],
     [],
-    ["Canais de venda", "Taxa (%)", "Taxa fixa (R$)", "Taxa calculada (R$)", "Preço unitário (R$)", "Lucro unitário (R$)", "Margem alcançada (%)"],
+    ["Canais de venda", "Taxa (%)", "Taxa fixa (R$)", "Logística por peça (R$)", "Taxa calculada (R$)", "Preço unitário (R$)", "Lucro unitário (R$)", "Margem alcançada (%)"],
     ...channels.map((channel) => {
       const price = result.channels.find((item) => item.id === channel.id);
-      return [channel.name, decimal(channel.feePercent), money(price?.fixedFeeCents), money(price?.feeCents), money(price?.priceCents), money(price?.profitCents), decimal(price?.actualMarginPercent)];
+      return [channel.name, decimal(channel.feePercent), money(price?.fixedFeeCents), money(price?.logisticsCostCents), money(price?.feeCents), money(price?.priceCents), money(price?.profitCents), decimal(price?.actualMarginPercent)];
     }),
     ...(input.additionalCosts.length ? [[], ["Itens adicionais", "Custo por unidade (R$)"], ...input.additionalCosts.map((item) => [item.name, decimal(item.amount)])] : []),
     ...(input.productionComponents?.length ? [[], ["Componentes de produção", "Material", "Impressora", "Unidades por produto", "Material do lote (g)", "Impressão do lote (h)"]] : []),

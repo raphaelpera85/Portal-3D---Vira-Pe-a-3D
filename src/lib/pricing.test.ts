@@ -19,6 +19,33 @@ const sample = {
 };
 
 describe("calculatePrintPrice", () => {
+  it("includes seller logistics cost in channel pricing and reports it separately", () => {
+    const result = calculatePrintPrice({
+      ...sample,
+      filamentGrams: 100,
+      filamentPricePerKg: 100,
+      printHours: 0,
+      averagePowerWatts: 0,
+      machineCostPerHour: 0,
+      depreciationPerHour: 0,
+      maintenancePerHour: 0,
+      laborMinutes: 0,
+      overheadPerUnit: 0,
+      failureReservePercent: 0,
+      additionalCosts: [],
+      targetMarginPercent: 25,
+    }, [{ id: "marketplace", name: "Marketplace", feePercent: 10, fixedFee: 1, logisticsCost: 3.5 }]);
+
+    expect(result.errors).toEqual([]);
+    expect(result.channels[0]).toMatchObject({
+      fixedFeeCents: 100,
+      logisticsCostCents: 350,
+      priceCents: 2231,
+      profitCents: 558,
+    });
+    expect(result.channels[0].actualMarginPercent).toBeGreaterThanOrEqual(25);
+  });
+
   it("breaks down production cost and finds channel prices at the requested margin", () => {
     const result = calculatePrintPrice(sample, [
       { id: "marketplace", name: "Marketplace", feePercent: 12, fixedFee: 2 },

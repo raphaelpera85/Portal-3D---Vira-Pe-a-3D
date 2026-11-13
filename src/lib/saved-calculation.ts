@@ -141,7 +141,8 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   const channels = parsed.channels.map((item) => isRecord(item) && typeof item.id === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(item.id)
     && typeof item.name === "string" && item.name.trim().length <= 80
     && validNumber(item.feePercent) && item.feePercent < 100 && validNumber(item.fixedFee)
-    ? { id: item.id, name: item.name.trim(), feePercent: item.feePercent, fixedFee: item.fixedFee }
+    && (item.logisticsCost === undefined || validNumber(item.logisticsCost))
+    ? { id: item.id, name: item.name.trim(), feePercent: item.feePercent, fixedFee: item.fixedFee, logisticsCost: item.logisticsCost ?? 0 }
     : null);
   if (channels.some((item) => item === null) || new Set(channels.map((item) => item?.id)).size !== channels.length) {
     return { calculation: null, error: "Há canais de venda inválidos ou repetidos." };

@@ -41,6 +41,21 @@ describe("validateCalculationToSave", () => {
     expect(result.calculation?.result.channels[0].priceCents).toBeGreaterThan(0);
   });
 
+  it("normalizes legacy channels and preserves validated logistics costs", () => {
+    const legacy = validateCalculationToSave("Antigo", JSON.stringify(snapshot));
+    const current = validateCalculationToSave("Atual", JSON.stringify({
+      ...snapshot,
+      channels: [{ ...snapshot.channels[0], logisticsCost: 4.25 }],
+    }));
+
+    expect(legacy.calculation?.channels[0].logisticsCost).toBe(0);
+    expect(current.calculation?.channels[0].logisticsCost).toBe(4.25);
+    expect(validateCalculationToSave("Inválido", JSON.stringify({
+      ...snapshot,
+      channels: [{ ...snapshot.channels[0], logisticsCost: -1 }],
+    })).calculation).toBeNull();
+  });
+
   it("preserves the calculation data source and marks legacy snapshots as unknown", () => {
     const imported = validateCalculationToSave("OCR", JSON.stringify({ ...snapshot, origin: "ocr" }));
     expect(imported.calculation?.origin).toBe("ocr");
