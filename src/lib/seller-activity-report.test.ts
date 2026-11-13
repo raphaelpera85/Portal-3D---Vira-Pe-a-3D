@@ -1,33 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { buildSellerActivityReportRows, getSellerActivityReportWindows } from "./seller-activity-report";
+import { exportSellerActivityReportCsv } from "./seller-activity-report";
 
-describe("seller activity report", () => {
-  it("uses rolling seven-day and thirty-day windows", () => {
-    expect(getSellerActivityReportWindows(new Date("2026-11-12T12:00:00.000Z"))).toEqual({
-      sevenDays: "2026-11-05T12:00:00.000Z",
-      thirtyDays: "2026-10-13T12:00:00.000Z",
-      through: "2026-11-12T12:00:00.000Z",
-    });
+describe("exportSellerActivityReportCsv", () => {
+  it("exports the displayed seven and thirty day activity as a Brazilian spreadsheet CSV", () => {
+    const csv = exportSellerActivityReportCsv("Loja ViraPeça", [
+      { label: "Pedidos do carrinho", sevenDays: 2, thirtyDays: 5 },
+      { label: "Orçamentos de produtos", sevenDays: 1, thirtyDays: 3 },
+    ], new Date("2026-11-13T12:00:00.000Z"));
+
+    expect(csv.startsWith("\uFEFFsep=;\r\n")).toBe(true);
+    expect(csv).toContain('"Loja";"Loja ViraPeça"');
+    expect(csv).toContain('"Tipo e situação";"7 dias";"30 dias"');
+    expect(csv).toContain('"Critério";"Contagens usam a data de criação e o status atual; não representam receita ou pagamentos confirmados."');
+    expect(csv).toContain('"Pedidos do carrinho";"2";"5"');
+    expect(csv).toContain("13/11/2026");
   });
 
-  it("totals cart orders by status and keeps incoming requests separate", () => {
-    expect(buildSellerActivityReportRows({
-      orders: {
-        pending: { sevenDays: 2, thirtyDays: 4 },
-        accepted: { sevenDays: 3, thirtyDays: 5 },
-        declined: { sevenDays: 1, thirtyDays: 2 },
-      },
-      productQuotes: { sevenDays: 7, thirtyDays: 11 },
-      productPurchases: { sevenDays: 19, thirtyDays: 23 },
-      customPrints: { sevenDays: 13, thirtyDays: 17 },
-    })).toEqual([
-      { label: "Pedidos do carrinho", sevenDays: 6, thirtyDays: 11 },
-      { label: "Aguardando decisão", sevenDays: 2, thirtyDays: 4 },
-      { label: "Aceitos", sevenDays: 3, thirtyDays: 5 },
-      { label: "Recusados", sevenDays: 1, thirtyDays: 2 },
-      { label: "Orçamentos de produtos", sevenDays: 7, thirtyDays: 11 },
-      { label: "Pedidos diretos de produtos", sevenDays: 19, thirtyDays: 23 },
-      { label: "Solicitações de impressão", sevenDays: 13, thirtyDays: 17 },
+  it("escapes separators, newlines, and formula-like store names", () => {
+    const csv = exportSellerActivityReportCsv('=HYPERLINK("https://example.invalid")', [
+      { label: "Pedidos; novos\npendentes", sevenDays: 0, thirtyDays: 1 },
     ]);
+
+    expect(csv).toContain('"Loja";"\'=HYPERLINK(""https://example.invalid"")"');
+    expect(csv).toContain('"Pedidos; novos\npendentes";"0";"1"');
   });
 });

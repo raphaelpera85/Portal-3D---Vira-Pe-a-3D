@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
-import { buildSellerActivityReportRows, getSellerActivityReportWindows, sellerOrderReportStatuses, type SellerActivityCounts } from "@/lib/seller-activity-report";
+import { loadSellerActivityReport } from "@/lib/seller-activity-report.server";
 import { getUserWithRole } from "@/lib/auth-role.server";
 
 export const dynamic = "force-dynamic";
@@ -15,48 +15,7 @@ export default async function MakerReportsPage() {
   const { data: store } = await actor.supabase.from("stores").select("id, name").eq("owner_user_id", actor.user.id).maybeSingle();
   if (!store) redirect("/painel/maker");
 
-  const db = actor.supabase;
-  const windows = getSellerActivityReportWindows();
-  const countOrders = (since: string, status: (typeof sellerOrderReportStatuses)[number]["status"]) => db
-    .from("seller_purchase_orders").select("id", { count: "exact", head: true })
-    .eq("store_id", store.id).eq("status", status).gte("created_at", since).lte("created_at", windows.through);
-  const countProductRequests = (since: string, requestType: "quote" | "purchase") => db
-    .from("product_quote_requests").select("id", { count: "exact", head: true })
-    .eq("store_id", store.id).eq("request_type", requestType).gte("created_at", since).lte("created_at", windows.through);
-  const countCustomPrints = (since: string) => db
-    .from("custom_print_request_targets").select("id", { count: "exact", head: true })
-    .eq("store_id", store.id).gte("created_at", since).lte("created_at", windows.through);
-
-  const [orderPeriods, quotePeriods, productPurchasePeriods, customPrintPeriods] = await Promise.all([
-    Promise.all(sellerOrderReportStatuses.map(async ({ status }) => {
-      const [sevenDays, thirtyDays] = await Promise.all([
-        countOrders(windows.sevenDays, status),
-        countOrders(windows.thirtyDays, status),
-      ]);
-      return { status, sevenDays, thirtyDays };
-    })),
-    Promise.all([countProductRequests(windows.sevenDays, "quote"), countProductRequests(windows.thirtyDays, "quote")]),
-    Promise.all([countProductRequests(windows.sevenDays, "purchase"), countProductRequests(windows.thirtyDays, "purchase")]),
-    Promise.all([countCustomPrints(windows.sevenDays), countCustomPrints(windows.thirtyDays)]),
-  ]);
-
-  const queryResults = [
-    ...orderPeriods.flatMap(({ sevenDays, thirtyDays }) => [sevenDays, thirtyDays]),
-    ...quotePeriods,
-    ...productPurchasePeriods,
-    ...customPrintPeriods,
-  ];
-  const unavailable = queryResults.some((result) => result.error || result.count === null);
-  const orderCounts = Object.fromEntries(orderPeriods.map(({ status, sevenDays, thirtyDays }) => [status, {
-    sevenDays: sevenDays.count ?? 0,
-    thirtyDays: thirtyDays.count ?? 0,
-  }])) as SellerActivityCounts["orders"];
-  const rows = unavailable ? [] : buildSellerActivityReportRows({
-    orders: orderCounts,
-    productQuotes: { sevenDays: quotePeriods[0].count ?? 0, thirtyDays: quotePeriods[1].count ?? 0 },
-    productPurchases: { sevenDays: productPurchasePeriods[0].count ?? 0, thirtyDays: productPurchasePeriods[1].count ?? 0 },
-    customPrints: { sevenDays: customPrintPeriods[0].count ?? 0, thirtyDays: customPrintPeriods[1].count ?? 0 },
-  });
+  const { unavailable, rows } = await loadSellerActivityReport(actor.supabase, store.id);
 
   return (
     <>
@@ -69,6 +28,7 @@ export default async function MakerReportsPage() {
           <p>Pedidos e solicitações recebidos pela sua loja em períodos recentes.</p>
         </div>
         <p className="maker-finance-link"><Link className="button button-secondary" href="/painel/maker/financeiro">Abrir financeiro e pagamentos →</Link></p>
+        {!unavailable && <p className="maker-finance-link"><a className="button button-primary" href="/api/maker/reports">Baixar relatório CSV</a></p>}
         {unavailable ? <section className="account-card maker-products-card" role="alert">
           <h2>Relatório indisponível</h2>
           <p>Não foi possível consultar a atividade da loja. Confira as migrações do marketplace e tente novamente.</p>

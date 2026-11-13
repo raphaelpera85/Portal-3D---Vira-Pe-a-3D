@@ -36,3 +36,27 @@ export function buildSellerActivityReportRows(counts: SellerActivityCounts) {
     { label: "Solicitações de impressão", ...counts.customPrints },
   ];
 }
+
+function cell(value: string | number | null | undefined) {
+  const text = String(value ?? "");
+  const safe = typeof value === "string" && /^[\s]*[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
+export function exportSellerActivityReportCsv(
+  storeName: string,
+  rows: ReturnType<typeof buildSellerActivityReportRows>,
+  createdAt = new Date(),
+) {
+  const csvRows: Array<Array<string | number | null | undefined>> = [
+    ["Relatório de atividade da loja", "ViraPeça 3D"],
+    ["Loja", storeName],
+    ["Gerado em", new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(createdAt)],
+    ["Períodos", "7 e 30 dias anteriores à geração"],
+    ["Critério", "Contagens usam a data de criação e o status atual; não representam receita ou pagamentos confirmados."],
+    [],
+    ["Tipo e situação", "7 dias", "30 dias"],
+    ...rows.map((row) => [row.label, row.sevenDays, row.thirtyDays]),
+  ];
+  return `\uFEFFsep=;\r\n${csvRows.map((row) => row.map(cell).join(";")).join("\r\n")}`;
+}
