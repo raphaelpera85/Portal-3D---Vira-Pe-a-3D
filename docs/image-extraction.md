@@ -27,6 +27,8 @@ O parser procura rótulos em português e inglês e só preenche valores associa
 
 Os nomes de fatiador reconhecidos são Anycubic Slicer Next, OrcaSlicer, Bambu Studio, Cura, UltiMaker Cura, PrusaSlicer, Creality Print, ElegooSlicer, FlashPrint e ideaMaker. Reconhecer o nome não garante que todos os campos daquele programa ou versão sejam extraídos.
 
+O parser também lê valores apresentados na linha logo abaixo do rótulo, como em resumos que mostram “Model” e “211,63 g” em linhas separadas. A regra exige que a linha seguinte contenha apenas o valor e a unidade esperada; moeda explícita continua associada ao custo e não é inferida de `$` isolado.
+
 O reconhecimento textual de material preserva nomes de produtos do catálogo, incluindo Bambu Lab PLA Basic e PPA-CF, Creality Hyper PLA/ABS/PETG e HP ASA/TPU, além de PA11 Carbon Fiber, PETG Carbon Fiber, PC Blend, Water-Wash Resin 2.0 e ABS-Like Resin V3.0. O OCR não associa automaticamente a leitura a um registro ou perfil do catálogo.
 
 ## Consolidação de várias imagens

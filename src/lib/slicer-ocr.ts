@@ -31,13 +31,16 @@ function parseNumber(value: string) {
 }
 
 function findMeasurement(lines: string[], labels: string, units: string, normalize: (value: number, unit: string) => number, exclude?: RegExp) {
-  for (const line of lines) {
+  const expression = new RegExp(`${numberPattern}\\s*(${units})\\b`, "i");
+  const currencyPrefix = units.includes("r\\$") ? String.raw`(?:R\$|US\$|BRL|USD|\$)\s*` : "";
+  const standalone = new RegExp(`^\\s*[:=\\-–]?\\s*${currencyPrefix}${numberPattern}\\s*(${units})\\b\\s*$`, "i");
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
     if (exclude?.test(line)) continue;
     const label = new RegExp(labels, "i").exec(line);
     if (!label) continue;
     const after = line.slice(label.index + label[0].length);
-    const expression = new RegExp(`${numberPattern}\\s*(${units})\\b`, "i");
-    const match = expression.exec(after) ?? expression.exec(line.slice(0, label.index));
+    const match = expression.exec(after) ?? expression.exec(line.slice(0, label.index)) ?? standalone.exec(lines[index + 1] ?? "");
     if (!match) continue;
     const value = parseNumber(match[1]);
     if (Number.isFinite(value) && value >= 0) return normalize(value, match[2].toLowerCase());
@@ -46,10 +49,12 @@ function findMeasurement(lines: string[], labels: string, units: string, normali
 }
 
 function findCount(lines: string[], labels: string) {
-  for (const line of lines) {
+  const standalone = new RegExp(`^\\s*[:=\\-–]?\\s*${numberPattern}\\s*$`, "i");
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
     const label = new RegExp(labels, "i").exec(line);
     if (!label) continue;
-    const match = new RegExp(`${numberPattern}`, "i").exec(line.slice(label.index + label[0].length));
+    const match = new RegExp(`${numberPattern}`, "i").exec(line.slice(label.index + label[0].length)) ?? standalone.exec(lines[index + 1] ?? "");
     if (match) {
       const value = parseNumber(match[1]);
       if (Number.isInteger(value) && value >= 0) return value;
@@ -60,10 +65,11 @@ function findCount(lines: string[], labels: string) {
 
 function findPrintHours(lines: string[]) {
   const labels = /(?:print(?:ing)?\s*time|tempo\s+(?:total\s+de\s+)?impress[aã]o|tempo\s+estimado|dura[cç][aã]o|^time)\s*[:=\-]?/i;
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
     const label = labels.exec(line);
     if (!label) continue;
-    const tail = line.slice(label.index + label[0].length);
+    const tail = line.slice(label.index + label[0].length).trim() ? line.slice(label.index + label[0].length) : lines[index + 1] ?? "";
     const clock = /\b(\d{1,3}):(\d{1,2})\b/.exec(tail);
     if (clock) return Number(clock[1]) + Number(clock[2]) / 60;
     const compound = /(?:(\d+(?:[.,]\d+)?)\s*d(?:ays?)?\s*)?(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?(?:\s*(\d+(?:[.,]\d+)?)\s*m?(?:in(?:utes?)?)?)?|(?:(\d+(?:[.,]\d+)?)\s*m(?:in(?:utes?)?)?))/i.exec(tail);
@@ -78,10 +84,12 @@ function findPrintHours(lines: string[]) {
 
 function findCostCurrency(lines: string[]): "BRL" | "USD" | null {
   const labels = /(?:estimated\s+cost|material\s+cost|filament\s+cost|custo\s+(?:estimado|do\s+material)|\bcost\b)/i;
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
     const label = labels.exec(line);
     if (!label) continue;
-    const value = line.slice(label.index + label[0].length);
+    const sameLine = line.slice(label.index + label[0].length).replace(/^\s*[:=\-]?\s*/, "");
+    const value = sameLine || lines[index + 1] || "";
     if (/(?:R\$|BRL)\s*\d[\d.,]*|\d[\d.,]*\s*BRL\b|\d[\d.,]*\s*R\$/i.test(value)) return "BRL";
     if (/(?:USD\s*|US\$\s*)\d[\d.,]*|\d[\d.,]*\s*USD\b/i.test(value)) return "USD";
   }

@@ -7,6 +7,15 @@ describe("parseSlicerOcrTexts", () => {
     expect(result).toMatchObject({ slicer: "OrcaSlicer", modelGrams: 211.63, supportGrams: 12.17, totalGrams: 223.8, filamentGrams: 223.8, lengthMeters: 75.65, printHours: 13 + 40 / 60, filamentChanges: 1, materials: ["PLA"], estimatedCost: 16.799 });
   });
 
+  it("reads values placed on the line after their labels in slicer summaries", () => {
+    const result = parseSlicerOcrTexts(["Anycubic Slicer Next\nModel\n211,63 g\nSupports\n12,17 g\nTotal filament\n223,80 g\nFilament length\n75,65 m\nPrint time\n13h40\nFilament changes\n1\nEstimated cost\nR$ 16,799"]);
+    expect(result).toMatchObject({
+      slicer: "Anycubic Slicer Next", modelGrams: 211.63, supportGrams: 12.17, totalGrams: 223.8,
+      filamentGrams: 223.8, lengthMeters: 75.65, printHours: 13 + 40 / 60, filamentChanges: 1,
+      estimatedCost: 16.799, estimatedCostCurrency: "BRL",
+    });
+  });
+
   it("recognizes only explicit currency labels for slicer cost", () => {
     expect(parseSlicerOcrTexts(["Estimated cost: R$ 16,79"]).estimatedCostCurrency).toBe("BRL");
     expect(parseSlicerOcrTexts(["Estimated cost: USD 2.30"]).estimatedCostCurrency).toBe("USD");
