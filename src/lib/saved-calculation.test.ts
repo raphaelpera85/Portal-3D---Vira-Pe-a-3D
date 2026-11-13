@@ -135,6 +135,17 @@ describe("validateCalculationToSave", () => {
     expect(validateCalculationToSave("Cálculo antigo", JSON.stringify(snapshot)).calculation?.priceTargetId).toBeNull();
   });
 
+  it("preserves checked nozzles for the main print and each production component", () => {
+    const compatibilityNozzles = {
+      main: { equipmentId: "76543210-abcd-4123-8123-abcdef123456", nozzleId: "bambu-a1-mini-0-4" },
+      components: [{ equipmentId: "89abcdef-1234-4123-8123-123456789abc", nozzleId: "creality-k2-plus-0-6" }, { equipmentId: null, nozzleId: null }],
+    };
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify({ ...snapshot, compatibilityNozzles })).calculation?.compatibilityNozzles).toEqual(compatibilityNozzles);
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify({ ...snapshot, compatibilityNozzles: { main: { equipmentId: null, nozzleId: "../secret" }, components: [] } })).calculation).toBeNull();
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify({ ...snapshot, compatibilityNozzles: { main: { equipmentId: "bad-id", nozzleId: null }, components: [] } })).calculation).toBeNull();
+    expect(validateCalculationToSave("Antigo", JSON.stringify(snapshot)).calculation?.compatibilityNozzles).toEqual({ main: { equipmentId: null, nozzleId: null }, components: [] });
+  });
+
   it("keeps older single-piece snapshots as one-piece batches", () => {
     const result = validateCalculationToSave("Suporte de mesa", JSON.stringify(snapshot));
     expect(result.calculation?.input.batchQuantity).toBe(1);

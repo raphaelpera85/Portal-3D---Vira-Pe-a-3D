@@ -9,6 +9,22 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}
 const isRecord = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value);
 const validNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
 const optionalUuid = (value: unknown) => value == null || value === "" ? null : typeof value === "string" && uuidPattern.test(value) ? value : undefined;
+const optionalCatalogId = (value: unknown) => value == null || value === "" ? null : typeof value === "string" && value.length <= 120 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(value) ? value : undefined;
+export type SavedCompatibilityNozzleCheck = { equipmentId: string | null; nozzleId: string | null };
+export type SavedCompatibilityNozzles = { main: SavedCompatibilityNozzleCheck; components: SavedCompatibilityNozzleCheck[] };
+
+function parseCompatibilityNozzles(value: unknown): SavedCompatibilityNozzles | undefined {
+  if (value === undefined) return { main: { equipmentId: null, nozzleId: null }, components: [] };
+  if (!isRecord(value) || !isRecord(value.main) || !Array.isArray(value.components) || value.components.length > MAX_PRODUCTION_COMPONENTS) return undefined;
+  const parseCheck = (check: Record<string, unknown>) => {
+    const equipmentId = optionalUuid(check.equipmentId);
+    const nozzleId = optionalCatalogId(check.nozzleId);
+    return equipmentId === undefined || nozzleId === undefined ? undefined : { equipmentId, nozzleId };
+  };
+  const main = parseCheck(value.main);
+  const components = value.components.map((check) => isRecord(check) ? parseCheck(check) : undefined);
+  return !main || components.some((check) => !check) ? undefined : { main, components: components as SavedCompatibilityNozzleCheck[] };
+}
 export type SavedSlicerMetrics = {
   slicer: string; modelGrams: number | null; supportGrams: number | null; totalGrams: number | null;
   purgeGrams: number | null; wipeTowerGrams: number | null; filamentGrams: number | null; derivedMass: boolean;
@@ -91,6 +107,8 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   }
   const priceTargetId = optionalUuid(parsed.priceTargetId);
   if (priceTargetId === undefined) return { calculation: null, error: "O anúncio selecionado para receber o preço é inválido." };
+  const compatibilityNozzles = parseCompatibilityNozzles(parsed.compatibilityNozzles);
+  if (!compatibilityNozzles) return { calculation: null, error: "A seleção de bicos para a checagem de compatibilidade é inválida." };
   const slicer = parseSlicerMetrics(parsed.slicer);
   if (slicer === undefined) return { calculation: null, error: "Os dados reconhecidos pelo OCR são inválidos." };
   const origin = parsed.origin === undefined ? "unknown" : parsed.origin;
@@ -165,7 +183,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
 
   return {
     calculation: {
-      title: rawTitle.trim(), productId, printerId, profileId, priceTargetId, input: safeInput, channels: safeChannels,
+      title: rawTitle.trim(), productId, printerId, profileId, priceTargetId, compatibilityNozzles, input: safeInput, channels: safeChannels,
       slicer, origin: origin as CalculationOrigin,
       result: { breakdown: result.breakdown, unitCostCents: result.unitCostCents, channels: result.channels },
     },

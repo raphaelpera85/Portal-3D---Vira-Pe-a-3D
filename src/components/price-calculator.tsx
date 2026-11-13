@@ -28,7 +28,7 @@ type CalculatorEquipment = EquipmentRateInput & { id: string; label: string; cat
 export type CalculatorProduct = { id: string; name: string; slug: string; published: boolean; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; variants: Array<{ id: string; options: Record<string, string>; priceBrl: number }>; canApplyPrice: boolean };
 type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics };
 type CalculatorMaterial = MaterialEntry;
-type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string };
+type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string };
 
 const initialFields: FormFields = {
   batchQuantity: "1", batchFixedCost: "", material: "", filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "",
@@ -54,10 +54,10 @@ const materialLabel = (material?: CalculatorMaterial) => material ? `${material.
 const compatibilityText = { compatible: "Compatível", conditional: "Compatível com condições", incompatible: "Incompatível", unverified: "Não verificado" };
 const metric = (value: number | null, suffix: string) => value == null ? "—" : `${value.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ${suffix}`;
 
-function MaterialCompatibilityNote({ equipmentId, materialName, equipment, materials, nozzles }: {
+function MaterialCompatibilityNote({ equipmentId, materialName, equipment, materials, nozzles, nozzleId, onNozzleChange }: {
   equipmentId: string; materialName: string; equipment: CalculatorEquipment[]; materials: CalculatorMaterial[]; nozzles: NozzleEntry[];
+  nozzleId: string; onNozzleChange: (id: string) => void;
 }) {
-  const [nozzleId, setNozzleId] = useState("");
   if (!equipmentId) return null;
   const selectedEquipment = equipment.find((item) => item.id === equipmentId);
   if (!selectedEquipment) return null;
@@ -86,7 +86,7 @@ function MaterialCompatibilityNote({ equipmentId, materialName, equipment, mater
 
   return <div className={`calculator-compatibility is-${status}`} role="status">
     <strong>Material e impressora: {compatibilityText[status]}</strong>
-    {material?.process === "filament" && selectedEquipment.catalogPrinter && nozzles.length > 0 && <label>Bico para esta checagem<select value={nozzleId} onChange={(event) => setNozzleId(event.target.value)}><option value="">Sem bico selecionado</option>{nozzles.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name} · {item.diameterMm} mm</option>)}</select></label>}
+    {material?.process === "filament" && selectedEquipment.catalogPrinter && nozzles.length > 0 && <label>Bico para esta checagem<select value={nozzleId} onChange={(event) => onNozzleChange(event.target.value)}><option value="">Sem bico selecionado</option>{nozzles.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name} · {item.diameterMm} mm</option>)}</select></label>}
     <small>{nozzleHint}</small>
     {message ? <p>{message}</p> : <ul>{evaluation?.checks.map((check) => <li key={check.key}>{check.label}: {check.detail}</li>)}</ul>}
   </div>;
@@ -118,6 +118,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const [pricingMode, setPricingMode] = useState<"margin" | "markup">("margin");
   const [calculationTitle, setCalculationTitle] = useState("");
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
+  const [selectedNozzleId, setSelectedNozzleId] = useState("");
+  const [componentNozzleIds, setComponentNozzleIds] = useState<Record<string, string>>({});
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedPriceTargetId, setSelectedPriceTargetId] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState("");
@@ -189,6 +191,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     && Boolean(consignmentChannelInput?.fixedFee !== "") && consignmentPrice?.priceCents != null && result.unitCostCents != null;
   const hasCurrentValues = Object.entries(fields).some(([key, value]) => value !== "" && key !== "batchQuantity" && key !== "batchFixedCost") || extras.length > 0
     || productionComponents.length > 0
+    || Boolean(selectedNozzleId) || Object.values(componentNozzleIds).some(Boolean)
     || channels.some((channel) => channel.feePercent !== "" || channel.fixedFee !== "" || channel.logisticsCost !== "" || channel.discountValue !== "" || !initialChannels.some((initial) => initial.id === channel.id && initial.name === channel.name))
     || pricingMode !== "margin";
 
@@ -205,11 +208,14 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   }
 
   function addProductionComponent() {
-    setProductionComponents((current) => current.length >= MAX_PRODUCTION_COMPONENTS ? current : [...current, {
-      id: crypto.randomUUID(), equipmentId: "", name: "", material: "", printer: "", piecesPerProduct: "1",
+    if (productionComponents.length >= MAX_PRODUCTION_COMPONENTS) return;
+    const id = crypto.randomUUID();
+    setProductionComponents((current) => [...current, {
+      id, equipmentId: "", name: "", material: "", printer: "", piecesPerProduct: "1",
       filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "", energyPricePerKwh: "",
       machineCostPerHour: "", depreciationPerHour: "", maintenancePerHour: "", laborMinutes: "", laborRatePerHour: "",
     }]);
+    setComponentNozzleIds((current) => ({ ...current, [id]: "" }));
   }
 
   function updateProductionComponent(id: string, field: keyof ProductionComponentFields, value: string) {
@@ -220,9 +226,13 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     const selected = equipment.find((item) => item.id === equipmentId);
     if (!selected) {
       setProductionComponents((current) => current.map((component) => component.id === componentId ? { ...component, equipmentId: "", maintenancePerHour: "" } : component));
+      setComponentNozzleIds((current) => ({ ...current, [componentId]: "" }));
       return;
     }
     const rates = deriveEquipmentRates(selected);
+    if (productionComponents.find((component) => component.id === componentId)?.equipmentId !== equipmentId) {
+      setComponentNozzleIds((current) => ({ ...current, [componentId]: "" }));
+    }
     setProductionComponents((current) => current.map((component) => component.id === componentId ? {
       ...component,
       equipmentId,
@@ -242,9 +252,11 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     const selected = equipment.find((item) => item.id === id);
     if (!selected) {
       setSelectedEquipmentId("");
+      setSelectedNozzleId("");
       setFields((current) => ({ ...current, maintenancePerHour: "" }));
       return;
     }
+    if (selectedEquipmentId !== id) setSelectedNozzleId("");
     setSelectedEquipmentId(id);
     const rates = deriveEquipmentRates(selected);
     setFields((current) => ({
@@ -331,14 +343,20 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   function duplicateCalculation(snapshot: string, title: string, productId: string | null, printerId: string | null, profileId: string | null) {
     if (hasCurrentValues && !window.confirm("Abrir esta cópia substituirá os valores atuais da calculadora. Deseja continuar?")) return;
     try {
-      const saved = JSON.parse(snapshot) as { input?: PrintCostInput; channels?: SalesChannel[]; slicer?: SavedSlicerMetrics | null; origin?: CalculationOrigin; priceTargetId?: string | null };
+      const saved = JSON.parse(snapshot) as { input?: PrintCostInput; channels?: SalesChannel[]; slicer?: SavedSlicerMetrics | null; origin?: CalculationOrigin; priceTargetId?: string | null; compatibilityNozzles?: { main?: { equipmentId?: string | null; nozzleId?: string | null }; components?: Array<{ equipmentId?: string | null; nozzleId?: string | null }> } };
       if (!saved.input || !Array.isArray(saved.channels)) return;
       setFields({ ...initialFields, ...Object.fromEntries(Object.entries(saved.input).filter(([key]) => key !== "additionalCosts" && key !== "productionComponents" && key !== "filamentCosts" && key !== "pricingMode").map(([key, value]) => [key, String(value)])) } as FormFields);
       setPricingMode(saved.input.pricingMode === "markup" ? "markup" : "margin");
       setExtras(saved.input.additionalCosts.map((item) => ({ id: crypto.randomUUID(), name: item.name, amount: String(item.amount) })));
-      setProductionComponents((saved.input.productionComponents ?? []).map((component) => ({
-        id: crypto.randomUUID(), equipmentId: "", ...Object.fromEntries(Object.entries(component).map(([key, value]) => [key, String(value)])),
-      } as ProductionComponentFields)));
+      const restoredComponents = (saved.input.productionComponents ?? []).map((component, index) => ({
+        id: crypto.randomUUID(), equipmentId: equipment.some((item) => item.id === saved.compatibilityNozzles?.components?.[index]?.equipmentId) ? saved.compatibilityNozzles?.components?.[index]?.equipmentId ?? "" : "", ...Object.fromEntries(Object.entries(component).map(([key, value]) => [key, String(value)])),
+      } as ProductionComponentFields));
+      setProductionComponents(restoredComponents);
+      setComponentNozzleIds(Object.fromEntries(restoredComponents.map((component, index) => {
+        const id = saved.compatibilityNozzles?.components?.[index]?.nozzleId ?? "";
+        return [component.id, nozzles.some((nozzle) => nozzle.id === id) ? id : ""];
+      })));
+      setSelectedNozzleId(nozzles.some((nozzle) => nozzle.id === saved.compatibilityNozzles?.main?.nozzleId) ? saved.compatibilityNozzles?.main?.nozzleId ?? "" : "");
       setChannels(saved.channels.map((channel) => ({
         ...channel,
         feePercent: String(channel.feePercent),
@@ -420,7 +438,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
           <section className="price-card">
             <div className="price-card-heading"><span className="price-step">02</span><div><h2>Máquina e energia</h2><p>Use horas, potência e custos medidos para a execução completa do lote. O tempo da impressora é contado uma vez.</p></div></div>
             {equipment.length > 0 && <label className="equipment-calculator-select">Equipamento cadastrado<select value={selectedEquipmentId} onChange={(event) => selectEquipment(event.target.value)}><option value="">Sem equipamento (manter campos manuais)</option>{equipment.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select><small>Selecionar preenche dados conhecidos; o equipamento fica vinculado ao salvar e os campos continuam editáveis.</small></label>}
-            <MaterialCompatibilityNote equipmentId={selectedEquipmentId} materialName={fields.material} equipment={equipment} materials={materials} nozzles={nozzles} />
+            <MaterialCompatibilityNote equipmentId={selectedEquipmentId} materialName={fields.material} equipment={equipment} materials={materials} nozzles={nozzles} nozzleId={selectedNozzleId} onNozzleChange={setSelectedNozzleId} />
             <div className="price-fields-grid">
               <CostField label="Tempo de impressão" suffix="horas" value={fields.printHours} onChange={(value) => updateField("printHours", value)} />
               <CostField label="Potência média" suffix="W" hint="Use a média medida, não a potência nominal." value={fields.averagePowerWatts} onChange={(value) => updateField("averagePowerWatts", value)} />
@@ -432,7 +450,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             <div className="price-subheading"><h3>Outros arquivos e componentes impressos</h3><button type="button" className="price-add-button" onClick={addProductionComponent} disabled={productionComponents.length >= MAX_PRODUCTION_COMPONENTS}><CirclePlus size={15} /> Adicionar componente</button></div>
             <p className="price-field-hint">Cada componente representa o total de material, tempo e custos de todas as execuções necessárias para este lote. Informe no tempo total quantas execuções foram necessárias; não multiplicamos pelas peças.</p>
             {productionComponents.length > 0 && <div className="production-component-list">{productionComponents.map((component) => <article className="production-component-card" key={component.id}>
-              <div className="production-component-heading"><strong>Componente de produção</strong><button type="button" aria-label={`Remover ${component.name || "componente"}`} onClick={() => setProductionComponents((current) => current.filter((item) => item.id !== component.id))}><Trash2 size={15} /></button></div>
+              <div className="production-component-heading"><strong>Componente de produção</strong><button type="button" aria-label={`Remover ${component.name || "componente"}`} onClick={() => { setProductionComponents((current) => current.filter((item) => item.id !== component.id)); setComponentNozzleIds((current) => { const next = { ...current }; delete next[component.id]; return next; }); }}><Trash2 size={15} /></button></div>
               <div className="price-fields-grid production-component-identification">
                 <label className="price-field"><span>Arquivo ou componente</span><div className="price-input-wrap"><input type="text" maxLength={80} value={component.name} onChange={(event) => updateProductionComponent(component.id, "name", event.target.value)} placeholder="Ex.: Tampa" /></div></label>
                 {materials.length > 0 && <label className="price-field"><span>Material do catálogo técnico</span><select value={materials.find((item) => materialLabel(item) === component.material)?.id ?? ""} onChange={(event) => updateProductionComponent(component.id, "material", materialLabel(materials.find((item) => item.id === event.target.value)))}>
@@ -443,7 +461,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
                 <CostField label="Quantidade por produto final" suffix="un." step="1" max={MAX_BATCH_QUANTITY} value={component.piecesPerProduct} onChange={(value) => updateProductionComponent(component.id, "piecesPerProduct", value)} idSuffix={component.id} />
               </div>
               {equipment.length > 0 && <label className="equipment-calculator-select production-equipment-select">Equipamento cadastrado para este componente<select value={component.equipmentId} onChange={(event) => selectComponentEquipment(component.id, event.target.value)}><option value="">Informar custos manualmente</option>{equipment.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select><small>Preenche a impressora, potência, tarifa e depreciação conhecidos; os campos permanecem editáveis.</small></label>}
-              <MaterialCompatibilityNote equipmentId={component.equipmentId} materialName={component.material} equipment={equipment} materials={materials} nozzles={nozzles} />
+              <MaterialCompatibilityNote equipmentId={component.equipmentId} materialName={component.material} equipment={equipment} materials={materials} nozzles={nozzles} nozzleId={componentNozzleIds[component.id] ?? ""} onNozzleChange={(id) => setComponentNozzleIds((current) => ({ ...current, [component.id]: id }))} />
               <div className="price-fields-grid production-component-costs">
                 <CostField label="Material consumido no componente" suffix="g" value={component.filamentGrams} onChange={(value) => updateProductionComponent(component.id, "filamentGrams", value)} idSuffix={component.id} />
                 <CostField label="Preço do material" suffix="R$/kg" hint="Informe seu preço de compra." value={component.filamentPricePerKg} onChange={(value) => updateProductionComponent(component.id, "filamentPricePerKg", value)} idSuffix={component.id} />
@@ -598,12 +616,12 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             <input type="hidden" name="productId" value={selectedProductId} />
             <input type="hidden" name="printerId" value={selectedEquipmentId} />
             <input type="hidden" name="profileId" value={selectedProfileId.startsWith("model:") ? "" : selectedProfileId} />
-            <input type="hidden" name="snapshot" value={JSON.stringify({ input, channels: parsedChannels, slicer: slicerMetrics, origin: calculationOrigin, priceTargetId: selectedPriceTargetId || null })} />
+            <input type="hidden" name="snapshot" value={JSON.stringify({ input, channels: parsedChannels, slicer: slicerMetrics, origin: calculationOrigin, priceTargetId: selectedPriceTargetId || null, compatibilityNozzles: { main: { equipmentId: selectedEquipmentId || null, nozzleId: selectedNozzleId || null }, components: productionComponents.map((component) => ({ equipmentId: component.equipmentId || null, nozzleId: componentNozzleIds[component.id] || null })) } })} />
             <button className="button button-primary" type="submit" disabled={saving || !hasProductionCost || result.errors.length > 0}>{saving ? "Salvando…" : "Salvar cálculo"}</button>
             {saveState.message && <p className={saveState.success ? "auth-notice is-success" : "auth-notice is-error"} role="status">{saveState.message}</p>}
           </form>
           {savedCalculationsError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar o histórico. Confira as migrações da calculadora e dos vínculos com produtos, equipamentos e perfis.</p> : savedCalculations.length === 0 ? <p className="price-history-empty">Os cálculos salvos aparecerão aqui.</p> : <div className="price-history-list">{savedCalculations.map((saved) => <article className="price-history-item" key={saved.id}>
-            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span><span>Origem dos dados: {{ manual: "Entrada manual", ocr: "OCR de imagem", "3mf": "Arquivo 3MF", profile: "Perfil de impressão", unknown: "Não registrada (histórico antigo)" }[saved.origin]}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}{saved.priceTargetId && <span>Preço destinado a: {saved.priceTargetName ?? "anúncio não disponível nesta loja"}</span>}{saved.printerName && <span>Equipamento: {saved.printerName}</span>}{saved.profileName && <span>Perfil: {saved.profileName}</span>}{saved.slicer && <><span>{saved.slicer.slicer} · modelo {metric(saved.slicer.modelGrams, "g")} · suportes {metric(saved.slicer.supportGrams, "g")} · total {metric(saved.slicer.totalGrams, "g")} · filamentos {metric(saved.slicer.filamentGrams, "g")} · purga {metric(saved.slicer.purgeGrams, "g")} · torre {metric(saved.slicer.wipeTowerGrams, "g")} · comprimento {metric(saved.slicer.lengthMeters, "m")} · trocas {saved.slicer.filamentChanges == null ? "—" : saved.slicer.filamentChanges.toLocaleString("pt-BR")} · tempo {metric(saved.slicer.printHours, "h")}</span>{saved.slicer.filaments.length > 0 && <details><summary>Consumo por filamento ({saved.slicer.filaments.length})</summary><ul>{saved.slicer.filaments.map((filament) => <li key={filament.index}>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""} · {metric(filament.grams, "g")} · {metric(filament.lengthMeters, "m")} · preço/kg {money(filament.pricePerKg == null ? null : Math.round(filament.pricePerKg * 100))}</li>)}</ul></details>}{saved.slicer.conflicts.length > 0 && <span>Campos com conflito ignorados: {saved.slicer.conflicts.join(", ")}</span>}</>}</div>
+            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span><span>Origem dos dados: {{ manual: "Entrada manual", ocr: "OCR de imagem", "3mf": "Arquivo 3MF", profile: "Perfil de impressão", unknown: "Não registrada (histórico antigo)" }[saved.origin]}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}{saved.priceTargetId && <span>Preço destinado a: {saved.priceTargetName ?? "anúncio não disponível nesta loja"}</span>}{saved.compatibilityNozzleLabels.length > 0 && <span>Bicos verificados: {saved.compatibilityNozzleLabels.join("; ")}</span>}{saved.printerName && <span>Equipamento: {saved.printerName}</span>}{saved.profileName && <span>Perfil: {saved.profileName}</span>}{saved.slicer && <><span>{saved.slicer.slicer} · modelo {metric(saved.slicer.modelGrams, "g")} · suportes {metric(saved.slicer.supportGrams, "g")} · total {metric(saved.slicer.totalGrams, "g")} · filamentos {metric(saved.slicer.filamentGrams, "g")} · purga {metric(saved.slicer.purgeGrams, "g")} · torre {metric(saved.slicer.wipeTowerGrams, "g")} · comprimento {metric(saved.slicer.lengthMeters, "m")} · trocas {saved.slicer.filamentChanges == null ? "—" : saved.slicer.filamentChanges.toLocaleString("pt-BR")} · tempo {metric(saved.slicer.printHours, "h")}</span>{saved.slicer.filaments.length > 0 && <details><summary>Consumo por filamento ({saved.slicer.filaments.length})</summary><ul>{saved.slicer.filaments.map((filament) => <li key={filament.index}>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""} · {metric(filament.grams, "g")} · {metric(filament.lengthMeters, "m")} · preço/kg {money(filament.pricePerKg == null ? null : Math.round(filament.pricePerKg * 100))}</li>)}</ul></details>}{saved.slicer.conflicts.length > 0 && <span>Campos com conflito ignorados: {saved.slicer.conflicts.join(", ")}</span>}</>}</div>
             <div className="price-history-actions"><button className="button button-secondary" type="button" onClick={() => duplicateCalculation(saved.snapshot, saved.title, saved.productId, saved.printerId, saved.profileId)}>Abrir como cópia</button><form action={deleteMakerCalculation} onSubmit={(event) => { if (!window.confirm(`Excluir “${saved.title}” do histórico?`)) event.preventDefault(); }}><input type="hidden" name="calculationId" value={saved.id} /><button className="price-history-delete" type="submit">Excluir</button></form></div>
           </article>)}</div>}
         </> : <div className="price-history-locked"><p>Entre com uma conta de fabricante e loja aprovada para manter um histórico privado dos seus custos.</p><Link className="button button-secondary" href="/conta">Acessar conta</Link></div>}

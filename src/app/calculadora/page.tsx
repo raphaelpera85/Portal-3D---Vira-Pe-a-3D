@@ -28,7 +28,7 @@ export default async function CalculatorPage() {
   let productNotice: string | null = null;
   let profileNotice: string | null = null;
   let canSaveCalculations = false;
-  let savedCalculations: Array<{ id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string }> = [];
+  let savedCalculations: Array<{ id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string }> = [];
   let savedCalculationsError = false;
   if (actor.supabase && actor.user && actor.authorized) {
     const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
@@ -119,6 +119,10 @@ export default async function CalculatorPage() {
         const priceTargetProduct = products.find((product) => product.id === validated.calculation.priceTargetId
           || product.variants.some((variant) => variant.id === validated.calculation.priceTargetId));
         const priceTargetVariant = priceTargetProduct?.variants.find((variant) => variant.id === validated.calculation.priceTargetId);
+        const compatibilityChecks = [validated.calculation.compatibilityNozzles.main, ...validated.calculation.compatibilityNozzles.components];
+        const compatibilityNozzleLabels = compatibilityChecks.flatMap((check, index) => check.nozzleId ? [
+          `${index === 0 ? "Execução principal" : validated.calculation.input.productionComponents?.[index - 1]?.name || `Componente ${index}`} · ${catalog.nozzles.find((nozzle) => nozzle.id === check.nozzleId)?.name ?? "bico não disponível no catálogo"}`,
+        ] : []);
         const linkedPrinter = equipment.find((item) => item.id === validated.calculation.printerId);
         const linkedProfile = profiles.find((item) => item.id === validated.calculation.profileId);
         return [{
@@ -131,13 +135,14 @@ export default async function CalculatorPage() {
           productUrl: linkedProduct?.published ? `/produtos/${linkedProduct.slug}` : null,
           priceTargetId: validated.calculation.priceTargetId,
           priceTargetName: priceTargetProduct ? `${priceTargetProduct.name}${priceTargetVariant ? ` · ${Object.entries(priceTargetVariant.options).map(([name, value]) => `${name}: ${value}`).join(" · ")}` : ""}` : null,
+          compatibilityNozzleLabels,
           printerId: validated.calculation.printerId,
           printerName: linkedPrinter?.label ?? null,
           profileId: validated.calculation.profileId,
           profileName: linkedProfile?.name ?? null,
           slicer: validated.calculation.slicer,
           origin: validated.calculation.origin,
-          snapshot: JSON.stringify({ input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin, priceTargetId: validated.calculation.priceTargetId }),
+          snapshot: JSON.stringify({ input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin, priceTargetId: validated.calculation.priceTargetId, compatibilityNozzles: validated.calculation.compatibilityNozzles }),
         }];
       });
     }
