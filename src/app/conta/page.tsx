@@ -49,7 +49,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               <span className="account-kicker">CONTA CONECTADA</span><h2>{displayName ?? "Bem-vindo(a)"}</h2><p>{user.email}</p>
               <p className="account-next-step">O cadastro está ativo. {isMaker ? "Sua conta maker está aprovada e já pode administrar a loja." : "Use as ferramentas e acompanhe suas solicitações nesta conta."}</p>
               <div className="account-links">
-                {isBuyer && <><Link className="button button-secondary" href="/orcamentos">Meus pedidos</Link><Link className="button button-secondary" href="/conta/modelagem">Pedidos de modelagem</Link><Link className="button button-secondary" href="/favoritos"><Heart size={15} aria-hidden="true" /> Favoritos</Link></>}
+                {isBuyer && <><Link className="button button-secondary" href="/conta/notificacoes">Notificações</Link><Link className="button button-secondary" href="/orcamentos">Meus pedidos</Link><Link className="button button-secondary" href="/conta/modelagem">Pedidos de modelagem</Link><Link className="button button-secondary" href="/favoritos"><Heart size={15} aria-hidden="true" /> Favoritos</Link></>}
                 {isMaker && <Link className="button button-primary" href="/painel/maker">Abrir painel da loja</Link>}
                 {isDesigner && <Link className="button button-primary" href="/painel/designer">Gerenciar perfil de designer</Link>}
                 {isAdmin && <Link className="button button-secondary" href="/admin/fabricantes">Revisar marketplace</Link>}

@@ -34,7 +34,7 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
 
   return <><SiteHeader /><main className="account-page shell designer-buyer-requests">
     <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
-    <div className="account-heading"><p className="eyebrow">SERVIÇOS CRIATIVOS</p><h1>Pedidos de <em>modelagem.</em></h1><p>Acompanhe os briefings enviados e as propostas recebidas.</p></div>
+    <div className="account-heading"><p className="eyebrow">SERVIÇOS CRIATIVOS</p><h1>Pedidos de <em>modelagem.</em></h1><p>Acompanhe os briefings enviados e as propostas recebidas.</p><Link className="button button-secondary" href="/conta/notificacoes">Ver notificações</Link></div>
     {resultado && resultMessages[resultado] && <p className={`auth-notice ${resultado === "retorno-pagamento" ? "is-success" : "is-error"}`} role="status">{resultMessages[resultado]}</p>}
     {paymentResult.error && <p className="auth-notice is-error" role="status">O status do checkout está temporariamente indisponível.</p>}
     {error ? <section className="account-card"><h2>Pedidos indisponíveis</h2><p>A migration de serviços de designers ainda precisa ser aplicada ao Supabase.</p></section>
