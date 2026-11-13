@@ -1,12 +1,16 @@
 export type Credentials = { email: string; password: string };
 export type Registration = Credentials & { displayName: string };
 
-export function validateCredentials(emailValue: unknown, passwordValue: unknown): Credentials | null {
-  if (typeof emailValue !== "string" || typeof passwordValue !== "string") return null;
+export function validateEmailAddress(emailValue: unknown): string | null {
+  if (typeof emailValue !== "string") return null;
   const email = emailValue.trim().toLocaleLowerCase("en-US");
-  const password = passwordValue;
-  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 8 || password.length > 128) return null;
-  return { email, password };
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}
+
+export function validateCredentials(emailValue: unknown, passwordValue: unknown): Credentials | null {
+  const email = validateEmailAddress(emailValue);
+  if (!email || typeof passwordValue !== "string" || passwordValue.length < 8 || passwordValue.length > 128) return null;
+  return { email, password: passwordValue };
 }
 
 export function validateRegistration(nameValue: unknown, emailValue: unknown, passwordValue: unknown): Registration | null {

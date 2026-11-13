@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getUserWithRole } from "@/lib/auth-role.server";
-import { validateCredentials, validateRegistration } from "@/lib/auth-validation";
+import { validateCredentials, validateEmailAddress, validateRegistration } from "@/lib/auth-validation";
 import { validateBuyerAddress } from "@/lib/buyer-address";
 
 export type AuthActionState = { message: string; success: boolean };
@@ -67,6 +67,36 @@ export async function signUpAction(_previous: AuthActionState, formData: FormDat
   if (error) return { message: "Não foi possível criar a conta. Verifique os dados ou tente novamente mais tarde.", success: false };
   if (data.session) redirect("/conta");
   return { message: "Cadastro iniciado. Confira seu e-mail para confirmar a conta e entrar.", success: true };
+}
+
+export async function requestPasswordResetAction(_previous: AuthActionState, formData: FormData): Promise<AuthActionState> {
+  const email = validateEmailAddress(formData.get("email"));
+  if (!email) return { message: invalidMessage, success: false };
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { message: "A recuperação de senha ainda não está conectada. Configure o Supabase para habilitar contas.", success: false };
+
+  const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? (await headers()).get("origin") ?? "http://localhost:3000";
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/callback?next=/conta/nova-senha` });
+  if (error) return { message: "Não foi possível enviar o link agora. Tente novamente mais tarde.", success: false };
+  return { message: "Se houver uma conta para esse e-mail, você receberá um link para redefinir a senha.", success: true };
+}
+
+export async function updatePasswordAction(_previous: AuthActionState, formData: FormData): Promise<AuthActionState> {
+  const password = formData.get("password");
+  const confirmation = formData.get("confirmation");
+  if (typeof password !== "string" || password.length < 8 || password.length > 128 || confirmation !== password) {
+    return { message: "Use uma senha entre 8 e 128 caracteres e confirme-a corretamente.", success: false };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { message: "A recuperação de senha ainda não está conectada. Configure o Supabase para habilitar contas.", success: false };
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { message: "O link expirou ou já foi usado. Solicite uma nova recuperação de senha.", success: false };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { message: "Não foi possível atualizar a senha. Tente novamente.", success: false };
+  return { message: "Senha atualizada. Você já pode acessar sua conta.", success: true };
 }
 
 export async function signOutAction() {

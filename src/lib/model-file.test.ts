@@ -127,6 +127,18 @@ describe("model dimensions", () => {
     });
   });
 
+  it("keeps separate consumption and print time for every plate in a real catalog 3MF", async () => {
+    const file = readFileSync(path.join(process.cwd(), "models/chainsawman-v2.3mf"));
+    const { slicePlates } = await readThreeMfPackage(new Uint8Array(file));
+
+    expect(slicePlates.map(({ index, weightGrams, printTimeSeconds }) => [index, weightGrams, printTimeSeconds])).toEqual([
+      [1, 33.94, 7535],
+      [2, 38.48, 8057],
+      [3, 7.41, 2586],
+      [4, 2.26, 1029],
+    ]);
+  });
+
   it("reads multiple colors from a real two-color catalog 3MF", async () => {
     const file = readFileSync(path.join(process.cwd(), "models/two-colours.3mf"));
     const { colors } = await readThreeMfPackage(new Uint8Array(file));

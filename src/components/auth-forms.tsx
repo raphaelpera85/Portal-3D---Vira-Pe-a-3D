@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { signInAction, signUpAction, type AuthActionState } from "@/app/conta/actions";
 
 const initialState: AuthActionState = { message: "", success: false };
@@ -16,6 +17,7 @@ export function AuthForms() {
         <form className="auth-form" action={signIn}>
           <label>E-mail<input type="email" name="email" autoComplete="email" maxLength={254} required /></label>
           <label>Senha<input type="password" name="password" autoComplete="current-password" minLength={8} maxLength={128} required /></label>
+          <Link className="account-recovery-link" href="/conta/recuperar-senha">Esqueceu a senha?</Link>
           <button className="button button-primary" type="submit" disabled={signingIn}>{signingIn ? "Entrando…" : "Entrar"}</button>
           <p className={`auth-notice${signInState.message ? " is-error" : ""}`} aria-live="polite">{signInState.message}</p>
         </form>
