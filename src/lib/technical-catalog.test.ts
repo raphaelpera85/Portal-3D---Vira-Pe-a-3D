@@ -14,6 +14,7 @@ const qidiQ2Migration = readFileSync(new URL("../../supabase/migrations/20261114
 const qidiPlus5Migration = readFileSync(new URL("../../supabase/migrations/20261114130000_seed_qidi_plus5.sql", import.meta.url), "utf8");
 const qidiQ2cMigration = readFileSync(new URL("../../supabase/migrations/20261114140000_seed_qidi_q2c.sql", import.meta.url), "utf8");
 const qidiQ2cPowerMigration = readFileSync(new URL("../../supabase/migrations/20261114150000_fix_qidi_q2c_rated_power.sql", import.meta.url), "utf8");
+const bambuH2cMigration = readFileSync(new URL("../../supabase/migrations/20261114160000_seed_bambu_h2c.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -25,6 +26,7 @@ describe("verified technical catalog records", () => {
       ["Bambu Lab", "A1 mini", "Combo"],
       ["Bambu Lab", "H2S", "standard"],
       ["Bambu Lab", "H2S", "AMS 2 Pro Combo"],
+      ["Bambu Lab", "H2C", "standard"],
       ["Bambu Lab", "H3C", "AMS 3H Combo"],
       ["Bambu Lab", "P2S", "standard"],
       ["Bambu Lab", "P2S", "AMS 2 Pro Combo"],
@@ -80,9 +82,31 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(57);
+    expect(printers).toHaveLength(58);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("keeps the H2C's nozzle-specific volumes and optional Vortek-to-AMS filament expansion", () => {
+    const h2c = printers.find((printer) => printer.id === "bambu-h2c");
+    const h2cNozzles = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["bambu-h2c"] === "compatible");
+
+    expect(h2c).toMatchObject({
+      brand: "Bambu Lab", model: "H2C", variant: "standard", buildVolumeMm: { x: 305, y: 320, z: 325 },
+      buildVolumeDescription: "305 × 320 × 325 mm (um bico); 300 × 320 × 325 mm (dois bicos); 330 × 320 × 325 mm combinados",
+      extruders: 2, maxNozzleTemperatureC: 350, maxBedTemperatureC: 120, heatedBed: true, enclosure: true,
+      maximumSpeedMmPerSecond: null, multicolorSlots: 7,
+      technicalProperties: {
+        activeChamberHeating: true, activeChamberMaximumTemperatureC: 65,
+        singleNozzleBuildVolumeMm: { x: 305, y: 320, z: 325 },
+        dualNozzleBuildVolumeMm: { x: 300, y: 320, z: 325 },
+        combinedNozzleBuildVolumeMm: { x: 330, y: 320, z: 325 },
+        interchangeableHotends: 6, maxMulticolorFilamentsWithAms: 24,
+      },
+    });
+    expect(h2cNozzles.map((nozzle) => nozzle.diameterMm)).toEqual([0.2, 0.4, 0.6, 0.8]);
+    expect(bambuH2cMigration).toContain("'Bambu Lab', 'H2C', 'standard'");
+    expect(bambuH2cMigration).toContain("'H2C Vortek hotend'");
   });
 
   it("keeps the QIDI Max4's verified specifications without presenting toolhead speed as print speed", () => {

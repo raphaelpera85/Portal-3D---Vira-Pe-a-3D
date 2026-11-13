@@ -73,6 +73,11 @@ const bambuH2sSource = {
   url: "https://blog.bambulab.com/h2s-the-ultimate-single-nozzle-3d-printer-now-bigger-than-ever/",
   checkedAt: "2026-11-13",
 };
+const bambuH2cSource = {
+  label: "Bambu Lab — H2C specifications",
+  url: "https://blog.bambulab.com/bambu-lab-h2c-where-multi-material-vortek-system-meets-engineering-precision/",
+  checkedAt: "2026-11-13",
+};
 const bambuH3cSource = {
   label: "Bambu Lab — H3C specifications",
   url: "https://blog.bambulab.com/tool-changer-game-changer-bambu-lab-presents-h3c-the-defining-new-generation-of-3d-printers/",
@@ -610,6 +615,38 @@ export const printers: PrinterEntry[] = [{
   supportedMaterials: {},
   sources: [bambuH2sSource],
 }, {
+  id: "bambu-h2c",
+  name: "Bambu Lab H2C",
+  brand: "Bambu Lab",
+  model: "H2C",
+  variant: "standard",
+  buildVolumeDescription: "305 × 320 × 325 mm (um bico); 300 × 320 × 325 mm (dois bicos); 330 × 320 × 325 mm combinados",
+  technology: "FDM",
+  buildVolumeMm: { x: 305, y: 320, z: 325 },
+  extruders: 2,
+  filamentDiameterMm: null,
+  maxNozzleTemperatureC: 350,
+  maxBedTemperatureC: 120,
+  heatedBed: true,
+  enclosure: true,
+  maximumSpeedMmPerSecond: null,
+  maximumPowerWatts: null,
+  measuredAveragePowerWatts: null,
+  multicolorSlots: 7,
+  multicolorSystem: "Vortek (até 7 cores; expansão por AMS até 24 filamentos)",
+  technicalProperties: {
+    activeChamberHeating: true,
+    activeChamberMaximumTemperatureC: 65,
+    singleNozzleBuildVolumeMm: { x: 305, y: 320, z: 325 },
+    dualNozzleBuildVolumeMm: { x: 300, y: 320, z: 325 },
+    combinedNozzleBuildVolumeMm: { x: 330, y: 320, z: 325 },
+    interchangeableHotends: 6,
+    maxMulticolorFilamentsWithAms: 24,
+    supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8],
+  },
+  supportedMaterials: {},
+  sources: [bambuH2cSource],
+}, {
   id: "bambu-h3c-ams-3h-combo",
   name: "Bambu Lab H3C + AMS 3H",
   brand: "Bambu Lab",
@@ -974,6 +1011,18 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
+    id: `bambu-h2c-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · H2C Vortek hotend`,
+    brand: "Bambu Lab",
+    diameterMm: diameter,
+    material: null,
+    maxTemperatureC: 350,
+    abrasionResistant: null,
+    printerCompatibility: { "bambu-h2c": "compatible" as const },
+    original: diameter === 0.4,
+    sources: [bambuH2cSource],
+  })),
   ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `qidi-q2-${diameter}`,
     name: `Bico ${diameter.toLocaleString("pt-BR")} mm · QIDI Q2`,
