@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${profile.display_name} | Designers ViraPeça 3D`,
     description: profile.biography.slice(0, 160),
     alternates: { canonical: `/designers/${encodeURIComponent(profile.slug)}` },
-    openGraph: { title: `${profile.display_name} | Designers ViraPeça 3D`, description: profile.biography.slice(0, 160), type: "profile" },
+    openGraph: { title: `${profile.display_name} | Designers ViraPeça 3D`, description: profile.biography.slice(0, 160), type: "profile", images: ["/opengraph-image"] },
   } : { title: "Designer | ViraPeça 3D" };
 }
 

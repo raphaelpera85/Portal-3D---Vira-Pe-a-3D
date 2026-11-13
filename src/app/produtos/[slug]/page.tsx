@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     robots: product.demo ? { index: false, follow: false } : undefined,
     ...(getSiteUrl() ? {
       alternates: { canonical: `/produtos/${encodeURIComponent(product.slug)}` },
-      openGraph: { title: product.name, description: product.description || `${product.name}, por ${product.maker}.`, url: `/produtos/${encodeURIComponent(product.slug)}`, type: "website" as const, images: product.media.slice(0, 1) },
+      openGraph: { title: product.name, description: product.description || `${product.name}, por ${product.maker}.`, url: `/produtos/${encodeURIComponent(product.slug)}`, type: "website" as const, images: product.media[0] ? [product.media[0]] : ["/opengraph-image"] },
     } : {}),
   } : { title: "Produto não encontrado | ViraPeça 3D", robots: { index: false } };
 }

@@ -12,6 +12,7 @@
 - Propriedade Search Console recomendada: **Prefixo do URL** `https://virapeca3d.vercel.app/` (a ViraPeça não controla o DNS de `vercel.app` para criar uma propriedade Domínio)
 - Sitemap: <https://virapeca3d.vercel.app/sitemap.xml> (inclui as 94 páginas individuais de modelos 3D e anúncios, perfis e lojas públicos)
 - Robots: <https://virapeca3d.vercel.app/robots.txt>
+- Cartão social padrão: <https://virapeca3d.vercel.app/opengraph-image> (PNG, 1200 × 630, também usado pelo Twitter quando a página não define uma imagem própria)
 
 A produção está configurada com `NEXT_PUBLIC_SITE_URL=https://virapeca3d.vercel.app`; a homepage pública já responde com URL canônica nessa origem e sitemap/robots estão acessíveis. Produtos demonstrativos não entram no sitemap nem são indexáveis. Produtos reais entram somente quando publicados e acessíveis pelas políticas públicas do banco.
 
@@ -27,5 +28,7 @@ Ainda não foi criada propriedade no Search Console nem configurado o token de v
 ## Metadados e rastreamento
 
 A aplicação define título, descrição, URL canônica quando o domínio está configurado, Open Graph, Twitter Card e schema `WebSite` na homepage; lojas públicas também têm schema `Store`. Produtos publicados incluem schema `Product`; `Offer` aparece quando o preço exato está visível (incluindo cada licença digital) e a disponibilidade só é informada quando conhecida. Variantes físicas recebem `ProductGroup`, uma oferta por combinação e URL própria `?variant=<id>`; o seletor público atualiza preço, estoque e endereço. Anúncios "a partir de" e sob orçamento não publicam uma oferta ambígua. O JSON-LD escapa conteúdo fornecido pelo fabricante antes de inseri-lo na página. Ainda não há nota agregada; avaliações verificadas aparecem no conteúdo visível, sem marcação `AggregateRating`. A conta recebe `noindex`; o callback de autenticação é bloqueado pelo `robots.txt`. Produtos de demonstração recebem `noindex` e não aparecem no sitemap.
+
+A homepage fornece um cartão social de marca com 1200 × 630 px. Modelos e anúncios com mídia própria usam sua imagem; lojas sem banner e perfis de designers usam a imagem padrão. A arte não contém texto de produto nem informação de preço.
 
 O sitemap é dinâmico e usa apenas anúncios físicos/digitais, perfis de designers e lojas com status publicado, respeitando RLS. As rotas `/lojas` e `/designers` são incluídas como páginas fixas, e cada perfil aprovado aparece como URL própria. Arquivos de origem e links assinados de download nunca entram no sitemap. Se o Supabase estiver fora do ar, as páginas institucionais continuam no sitemap e os anúncios, perfis e lojas são omitidos.

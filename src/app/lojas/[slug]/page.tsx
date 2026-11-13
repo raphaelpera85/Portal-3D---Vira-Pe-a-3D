@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${store.name} | Lojas ViraPeça 3D`,
     description: store.description.slice(0, 160) || `Conheça os produtos e serviços da loja ${store.name} no ViraPeça 3D.`,
     alternates: { canonical: `/lojas/${encodeURIComponent(store.slug)}` },
-    openGraph: { title: store.name, description: store.description || `Vitrine de ${store.name} no ViraPeça 3D.`, type: "website", ...(store.banner_url ? { images: [store.banner_url] } : {}) },
+    openGraph: { title: store.name, description: store.description || `Vitrine de ${store.name} no ViraPeça 3D.`, type: "website", images: [store.banner_url || "/opengraph-image"] },
   };
 }
 
