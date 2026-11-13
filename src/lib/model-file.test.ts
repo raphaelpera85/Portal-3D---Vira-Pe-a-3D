@@ -95,6 +95,11 @@ describe("model dimensions", () => {
     ]);
   });
 
+  it("keeps RGB values from slicer filament colors that include alpha", () => {
+    expect(parseThreeMfSliceInfo('<plate><filament color="#1B1B1DFF" used_g="1"/></plate>'))
+      .toEqual([{ index: null, weightGrams: null, printTimeSeconds: null, supportUsed: null, filaments: [{ color: "1b1b1d", type: null, weightGrams: 1, lengthMeters: null }] }]);
+  });
+
   it("ignores malformed and oversized slicer metadata", () => {
     expect(parseThreeMfSliceInfo('<plate><metadata key="weight" value="-1"/><filament color="url(x)" used_g="NaN"/></plate>')).toEqual([]);
     expect(parseThreeMfSliceInfo(" ".repeat(256 * 1024 + 1))).toEqual([]);
@@ -140,6 +145,18 @@ describe("model dimensions", () => {
     expect(colors.faceColors).toEqual({ 12: ["00ff00"] });
     expect(colors.componentPartColors).toEqual([["00ff00", "0000ff"]]);
     expect(colors.palette).toEqual(["ff0000", "00ff00", "0000ff"]);
+  });
+
+  it("reads RGB colors from slicer palettes that include an alpha byte", () => {
+    const colors = parseThreeMfColors(
+      '<model><resources><object id="2" name="Body"/><object id="3" name="Face"/></resources><build><item objectid="2"/><item objectid="3"/></build></model>',
+      '<config><object id="2"><metadata key="name" value="Body"/><metadata key="extruder" value="1"/></object><object id="3"><metadata key="name" value="Face"/><metadata key="extruder" value="2"/></object></config>',
+      JSON.stringify({ filament_colour: ["#1B1B1DFF", "#D9A18480"] }),
+    );
+
+    expect(colors.palette).toEqual(["1b1b1d", "d9a184"]);
+    expect(colors.objectColors).toEqual(["1b1b1d", "d9a184"]);
+    expect(colors.namedColors).toEqual({ Body: "1b1b1d", Face: "d9a184" });
   });
 
   it("maps painted Bambu child objects to their root components", () => {

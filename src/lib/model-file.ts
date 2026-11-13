@@ -100,7 +100,7 @@ export function parseThreeMfSliceInfo(xml: string): ThreeMfSlicePlate[] {
     const filaments = [...body.matchAll(/<filament\b([^>]*)\/?\s*>/gi)].map(([, attrs]) => {
       const rawColor = attribute(attrs, "color")?.replace(/^#/, "");
       return {
-        color: rawColor && /^#[\da-f]{6}$/i.test(`#${rawColor}`) ? rawColor.toLowerCase() : null,
+        color: rawColor && /^[\da-f]{6}(?:[\da-f]{2})?$/i.test(rawColor) ? rawColor.slice(0, 6).toLowerCase() : null,
         type: attribute(attrs, "type") || null,
         weightGrams: numeric(attribute(attrs, "used_g")),
         lengthMeters: numeric(attribute(attrs, "used_m")),
@@ -121,7 +121,7 @@ export function parseThreeMfColors(modelXml: string, modelSettingsXml: string, p
   try {
     const settings = JSON.parse(projectSettingsText) as { filament_colour?: unknown };
     const colors = Array.isArray(settings.filament_colour) ? settings.filament_colour : typeof settings.filament_colour === "string" ? JSON.parse(settings.filament_colour) : [];
-    palette = colors.filter((color: unknown): color is string => typeof color === "string" && /^#?[\da-f]{6}$/i.test(color)).map((color: string) => color.replace(/^#/, "").toLowerCase());
+    palette = colors.filter((color: unknown): color is string => typeof color === "string" && /^#?[\da-f]{6}(?:[\da-f]{2})?$/i.test(color)).map((color: string) => color.replace(/^#/, "").slice(0, 6).toLowerCase());
   } catch { /* Non-Bambu 3MF files have no slicer palette. */ }
 
   const filamentColor = (extruder: string | undefined) => palette[Number(extruder) - 1];
