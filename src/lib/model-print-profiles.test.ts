@@ -95,4 +95,26 @@ describe("validateModelPrintProfile", () => {
     });
     expect(result?.metrics).toMatchObject({ modelGrams: 6, filamentGrams: 10, filaments: [{ index: 1, grams: 10, material: "PETG", color: "#FFAA00" }] });
   });
+
+  it("preserves sparse 3MF filament slot ids when editing a model profile", () => {
+    const result = validateModelPrintProfile({
+      ...input, filamentGrams: "222.17",
+      filamentLines: "#000000; PLA; 3.08; 1.02; 1\n#00AE42; PLA; 219.09; 72.29; 3",
+      manualOverrideFields: "filamentLines",
+      importedMetrics: JSON.stringify({
+        slicer: "Arquivo 3MF · placa 1", modelGrams: null, supportGrams: null, totalGrams: 222.17,
+        purgeGrams: null, wipeTowerGrams: null, filamentGrams: 222.17, derivedMass: false, lengthMeters: 73.31,
+        printHours: null, filamentChanges: null, estimatedCost: null, materials: ["PLA"],
+        filaments: [
+          { index: 1, grams: 3.08, lengthMeters: 1.02, pricePerKg: null, material: "PLA", color: "#000000" },
+          { index: 3, grams: 219.09, lengthMeters: 72.29, pricePerKg: null, material: "PLA", color: "#00AE42" },
+        ], conflicts: [],
+      }),
+    });
+    expect(result?.metrics.filaments.map(({ index }) => index)).toEqual([1, 3]);
+  });
+
+  it("rejects duplicate filament slot ids in manual profile data", () => {
+    expect(validateModelPrintProfile({ ...input, filamentLines: "#000000; PLA; 3; 1; 3\n#00AE42; PLA; 5; 2; 3" })).toBeNull();
+  });
 });

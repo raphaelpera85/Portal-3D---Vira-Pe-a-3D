@@ -9,6 +9,7 @@
 - STL e OBJ não carregam uma unidade padronizada. O usuário precisa confirmá-la antes que as dimensões sejam mostradas.
 - 3MF lê a unidade do arquivo (milímetro por padrão no padrão 3MF); unidades desconhecidas precisam de confirmação manual. GLB/GLTF usam metros, como definido pelo glTF. A dimensão pode ser mostrada em mm, cm ou m.
 - A paleta mostra cores de vértice, materiais e atribuições presentes no arquivo, como aparência visual, sem atribuir filamentos. Selecione uma amostra para realçar os componentes correspondentes no modelo e na lista.
+- Quando um 3MF inclui metadados de fatiamento, a página mostra o consumo, material, cor e slot registrados por filamento; esses dados de slot não associam automaticamente um filamento a uma malha visível.
 - Malhas de uma cena podem ser ocultadas individualmente quando o formato as mantém separadas.
 - Escala proporcional de 10% a 300% pode ser baixada como uma nova cópia GLB. A unidade original é convertida para metros conforme o padrão glTF; componentes ocultos não entram na cópia.
 - A página pública do produto permite selecionar perfis de impressão comunitários ou oficiais aprovados e consultar o lote, os parâmetros e o consumo declarados pelo fabricante.
@@ -22,7 +23,7 @@
 - A exportação cria um GLB com a geometria, materiais e componentes visíveis compatíveis com glTF; metadados específicos de impressão ou do formato de origem podem não ser preservados. O arquivo original permanece intacto.
 - A biblioteca usa bucket privado, limita os arquivos e o conjunto a 20 MB e verifica a propriedade antes de registrar o upload. A migração `20261112040057_private_model_uploads.sql` está aplicada ao projeto Supabase configurado.
 - Com a migração `20261112040236_custom_print_requests.sql`, o comprador pode pedir impressão para um modelo salvo. As dimensões calculadas pelo visualizador após confirmação da unidade são salvas e ficam bloqueadas no formulário; se estiverem ausentes, é necessário reabrir o modelo com a unidade correta e salvá-lo novamente. O banco compara as dimensões enviadas com as armazenadas, mas elas ainda dependem do cliente e devem ser conferidas pelo fabricante no fatiador. O acesso do fabricante aos arquivos depende de convite e usa links assinados de 2 minutos.
-- Uploads locais aceitam até 20 MiB por conjunto; arquivos 3MF do catálogo podem ter até 50 MiB comprimidos. A extração de qualquer pacote 3MF é limitada a 150 MiB descompactados para reduzir risco de arquivos ZIP desproporcionais.
+- Uploads locais aceitam até 20 MiB por conjunto; arquivos 3MF do catálogo podem ter até 50 MiB comprimidos. A extração de qualquer pacote 3MF é limitada a 300 MiB descompactados para reduzir risco de arquivos ZIP desproporcionais.
 
 ## Implementação
 

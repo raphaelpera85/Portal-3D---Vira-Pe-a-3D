@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { strToU8, zipSync } from "fflate";
 import { BufferAttribute } from "three";
-import { exceedsThreeMfExpansionLimit, formatModelDimensions, getModelColorMatchedComponentIds, getModelColorMatchedTriangleIndexes, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
+import { exceedsThreeMfExpansionLimit, formatModelDimensions, formatThreeMfFilamentLabel, getModelColorMatchedComponentIds, getModelColorMatchedTriangleIndexes, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
 import { mapThreeMfPlateToSlicerMetrics } from "./saved-calculation";
 
 describe("model upload validation", () => {
@@ -69,6 +69,11 @@ describe("model color highlighting", () => {
 });
 
 describe("model dimensions", () => {
+  it("labels a filament by its source slot id, falling back to its list position", () => {
+    expect(formatThreeMfFilamentLabel({ index: 3, type: "PLA" }, 1)).toBe("Filamento 3 · PLA");
+    expect(formatThreeMfFilamentLabel({ index: null, type: null }, 1)).toBe("Filamento 2");
+  });
+
   it("converts confirmed model units to glTF meters", () => {
     expect(modelUnitToMeters("mm")).toBe(0.001);
     expect(modelUnitToMeters("in")).toBe(0.0254);

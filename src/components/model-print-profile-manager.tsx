@@ -22,7 +22,7 @@ const statusLabels = { draft: "Privado", pending: "Aguardando revisão", publish
 const metricNumber = (value: number | null) => value == null ? "" : String(value);
 const filamentLines = (filaments: SavedSlicerMetrics["filaments"]) => filaments.filter((item) => item.grams !== null || item.lengthMeters !== null).map((item) => {
   const color = item.color && /^#?[0-9a-f]{6}$/i.test(item.color) ? `#${item.color.replace(/^#/, "").toUpperCase()}` : "";
-  return `${color}; ${item.material ?? ""}; ${metricNumber(item.grams)}; ${metricNumber(item.lengthMeters)}`;
+  return `${color}; ${item.material ?? ""}; ${metricNumber(item.grams)}; ${metricNumber(item.lengthMeters)}; ${item.index}`;
 }).join("\n");
 
 export function ModelPrintProfileManager({ modelSlug, profiles, plates, authenticated, notice }: {
@@ -88,7 +88,7 @@ function ModelPrintProfileForm({ modelSlug, profile, plates }: { modelSlug: stri
     <label>Comprimento total (m)<input name="lengthMeters" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.lengthMeters ?? null)} onChange={markManualOverride} /></label>
     <label>Tempo de impressão (h)<input name="printHours" type="number" min="0" max="1000000000" step="0.001" defaultValue={metricNumber(metrics?.printHours ?? null)} onChange={markManualOverride} /></label>
     <label>Trocas de filamento<input name="filamentChanges" type="number" min="0" max="1000000000" step="1" defaultValue={metricNumber(metrics?.filamentChanges ?? null)} onChange={markManualOverride} /></label>
-    <label className="model-print-profile-colors">Consumo por cor (opcional)<textarea name="filamentLines" rows={3} maxLength={4000} defaultValue={filamentLines(metrics?.filaments ?? [])} placeholder="#336699; PLA; 20; 6,2" onChange={markManualOverride} /><small>Até 32 linhas, uma por filamento: cor hexadecimal; material; gramas; metros. Use cor vazia quando o arquivo não a identifica.</small></label>
+    <label className="model-print-profile-colors">Consumo por cor (opcional)<textarea name="filamentLines" rows={3} maxLength={4000} defaultValue={filamentLines(metrics?.filaments ?? [])} placeholder="#336699; PLA; 20; 6,2; 3" onChange={markManualOverride} /><small>Até 32 linhas, uma por filamento: cor hexadecimal; material; gramas; metros; número do filamento. Use cor vazia quando o arquivo não a identifica.</small></label>
     <input type="hidden" name="manualOverrideFields" value={manualOverrideFields.join(",")} />
     <input type="hidden" name="importedMetrics" value={importedMetrics ? JSON.stringify(importedMetrics) : ""} />
     <button className="button button-primary model-print-profile-submit" type="submit">{profile?.sharing_scope === "community" && profile.review_status === "published" ? "Atualizar e reenviar para revisão" : profile?.sharing_scope === "community" ? "Salvar e reenviar para revisão" : profile ? "Salvar como particular" : "Salvar perfil"}</button>

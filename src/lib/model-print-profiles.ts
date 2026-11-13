@@ -24,17 +24,20 @@ function parseManualFilaments(value: unknown, materialName: string) {
   if (lines.length > 32) return undefined;
   if (!lines.length) return [];
   const filaments = lines.map((line, index) => {
-    const match = line.match(/^\s*(#[0-9a-f]{6})?\s*;\s*([^;]{0,40})\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*$/i);
+    const match = line.match(/^\s*(#[0-9a-f]{6})?\s*;\s*([^;]{0,40})\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*(?:;\s*(\d{1,3}))?\s*$/i);
     if (!match || !match[3] && !match[4]) return null;
     const grams = match[3] ? Number(match[3].replace(",", ".")) : null;
     const lengthMeters = match[4] ? Number(match[4].replace(",", ".")) : null;
+    const filamentIndex = match[5] ? Number(match[5]) : index + 1;
+    if (!Number.isSafeInteger(filamentIndex) || filamentIndex < 1) return null;
     if ([grams, lengthMeters].some((item) => item !== null && (!Number.isFinite(item) || item < 0))) return null;
-    return { index: index + 1, grams, lengthMeters, pricePerKg: null, material: match[2].trim() || materialName || null, color: match[1]?.toUpperCase() ?? null };
+    return { index: filamentIndex, grams, lengthMeters, pricePerKg: null, material: match[2].trim() || materialName || null, color: match[1]?.toUpperCase() ?? null };
   });
   if (filaments.some((item) => item === null)) return undefined;
   const validFilaments = filaments.filter((item): item is NonNullable<typeof item> => item !== null);
   const colors = validFilaments.map((item) => item.color).filter((item): item is string => item !== null);
-  return new Set(colors).size === colors.length ? validFilaments : undefined;
+  const indexes = validFilaments.map((item) => item.index);
+  return new Set(colors).size === colors.length && new Set(indexes).size === indexes.length ? validFilaments : undefined;
 }
 
 function validateImportedMetrics(value: unknown): SavedSlicerMetrics | null {

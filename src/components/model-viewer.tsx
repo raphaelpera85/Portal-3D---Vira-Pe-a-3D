@@ -11,7 +11,7 @@ import { createMeterExportCopy } from "@/lib/model-export";
 import {
   formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
   type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds,
-  getModelColorMatchedTriangleIndexes, getModelFormat, readThreeMfPackage, validateModelFiles,
+  formatThreeMfFilamentLabel, getModelColorMatchedTriangleIndexes, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
 
 type ViewName = "frente" | "tras" | "topo" | "base" | "esquerda" | "direita";
@@ -590,7 +590,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
                 {plate.supportUsed !== null && <span>{plate.supportUsed ? "Inclui suportes" : "Sem suportes"}</span>}
               </div>
               {plate.filaments.length > 0 && <ul>{plate.filaments.map((filament, filamentIndex) => <li key={`${filament.color ?? filament.type ?? "filamento"}-${filamentIndex}`}>
-                <span className="slice-info-filament-name">{filament.color && <i style={{ backgroundColor: `#${filament.color}` }} aria-hidden="true" />}{filament.type || `Filamento ${filamentIndex + 1}`}</span>
+                <span className="slice-info-filament-name">{filament.color && <i style={{ backgroundColor: `#${filament.color}` }} aria-hidden="true" />}{formatThreeMfFilamentLabel(filament, filamentIndex)}</span>
                 <span>{filament.weightGrams !== null ? `${formatSliceNumber(filament.weightGrams)} g` : ""}{filament.lengthMeters !== null ? `${filament.weightGrams !== null ? " · " : ""}${formatSliceNumber(filament.lengthMeters)} m` : ""}</span>
               </li>)}</ul>}
             </div>)}

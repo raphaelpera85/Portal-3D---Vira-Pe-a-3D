@@ -10,4 +10,6 @@ Perfis aprovados ficam somente para leitura pelo fabricante. Um perfil recusado 
 
 Os detalhes públicos de cada modelo também aceitam perfis particulares do autor e submissões comunitárias. A equipe pode aprovar uma submissão como comunitária ou oficial, ou recusá-la com nota; perfis publicados podem ser copiados para a conta de outro usuário. A view `visible_model_print_profiles` expõe apenas perfis próprios ou compartilhados publicados, oculta o identificador do autor e limita a nota de revisão ao autor e à equipe. A migration `20261113150000_model_print_profile_sharing.sql` implementa esse fluxo e está versionada no Git, mas ainda não foi aplicada ao Supabase.
 
+Perfis por modelo podem importar métricas de uma placa 3MF ou receber valores manuais. O campo opcional de consumo por cor aceita até 32 linhas no formato `#RRGGBB; material; gramas; metros; filamento`; o último campo preserva o número original do slot, inclusive quando os slots não são consecutivos. Linhas antigas sem esse campo continuam válidas e recebem numeração sequencial.
+
 As migrations devem continuar versionadas em `supabase/migrations/` e aplicadas em ordem. Publicar alterações de código pelo Git/Vercel não aplica automaticamente o schema Supabase.

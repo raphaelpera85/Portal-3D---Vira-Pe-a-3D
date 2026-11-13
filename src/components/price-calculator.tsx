@@ -424,7 +424,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
                 const color = slicerColorPresentation(filament.color);
                 return (
                   <li key={`${filament.index}-${index}`}>
-                    <span>{color?.cssColor && <i className="three-mf-filament-color" style={{ backgroundColor: color.cssColor }} aria-hidden="true" />}{filament.material || `Filamento ${filament.index}`}{color ? ` · ${color.label}` : ""}</span>
+                    <span>{color?.cssColor && <i className="three-mf-filament-color" style={{ backgroundColor: color.cssColor }} aria-hidden="true" />}{`Filamento ${filament.index}`}{filament.material ? ` · ${filament.material}` : ""}{color ? ` · ${color.label}` : ""}</span>
                     <label><span className="sr-only">Massa em gramas do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.grams ?? ""} placeholder="g" onChange={(event) => updateSlicerFilament(index, { grams: event.target.value === "" ? null : Number(event.target.value) })} /></label>
                     <label><span className="sr-only">Comprimento em metros do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.lengthMeters ?? ""} placeholder="m" onChange={(event) => updateSlicerFilament(index, { lengthMeters: event.target.value === "" ? null : Number(event.target.value) })} /></label>
                     <label><span className="sr-only">Preço por quilo do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.pricePerKg ?? ""} placeholder="R$/kg" onChange={(event) => updateSlicerFilament(index, { pricePerKg: event.target.value === "" ? null : Number(event.target.value) })} /></label>

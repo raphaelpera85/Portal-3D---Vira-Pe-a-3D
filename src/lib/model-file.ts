@@ -9,6 +9,11 @@ export type ModelDimensions = { x: number; y: number; z: number };
 export type ThreeMfColorData = { componentPaintColors: string[][]; componentTriangleColors: string[][][]; componentPartColors: string[][]; faceColors: Record<number, string[]>; objectColors: string[]; namedColors: Record<string, string>; palette: string[]; paintPaletteColors: string[] };
 export type ThreeMfSlicePlate = { index: number | null; weightGrams: number | null; printTimeSeconds: number | null; supportUsed: boolean | null; filaments: Array<{ index: number | null; color: string | null; type: string | null; weightGrams: number | null; lengthMeters: number | null }> };
 
+export function formatThreeMfFilamentLabel(filament: Pick<ThreeMfSlicePlate["filaments"][number], "index" | "type">, position: number) {
+  const index = filament.index ?? position + 1;
+  return `Filamento ${index}${filament.type ? ` · ${filament.type}` : ""}`;
+}
+
 export function getModelColorMatchedComponentIds(components: Array<{ id: string; colors: string[] }>, color: string | null) {
   return color ? components.filter((component) => component.colors.includes(color)).map((component) => component.id) : [];
 }
