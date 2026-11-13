@@ -26,6 +26,11 @@ describe("parseSlicerOcrTexts", () => {
     expect(parseSlicerOcrTexts(["Filament 1: Prusament PA11 Carbon Fiber black 12 g"]).filaments[0].material).toBe("PRUSAMENT PA11 CARBON FIBER");
   });
 
+  it("preserves Bambu Lab and Creality catalog material names", () => {
+    const names = ["Bambu Lab PLA Basic", "Bambu Lab PPA-CF", "Creality Hyper PLA", "Creality Hyper ABS", "Creality Hyper PETG", "Creality HP ASA", "Creality HP-TPU"];
+    for (const name of names) expect(parseSlicerOcrTexts([`Material: ${name}`]).materials).toEqual([name.toUpperCase()]);
+  });
+
   it("leaves currency empty when screenshots disagree", () => {
     const result = parseSlicerOcrTexts(["Cost: R$ 10.00", "Cost: USD 10.00"]);
     expect(result.estimatedCostCurrency).toBeNull();

@@ -4,7 +4,7 @@ const massLabels = {
   support: String.raw`(?:supports?|suportes?)`,
   total: String.raw`(?:filament\s+(?:used|usage|total)|material\s+(?:used|usage|total)|(?:consumo|peso)\s+total|total(?:\s+(?:filament|material|weight|consumption))?)`,
 };
-const materialPattern = String.raw`(?:(?:Prusament|Anycubic|ELEGOO)\s+)?(?:Water[- ]Wash\s+Resin(?:\s+\d+(?:\.\d+)?)?|Standard\s+Resin(?:\s+V\d+(?:\.\d+)?)?|ABS[- ]?Like\s+Resin(?:\s+V?\d+(?:\.\d+)?)?|PPA[- ]CF|PA11(?:[- ](?:CF|Carbon[- ]?Fiber))?|PETG(?:[- ](?:CF|Carbon[- ]?Fiber))?|PC\s+Blend|TPU\s*95A|PLA(?:\+|\s*(?:Silk|Matte|Basic))?|PETG|ABS|ASA|TPU|PA(?:-CF)?|NYLON|PC|PVA|HIPS|RESIN|RESINA)`;
+const materialPattern = String.raw`(?:(?:Prusament|Anycubic|ELEGOO|Bambu\s+Lab|Creality)\s+)?(?:Water[- ]Wash\s+Resin(?:\s+\d+(?:\.\d+)?)?|Standard\s+Resin(?:\s+V\d+(?:\.\d+)?)?|ABS[- ]?Like\s+Resin(?:\s+V?\d+(?:\.\d+)?)?|Hyper\s+(?:PLA|ABS|PETG)|HP[- ](?:ASA|TPU)|PPA[- ]CF|PA11(?:[- ](?:CF|Carbon[- ]?Fiber))?|PETG(?:[- ](?:CF|Carbon[- ]?Fiber))?|PC\s+Blend|TPU\s*95A|PLA(?:\+|\s*(?:Silk|Matte|Basic))?|PETG|ABS|ASA|TPU|PA(?:-CF)?|NYLON|PC|PVA|HIPS|RESIN|RESINA)`;
 const colorPattern = String.raw`(?:preto|branco|vermelho|azul|verde|amarelo|laranja|roxo|rosa|cinza|marrom|black|white|red|blue|green|yellow|orange|purple|pink|gray|grey|brown)`;
 const slicerPatterns: Array<[RegExp, string]> = [
   [/Anycubic\s+Slicer\s+Next/i, "Anycubic Slicer Next"],
