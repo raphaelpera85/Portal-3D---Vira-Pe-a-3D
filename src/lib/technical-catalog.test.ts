@@ -10,6 +10,7 @@ const ender3V4Migration = readFileSync(new URL("../../supabase/migrations/202611
 const ender5MaxMigration = readFileSync(new URL("../../supabase/migrations/20261114020000_seed_creality_ender_5_max.sql", import.meta.url), "utf8");
 const bambuPetgHfMigration = readFileSync(new URL("../../supabase/migrations/20261114030000_seed_bambu_petg_hf.sql", import.meta.url), "utf8");
 const qidiMax4Migration = readFileSync(new URL("../../supabase/migrations/20261114110000_seed_qidi_max4.sql", import.meta.url), "utf8");
+const qidiQ2Migration = readFileSync(new URL("../../supabase/migrations/20261114120000_seed_qidi_q2.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -40,6 +41,8 @@ describe("verified technical catalog records", () => {
       ["Sovol", "SV08", "standard"],
       ["QIDI Tech", "Plus4", "standard"],
       ["QIDI Tech", "Max4", "standard"],
+      ["QIDI Tech", "Q2", "standard"],
+      ["QIDI Tech", "Q2", "QIDI Box Combo"],
       ["Artillery", "M1 Pro", "standard"],
       ["FLSUN", "V400 Max", "standard"],
       ["Raise3D", "Pro3 HS", "standard"],
@@ -70,7 +73,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(51);
+    expect(printers).toHaveLength(53);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -94,6 +97,25 @@ describe("verified technical catalog records", () => {
     }], [], [], [], []).printers[0].maximumSpeedDescription).toBe("800 mm/s de deslocamento do cabeçote; velocidade de impressão não informada");
     expect(qidiMax4Migration).toContain("'QIDI Tech', 'Max4', 'standard'");
     expect(qidiMax4Migration).toContain("select 'QIDI Tech', 'Max4 nozzle'");
+  });
+
+  it("keeps QIDI Q2 variants, the included four-slot Box, and its distinct compatible nozzle family", () => {
+    const q2 = printers.filter((printer) => printer.model === "Q2");
+    const q2Nozzles = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["qidi-q2"] === "compatible"
+      || nozzle.printerCompatibility?.["qidi-q2-box-combo"] === "compatible");
+
+    expect(q2).toHaveLength(2);
+    expect(q2[0]).toMatchObject({
+      id: "qidi-q2", variant: "standard", buildVolumeMm: { x: 270, y: 270, z: 256 },
+      maximumSpeedMmPerSecond: null, multicolorSystem: "QIDI Box (vendido separadamente)",
+    });
+    expect(q2[1]).toMatchObject({
+      id: "qidi-q2-box-combo", variant: "QIDI Box Combo", multicolorSystem: "QIDI Box", multicolorSlots: 4,
+    });
+    expect(q2Nozzles).toHaveLength(4);
+    expect(q2Nozzles.every((nozzle) => nozzle.printerCompatibility?.["qidi-max4"] === undefined)).toBe(true);
+    expect(qidiQ2Migration).toContain("'QIDI Tech', 'Q2', 'QIDI Box Combo'");
+    expect(qidiQ2Migration).toContain("and nozzle.model = 'Q2 nozzle'");
   });
 
   it("keeps the Bambu Lab A1 and A1 mini variants in the local fallback with exact hotend compatibility", () => {

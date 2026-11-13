@@ -86,4 +86,10 @@ test("technical catalog shows Flashforge AD5X conditions after selecting it", as
   await expect(page.locator(".technical-facts").first()).toContainText("Câmara ativa máxima");
   await expect(page.locator(".technical-facts").first()).toContainText("65 °C");
   await expect(page.locator(".technical-facts").first()).toContainText("800 mm/s de deslocamento do cabeçote");
+
+  await printer.selectOption({ label: "QIDI Tech · Q2 · standard" });
+  await expect(page.locator(".technical-facts").first()).toContainText("270 × 270 × 256 mm");
+  await expect(page.locator(".technical-facts").first()).toContainText("600 mm/s de deslocamento do cabeçote");
+  await printer.selectOption({ label: "QIDI Tech · Q2 · QIDI Box Combo" });
+  await expect(page.locator(".technical-facts").first()).toContainText("QIDI Box · até 4 filamentos");
 });

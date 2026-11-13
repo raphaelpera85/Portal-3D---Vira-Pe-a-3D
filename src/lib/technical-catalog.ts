@@ -83,6 +83,11 @@ const qidiMax4Source = {
   url: "https://us.qidi3d.com/pages/qidi-max4-techspecs",
   checkedAt: "2026-11-13",
 };
+const qidiQ2Source = {
+  label: "QIDI Tech — Q2 Technical Specifications",
+  url: "https://us.qidi3d.com/products/qidi-q2",
+  checkedAt: "2026-11-13",
+};
 const elegooCentauri2Source = {
   label: "ELEGOO — Centauri 2 official specifications",
   url: "https://us.elegoo.com/products/centauri-2",
@@ -120,6 +125,8 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "sovol-sv08", brand: "Sovol", model: "SV08", variant: "standard", technology: "FDM", buildVolumeMm: { x: 350, y: 350, z: 345 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 700, sourceUrl: "https://www.sovol3d.com/products/sovol-sv08-3d-printer" }),
   seededPrinter({ id: "qidi-plus4", brand: "QIDI Tech", model: "Plus4", variant: "standard", technology: "FDM", buildVolumeMm: { x: 305, y: 305, z: 280 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 850, technicalProperties: { activeChamberMaximumTemperatureC: 65, ratedPowerComponentsW: [450, 400] }, sourceUrl: "https://us.qidi3d.com/pages/qidi-plus-4-techspecs" }),
   seededPrinter({ id: "qidi-max4", brand: "QIDI Tech", model: "Max4", variant: "standard", technology: "FDM", buildVolumeMm: { x: 390, y: 390, z: 340 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedDescription: "800 mm/s de deslocamento do cabeçote; velocidade de impressão não informada", multicolorSystem: "QIDI Box (vendido separadamente)", technicalProperties: { maxToolheadSpeedMmPerSecond: 800, activeChamberMaximumTemperatureC: 65, maxAccelerationMmPerSecondSquared: 30000, ratedPowerComponentsW: [150, 500, 700], manufacturerSupportedMaterials: ["PLA", "ABS", "ASA", "PETG", "TPU", "PA", "PC", "PPS-CF"] }, sourceUrl: "https://us.qidi3d.com/pages/qidi-max4-techspecs", checkedAt: "2026-11-13" }),
+  seededPrinter({ id: "qidi-q2", brand: "QIDI Tech", model: "Q2", variant: "standard", technology: "FDM", buildVolumeMm: { x: 270, y: 270, z: 256 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedDescription: "600 mm/s de deslocamento do cabeçote; velocidade de impressão não informada", multicolorSystem: "QIDI Box (vendido separadamente)", technicalProperties: { maxToolheadSpeedMmPerSecond: 600, activeChamberMaximumTemperatureC: 65, maxAccelerationMmPerSecondSquared: 20000, ratedPowerComponentsW: [350, 280], manufacturerSupportedMaterials: ["PLA", "PETG", "ABS", "ASA", "TPU", "PA", "PC", "PPS-CF"], maximumMulticolorFilamentsWithExtraBoxes: 16 }, sourceUrl: "https://us.qidi3d.com/products/qidi-q2", checkedAt: "2026-11-13" }),
+  seededPrinter({ id: "qidi-q2-box-combo", brand: "QIDI Tech", model: "Q2", variant: "QIDI Box Combo", technology: "FDM", buildVolumeMm: { x: 270, y: 270, z: 256 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedDescription: "600 mm/s de deslocamento do cabeçote; velocidade de impressão não informada", multicolorSystem: "QIDI Box", multicolorSlots: 4, technicalProperties: { maxToolheadSpeedMmPerSecond: 600, activeChamberMaximumTemperatureC: 65, maxAccelerationMmPerSecondSquared: 20000, ratedPowerComponentsW: [350, 280], manufacturerSupportedMaterials: ["PLA", "PETG", "ABS", "ASA", "TPU", "PA", "PC", "PPS-CF"], maximumMulticolorFilamentsWithExtraBoxes: 16 }, sourceUrl: "https://us.qidi3d.com/products/qidi-q2", checkedAt: "2026-11-13" }),
   seededPrinter({ id: "artillery-m1-pro", brand: "Artillery", model: "M1 Pro", variant: "standard", technology: "FDM", buildVolumeMm: { x: 260, y: 260, z: 260 }, maxNozzleTemperatureC: 320, maximumSpeedMmPerSecond: 600, sourceUrl: "https://uk.artillery3d.com/pages/m1" }),
   seededPrinter({ id: "flsun-v400-max", brand: "FLSUN", model: "V400 Max", variant: "standard", technology: "FDM", buildVolumeDescription: "Cilíndrico · Ø500 × 550 mm (altura cilíndrica máx. 480 mm)", filamentDiameterMm: 1.75, maxNozzleTemperatureC: 350, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 1400, technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 500, buildHeightMm: 550, buildHeightConditions: { singleColorMm: 480, multicolorMm: 480 } }, sourceUrl: "https://wiki.flsun3d.com/en/V400MaxProductIntroduction" }),
   seededPrinter({ id: "raise3d-pro3-hs", brand: "Raise3D", model: "Pro3 HS", variant: "standard", technology: "FDM", buildVolumeDescription: "300 × 300 × 300 mm (extrusão simples) · 255 × 300 × 300 mm (dupla)", extruders: 2, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 320, maxBedTemperatureC: 120, heatedBed: true, maximumSpeedMmPerSecond: 500, technicalProperties: { singleExtrusionVolumeMm: { x: 300, y: 300, z: 300 }, dualExtrusionVolumeMm: { x: 255, y: 300, z: 300 } }, sourceUrl: "https://www.raise3d.com/raise3d-pro3-hs-series/", documentationUrl: "https://www.raise3d.com/pro3-series/" }),
@@ -953,6 +960,18 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
+    id: `qidi-q2-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · QIDI Q2`,
+    brand: "QIDI Tech",
+    diameterMm: diameter,
+    material: diameter === 0.4 ? "Bimetálico com aço endurecido" : null,
+    maxTemperatureC: 370,
+    abrasionResistant: null,
+    printerCompatibility: { "qidi-q2": "compatible" as const, "qidi-q2-box-combo": "compatible" as const },
+    original: diameter === 0.4,
+    sources: [qidiQ2Source],
+  })),
   ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `qidi-max4-${diameter}`,
     name: `Bico ${diameter.toLocaleString("pt-BR")} mm · QIDI Max4`,
