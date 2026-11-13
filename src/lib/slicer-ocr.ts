@@ -25,7 +25,7 @@ export function slicerColorPresentation(color: unknown) {
 }
 
 const slicerPatterns: Array<[RegExp, string]> = [
-  [/Anycubic\s+Slicer\s+Next/i, "Anycubic Slicer Next"],
+  [/Anycubic\s*Slicer\s*Next/i, "Anycubic Slicer Next"],
   [/OrcaSlicer/i, "OrcaSlicer"],
   [/Bambu\s*Studio/i, "Bambu Studio"],
   [/PrusaSlicer/i, "PrusaSlicer"],
