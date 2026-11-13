@@ -83,6 +83,30 @@ describe("verified technical catalog records", () => {
     });
   });
 
+  it("includes official H3C specifications without treating toolhead speed or tools as print speed or filament count", () => {
+    const printer = printers.find((item) => item.id === "bambu-h3c-ams-3h-combo");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: { x: 330, y: 320, z: 325 },
+      maxNozzleTemperatureC: 350,
+      maxBedTemperatureC: 120,
+      filamentDiameterMm: null,
+      maximumSpeedMmPerSecond: null,
+      maximumSpeedDescription: "1.400 mm/s de deslocamento do cabeçote; velocidade de impressão não informada",
+      multicolorSlots: null,
+      multicolorSystem: "SwapTek + AMS 3H",
+      technicalProperties: {
+        activeChamberHeating: true,
+        maximumChamberTemperatureC: 65,
+        maxToolheadSpeedMmPerSecond: 1400,
+        maxToolheadAccelerationMmPerSecondSquared: 25000,
+        printToolCount: 9,
+        supportedFilamentDiametersMm: [1.75, 2.85],
+      },
+    });
+    expect(printer?.sources[0].url).toBe("https://blog.bambulab.com/tool-changer-game-changer-bambu-lab-presents-h3c-the-defining-new-generation-of-3d-printers/");
+  });
+
   it("keeps cylindrical build volume descriptive instead of treating it as a rectangular box", () => {
     const catalog = mapTechnicalCatalog([{
       id: "flsun-v400-max",

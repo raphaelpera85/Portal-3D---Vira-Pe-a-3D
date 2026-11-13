@@ -53,6 +53,11 @@ const bambuH2sSource = {
   url: "https://blog.bambulab.com/h2s-the-ultimate-single-nozzle-3d-printer-now-bigger-than-ever/",
   checkedAt: "2026-11-13",
 };
+const bambuH3cSource = {
+  label: "Bambu Lab — H3C specifications",
+  url: "https://blog.bambulab.com/tool-changer-game-changer-bambu-lab-presents-h3c-the-defining-new-generation-of-3d-printers/",
+  checkedAt: "2026-11-13",
+};
 const plaSource = {
   label: "Bambu Lab — PLA Basic",
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
@@ -216,6 +221,45 @@ export const printers: PrinterEntry[] = [{
   },
   supportedMaterials: {},
   sources: [bambuH2sSource],
+}, {
+  id: "bambu-h3c-ams-3h-combo",
+  name: "Bambu Lab H3C + AMS 3H",
+  brand: "Bambu Lab",
+  model: "H3C",
+  variant: "AMS 3H Combo",
+  buildVolumeDescription: null,
+  technology: "FDM",
+  buildVolumeMm: { x: 330, y: 320, z: 325 },
+  extruders: null,
+  filamentDiameterMm: null,
+  maxNozzleTemperatureC: 350,
+  maxBedTemperatureC: 120,
+  heatedBed: true,
+  enclosure: true,
+  maximumSpeedMmPerSecond: null,
+  maximumSpeedDescription: "1.400 mm/s de deslocamento do cabeçote; velocidade de impressão não informada",
+  maximumPowerWatts: null,
+  measuredAveragePowerWatts: null,
+  multicolorSlots: null,
+  multicolorSystem: "SwapTek + AMS 3H",
+  technicalProperties: {
+    activeChamberHeating: true,
+    maximumChamberTemperatureC: 65,
+    maxToolheadSpeedMmPerSecond: 1400,
+    maxToolheadAccelerationMmPerSecondSquared: 25000,
+    printToolCount: 9,
+    includedAms: "AMS 3H",
+    supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8],
+    supportedFilamentDiametersMm: [1.75, 2.85],
+    hardenedExtruderGears: true,
+    includedNozzleMaterial: "hardened steel",
+    airPurificationFilterGrade: "HEPA H11",
+    filamentDrying: true,
+    externalDimensionsMm: { x: 493, y: 571, z: 587 },
+    weightKgIncludingAms: 36.28,
+  },
+  supportedMaterials: {},
+  sources: [bambuH3cSource],
 }];
 
 export const materials: MaterialEntry[] = [
