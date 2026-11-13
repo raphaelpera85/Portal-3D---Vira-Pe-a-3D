@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { validateProductQuoteOffer } from "@/lib/marketplace-validation";
 
@@ -35,5 +36,22 @@ export async function submitDesignerServiceQuote(
 
   revalidatePath("/painel/designer");
   revalidatePath("/conta/modelagem");
-  return { message: "Proposta enviada ao comprador. O pagamento ainda não foi processado.", success: true };
+  return { message: "Proposta enviada ao comprador. Ele pode aceitar e pagar pelo checkout do portal.", success: true };
+}
+
+export async function advanceDesignerServiceWork(formData: FormData): Promise<void> {
+  const requestId = formData.get("requestId");
+  const nextStatus = formData.get("nextStatus");
+  if (typeof requestId !== "string" || !uuidPattern.test(requestId)
+    || (nextStatus !== "in_progress" && nextStatus !== "completed")) redirect("/painel/designer?resultado=modelagem-erro");
+  const actor = await getUserWithRole("designer");
+  if (!actor.supabase || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("advance_designer_service_work", {
+    p_request_id: requestId,
+    p_next_status: nextStatus,
+  });
+  if (error) redirect("/painel/designer?resultado=modelagem-erro");
+  revalidatePath("/painel/designer");
+  revalidatePath("/conta/modelagem");
+  redirect(`/painel/designer?resultado=modelagem-${nextStatus === "in_progress" ? "iniciada" : "concluida"}`);
 }

@@ -13,7 +13,7 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
   const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("buyer")]);
   if (!actor.supabase || !actor.authorized) redirect("/conta");
   const { data: requests, error } = await actor.supabase.from("designer_service_requests")
-    .select("id, title, brief, due_date, reference_url, status, quote_amount_cents, quote_lead_days, quote_notes, created_at")
+    .select("id, title, brief, due_date, reference_url, status, quote_amount_cents, quote_lead_days, quote_notes, work_started_at, work_completed_at, created_at")
     .eq("buyer_id", actor.user!.id).order("created_at", { ascending: false }).limit(100);
   const requestIds = (requests ?? []).map((request) => request.id);
   const paymentResult = requestIds.length ? await actor.supabase.from("seller_order_payments")
@@ -42,14 +42,16 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
         const payment = paymentsByRequest.get(request.id);
         const checkoutUrl = payment?.status === "pending" && payment.checkout_url && isMercadoPagoCheckoutUrl(payment.checkout_url) ? payment.checkout_url : null;
         return <article className="account-card designer-service-request-card" key={request.id}>
-        <span className="account-kicker">{request.status === "paid" ? "PAGAMENTO CONFIRMADO" : request.status === "accepted" ? "AGUARDANDO PAGAMENTO" : request.status === "quoted" ? "PROPOSTA RECEBIDA" : "AGUARDANDO DESIGNER"}</span>
+        <span className="account-kicker">{request.status === "paid" ? "PAGAMENTO CONFIRMADO" : request.status === "in_progress" ? "EM MODELAGEM" : request.status === "completed" ? "MODELAGEM CONCLUÍDA" : request.status === "accepted" ? "AGUARDANDO PAGAMENTO" : request.status === "quoted" ? "PROPOSTA RECEBIDA" : "AGUARDANDO DESIGNER"}</span>
         <h2>{request.title}</h2><p className="designer-service-brief">{request.brief}</p>
         {request.due_date && <p>Prazo desejado: {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${request.due_date}T00:00:00Z`))}</p>}
         {request.reference_url && <a href={request.reference_url} target="_blank" rel="noopener noreferrer">Abrir referência ↗</a>}
         {request.quote_amount_cents && <div className="designer-service-quote-result"><h3>Proposta</h3>
           <p><strong>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(request.quote_amount_cents! / 100)}</strong> · {request.quote_lead_days} dias</p>
           <p>{request.quote_notes}</p>
-          {request.status === "paid" || payment?.status === "paid" ? <p>Pagamento confirmado. O designer pode iniciar o trabalho.</p>
+          {request.status === "completed" ? <p>Modelagem concluída em {request.work_completed_at ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(request.work_completed_at)) : "data não informada"}.</p>
+            : request.status === "in_progress" ? <p>O designer iniciou o trabalho em {request.work_started_at ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(request.work_started_at)) : "data não informada"}.</p>
+            : request.status === "paid" || payment?.status === "paid" ? <p>Pagamento confirmado. O designer pode iniciar o trabalho.</p>
             : checkoutUrl ? <><p>O pagamento está pendente no Mercado Pago.</p><a className="button button-primary" href={checkoutUrl} rel="noreferrer">Continuar pagamento</a></>
             : payment?.status === "creating" ? <p>Estamos preparando o checkout. Atualize a página em instantes.</p>
             : payment && ["partially_refunded", "refunded", "charged_back"].includes(payment.status) ? <p>Este pagamento precisa de atendimento antes de uma nova tentativa.</p>
