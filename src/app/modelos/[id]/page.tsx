@@ -46,6 +46,19 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   if (!model) notFound();
   const previewUrl = getModelAssetUrl(model.filePath);
   const downloadUrl = previewUrl;
+  const siteUrl = getSiteUrl();
+  const modelUrl = siteUrl ? new URL(`/modelos/${encodeURIComponent(model.id)}`, siteUrl).toString() : null;
+  const structuredData = modelUrl ? {
+    "@context": "https://schema.org",
+    "@type": "3DModel",
+    name: model.name,
+    description: `Modelo 3D ${model.name} para visualização e download em 3MF.`,
+    category: model.category,
+    keywords: model.tags,
+    url: modelUrl,
+    image: siteUrl ? new URL(model.image, siteUrl).toString() : undefined,
+    ...(downloadUrl ? { encoding: { "@type": "MediaObject", name: `${model.name}.3mf`, contentUrl: downloadUrl, encodingFormat: "model/3mf" } } : {}),
+  } : null;
   const recommendations = getRecommendedModels(model);
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
@@ -59,6 +72,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
     <SiteHeader />
     <main className="model-detail-page">
       <div className="shell model-detail-heading">
+        {structuredData && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />}
         <Link href="/modelos" className="model-detail-back">← Voltar à coleção</Link>
         <p className="eyebrow">{model.category} · ARQUIVO 3MF</p>
         <h1>{model.name}</h1>
