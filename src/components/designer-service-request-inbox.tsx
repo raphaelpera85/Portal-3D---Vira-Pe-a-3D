@@ -1,5 +1,6 @@
 import { DesignerServiceQuoteForm } from "@/components/designer-service-quote-form";
 import { advanceDesignerServiceWork } from "@/app/painel/designer/actions";
+import { DesignerServiceDeliveryForm } from "@/components/designer-service-delivery-form";
 
 type DesignerServiceRequest = {
   id: string;
@@ -14,6 +15,7 @@ type DesignerServiceRequest = {
   quote_notes: string | null;
   work_started_at: string | null;
   work_completed_at: string | null;
+  delivery: { notes: string; created_at: string; files: { id: string; file_name: string; file_size: number; downloadUrl: string | null }[] } | null;
 };
 
 export function DesignerServiceRequestInbox({ requests, error }: { requests: DesignerServiceRequest[]; error: boolean }) {
@@ -35,8 +37,9 @@ export function DesignerServiceRequestInbox({ requests, error }: { requests: Des
           <p><strong>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(request.quote_amount_cents ?? 0) / 100)}</strong> · {request.quote_lead_days} dias</p>
           {request.quote_notes && <p>{request.quote_notes}</p>}
           {request.status === "paid" && <><p>O pagamento foi confirmado. Registre o início para atualizar o status do comprador.</p><form action={advanceDesignerServiceWork}><input type="hidden" name="requestId" value={request.id} /><input type="hidden" name="nextStatus" value="in_progress" /><button className="button button-primary" type="submit">Iniciar modelagem</button></form></>}
-          {request.status === "in_progress" && <><p>Iniciado em {request.work_started_at ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(request.work_started_at)) : "—"}. Ao concluir, o status atualizado ficará disponível em Meus pedidos de modelagem.</p><form action={advanceDesignerServiceWork}><input type="hidden" name="requestId" value={request.id} /><input type="hidden" name="nextStatus" value="completed" /><button className="button button-primary" type="submit">Marcar modelagem concluída</button></form></>}
-          {request.status === "completed" && <p>Concluído em {request.work_completed_at ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(request.work_completed_at)) : "—"}.</p>}
+          {request.status === "in_progress" && <><p>Iniciado em {request.work_started_at ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(request.work_started_at)) : "—"}. Envie os arquivos finais para concluir e liberar o download ao comprador.</p><DesignerServiceDeliveryForm requestId={request.id} /></>}
+          {request.status === "completed" && <><p>Entrega enviada em {request.work_completed_at ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(request.work_completed_at)) : "—"}.</p>{request.delivery?.notes && <p>{request.delivery.notes}</p>}
+            {request.delivery?.files.map((file) => file.downloadUrl ? <p key={file.id}><a href={file.downloadUrl}>{file.file_name} · {(Number(file.file_size) / 1024 / 1024).toFixed(1)} MiB ↓</a></p> : <p key={file.id}>{file.file_name} · download indisponível</p>)}</>}
         </div>}
       </article>)}</div> : <p className="designer-service-empty">Ainda não há pedidos de modelagem.</p>}
   </section>;

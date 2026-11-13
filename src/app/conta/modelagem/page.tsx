@@ -16,6 +16,18 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
     .select("id, title, brief, due_date, reference_url, status, quote_amount_cents, quote_lead_days, quote_notes, work_started_at, work_completed_at, created_at")
     .eq("buyer_id", actor.user!.id).order("created_at", { ascending: false }).limit(100);
   const requestIds = (requests ?? []).map((request) => request.id);
+  const deliveriesResult = requestIds.length ? await actor.supabase.from("designer_service_deliveries")
+    .select("id, request_id, notes, created_at, designer_service_delivery_files(id, file_name, file_size, storage_path)")
+    .in("request_id", requestIds) : { data: [], error: null };
+  const deliveriesByRequest = new Map<string, { notes: string; created_at: string; files: { id: string; file_name: string; file_size: number; downloadUrl: string | null }[] }>();
+  for (const delivery of deliveriesResult.data ?? []) {
+    const files = await Promise.all((delivery.designer_service_delivery_files ?? []).map(async (file) => {
+      const { data } = await actor.supabase!.storage.from("designer-service-deliveries")
+        .createSignedUrl(file.storage_path, 3600, { download: file.file_name });
+      return { ...file, downloadUrl: data?.signedUrl ?? null };
+    }));
+    deliveriesByRequest.set(delivery.request_id, { notes: delivery.notes, created_at: delivery.created_at, files });
+  }
   const paymentResult = requestIds.length ? await actor.supabase.from("seller_order_payments")
     .select("id, designer_service_request_id, status, checkout_url, created_at")
     .eq("buyer_id", actor.user!.id).in("designer_service_request_id", requestIds).order("created_at", { ascending: false }) : { data: [], error: null };
@@ -37,6 +49,7 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
     <div className="account-heading"><p className="eyebrow">SERVIÇOS CRIATIVOS</p><h1>Pedidos de <em>modelagem.</em></h1><p>Acompanhe os briefings enviados e as propostas recebidas.</p><Link className="button button-secondary" href="/conta/notificacoes">Ver notificações</Link></div>
     {resultado && resultMessages[resultado] && <p className={`auth-notice ${resultado === "retorno-pagamento" ? "is-success" : "is-error"}`} role="status">{resultMessages[resultado]}</p>}
     {paymentResult.error && <p className="auth-notice is-error" role="status">O status do checkout está temporariamente indisponível.</p>}
+    {deliveriesResult.error && <p className="auth-notice is-error" role="status">Os arquivos da entrega estão temporariamente indisponíveis.</p>}
     {error ? <section className="account-card"><h2>Pedidos indisponíveis</h2><p>A migration de serviços de designers ainda precisa ser aplicada ao Supabase.</p></section>
       : requests?.length ? <div className="designer-service-request-list">{requests.map((request) => {
         const payment = paymentsByRequest.get(request.id);
@@ -56,6 +69,10 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
             : payment?.status === "creating" ? <p>Estamos preparando o checkout. Atualize a página em instantes.</p>
             : payment && ["partially_refunded", "refunded", "charged_back"].includes(payment.status) ? <p>Este pagamento precisa de atendimento antes de uma nova tentativa.</p>
             : <form action={startSellerOrderPayment} className="auth-form"><input type="hidden" name="designerServiceRequestId" value={request.id} /><button className="button button-primary" type="submit">Aceitar proposta e pagar</button><small>Você será direcionado ao checkout seguro do Mercado Pago.</small></form>}
+          {request.status === "completed" && deliveriesByRequest.get(request.id) && <div className="designer-service-delivery-result"><h3>Arquivos da modelagem</h3>
+            {deliveriesByRequest.get(request.id)!.notes && <p>{deliveriesByRequest.get(request.id)!.notes}</p>}
+            {deliveriesByRequest.get(request.id)!.files.map((file) => file.downloadUrl ? <p key={file.id}><a href={file.downloadUrl}>{file.file_name} · {(Number(file.file_size) / 1024 / 1024).toFixed(1)} MiB ↓</a></p> : <p key={file.id}>{file.file_name} · download indisponível</p>)}
+          </div>}
         </div>}
       </article>})}</div> : <section className="account-card"><h2>Nenhum pedido enviado</h2><p>Escolha um designer no <Link href="/designers">diretório de designers</Link> para iniciar um briefing de modelagem.</p></section>}
   </main></>;
