@@ -16,8 +16,8 @@ describe("mapThreeMfPlateToSlicerMetrics", () => {
     expect(mapThreeMfPlateToSlicerMetrics({
       index: 2, weightGrams: null, printTimeSeconds: 5400, supportUsed: true,
       filaments: [
-        { color: "ff0000", type: "PLA", weightGrams: 12, lengthMeters: 4 },
-        { color: "0000ff", type: "PETG", weightGrams: 8, lengthMeters: 3 },
+        { index: null, color: "ff0000", type: "PLA", weightGrams: 12, lengthMeters: 4 },
+        { index: null, color: "0000ff", type: "PETG", weightGrams: 8, lengthMeters: 3 },
       ],
     }, 1)).toMatchObject({
       slicer: "Arquivo 3MF · placa 2", filamentGrams: 20, derivedMass: true,
@@ -25,8 +25,12 @@ describe("mapThreeMfPlateToSlicerMetrics", () => {
       filaments: [{ index: 1, grams: 12, color: "ff0000" }, { index: 2, grams: 8, color: "0000ff" }],
     });
     expect(mapThreeMfPlateToSlicerMetrics({
+      index: null, weightGrams: null, printTimeSeconds: null, supportUsed: null,
+      filaments: [{ index: 1, color: "000000", type: "PLA", weightGrams: 1, lengthMeters: null }, { index: 3, color: "00ae42", type: "PLA", weightGrams: 2, lengthMeters: null }],
+    }, 1).filaments.map(({ index }) => index)).toEqual([1, 3]);
+    expect(mapThreeMfPlateToSlicerMetrics({
       index: 1, weightGrams: 25, printTimeSeconds: null, supportUsed: null,
-      filaments: [{ color: null, type: "PLA", weightGrams: 12, lengthMeters: null }, { color: null, type: "PETG", weightGrams: null, lengthMeters: null }],
+      filaments: [{ index: null, color: null, type: "PLA", weightGrams: 12, lengthMeters: null }, { index: null, color: null, type: "PETG", weightGrams: null, lengthMeters: null }],
     }, 1)).toMatchObject({ filamentGrams: 25, derivedMass: false, lengthMeters: null, filaments: [{ grams: 12 }, { grams: null }] });
   });
 });

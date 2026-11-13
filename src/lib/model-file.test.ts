@@ -111,14 +111,14 @@ describe("model dimensions", () => {
       <plate><metadata key="index" value="2"/><metadata key="weight" value="1.5"/><filament id="1" type="PETG" color="#ff0000" used_g="1.5"/></plate>
     </config>`);
     expect(plates).toEqual([
-      { index: 1, weightGrams: 33.94, printTimeSeconds: 7535, supportUsed: true, filaments: [{ color: "ffffff", type: "PLA", weightGrams: 33.94, lengthMeters: 11.38 }] },
-      { index: 2, weightGrams: 1.5, printTimeSeconds: null, supportUsed: null, filaments: [{ color: "ff0000", type: "PETG", weightGrams: 1.5, lengthMeters: null }] },
+      { index: 1, weightGrams: 33.94, printTimeSeconds: 7535, supportUsed: true, filaments: [{ index: 2, color: "ffffff", type: "PLA", weightGrams: 33.94, lengthMeters: 11.38 }] },
+      { index: 2, weightGrams: 1.5, printTimeSeconds: null, supportUsed: null, filaments: [{ index: 1, color: "ff0000", type: "PETG", weightGrams: 1.5, lengthMeters: null }] },
     ]);
   });
 
   it("keeps RGB values from slicer filament colors that include alpha", () => {
     expect(parseThreeMfSliceInfo('<plate><filament color="#1B1B1DFF" used_g="1"/></plate>'))
-      .toEqual([{ index: null, weightGrams: null, printTimeSeconds: null, supportUsed: null, filaments: [{ color: "1b1b1d", type: null, weightGrams: 1, lengthMeters: null }] }]);
+      .toEqual([{ index: null, weightGrams: null, printTimeSeconds: null, supportUsed: null, filaments: [{ index: null, color: "1b1b1d", type: null, weightGrams: 1, lengthMeters: null }] }]);
   });
 
   it("ignores malformed and oversized slicer metadata", () => {
@@ -139,11 +139,12 @@ describe("model dimensions", () => {
     const { slicePlates } = await readThreeMfPackage(new Uint8Array(file));
     const metrics = mapThreeMfPlateToSlicerMetrics(slicePlates[0], 1);
 
+    expect(slicePlates[0].filaments.map(({ index }) => index)).toEqual([1, 3]);
     expect(metrics).toMatchObject({
       slicer: "Arquivo 3MF · placa 1", filamentGrams: 222.17, printHours: 52333 / 3600,
       materials: ["PLA"], filaments: [
         { index: 1, grams: 3.08, color: "000000" },
-        { index: 2, grams: 219.09, color: "00ae42" },
+        { index: 3, grams: 219.09, color: "00ae42" },
       ],
     });
   });

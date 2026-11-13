@@ -7,7 +7,7 @@ export type ModelSourceUnit = ModelUnit | "um" | "in" | "ft";
 export type ModelFormat = "stl" | "obj" | "3mf" | "glb" | "gltf";
 export type ModelDimensions = { x: number; y: number; z: number };
 export type ThreeMfColorData = { componentPaintColors: string[][]; componentTriangleColors: string[][][]; componentPartColors: string[][]; faceColors: Record<number, string[]>; objectColors: string[]; namedColors: Record<string, string>; palette: string[]; paintPaletteColors: string[] };
-export type ThreeMfSlicePlate = { index: number | null; weightGrams: number | null; printTimeSeconds: number | null; supportUsed: boolean | null; filaments: Array<{ color: string | null; type: string | null; weightGrams: number | null; lengthMeters: number | null }> };
+export type ThreeMfSlicePlate = { index: number | null; weightGrams: number | null; printTimeSeconds: number | null; supportUsed: boolean | null; filaments: Array<{ index: number | null; color: string | null; type: string | null; weightGrams: number | null; lengthMeters: number | null }> };
 
 export function getModelColorMatchedComponentIds(components: Array<{ id: string; colors: string[] }>, color: string | null) {
   return color ? components.filter((component) => component.colors.includes(color)).map((component) => component.id) : [];
@@ -119,7 +119,10 @@ export function parseThreeMfSliceInfo(xml: string): ThreeMfSlicePlate[] {
     const values = new Map([...body.matchAll(/<metadata\b([^>]*)\/?\s*>/gi)].map(([, attrs]) => [attribute(attrs, "key") ?? "", attribute(attrs, "value") ?? ""]));
     const filaments = [...body.matchAll(/<filament\b([^>]*)\/?\s*>/gi)].map(([, attrs]) => {
       const rawColor = attribute(attrs, "color")?.replace(/^#/, "");
+      const rawIndex = attribute(attrs, "id");
+      const parsedIndex = rawIndex && /^\d+$/.test(rawIndex) ? Number(rawIndex) : NaN;
       return {
+        index: Number.isSafeInteger(parsedIndex) ? parsedIndex : null,
         color: rawColor && /^[\da-f]{6}(?:[\da-f]{2})?$/i.test(rawColor) ? rawColor.slice(0, 6).toLowerCase() : null,
         type: attribute(attrs, "type") || null,
         weightGrams: numeric(attribute(attrs, "used_g")),

@@ -56,7 +56,7 @@ export function mapThreeMfPlateToSlicerMetrics(plate: ThreeMfSlicePlate, plateNu
     estimatedCost: null,
     materials: [...new Set(plate.filaments.map((filament) => filament.type).filter((type): type is string => Boolean(type)))].slice(0, 20),
     filaments: plate.filaments.slice(0, 32).map((filament, index) => ({
-      index: index + 1, grams: filament.weightGrams, lengthMeters: filament.lengthMeters, pricePerKg: null, material: filament.type, color: filament.color,
+      index: filament.index ?? index + 1, grams: filament.weightGrams, lengthMeters: filament.lengthMeters, pricePerKg: null, material: filament.type, color: filament.color,
     })),
     conflicts: [],
   };
