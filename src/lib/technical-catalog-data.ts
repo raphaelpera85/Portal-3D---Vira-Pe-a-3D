@@ -1,4 +1,4 @@
-import type { CompatibilityStatus, MaterialSupport } from "./compatibility";
+import type { CompatibilityStatus, MaterialSupportEntry } from "./compatibility";
 import type { MaterialEntry, NozzleEntry, PrinterEntry } from "./technical-catalog";
 
 type Row = Record<string, unknown>;
@@ -18,8 +18,6 @@ const range = (min: unknown, max: unknown) => {
   return lower == null || upper == null ? null : { min: lower, max: upper };
 };
 const statuses = new Set<CompatibilityStatus>(["compatible", "conditional", "incompatible", "unverified"]);
-const materialSupport = (compatibility: CompatibilityStatus): MaterialSupport => compatibility;
-
 export function mapTechnicalCatalog(
   printerRows: Row[], materialRows: Row[], nozzleRows: Row[], materialLinks: Row[], nozzleLinks: Row[],
 ) {
@@ -47,12 +45,11 @@ export function mapTechnicalCatalog(
       resinExposureSeconds: number(row.resin_exposure_seconds), technicalProperties: properties, sources: source(row),
     };
   });
-  const familyByMaterialId = new Map(materials.map((item) => [item.id, item.family.toLocaleUpperCase("pt-BR")]));
   const printers: PrinterEntry[] = printerRows.map((row) => {
-    const supportedMaterials: Record<string, MaterialSupport> = {};
+    const supportedMaterials: Record<string, MaterialSupportEntry> = {};
     materialLinks.filter((link) => link.printer_id === row.id).forEach((link) => {
-      const family = familyByMaterialId.get(text(link.material_id));
-      if (family) supportedMaterials[family] = materialSupport(status(link.compatibility));
+      const materialId = text(link.material_id);
+      if (materialId) supportedMaterials[materialId] = { status: status(link.compatibility), conditions: text(link.conditions) || null };
     });
     const x = number(row.build_volume_x_mm), y = number(row.build_volume_y_mm), z = number(row.build_volume_z_mm);
     const buildVolumeMm = x != null && y != null && z != null ? { x, y, z } : null;

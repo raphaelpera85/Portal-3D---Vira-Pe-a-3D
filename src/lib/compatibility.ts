@@ -2,6 +2,7 @@ export type PrinterTechnology = "FDM" | "SLA" | "MSLA" | "DLP";
 export type MaterialProcess = "filament" | "resin";
 export type CompatibilityStatus = "compatible" | "conditional" | "incompatible" | "unverified";
 export type MaterialSupport = "recommended" | "not-recommended" | CompatibilityStatus;
+export type MaterialSupportEntry = MaterialSupport | { status: MaterialSupport; conditions?: string | null };
 
 export type CatalogPrinter = {
   id: string;
@@ -14,7 +15,7 @@ export type CatalogPrinter = {
   heatedBed: boolean | null;
   enclosure: boolean | null;
   multicolorSlots: number | null;
-  supportedMaterials: Record<string, MaterialSupport>;
+  supportedMaterials: Record<string, MaterialSupportEntry>;
 };
 
 export type CatalogMaterial = {
@@ -81,11 +82,14 @@ export function evaluateCompatibility(
     add("technology", "Tecnologia", "compatible", "O processo do material corresponde à impressora.");
   }
 
-  const support = printer.supportedMaterials[material.family.toLocaleUpperCase("pt-BR")];
-  if (support === "recommended" || support === "compatible") add("material", "Material", "compatible", "O catálogo indica esta família de material para a impressora.");
-  else if (support === "not-recommended" || support === "conditional") add("material", "Material", "conditional", "O catálogo indica condições ou restrições para esta família neste modelo.");
-  else if (support === "incompatible") add("material", "Material", "incompatible", "O catálogo indica que esta família não é compatível com a impressora.");
-  else add("material", "Material", "unverified", "O catálogo não confirma esta família para a impressora.");
+  const supportEntry = printer.supportedMaterials[material.id] ?? printer.supportedMaterials[material.family.toLocaleUpperCase("pt-BR")];
+  const support = typeof supportEntry === "string" ? supportEntry : supportEntry?.status;
+  const conditions = typeof supportEntry === "string" ? null : supportEntry?.conditions;
+  const supportDetail = conditions ? ` Condições do fabricante: ${conditions}` : "";
+  if (support === "recommended" || support === "compatible") add("material", "Material", "compatible", `O catálogo confirma este material para a impressora.${supportDetail}`);
+  else if (support === "not-recommended" || support === "conditional") add("material", "Material", "conditional", `O catálogo indica condições ou restrições para este material.${supportDetail}`);
+  else if (support === "incompatible") add("material", "Material", "incompatible", `O catálogo indica que este material não é compatível com a impressora.${supportDetail}`);
+  else add("material", "Material", "unverified", "O catálogo não confirma este material para a impressora.");
 
   if (material.process === "filament") {
     if (material.filamentDiameterMm == null || printer.filamentDiameterMm == null) {

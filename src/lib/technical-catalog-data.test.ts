@@ -47,7 +47,7 @@ describe("mapTechnicalCatalog", () => {
       [{ printer_id: "printer-1", nozzle_id: "nozzle-1", fit: "compatible" }],
     );
 
-    expect(catalog.printers[0].supportedMaterials.PLA).toBe("compatible");
+    expect(catalog.printers[0].supportedMaterials["material-1"]).toEqual({ status: "compatible", conditions: null });
     expect(catalog.nozzles[0].original).toBe(true);
     expect(catalog.printers[0].sources[0].url).toBe("https://example.com/printer");
     expect(evaluateCompatibility(catalog.printers[0], catalog.materials[0], catalog.nozzles[0]).status).toBe("compatible");
@@ -63,5 +63,22 @@ describe("mapTechnicalCatalog", () => {
     const result = evaluateCompatibility(catalog.printers[0], catalog.materials[0], catalog.nozzles[0]);
     expect(result.checks.find((check) => check.key === "material")?.status).toBe("unverified");
     expect(result.checks.find((check) => check.key === "nozzle-fit")?.status).toBe("unverified");
+  });
+
+  it("keeps same-family material relations product-specific and shows manufacturer conditions", () => {
+    const catalog = mapTechnicalCatalog(
+      [{ id: "printer-1", manufacturer: "Maker", model: "M1", variant: "standard", technology: "FDM", filament_diameter_mm: 1.75 }],
+      [
+        { id: "pla-a", manufacturer: "Maker", product: "PLA A", family: "PLA", process: "filament", filament_diameter_mm: 1.75 },
+        { id: "pla-b", manufacturer: "Maker", product: "PLA B", family: "PLA", process: "filament", filament_diameter_mm: 1.75 },
+      ], [], [
+        { printer_id: "printer-1", material_id: "pla-a", compatibility: "compatible", conditions: "Camada 0,05 mm; exposição 2 s." },
+        { printer_id: "printer-1", material_id: "pla-b", compatibility: "incompatible", conditions: "Não usar com este cabeçote." },
+      ], [],
+    );
+
+    const supportCheck = (materialIndex: number) => evaluateCompatibility(catalog.printers[0], catalog.materials[materialIndex]).checks.find((check) => check.key === "material");
+    expect(supportCheck(0)).toMatchObject({ status: "compatible", detail: expect.stringContaining("exposição 2 s") });
+    expect(supportCheck(1)).toMatchObject({ status: "incompatible", detail: expect.stringContaining("Não usar") });
   });
 });
