@@ -50,7 +50,11 @@ test("mobile 3D viewer fits the viewport without horizontal scrolling", async ({
 test("technical catalog shows Flashforge AD5X conditions after selecting it", async ({ page }) => {
   await page.goto("/catalogos");
 
-  await page.getByLabel("Fabricante, modelo e variante").selectOption({ label: "Flashforge · AD5X · standard" });
+  const printer = page.getByLabel("Fabricante, modelo e variante");
+  await printer.selectOption({ label: "Anycubic · Photon Mono M7 · standard" });
+  await expect(page.locator(".technical-panel").nth(2)).toContainText("Processo de cura");
+
+  await printer.selectOption({ label: "Flashforge · AD5X · standard" });
   await expect(page.locator(".technical-panel").nth(2)).toContainText("Diâmetros cadastrados");
   await expect(page.locator(".technical-panel").first()).toContainText("Filamentos citados pelo fabricante:");
   await expect(page.locator(".technical-panel").first()).toContainText("TPU 95A: 0,4/0,6/0,8 mm; não compatível com IFS");
