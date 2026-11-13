@@ -23,15 +23,20 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const product = await loadMarketplaceProduct(slug);
-  return product ? {
-    title: `${product.name} | ViraPeça 3D`,
-    description: product.description || `${product.name}, por ${product.maker}.`,
+  if (!product) return { title: "Produto não encontrado | ViraPeça 3D", robots: { index: false } };
+  const title = product.name;
+  const description = product.description || `${product.name}, por ${product.maker}.`;
+  const image = product.media[0] || "/opengraph-image";
+  return {
+    title: `${title} | ViraPeça 3D`,
+    description,
     robots: product.demo ? { index: false, follow: false } : undefined,
     ...(getSiteUrl() ? {
       alternates: { canonical: `/produtos/${encodeURIComponent(product.slug)}` },
-      openGraph: { title: product.name, description: product.description || `${product.name}, por ${product.maker}.`, url: `/produtos/${encodeURIComponent(product.slug)}`, type: "website" as const, images: product.media[0] ? [product.media[0]] : ["/opengraph-image"] },
+      openGraph: { title, description, url: `/produtos/${encodeURIComponent(product.slug)}`, type: "website" as const, images: [image] },
+      twitter: { card: "summary_large_image" as const, title: `${title} | ViraPeça 3D`, description, images: [image] },
     } : {}),
-  } : { title: "Produto não encontrado | ViraPeça 3D", robots: { index: false } };
+  };
 }
 
 export default async function ProductPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ orcamento?: string; compra?: string; carrinho?: string; denuncia?: string; variant?: string }> }) {

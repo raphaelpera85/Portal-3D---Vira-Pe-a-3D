@@ -24,11 +24,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const store = await getPublishedStore(slug);
   if (!store) return { title: "Loja não encontrada | ViraPeça 3D", robots: { index: false } };
+  const title = store.name;
+  const description = store.description.slice(0, 160) || `Conheça os produtos e serviços da loja ${store.name} no ViraPeça 3D.`;
+  const image = store.banner_url || "/opengraph-image";
   return {
-    title: `${store.name} | Lojas ViraPeça 3D`,
-    description: store.description.slice(0, 160) || `Conheça os produtos e serviços da loja ${store.name} no ViraPeça 3D.`,
+    title: `${title} | Lojas ViraPeça 3D`,
+    description,
     alternates: { canonical: `/lojas/${encodeURIComponent(store.slug)}` },
-    openGraph: { title: store.name, description: store.description || `Vitrine de ${store.name} no ViraPeça 3D.`, type: "website", images: [store.banner_url || "/opengraph-image"] },
+    openGraph: { title, description: store.description || `Vitrine de ${store.name} no ViraPeça 3D.`, type: "website", images: [image] },
+    twitter: { card: "summary_large_image", title: `${title} | Lojas ViraPeça 3D`, description, images: [image] },
   };
 }
 
