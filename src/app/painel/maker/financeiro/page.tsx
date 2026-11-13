@@ -34,6 +34,7 @@ const resultMessages: Record<string, string> = {
   "reembolso-acesso-negado": "Entre com a conta autorizada da loja para solicitar um reembolso.",
   "reembolso-configurar": "O serviço financeiro do portal ainda não está configurado.",
 };
+type MakerPaymentPeriodMetric = { window_days: number; paid_payment_count: number; paid_total_cents: number | string; marketplace_fee_cents: number | string };
 
 export default async function MakerFinancePage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
   const { resultado } = await searchParams;
@@ -42,11 +43,19 @@ export default async function MakerFinancePage({ searchParams }: { searchParams:
   const { data: store } = await actor.supabase.from("stores").select("id, name").eq("owner_user_id", actor.user.id).maybeSingle();
   if (!store) redirect("/painel/maker");
 
-  const { data: payments, error } = await actor.supabase.from("seller_order_payments")
+  const [paymentResult, periodResult] = await Promise.all([
+    actor.supabase.from("seller_order_payments")
     .select("id, order_id, purchase_request_id, custom_print_request_id, total_cents, marketplace_fee_cents, provider_order_id, status, provider_status, created_at, refunds:seller_order_refunds(id, amount_cents, status, provider_status, created_at), chargebacks:seller_order_chargebacks(case_id, case_status, reason, amount_cents, currency, coverage_applied, documentation_status, documentation_deadline, documents_sent_at, documents_count)")
-    .eq("store_id", store.id).order("created_at", { ascending: false }).limit(500);
+    .eq("store_id", store.id).order("created_at", { ascending: false }).limit(500),
+    actor.supabase.rpc("get_maker_payment_period_metrics"),
+  ]);
+  const { data: payments, error } = paymentResult;
+  const { data: periodMetrics, error: periodError } = periodResult;
   const rows = payments ?? [];
   const summary = summarizeSellerPayments(rows);
+  const periodByDays = new Map<number, MakerPaymentPeriodMetric>(
+    ((periodMetrics ?? []) as MakerPaymentPeriodMetric[]).map((period) => [period.window_days, period]),
+  );
 
   return (
     <>
@@ -63,6 +72,16 @@ export default async function MakerFinancePage({ searchParams }: { searchParams:
             <article><span>Após comissão da plataforma</span><strong>{formatBrl(summary.beforeProviderFeesCents / 100)}</strong></article>
           </section>
           <p className="seller-finance-note">Os totais acima incluem apenas pagamentos no status “Pago”. O valor após comissão ainda não desconta as tarifas do Mercado Pago. Reembolsos e contestações aparecem no extrato sem serem somados como recebimento confirmado.</p>
+          <section className="account-card maker-products-card seller-finance-ledger">
+            <span className="account-kicker">RESUMO POR PERÍODO</span><h2>Pagamentos confirmados</h2>
+            {periodError ? <p role="alert">Não foi possível calcular os totais do período.</p> : <div className="seller-finance-table-wrap"><table className="seller-finance-table seller-period-metrics-table"><caption className="sr-only">Pagamentos pagos criados nos últimos sete e trinta dias</caption><thead><tr><th scope="col">Indicador</th><th scope="col">7 dias</th><th scope="col">30 dias</th></tr></thead><tbody>
+              <tr><th scope="row">Pagamentos no status pago</th><td>{periodByDays.get(7)?.paid_payment_count ?? 0}</td><td>{periodByDays.get(30)?.paid_payment_count ?? 0}</td></tr>
+              <tr><th scope="row">Valor cobrado</th><td>{formatBrl(Number(periodByDays.get(7)?.paid_total_cents ?? 0) / 100)}</td><td>{formatBrl(Number(periodByDays.get(30)?.paid_total_cents ?? 0) / 100)}</td></tr>
+              <tr><th scope="row">Comissão ViraPeça</th><td>{formatBrl(Number(periodByDays.get(7)?.marketplace_fee_cents ?? 0) / 100)}</td><td>{formatBrl(Number(periodByDays.get(30)?.marketplace_fee_cents ?? 0) / 100)}</td></tr>
+              <tr><th scope="row">Após comissão da plataforma</th><td>{formatBrl((Number(periodByDays.get(7)?.paid_total_cents ?? 0) - Number(periodByDays.get(7)?.marketplace_fee_cents ?? 0)) / 100)}</td><td>{formatBrl((Number(periodByDays.get(30)?.paid_total_cents ?? 0) - Number(periodByDays.get(30)?.marketplace_fee_cents ?? 0)) / 100)}</td></tr>
+            </tbody></table></div>}
+            <p className="seller-finance-note">Os períodos usam a data de criação e o status atual. Pagamentos parcialmente reembolsados, reembolsados ou contestados ficam fora; tarifas e liquidação continuam no Mercado Pago.</p>
+          </section>
           <section className="account-card maker-products-card seller-finance-ledger">
             <span className="account-kicker">MOVIMENTAÇÕES</span><h2>Pagamentos recentes</h2>
             {summary.pendingCount + summary.partiallyRefundedCount + summary.refundedCount + summary.chargedBackCount > 0 && <p className="quote-small-note">Aguardando: {summary.pendingCount} · reembolsos parciais: {summary.partiallyRefundedCount} · reembolsados: {summary.refundedCount} · contestados: {summary.chargedBackCount}</p>}

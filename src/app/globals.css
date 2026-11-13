@@ -577,6 +577,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .seller-finance-note { margin-block: 12px 20px; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .seller-finance-table-wrap { width: 100%; overflow-x: auto; }
 .seller-finance-table { width: 100%; min-width: 1040px; border-collapse: collapse; text-align: left; }
+.seller-period-metrics-table { min-width: 440px; }
 .seller-finance-table th, .seller-finance-table td { padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 11px; }
 .seller-finance-table th { color: var(--muted); font-size: 9px; letter-spacing: .4px; text-transform: uppercase; }
 .seller-finance-table td { color: var(--ink); }
