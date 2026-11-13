@@ -100,9 +100,11 @@ export function mergeTechnicalCatalogWithFallback(
   const key = (...parts: (string | number | null | undefined)[]) => parts
     .map((part) => String(part ?? "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("pt-BR"))
     .join("|");
-  const printerKey = (printer: PrinterEntry) => key(printer.brand, printer.model, printer.variant);
-  const materialKey = (material: MaterialEntry) => key(material.brand, material.name);
-  const nozzleKey = (nozzle: NozzleEntry) => key(nozzle.brand, nozzle.name, nozzle.diameterMm, nozzle.material);
+  const identity = (id: string, parts: (string | number | null | undefined)[], required = parts) =>
+    required.some((part) => part == null || String(part).trim() === "") ? `id:${id}` : `natural:${key(...parts)}`;
+  const printerKey = (printer: PrinterEntry) => identity(printer.id, [printer.brand, printer.model, printer.variant]);
+  const materialKey = (material: MaterialEntry) => identity(material.id, [material.brand, material.name]);
+  const nozzleKey = (nozzle: NozzleEntry) => identity(nozzle.id, [nozzle.brand, nozzle.name, nozzle.diameterMm, nozzle.material], [nozzle.brand, nozzle.name, nozzle.diameterMm]);
   const merge = <Entry extends { id: string }>(primary: Entry[], local: Entry[], identity: (entry: Entry) => string, combine: (local: Entry, primary: Entry) => Entry) => {
     const records = new Map(local.map((item) => [identity(item), item]));
     const ids = new Map(local.map((item) => [item.id, item.id]));

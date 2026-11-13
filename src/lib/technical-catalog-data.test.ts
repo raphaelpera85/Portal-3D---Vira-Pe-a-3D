@@ -26,6 +26,30 @@ describe("mapTechnicalCatalog", () => {
     expect(catalog.nozzles.find((nozzle) => nozzle.id === "db-nozzle")?.printerCompatibility).toEqual({ "db-printer": "compatible" });
   });
 
+  it("keeps separate records when the database does not provide natural identity fields", () => {
+    const printer = printers[0];
+    const material = materials[0];
+    const nozzle = nozzles[0];
+    const catalog = mergeTechnicalCatalogWithFallback({
+      printers: [
+        { ...printer, id: "db-printer-1", brand: "", model: "" },
+        { ...printer, id: "db-printer-2", brand: "", model: "" },
+      ],
+      materials: [
+        { ...material, id: "db-material-1", brand: "", name: "" },
+        { ...material, id: "db-material-2", brand: "", name: "" },
+      ],
+      nozzles: [
+        { ...nozzle, id: "db-nozzle-1", brand: "", name: "", diameterMm: 0 },
+        { ...nozzle, id: "db-nozzle-2", brand: "", name: "", diameterMm: 0 },
+      ],
+    }, { printers: [], materials: [], nozzles: [] });
+
+    expect(catalog.printers.map(({ id }) => id)).toEqual(["db-printer-1", "db-printer-2"]);
+    expect(catalog.materials.map(({ id }) => id)).toEqual(["db-material-1", "db-material-2"]);
+    expect(catalog.nozzles.map(({ id }) => id)).toEqual(["db-nozzle-1", "db-nozzle-2"]);
+  });
+
   it("preserves manufacturer resin ranges, colors and printer-specific exposure settings", () => {
     const catalog = mapTechnicalCatalog([], [{
       id: "resin-1", manufacturer: "Anycubic", product: "Standard Resin V2", family: "standard resin", process: "resin",
