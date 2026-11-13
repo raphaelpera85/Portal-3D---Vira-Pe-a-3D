@@ -8,6 +8,7 @@ const k2ProMigration = readFileSync(new URL("../../supabase/migrations/202611132
 const centauri2Migration = readFileSync(new URL("../../supabase/migrations/20261114000000_seed_elegoo_centauri_2.sql", import.meta.url), "utf8");
 const ender3V4Migration = readFileSync(new URL("../../supabase/migrations/20261114010000_seed_creality_ender_3_v4_combo.sql", import.meta.url), "utf8");
 const ender5MaxMigration = readFileSync(new URL("../../supabase/migrations/20261114020000_seed_creality_ender_5_max.sql", import.meta.url), "utf8");
+const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("keeps the Bambu Lab A1 and A1 mini variants in the local fallback with exact hotend compatibility", () => {
@@ -123,6 +124,34 @@ describe("verified technical catalog records", () => {
     expect(evaluateCompatibility(printer!, materials.find((item) => item.id === "prusament-pa11")!, originalNozzle).status).toBe("conditional");
     expect(evaluateCompatibility(printer!, materials.find((item) => item.id === "prusament-pa11-cf")!, originalNozzle).checks)
       .toContainEqual(expect.objectContaining({ key: "hotend-temperature", status: "conditional" }));
+  });
+
+  it("keeps MK4S material compatibility and the hardened Nextruder nozzle distinct in the fallback", () => {
+    const printer = printers.find((item) => item.id === "prusa-mk4s");
+    const mk4sNozzles = nozzles.filter((item) => item.printerCompatibility?.["prusa-mk4s"] === "compatible");
+    const hardenedNozzle = mk4sNozzles.find((item) => item.id === "prusa-mk4s-hardened-0.4");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: { x: 250, y: 210, z: 220 },
+      filamentDiameterMm: 1.75,
+      maxNozzleTemperatureC: 290,
+      maxBedTemperatureC: 120,
+      enclosure: false,
+      multicolorSlots: null,
+      technicalProperties: { optionalMultiMaterialUpgrade: "MMU3" },
+      supportedMaterials: {
+        "prusament-pla": { status: "compatible" },
+        "prusament-asa": { status: "conditional" },
+        "prusament-pa11-cf": { status: "conditional" },
+      },
+    });
+    expect(mk4sNozzles).toHaveLength(5);
+    expect(mk4sNozzles.filter((item) => item.diameterMm === 0.4).map((item) => item.abrasionResistant).sort()).toEqual([false, true]);
+    expect(hardenedNozzle).toMatchObject({ original: false, abrasionResistant: true });
+    const abrasiveCheck = evaluateCompatibility(printer!, materials.find((item) => item.id === "prusament-petg-cf")!, hardenedNozzle!);
+    expect(abrasiveCheck.status).toBe("conditional");
+    expect(abrasiveCheck.checks).not.toContainEqual(expect.objectContaining({ key: "abrasion", status: "unverified" }));
+    expect(prusaMk4sMigration).toContain("Prusa Hardened Nozzle (Nickel plated)");
   });
 
   it("includes confirmed P2S specifications while leaving unpublished values unknown", () => {

@@ -103,6 +103,16 @@ const prusaCoreOneGen2Source = {
   url: "https://www.prusa3d.com/en/product/prusa-core-one-12/",
   checkedAt: "2026-11-13",
 };
+const prusaMk4sSource = {
+  label: "Original Prusa — MK4S technical specifications",
+  url: "https://www.prusa3d.com/product/original-prusa-mk4s-3d-printer/",
+  checkedAt: "2026-11-13",
+};
+const prusaNextruderNozzleSource = {
+  label: "Prusa Knowledge Base — Nextruder nozzle types",
+  url: "https://help.prusa3d.com/article/prusa-nozzle-types-for-nextruder-printers_928993",
+  checkedAt: "2026-11-13",
+};
 const plaSource = {
   label: "Bambu Lab — PLA Basic",
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
@@ -359,6 +369,43 @@ export const printers: PrinterEntry[] = [{
     "prusament-pa11-cf": { status: "conditional", conditions: "Requer filtragem e bico endurecido; a faixa chega a 295 °C, acima do limite base de 290 °C." },
   },
   sources: [prusaCoreOneGen2Source],
+}, {
+  id: "prusa-mk4s",
+  name: "Prusa Research MK4S",
+  brand: "Prusa Research",
+  model: "MK4S",
+  variant: "standard",
+  buildVolumeDescription: null,
+  technology: "FDM",
+  buildVolumeMm: { x: 250, y: 210, z: 220 },
+  extruders: null,
+  filamentDiameterMm: 1.75,
+  maxNozzleTemperatureC: 290,
+  maxBedTemperatureC: 120,
+  heatedBed: true,
+  enclosure: false,
+  maximumSpeedMmPerSecond: null,
+  maximumPowerWatts: null,
+  measuredAveragePowerWatts: null,
+  multicolorSlots: null,
+  multicolorSystem: "MMU3 (upgrade opcional; quantidade de materiais não informada)",
+  technicalProperties: {
+    layerHeightRangeMm: { min: 0.05, max: 0.3 },
+    powerSupplyRatedOutputW: 240,
+    optionalMultiMaterialUpgrade: "MMU3",
+    supportedNozzleDiametersMm: [0.25, 0.4, 0.6, 0.8],
+  },
+  supportedMaterials: {
+    "prusament-pla": { status: "compatible", conditions: "PLA está listado entre os materiais suportados." },
+    "prusament-petg": { status: "compatible", conditions: "PETG está listado entre os materiais suportados." },
+    "prusament-tpu-95a": { status: "compatible", conditions: "Materiais flexíveis estão listados entre os materiais suportados." },
+    "prusament-pc-blend": { status: "compatible", conditions: "PC está listado; os limites térmicos do material cabem nos limites publicados da impressora." },
+    "prusament-asa": { status: "conditional", conditions: "Exige o Original Prusa Enclosure com o acessório de filtragem." },
+    "prusament-petg-cf": { status: "conditional", conditions: "O material é abrasivo e exige o bico endurecido Prusa Nextruder de 0,4 mm." },
+    "prusament-pa11": { status: "conditional", conditions: "PA exige gabinete e filtragem; requer câmara de 50–60 °C, sem controle ativo informado para a MK4S." },
+    "prusament-pa11-cf": { status: "conditional", conditions: "PA exige gabinete e filtragem; use bico endurecido e perfil validado até 290 °C, pois o material pode exigir 295 °C." },
+  },
+  sources: [prusaMk4sSource],
 }, {
   id: "bambu-p2s",
   name: "Bambu Lab P2S",
@@ -802,6 +849,30 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[0.25, 0.4, 0.6, 0.8].map((diameter) => ({
+    id: `prusa-mk4s-nozzle-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · MK4S Nextruder`,
+    brand: "Prusa Research",
+    diameterMm: diameter,
+    material: diameter === 0.4 ? "Latão" : null,
+    maxTemperatureC: null,
+    abrasionResistant: diameter === 0.4 ? false : null,
+    printerCompatibility: { "prusa-mk4s": "compatible" as const },
+    original: diameter === 0.4,
+    sources: [diameter === 0.4 ? prusaMk4sSource : prusaNextruderNozzleSource],
+  })),
+  {
+    id: "prusa-mk4s-hardened-0.4",
+    name: "Bico endurecido 0,4 mm · MK4S Nextruder",
+    brand: "Prusa Research",
+    diameterMm: 0.4,
+    material: "Aço endurecido niquelado",
+    maxTemperatureC: null,
+    abrasionResistant: true,
+    printerCompatibility: { "prusa-mk4s": "compatible" },
+    original: false,
+    sources: [prusaNextruderNozzleSource],
+  },
   ...[0.25, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `prusa-core-one-plus-gen-2-${diameter}`,
     name: `Bico ${diameter.toLocaleString("pt-BR")} mm · CORE One+ Gen 2`,
