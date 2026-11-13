@@ -80,6 +80,17 @@ describe("parseSlicerOcrTexts", () => {
     expect(result.filaments).toEqual([]);
   });
 
+  it("accepts American spelling in per-filament color metadata", () => {
+    const result = parseSlicerOcrTexts([`; filament_color = #FF0000;#00AAFF
+; filament_type = PLA;PETG
+; filament used [g] = 3.00, 4.50`]);
+
+    expect(result.filaments).toMatchObject([
+      { index: 1, grams: 3, color: "#ff0000" },
+      { index: 2, grams: 4.5, color: "#00aaff" },
+    ]);
+  });
+
   it("reads Bambu Studio G-code headers without mistaking model time for total time", () => {
     const result = parseSlicerOcrTexts([`; BambuStudio 02.02.02.56
 ; model printing time: 7m 41s; total estimated time: 15m 33s

@@ -103,7 +103,7 @@ function findGcodeFilamentReadings(lines: string[]) {
   const millimeters = numbersFor("mm", (value) => value / 1000);
   const meters = numbersFor("m", Number);
   const lengths = millimeters ?? meters;
-  const colors = valuesFor("filament[_ ]colour|extruder[_ ]colour");
+  const colors = valuesFor("filament[_ ]colou?r|extruder[_ ]colou?r");
   const materials = valuesFor("filament[_ ]type");
   const arrays = [grams, lengths, colors, materials].filter((value): value is NonNullable<typeof value> => value !== null);
   if (!arrays.some((value) => value === grams || value === lengths) || arrays.some((value) => value.length !== arrays[0].length)) return [];
