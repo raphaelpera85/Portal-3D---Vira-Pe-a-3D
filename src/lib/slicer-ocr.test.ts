@@ -7,6 +7,18 @@ describe("parseSlicerOcrTexts", () => {
     expect(result).toMatchObject({ slicer: "OrcaSlicer", modelGrams: 211.63, supportGrams: 12.17, totalGrams: 223.8, filamentGrams: 223.8, lengthMeters: 75.65, printHours: 13 + 40 / 60, filamentChanges: 1, materials: ["PLA"], estimatedCost: 16.799 });
   });
 
+  it("recognizes only explicit currency labels for slicer cost", () => {
+    expect(parseSlicerOcrTexts(["Estimated cost: R$ 16,79"]).estimatedCostCurrency).toBe("BRL");
+    expect(parseSlicerOcrTexts(["Estimated cost: USD 2.30"]).estimatedCostCurrency).toBe("USD");
+    expect(parseSlicerOcrTexts(["Estimated cost: $2.30"]).estimatedCostCurrency).toBeNull();
+  });
+
+  it("leaves currency empty when screenshots disagree", () => {
+    const result = parseSlicerOcrTexts(["Cost: R$ 10.00", "Cost: USD 10.00"]);
+    expect(result.estimatedCostCurrency).toBeNull();
+    expect(result.conflicts).toContain("moeda do custo");
+  });
+
   it("recognizes the slicers used by Creality, ELEGOO, Flashforge, Raise3D, and UltiMaker", () => {
     const names = [
       ["Creality Print 7.3.1", "Creality Print"],

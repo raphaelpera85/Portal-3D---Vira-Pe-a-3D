@@ -76,6 +76,18 @@ function findPrintHours(lines: string[]) {
   return null;
 }
 
+function findCostCurrency(lines: string[]): "BRL" | "USD" | null {
+  const labels = /(?:estimated\s+cost|material\s+cost|filament\s+cost|custo\s+(?:estimado|do\s+material)|\bcost\b)/i;
+  for (const line of lines) {
+    const label = labels.exec(line);
+    if (!label) continue;
+    const value = line.slice(label.index + label[0].length);
+    if (/(?:R\$|BRL)\s*\d[\d.,]*|\d[\d.,]*\s*BRL\b|\d[\d.,]*\s*R\$/i.test(value)) return "BRL";
+    if (/(?:USD\s*|US\$\s*)\d[\d.,]*|\d[\d.,]*\s*USD\b/i.test(value)) return "USD";
+  }
+  return null;
+}
+
 function parseOne(text: string) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
@@ -112,6 +124,7 @@ function parseOne(text: string) {
     printHours: findPrintHours(lines),
     filamentChanges: findCount(lines, String.raw`(?:filament\s+changes?|color\s+changes?|trocas?(?:\s+de\s+(?:filamento|cor))?|mudan[cç]as\s+de\s+(?:filamento|cor)|swaps?)\s*[:=\-]?`),
     estimatedCost: cost,
+    estimatedCostCurrency: findCostCurrency(lines),
     materials,
     filamentReadings,
   };
@@ -133,6 +146,8 @@ export function parseSlicerOcrTexts(texts: string[]) {
   const supportGrams = unique<number>("supportGrams", "peso dos suportes");
   const purgeGrams = unique<number>("purgeGrams", "purga");
   const wipeTowerGrams = unique<number>("wipeTowerGrams", "torre de limpeza");
+  const costCurrencies = [...new Set(parsed.map((item) => item.estimatedCostCurrency).filter((value): value is "BRL" | "USD" => value !== null))];
+  if (costCurrencies.length > 1) conflicts.push("moeda do custo");
   const canDeriveMass = totalGrams === null && !conflicts.includes("consumo total") && modelGrams !== null && supportGrams !== null;
   const filaments = new Map<number, { index: number; grams: number | null; lengthMeters: number | null; material: string | null; color: string | null }>();
   const conflictingFilaments = new Set<number>();
@@ -175,6 +190,7 @@ export function parseSlicerOcrTexts(texts: string[]) {
     printHours: unique<number>("printHours", "tempo de impressão"),
     filamentChanges: unique<number>("filamentChanges", "trocas de filamento"),
     estimatedCost: unique<number>("estimatedCost", "custo informado"),
+    estimatedCostCurrency: costCurrencies.length === 1 ? costCurrencies[0] : null,
     materials: [...new Set(parsed.flatMap((item) => item.materials))],
     filaments: [...filaments.values()].sort((left, right) => left.index - right.index),
     conflicts: [...new Set(conflicts)],

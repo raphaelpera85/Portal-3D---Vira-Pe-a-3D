@@ -73,6 +73,20 @@ describe("validateCalculationToSave", () => {
     expect(validateCalculationToSave("Teste", JSON.stringify({ ...snapshot, slicer: { ...slicer, filaments: Array(33).fill(slicer.filaments[0]) } })).calculation).toBeNull();
   });
 
+  it("preserves recognized cost currency and rejects unsupported currency codes", () => {
+    const slicer = {
+      slicer: "OrcaSlicer", modelGrams: null, supportGrams: null, totalGrams: null, purgeGrams: null,
+      wipeTowerGrams: null, filamentGrams: 15, derivedMass: false, lengthMeters: null, printHours: null,
+      filamentChanges: null, estimatedCost: 2.3, estimatedCostCurrency: "USD", materials: [], filaments: [], conflicts: [],
+    };
+    const result = validateCalculationToSave("Suporte de mesa", JSON.stringify({ ...snapshot, slicer }));
+
+    expect(result.calculation?.slicer?.estimatedCostCurrency).toBe("USD");
+    const legacySlicer = { ...slicer, estimatedCostCurrency: undefined };
+    expect(validateCalculationToSave("Antigo", JSON.stringify({ ...snapshot, slicer: legacySlicer })).calculation?.slicer?.estimatedCostCurrency).toBeNull();
+    expect(validateCalculationToSave("Inválido", JSON.stringify({ ...snapshot, slicer: { ...slicer, estimatedCostCurrency: "EUR" } })).calculation).toBeNull();
+  });
+
   it("keeps optional product and equipment associations and rejects malformed IDs", () => {
     const productId = "89abcdef-1234-4123-8123-123456789abc";
     const printerId = "76543210-abcd-4123-8123-abcdef123456";

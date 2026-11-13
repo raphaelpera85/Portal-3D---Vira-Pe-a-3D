@@ -92,7 +92,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
           <div><dt>Comprimento</dt><dd>{extraction.lengthMeters == null ? "Não identificado" : `${extraction.lengthMeters.toLocaleString("pt-BR")} m`}</dd></div>
           <div><dt>Tempo</dt><dd>{extraction.printHours == null ? "Não identificado" : `${extraction.printHours.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} h`}</dd></div>
           <div><dt>Trocas</dt><dd>{extraction.filamentChanges ?? "Não identificado"}</dd></div>
-          <div><dt>Custo reconhecido</dt><dd>{extraction.estimatedCost == null ? "Não identificado" : `${extraction.estimatedCost.toLocaleString("pt-BR")} · confirme a moeda`}</dd></div>
+          <div><dt>Custo reconhecido</dt><dd>{extraction.estimatedCost == null ? "Não identificado" : `${extraction.estimatedCost.toLocaleString("pt-BR")} ${extraction.estimatedCostCurrency ?? "· moeda não identificada"} · confira no fatiador`}</dd></div>
         </dl>
         {extraction.filaments.length > 0 && <div className="price-ocr-filaments"><strong>Consumo por filamento</strong><ul>{extraction.filaments.map((filament) => <li key={filament.index}><span>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""}</span><b>{filament.grams == null ? "—" : `${filament.grams.toLocaleString("pt-BR")} g`}{filament.lengthMeters == null ? "" : ` · ${filament.lengthMeters.toLocaleString("pt-BR")} m`}</b></li>)}</ul></div>}
         {extraction.derivedMass && <p className="price-ocr-note">O total foi somado do peso do modelo e dos suportes. Purga e torre aparecem separadas e não são somadas automaticamente.</p>}

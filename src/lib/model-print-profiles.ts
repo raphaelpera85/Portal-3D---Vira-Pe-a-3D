@@ -38,7 +38,7 @@ function validateImportedMetrics(value: unknown): SavedSlicerMetrics | null {
     || !(item.pricePerKg === null || nullableMetric(item.pricePerKg))
     || !(item.material === null || typeof item.material === "string" && item.material.length <= 40)
     || !(item.color === null || typeof item.color === "string" && /^#[0-9a-f]{6}$/i.test(item.color)))) return null;
-  if (metrics.estimatedCost !== null || metrics.filamentChanges !== null && !Number.isSafeInteger(metrics.filamentChanges)) return null;
+  if (metrics.estimatedCost !== null || metrics.estimatedCostCurrency != null || metrics.filamentChanges !== null && !Number.isSafeInteger(metrics.filamentChanges)) return null;
   const colors = filaments.map((item) => typeof item.color === "string" ? item.color.toUpperCase() : null).filter((item): item is string => item !== null);
   const colorGrams = filaments.reduce((sum, item) => sum + (typeof item.grams === "number" ? item.grams : 0), 0);
   if (new Set(colors).size !== colors.length || metrics.filamentGrams !== null && colorGrams > (metrics.filamentGrams as number) + 0.001) return null;

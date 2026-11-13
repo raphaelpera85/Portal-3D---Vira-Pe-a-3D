@@ -11,6 +11,7 @@ export type SavedSlicerMetrics = {
   slicer: string; modelGrams: number | null; supportGrams: number | null; totalGrams: number | null;
   purgeGrams: number | null; wipeTowerGrams: number | null; filamentGrams: number | null; derivedMass: boolean;
   lengthMeters: number | null; printHours: number | null; filamentChanges: number | null; estimatedCost: number | null;
+  estimatedCostCurrency?: "BRL" | "USD" | null;
   materials: string[]; filaments: Array<{ index: number; grams: number | null; lengthMeters: number | null; pricePerKg: number | null; material: string | null; color: string | null }>;
   conflicts: string[];
 };
@@ -47,9 +48,11 @@ function parseSlicerMetrics(value: unknown): SavedSlicerMetrics | null | undefin
   if (value == null) return null;
   if (!isRecord(value)) return undefined;
   const metricFields = ["modelGrams", "supportGrams", "totalGrams", "purgeGrams", "wipeTowerGrams", "filamentGrams", "lengthMeters", "printHours", "filamentChanges", "estimatedCost"] as const;
+  const costCurrency = value.estimatedCostCurrency;
   const nullableNumber = (item: unknown) => item === null || validNumber(item);
   if (typeof value.slicer !== "string" || value.slicer.length > 40 || typeof value.derivedMass !== "boolean"
     || !metricFields.every((field) => nullableNumber(value[field]))
+    || !(costCurrency === undefined || costCurrency === null || costCurrency === "BRL" || costCurrency === "USD")
     || !Array.isArray(value.materials) || value.materials.length > 20 || value.materials.some((item) => typeof item !== "string" || item.length > 40)
     || !Array.isArray(value.conflicts) || value.conflicts.length > 30 || value.conflicts.some((item) => typeof item !== "string" || item.length > 80)
     || !Array.isArray(value.filaments) || value.filaments.length > 32 || value.filaments.some((item) => !isRecord(item)
@@ -61,6 +64,7 @@ function parseSlicerMetrics(value: unknown): SavedSlicerMetrics | null | undefin
   return {
     slicer: value.slicer, derivedMass: value.derivedMass,
     ...Object.fromEntries(metricFields.map((field) => [field, value[field]])),
+    estimatedCostCurrency: costCurrency ?? null,
     materials: value.materials as string[], conflicts: value.conflicts as string[],
     filaments: value.filaments.map((item) => ({ ...item, lengthMeters: item.lengthMeters ?? null, pricePerKg: item.pricePerKg ?? null })) as SavedSlicerMetrics["filaments"],
   } as SavedSlicerMetrics;

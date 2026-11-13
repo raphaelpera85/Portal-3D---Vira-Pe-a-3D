@@ -55,5 +55,6 @@ describe("validateModelPrintProfile", () => {
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, filamentGrams: -8 }) })).toBeNull();
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, filamentChanges: 1.5 }) })).toBeNull();
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, estimatedCost: 12 }) })).toBeNull();
+    expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, estimatedCostCurrency: "USD" }) })).toBeNull();
   });
 });
