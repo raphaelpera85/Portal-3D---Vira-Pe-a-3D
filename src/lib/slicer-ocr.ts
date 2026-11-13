@@ -33,6 +33,7 @@ const slicerPatterns: Array<[RegExp, string]> = [
   [/Elegoo\s*Slicer/i, "ElegooSlicer"],
   [/Flash\s*Print/i, "FlashPrint"],
   [/idea\s*Maker/i, "ideaMaker"],
+  [/Simplify\s*3D/i, "Simplify3D"],
   [/UltiMaker\s+Cura/i, "UltiMaker Cura"],
   [/\bCura(?:_SteamEngine)?\b/i, "Cura"],
 ];
@@ -169,7 +170,7 @@ function findPrintHours(lines: string[]) {
     const label = /total\s+estimated\s+time\s*[:=]\s*/i.exec(line);
     return label ? [`estimated time: ${line.slice(label.index + label[0].length)}`] : [];
   });
-  const labels = /(?:estimated\s+(?:printing\s+)?time|print(?:ing)?\s*time|tempo\s+(?:total\s+de\s+)?impress[aã]o|tempo\s+estimado|dura[cç][aã]o|^time)\s*[:=\-]?/i;
+  const labels = /(?:estimated\s+(?:printing\s+)?time|build\s+time|print(?:ing)?\s*time|tempo\s+(?:total\s+de\s+)?impress[aã]o|tempo\s+estimado|dura[cç][aã]o|^time)\s*[:=\-]?/i;
   for (const [lineIndex, line] of [...totalEstimated, ...lines].entries()) {
     const nextLine = lineIndex >= totalEstimated.length ? lines[lineIndex - totalEstimated.length + 1] ?? "" : "";
     if (lineIndex >= totalEstimated.length && /model\s+printing\s+time/i.test(line)) continue;
@@ -251,6 +252,7 @@ function findStackedFilamentReadings(lines: string[]) {
 
 function parseOne(text: string) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const slicer = slicerPatterns.find(([pattern]) => pattern.test(text))?.[1] ?? null;
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
   const length = findFilamentLength(lines);
   const gcodeTotalGrams = findGcodeFilamentTotal(lines, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams);
@@ -276,10 +278,9 @@ function parseOne(text: string) {
       ? [{ index: Number(row[1]), grams: gramsValue, lengthMeters, material, color: (labeledColor ?? namedColor ?? null)?.toLowerCase() ?? null }]
       : [];
   });
-  const slicer = slicerPatterns.find(([pattern]) => pattern.test(text))?.[1] ?? null;
   return {
     slicer,
-    modelGrams: findMeasurement(lines, massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
+    modelGrams: findMeasurement(lines, slicer === "Simplify3D" ? `${massLabels.model}|weight` : massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
     supportGrams: findMeasurement(lines, massLabels.support, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
     totalGrams: gcodeTotalGrams !== undefined ? gcodeTotalGrams
       : findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),

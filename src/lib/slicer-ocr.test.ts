@@ -21,6 +21,19 @@ describe("parseSlicerOcrTexts", () => {
     expect(result).toMatchObject({ slicer: "OrcaSlicer", modelGrams: 211.63, supportGrams: 12.17, totalGrams: 223.8, filamentGrams: 223.8, lengthMeters: 75.65, printHours: 13 + 40 / 60, filamentChanges: 1, materials: ["PLA"], estimatedCost: 16.799 });
   });
 
+  it("reads Simplify3D build statistics without treating part weight as total filament consumption", () => {
+    const result = parseSlicerOcrTexts([`Simplify3D
+Build Time: 1d 2h 30m
+Filament Length: 12,5 m
+Weight: 38 g
+Material Cost: $0.72`]);
+
+    expect(result).toMatchObject({
+      slicer: "Simplify3D", modelGrams: 38, totalGrams: null, filamentGrams: null,
+      lengthMeters: 12.5, printHours: 26.5, estimatedCost: 0.72, estimatedCostCurrency: null,
+    });
+  });
+
   it("reads OrcaSlicer G-code statistics with bracketed units before values", () => {
     const result = parseSlicerOcrTexts([`OrcaSlicer
 ; filament used [mm] = 1182.01
