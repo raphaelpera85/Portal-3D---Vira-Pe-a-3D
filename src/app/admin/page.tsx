@@ -23,13 +23,14 @@ export default async function AdminPage() {
   if (!actor.supabase || !actor.authorized) redirect("/conta");
 
   const metricsAdmin = createSupabaseAdminClient();
-  const [metricsResult, periodMetricsResult, applications, stores, products, printProfiles, designers, reports, reviews, printerSuggestions, supportTickets] = await Promise.all([
+  const [metricsResult, periodMetricsResult, applications, stores, products, printProfiles, modelPrintProfiles, designers, reports, reviews, printerSuggestions, supportTickets] = await Promise.all([
     metricsAdmin ? metricsAdmin.rpc("get_admin_marketplace_metrics") : Promise.resolve({ data: null, error: new Error("Admin database key is not configured") }),
     metricsAdmin ? metricsAdmin.rpc("get_admin_marketplace_period_metrics") : Promise.resolve({ data: null, error: new Error("Admin database key is not configured") }),
     actor.supabase.from("maker_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
     actor.supabase.from("stores").select("id", { count: "exact", head: true }).eq("status", "pending"),
     actor.supabase.from("marketplace_products").select("id, store:stores!inner(status)", { count: "exact", head: true }).eq("catalog_status", "draft").eq("store.status", "published"),
     actor.supabase.from("maker_print_profiles").select("id", { count: "exact", head: true }).eq("sharing_scope", "community").eq("review_status", "pending"),
+    actor.supabase.from("model_print_profiles").select("id", { count: "exact", head: true }).eq("sharing_scope", "community").eq("review_status", "pending"),
     actor.supabase.from("designer_profiles").select("id", { count: "exact", head: true }).eq("status", "pending"),
     actor.supabase.from("digital_asset_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
     actor.supabase.from("marketplace_reviews").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -42,6 +43,7 @@ export default async function AdminPage() {
     { label: "Lojas aguardando publicação", href: "/admin/fabricantes", result: stores },
     { label: "Anúncios para revisar", href: "/admin/fabricantes", result: products },
     { label: "Perfis de impressão", href: "/admin/fabricantes", result: printProfiles },
+    { label: "Perfis comunitários de modelos", href: "/admin/fabricantes", result: modelPrintProfiles },
     { label: "Perfis de designers", href: "/admin/designers", result: designers },
     { label: "Denúncias de conteúdo", href: "/admin/denuncias-digitais", result: reports },
     { label: "Avaliações para moderar", href: "/admin/avaliacoes", result: reviews },

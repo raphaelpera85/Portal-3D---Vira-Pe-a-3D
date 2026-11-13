@@ -23,14 +23,38 @@ export async function saveModelPrintProfile(formData: FormData) {
     layer_height_mm: input.layerHeightMm, infill_percent: input.infillPercent, wall_count: input.wallCount,
     supports: input.supports, orientation: input.orientation, scale_percent: input.scalePercent,
     quantity: input.quantity, slicer_metrics: input.metrics,
+    sharing_scope: input.sharingScope, review_status: input.sharingScope === "community" ? "pending" : "draft",
+    reviewed_by: null, reviewed_at: null, review_note: null,
   };
   const result = input.id
-    ? await supabase.from("model_print_profiles").update(payload).eq("id", input.id).eq("model_slug", input.modelSlug).eq("user_id", auth.user.id).select("id").maybeSingle()
+    ? await supabase.from("model_print_profiles").update(payload).eq("id", input.id).eq("model_slug", input.modelSlug).select("id").maybeSingle()
     : await supabase.from("model_print_profiles").insert(payload).select("id").single();
   if (result.error || !result.data) redirect(`/modelos/${model.id}?perfil=erro`);
   revalidatePath(`/modelos/${model.id}`);
   revalidatePath("/calculadora");
-  redirect(`/modelos/${model.id}?perfil=salvo`);
+  redirect(`/modelos/${model.id}?perfil=${input.sharingScope === "community" ? "enviado" : "salvo"}`);
+}
+
+export async function copyPublishedModelPrintProfile(formData: FormData) {
+  const modelSlug = String(formData.get("modelSlug") ?? "");
+  const profileId = String(formData.get("profileId") ?? "");
+  const model = getShowcaseModel(modelSlug);
+  if (!model || !uuidPattern.test(profileId)) redirect("/modelos?perfil=erro");
+  const supabase = await createSupabaseServerClient();
+  const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+  if (!supabase || !auth.user) redirect("/conta");
+  const { data: source, error: sourceError } = await supabase.from("visible_model_print_profiles")
+    .select("profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, sharing_scope, review_status")
+    .eq("id", profileId).eq("model_slug", model.id).maybeSingle();
+  if (sourceError || !source || !["community", "official"].includes(source.sharing_scope) || source.review_status !== "published") redirect(`/modelos/${model.id}?perfil=erro`);
+  const { error } = await supabase.from("model_print_profiles").insert({
+    ...source, user_id: auth.user.id, model_slug: model.id, profile_name: `Cópia de ${source.profile_name}`.slice(0, 80),
+    sharing_scope: "private", review_status: "draft", reviewed_by: null, reviewed_at: null, review_note: null,
+  });
+  if (error) redirect(`/modelos/${model.id}?perfil=erro`);
+  revalidatePath(`/modelos/${model.id}`);
+  revalidatePath("/calculadora");
+  redirect(`/modelos/${model.id}?perfil=copiado`);
 }
 
 export async function deleteModelPrintProfile(formData: FormData) {
@@ -41,7 +65,7 @@ export async function deleteModelPrintProfile(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   if (!supabase || !auth.user) redirect("/conta");
-  const { error } = await supabase.from("model_print_profiles").delete().eq("id", profileId).eq("model_slug", model.id).eq("user_id", auth.user.id);
+  const { error } = await supabase.from("model_print_profiles").delete().eq("id", profileId).eq("model_slug", model.id);
   if (error) redirect(`/modelos/${model.id}?perfil=erro`);
   revalidatePath(`/modelos/${model.id}`);
   revalidatePath("/calculadora");

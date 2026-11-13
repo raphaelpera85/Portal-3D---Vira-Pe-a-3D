@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { deleteModelPrintProfile, saveModelPrintProfile } from "@/app/modelos/actions";
+import { copyPublishedModelPrintProfile, deleteModelPrintProfile, saveModelPrintProfile } from "@/app/modelos/actions";
 import { mapThreeMfPlateToSlicerMetrics, type SavedSlicerMetrics } from "@/lib/saved-calculation";
 import type { ThreeMfSlicePlate } from "@/lib/model-file";
 import { modelProfileSlicers, modelProfileTypes } from "@/lib/model-print-profiles";
@@ -12,10 +12,13 @@ export type ModelPrintProfileRecord = {
   printer_snapshot: string; material_snapshot: string; nozzle_snapshot: string;
   layer_height_mm: number | string | null; infill_percent: number | string | null; wall_count: number | null;
   supports: boolean; orientation: string; scale_percent: number | string; quantity: number;
-  slicer_metrics: SavedSlicerMetrics; created_at: string;
+  slicer_metrics: SavedSlicerMetrics; created_at: string; sharing_scope: "private" | "community" | "official";
+  review_status: "draft" | "pending" | "published" | "rejected"; review_note: string | null; isOwner: boolean;
 };
 
 const labelType: Record<string, string> = { economic: "Econômico", fast: "Rápido", detailed: "Detalhado", multicolor: "Multicolorido", custom: "Personalizado" };
+const scopeLabels = { private: "Particular", community: "Comunitário", official: "Oficial" };
+const statusLabels = { draft: "Privado", pending: "Aguardando revisão", published: "Publicado", rejected: "Precisa de ajustes" };
 const metricNumber = (value: number | null) => value == null ? "" : String(value);
 const filamentLines = (filaments: SavedSlicerMetrics["filaments"]) => filaments.filter((item) => item.grams !== null || item.lengthMeters !== null).map((item) => {
   const color = item.color && /^#?[0-9a-f]{6}$/i.test(item.color) ? `#${item.color.replace(/^#/, "").toUpperCase()}` : "";
@@ -25,17 +28,24 @@ const filamentLines = (filaments: SavedSlicerMetrics["filaments"]) => filaments.
 export function ModelPrintProfileManager({ modelSlug, profiles, plates, authenticated, notice }: {
   modelSlug: string; profiles: ModelPrintProfileRecord[]; plates: ThreeMfSlicePlate[]; authenticated: boolean; notice: string | null;
 }) {
+  const noticeLabels: Record<string, string> = {
+    salvo: "Perfil particular salvo.", enviado: "Perfil enviado para revisão; ele ficará visível à comunidade após aprovação.",
+    copiado: "Cópia particular adicionada à sua conta.", retirado: "Perfil removido da comunidade e tornado particular.",
+    excluido: "Perfil removido.", erro: "Não foi possível salvar o perfil. Confira os dados e tente novamente.",
+  };
   return <section className="shell model-print-profiles" aria-labelledby="model-print-profiles-title">
-    <div className="model-print-profiles-heading"><div><p className="eyebrow">SEUS DADOS DE PRODUÇÃO</p><h2 id="model-print-profiles-title">Perfis de impressão deste modelo</h2><p>Guarde configurações e resultados por impressora, material e qualidade. Eles ficam privados na sua conta.</p></div><span>{profiles.length} {profiles.length === 1 ? "perfil" : "perfis"}</span></div>
-    {notice && <p className={`auth-notice${notice === "erro" ? " is-error" : ""}`} role={notice === "erro" ? "alert" : "status"}>{notice === "salvo" ? "Perfil salvo." : notice === "excluido" ? "Perfil removido." : "Não foi possível salvar o perfil. Confira os dados e tente novamente."}</p>}
-    {!authenticated ? <p className="model-print-profiles-login">Entre na sua conta para registrar perfis privados de impressão. <Link href="/conta">Acessar conta</Link></p> : <>
-      <div className="model-print-profile-list">{profiles.map((profile) => <details className="model-print-profile-card" key={profile.id}>
-        <summary><span><strong>{profile.profile_name}</strong><small>{labelType[profile.profile_type] ?? profile.profile_type} · {profile.printer_snapshot || "Impressora não informada"} · {profile.material_snapshot || "Material não informado"}</small></span><span>{profile.slicer_metrics.filamentGrams == null ? "Consumo não informado" : `${profile.slicer_metrics.filamentGrams.toLocaleString("pt-BR")} g`}</span></summary>
+    <div className="model-print-profiles-heading"><div><p className="eyebrow">DADOS DE PRODUÇÃO</p><h2 id="model-print-profiles-title">Perfis de impressão deste modelo</h2><p>Consulte perfis comunitários e oficiais; seus próprios perfis podem ser particulares ou enviados à comunidade para revisão.</p></div><span>{profiles.length} {profiles.length === 1 ? "perfil" : "perfis"}</span></div>
+    {notice && <p className={`auth-notice${notice === "erro" ? " is-error" : ""}`} role={notice === "erro" ? "alert" : "status"}>{noticeLabels[notice] ?? "Ação concluída."}</p>}
+    {profiles.length > 0 && <div className="model-print-profile-list">{profiles.map((profile) => <details className="model-print-profile-card" key={profile.id}>
+      <summary><span><strong>{profile.profile_name}</strong><small>{scopeLabels[profile.sharing_scope]} · {statusLabels[profile.review_status]} · {labelType[profile.profile_type] ?? profile.profile_type} · {profile.printer_snapshot || "Impressora não informada"} · {profile.material_snapshot || "Material não informado"}</small></span><span>{profile.slicer_metrics.filamentGrams == null ? "Consumo não informado" : `${profile.slicer_metrics.filamentGrams.toLocaleString("pt-BR")} g`}</span></summary>
+      <div className="model-print-profile-details"><p>{profile.slicer} · {profile.quantity} peça(s) · {profile.scale_percent}% · {profile.layer_height_mm ?? "camada não informada"} mm</p>{profile.review_note && profile.isOwner && <p>Retorno da equipe: {profile.review_note}</p>}</div>
+      {profile.isOwner && profile.sharing_scope !== "official" && <>
         <ModelPrintProfileForm modelSlug={modelSlug} profile={profile} plates={plates} />
-        <form action={deleteModelPrintProfile} onSubmit={(event) => { if (!window.confirm(`Excluir o perfil “${profile.profile_name}”?`)) event.preventDefault(); }}><input type="hidden" name="modelSlug" value={modelSlug} /><input type="hidden" name="profileId" value={profile.id} /><button type="submit" className="model-print-profile-delete">Excluir perfil</button></form>
-      </details>)}</div>
-      <div className="model-print-profile-card model-print-profile-new"><h3>Novo perfil</h3><ModelPrintProfileForm modelSlug={modelSlug} plates={plates} /></div>
-    </>}
+        {(profile.sharing_scope === "private" || ["pending", "rejected"].includes(profile.review_status)) && <form action={deleteModelPrintProfile} onSubmit={(event) => { if (!window.confirm(`Excluir o perfil “${profile.profile_name}”?`)) event.preventDefault(); }}><input type="hidden" name="modelSlug" value={modelSlug} /><input type="hidden" name="profileId" value={profile.id} /><button type="submit" className="model-print-profile-delete">Excluir perfil</button></form>}
+      </>}
+      {!profile.isOwner && authenticated && profile.sharing_scope !== "private" && profile.review_status === "published" && <form action={copyPublishedModelPrintProfile}><input type="hidden" name="modelSlug" value={modelSlug} /><input type="hidden" name="profileId" value={profile.id} /><button className="button button-secondary" type="submit">Salvar cópia particular</button></form>}
+    </details>)}</div>}
+    {!authenticated ? <p className="model-print-profiles-login">Entre para salvar um perfil particular ou compartilhar o seu com a comunidade. <Link href="/conta">Acessar conta</Link></p> : <div className="model-print-profile-card model-print-profile-new"><h3>Novo perfil</h3><ModelPrintProfileForm modelSlug={modelSlug} plates={plates} /></div>}
   </section>;
 }
 
@@ -52,6 +62,7 @@ function ModelPrintProfileForm({ modelSlug, profile, plates }: { modelSlug: stri
     <label>Nome do perfil<input name="name" required minLength={2} maxLength={80} defaultValue={profile?.profile_name ?? ""} placeholder="PLA detalhado 0,20 mm" /></label>
     <label>Tipo<select name="profileType" defaultValue={profile?.profile_type ?? "custom"}>{modelProfileTypes.map((type) => <option key={type} value={type}>{labelType[type]}</option>)}</select></label>
     <label>Fatiador<select name="slicer" defaultValue={profile?.slicer ?? "Manual"}>{modelProfileSlicers.map((slicer) => <option key={slicer} value={slicer}>{slicer}</option>)}</select></label>
+    <label>Visibilidade<select name="sharingScope" defaultValue={profile?.sharing_scope === "community" ? "community" : "private"}><option value="private">Particular · só para mim</option><option value="community">Comunidade · publicar após revisão</option></select><small>Perfis comunitários aprovados ficam públicos. Não inclua identificadores ou dados pessoais nos campos.</small></label>
     <label>Impressora<input name="printerName" maxLength={120} defaultValue={profile?.printer_snapshot ?? ""} placeholder="Marca e modelo" /></label>
     <label>Material<input name="materialName" maxLength={120} defaultValue={profile?.material_snapshot ?? ""} placeholder="PLA, PETG, resina…" /></label>
     <label>Bico<input name="nozzleName" maxLength={80} defaultValue={profile?.nozzle_snapshot ?? ""} placeholder="0,4 mm" /></label>
@@ -74,6 +85,6 @@ function ModelPrintProfileForm({ modelSlug, profile, plates }: { modelSlug: stri
     <label>Trocas de filamento<input name="filamentChanges" type="number" min="0" max="1000000000" step="1" defaultValue={metricNumber(metrics?.filamentChanges ?? null)} /></label>
     <label className="model-print-profile-colors">Consumo por cor (opcional)<textarea name="filamentLines" rows={3} maxLength={1000} defaultValue={filamentLines(metrics?.filaments ?? [])} placeholder="#336699; PLA; 20; 6,2" /><small>Uma linha por filamento: cor hexadecimal; material; gramas; metros. Use cor vazia quando o arquivo não a identifica.</small></label>
     <input type="hidden" name="importedMetrics" value={importedMetrics ? JSON.stringify(importedMetrics) : ""} />
-    <button className="button button-primary model-print-profile-submit" type="submit">{profile ? "Salvar alterações" : "Salvar perfil"}</button>
+    <button className="button button-primary model-print-profile-submit" type="submit">{profile?.sharing_scope === "community" && profile.review_status === "published" ? "Atualizar e reenviar para revisão" : profile?.sharing_scope === "community" ? "Salvar e reenviar para revisão" : profile ? "Salvar como particular" : "Salvar perfil"}</button>
   </form>;
 }

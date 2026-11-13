@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { getShowcaseModel } from "@/lib/model-showcase";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const returnToAdmin = (result: string) => redirect(`/admin/fabricantes?resultado=${result}`);
@@ -71,4 +72,34 @@ export async function reviewPrintProfileAction(formData: FormData): Promise<void
   revalidatePath("/painel/maker");
   revalidatePath("/");
   returnToAdmin(decision === "rejected" ? "perfil-recusado" : decision === "official" ? "perfil-oficial" : "perfil-comunitario");
+}
+
+export async function reviewModelPrintProfileAction(formData: FormData): Promise<void> {
+  const profileId = String(formData.get("profileId") ?? "");
+  const modelSlug = String(formData.get("modelSlug") ?? "");
+  const decisionValue = formData.get("decision");
+  const noteValue = formData.get("note");
+  if (!uuidPattern.test(profileId) || !/^[a-z0-9]{6,16}$/.test(modelSlug)) returnToAdmin("erro");
+  if (decisionValue !== "community" && decisionValue !== "official" && decisionValue !== "rejected") returnToAdmin("erro");
+  if (noteValue != null && (typeof noteValue !== "string" || noteValue.length > 1000)) returnToAdmin("erro");
+  const decision = decisionValue as "community" | "official" | "rejected";
+  const model = getShowcaseModel(modelSlug);
+  if (decision !== "rejected" && !model) returnToAdmin("erro");
+  const actor = await getUserWithRole("admin");
+  if (!actor.supabase || !actor.user || !actor.authorized) return redirect("/conta");
+  const note = typeof noteValue === "string" ? noteValue.trim() : "";
+  const published = decision !== "rejected";
+  const { data, error } = await actor.supabase.from("model_print_profiles").update({
+    sharing_scope: decision === "official" ? "official" : "community",
+    review_status: published ? "published" : "rejected",
+    reviewed_by: actor.user.id,
+    reviewed_at: new Date().toISOString(),
+    review_note: note || null,
+  }).eq("id", profileId).eq("model_slug", modelSlug).eq("sharing_scope", "community").eq("review_status", "pending").select("id").maybeSingle();
+  if (error || !data) returnToAdmin("erro");
+  revalidatePath("/admin/fabricantes");
+  if (model) revalidatePath(`/modelos/${model.id}`);
+  revalidatePath("/modelos/[id]", "page");
+  revalidatePath("/admin");
+  returnToAdmin(decision === "rejected" ? "perfil-modelo-recusado" : decision === "official" ? "perfil-modelo-oficial" : "perfil-modelo-comunitario");
 }

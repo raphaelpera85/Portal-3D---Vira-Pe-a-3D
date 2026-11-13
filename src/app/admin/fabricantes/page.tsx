@@ -6,7 +6,9 @@ import { getUserWithRole } from "@/lib/auth-role.server";
 import { readPrintProfileColors } from "@/lib/print-profile-colors";
 import { normalizeProductImageUrls, normalizeProductVideoUrl } from "@/lib/marketplace-validation";
 import { ProductImageGallery } from "@/components/product-image-gallery";
-import { publishProductAction, publishStoreAction, reviewMakerApplicationAction, reviewPrintProfileAction } from "./actions";
+import { publishProductAction, publishStoreAction, reviewMakerApplicationAction, reviewModelPrintProfileAction, reviewPrintProfileAction } from "./actions";
+import { getShowcaseModel } from "@/lib/model-showcase";
+import type { SavedSlicerMetrics } from "@/lib/saved-calculation";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Revisão do marketplace | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -18,17 +20,21 @@ const resultMessages: Record<string, string> = {
   "perfil-comunitario": "Perfil aprovado para a comunidade.",
   "perfil-oficial": "Perfil aprovado como oficial.",
   "perfil-recusado": "Perfil recusado com retorno ao fabricante.",
+  "perfil-modelo-comunitario": "Perfil do modelo aprovado para a comunidade.",
+  "perfil-modelo-oficial": "Perfil do modelo aprovado como oficial.",
+  "perfil-modelo-recusado": "Perfil do modelo recusado com retorno ao autor.",
   erro: "Não foi possível concluir a ação. Atualize a página e confira as permissões.",
 };
 
 export default async function MarketplaceAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
   const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.authorized) redirect("/conta");
-  const [applications, stores, products, printProfiles] = await Promise.all([
+  const [applications, stores, products, printProfiles, modelPrintProfiles] = await Promise.all([
     actor.supabase.from("maker_applications").select("id, business_name, contact_email, description, portfolio_url, city, state_code, created_at").eq("status", "pending").order("created_at"),
     actor.supabase.from("stores").select("id, name, slug, description, city, state_code, created_at").eq("status", "pending").order("created_at"),
     actor.supabase.from("marketplace_products").select("id, name, slug, description, listing_type, price_mode, price_brl, media, video_url, created_at, digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl), store:stores!inner(name, status)").eq("catalog_status", "draft").eq("store.status", "published").order("created_at"),
     actor.supabase.from("maker_print_profiles").select("id, profile_name, profile_type, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, print_hours, material_grams, material_by_color, product:marketplace_products!inner(name), store:stores!inner(name)").eq("sharing_scope", "community").eq("review_status", "pending").order("created_at"),
+    actor.supabase.from("visible_model_print_profiles").select("id, model_slug, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at").eq("sharing_scope", "community").eq("review_status", "pending").order("created_at").limit(100),
   ]);
 
   return (
@@ -77,6 +83,21 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
                 {profile.orientation && <p>Orientação: {profile.orientation}</p>}
               </div>
               <form action={reviewPrintProfileAction}><input type="hidden" name="profileId" value={profile.id} /><label>Retorno ao fabricante (opcional)<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="community" type="submit">Aprovar comunitário</button><button className="button button-primary" name="decision" value="official" type="submit">Marcar como oficial</button><button className="button button-secondary" name="decision" value="rejected" type="submit">Recusar</button></div></form>
+            </article>;
+          })}
+        </section>
+        <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">ETAPA 5</span><h2>Perfis comunitários dos modelos</h2></div>
+          {modelPrintProfiles.error ? <p className="auth-notice is-error">Não foi possível carregar os perfis comunitários dos modelos.</p> : (modelPrintProfiles.data?.length ?? 0) === 0 ? <p className="admin-empty">Nenhum perfil de modelo aguarda revisão.</p> : modelPrintProfiles.data?.map((profile) => {
+            const model = getShowcaseModel(profile.model_slug);
+            const metrics = profile.slicer_metrics as SavedSlicerMetrics;
+            return <article className="admin-review-card" key={profile.id}>
+              <div><span className="account-kicker">{profile.profile_type.toUpperCase()} · {profile.slicer}</span><h3>{model ? <Link href={`/modelos/${model.id}`}>{model.name}</Link> : `Modelo não cadastrado · ${profile.model_slug}`} · {profile.profile_name}</h3>
+                <p>{profile.printer_snapshot || "Impressora não informada"} · {profile.material_snapshot || "Material não informado"} · {profile.nozzle_snapshot || "Bico não informado"}</p>
+                <p>Escala {profile.scale_percent}% · lote de {profile.quantity} · camada {profile.layer_height_mm ?? "não informada"} mm · preenchimento {profile.infill_percent ?? "não informado"}% · {profile.wall_count ?? "paredes não informadas"} parede(s) · {profile.supports ? "com suportes" : "sem suportes"}</p>
+                <p>Consumo {metrics.filamentGrams ?? "não informado"} g · tempo {metrics.printHours ?? "não informado"} h · {metrics.filaments.length} filamento(s)</p>
+                {profile.orientation && <p>Orientação: {profile.orientation}</p>}
+              </div>
+              <form action={reviewModelPrintProfileAction}><input type="hidden" name="profileId" value={profile.id} /><input type="hidden" name="modelSlug" value={profile.model_slug} /><label>Retorno ao autor (opcional)<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="community" type="submit" disabled={!model}>Aprovar comunitário</button><button className="button button-primary" name="decision" value="official" type="submit" disabled={!model}>Marcar como oficial</button><button className="button button-secondary" name="decision" value="rejected" type="submit">Recusar</button></div></form>
             </article>;
           })}
         </section>

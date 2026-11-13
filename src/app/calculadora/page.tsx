@@ -44,8 +44,8 @@ export default async function CalculatorPage() {
           .eq("store_id", store.id).order("name"),
         actor.supabase.from("maker_print_profiles").select("id, product_id, profile_name, quantity, material_snapshot, print_hours, material_grams, material_by_color, maker_printer_id")
           .eq("store_id", store.id).order("profile_name"),
-        actor.supabase.from("model_print_profiles").select("id, model_slug, profile_name, quantity, material_snapshot, slicer_metrics")
-          .eq("user_id", actor.user.id).order("profile_name"),
+        actor.supabase.from("visible_model_print_profiles").select("id, model_slug, profile_name, quantity, material_snapshot, slicer_metrics")
+          .eq("is_owner", true).order("profile_name"),
       ]);
       if (error) equipmentNotice = "Não foi possível carregar seus equipamentos. A calculadora manual continua disponível.";
       if (productResult.error) productNotice = "Não foi possível carregar os produtos desta loja para vinculá-los ao cálculo.";

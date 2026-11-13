@@ -4,7 +4,7 @@ export const modelProfileTypes = ["economic", "fast", "detailed", "multicolor", 
 export const modelProfileSlicers = ["Arquivo 3MF", "Anycubic Slicer Next", "OrcaSlicer", "Bambu Studio", "Cura", "PrusaSlicer", "Manual"] as const;
 export type ModelPrintProfileInput = {
   id: string | null; modelSlug: string; name: string; profileType: typeof modelProfileTypes[number];
-  slicer: string; printerName: string; materialName: string; nozzleName: string;
+  slicer: string; sharingScope: "private" | "community"; printerName: string; materialName: string; nozzleName: string;
   layerHeightMm: number | null; infillPercent: number | null; wallCount: number | null;
   supports: boolean; orientation: string; scalePercent: number; quantity: number; metrics: SavedSlicerMetrics;
 };
@@ -51,6 +51,7 @@ export function validateModelPrintProfile(values: Record<string, unknown>): Mode
   const name = text(values.name);
   const profileType = values.profileType;
   const slicer = text(values.slicer);
+  const sharingScope = text(values.sharingScope) || "private";
   const printerName = text(values.printerName);
   const materialName = text(values.materialName);
   const nozzleName = text(values.nozzleName);
@@ -62,7 +63,7 @@ export function validateModelPrintProfile(values: Record<string, unknown>): Mode
   const quantity = decimal(values.quantity);
   if (!/^[a-z0-9]{6,16}$/.test(modelSlug) || id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
     || name.length < 2 || name.length > 80 || !modelProfileTypes.includes(profileType as typeof modelProfileTypes[number])
-    || !modelProfileSlicers.includes(slicer as typeof modelProfileSlicers[number])
+    || !modelProfileSlicers.includes(slicer as typeof modelProfileSlicers[number]) || !["private", "community"].includes(sharingScope)
     || printerName.length > 120 || materialName.length > 120 || nozzleName.length > 80 || orientation.length > 80
     || [layerHeightMm, infillPercent, wallCount, scalePercent, quantity].some((value) => value === undefined || value !== null && (!Number.isFinite(value) || value < 0))
     || layerHeightMm !== null && layerHeightMm !== undefined && (layerHeightMm <= 0 || layerHeightMm > 5)
@@ -107,7 +108,7 @@ export function validateModelPrintProfile(values: Record<string, unknown>): Mode
     };
   }
   return {
-    id, modelSlug, name, profileType: profileType as ModelPrintProfileInput["profileType"], slicer,
+    id, modelSlug, name, profileType: profileType as ModelPrintProfileInput["profileType"], slicer, sharingScope: sharingScope as ModelPrintProfileInput["sharingScope"],
     printerName, materialName, nozzleName, layerHeightMm: layerHeightMm ?? null, infillPercent: infillPercent ?? null,
     wallCount: wallCount ?? null, supports: values.supports === true || values.supports === "on" || values.supports === "true",
     orientation, scalePercent, quantity, metrics,

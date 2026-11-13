@@ -34,11 +34,11 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   const recommendations = getRecommendedModels(model);
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-  const profileResult = supabase && auth.user ? await supabase.from("model_print_profiles")
-    .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at")
-    .eq("user_id", auth.user.id).eq("model_slug", model.id).order("created_at", { ascending: false }) : null;
-  const profiles = (profileResult?.data ?? []) as import("@/components/model-print-profile-manager").ModelPrintProfileRecord[];
-  const notice = profileResult?.error ? "erro" : ["salvo", "excluido", "erro"].includes(perfil ?? "") ? perfil! : null;
+  const profileResult = supabase ? await supabase.from("visible_model_print_profiles")
+    .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at, sharing_scope, review_status, review_note, is_owner")
+    .eq("model_slug", model.id).order("created_at", { ascending: false }).limit(100) : null;
+  const profiles = (profileResult?.data ?? []).map(({ is_owner, ...profile }) => ({ ...profile, isOwner: is_owner })) as import("@/components/model-print-profile-manager").ModelPrintProfileRecord[];
+  const notice = profileResult?.error ? "erro" : ["salvo", "enviado", "copiado", "retirado", "excluido", "erro"].includes(perfil ?? "") ? perfil! : null;
 
   return <>
     <SiteHeader />

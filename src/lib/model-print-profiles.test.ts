@@ -29,6 +29,12 @@ const input = {
 };
 
 describe("validateModelPrintProfile", () => {
+  it("defaults to private profiles and accepts community submissions", () => {
+    expect(validateModelPrintProfile(input)?.sharingScope).toBe("private");
+    expect(validateModelPrintProfile({ ...input, sharingScope: "community" })?.sharingScope).toBe("community");
+    expect(validateModelPrintProfile({ ...input, sharingScope: "official" })).toBeNull();
+  });
+
   it("normalizes a manually entered per-color print profile", () => {
     expect(validateModelPrintProfile(input)).toMatchObject({
       modelSlug: "70bda315e46e", name: "PLA 0.20 mm", quantity: 1,
