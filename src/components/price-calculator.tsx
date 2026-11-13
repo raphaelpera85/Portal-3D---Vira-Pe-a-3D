@@ -13,7 +13,7 @@ import { createMakerConsignmentItem } from "@/app/painel/maker/actions";
 import { MAX_CONSIGNMENT_QUANTITY } from "@/lib/consignment";
 import { SlicerImageImporter } from "@/components/slicer-image-importer";
 import { ThreeMfSlicerImporter } from "@/components/three-mf-slicer-importer";
-import { hasReviewableSlicerOcrData, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
+import { hasReviewableSlicerOcrData, slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 import { mapThreeMfPlateToSlicerMetrics, type CalculationOrigin, type SavedSlicerMetrics } from "@/lib/saved-calculation";
 import { mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "@/lib/calculator-profile";
 import type { ThreeMfSlicePlate } from "@/lib/model-file";
@@ -379,12 +379,17 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             {slicerMetrics?.filaments.length ? <div className="price-ocr-filaments is-editable">
               <strong>Consumo e custo por cor/material</strong>
               <p className="price-field-hint">Revise massa, comprimento e preço por quilo de cada filamento. O custo total por cor substitui o preço geral somente quando todas as linhas tiverem massa e preço preenchidos.</p>
-              <ul>{slicerMetrics.filaments.map((filament, index) => <li key={`${filament.index}-${index}`}>
-                <span>{filament.color && <i className="three-mf-filament-color" style={{ backgroundColor: `#${filament.color.replace(/^#/, "")}` }} aria-hidden="true" />}{filament.material || `Filamento ${filament.index}`}{filament.color ? ` · #${filament.color.replace(/^#/, "")}` : ""}</span>
-                <label><span className="sr-only">Massa em gramas do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.grams ?? ""} placeholder="g" onChange={(event) => updateSlicerFilament(index, { grams: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-                <label><span className="sr-only">Comprimento em metros do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.lengthMeters ?? ""} placeholder="m" onChange={(event) => updateSlicerFilament(index, { lengthMeters: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-                <label><span className="sr-only">Preço por quilo do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.pricePerKg ?? ""} placeholder="R$/kg" onChange={(event) => updateSlicerFilament(index, { pricePerKg: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-              </li>)}</ul>
+              <ul>{slicerMetrics.filaments.map((filament, index) => {
+                const color = slicerColorPresentation(filament.color);
+                return (
+                  <li key={`${filament.index}-${index}`}>
+                    <span>{color?.cssColor && <i className="three-mf-filament-color" style={{ backgroundColor: color.cssColor }} aria-hidden="true" />}{filament.material || `Filamento ${filament.index}`}{color ? ` · ${color.label}` : ""}</span>
+                    <label><span className="sr-only">Massa em gramas do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.grams ?? ""} placeholder="g" onChange={(event) => updateSlicerFilament(index, { grams: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+                    <label><span className="sr-only">Comprimento em metros do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.lengthMeters ?? ""} placeholder="m" onChange={(event) => updateSlicerFilament(index, { lengthMeters: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+                    <label><span className="sr-only">Preço por quilo do filamento {filament.index}</span><input type="number" min="0" step="any" value={filament.pricePerKg ?? ""} placeholder="R$/kg" onChange={(event) => updateSlicerFilament(index, { pricePerKg: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+                  </li>
+                );
+              })}</ul>
               {input.filamentCosts?.length ? <p className="price-ocr-note">O cálculo soma o custo de cada filamento informado.</p> : null}
             </div> : null}
           </section>

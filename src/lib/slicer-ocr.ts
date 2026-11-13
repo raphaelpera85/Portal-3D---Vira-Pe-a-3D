@@ -6,6 +6,24 @@ const massLabels = {
 };
 const materialPattern = String.raw`(?:(?:Prusament|Anycubic|ELEGOO|Bambu\s+Lab|Creality)\s+)?(?:Water[- ]Wash\s+Resin(?:\s+\d+(?:\.\d+)?)?|Standard\s+Resin(?:\s+V\d+(?:\.\d+)?)?|ABS[- ]?Like\s+Resin(?:\s+V?\d+(?:\.\d+)?)?|Hyper\s+(?:PLA|ABS|PETG)|HP[- ](?:ASA|TPU)|PPA[- ]CF|PA11(?:[- ](?:CF|Carbon[- ]?Fiber))?|PETG(?:[- ](?:CF|Carbon[- ]?Fiber))?|PC\s+Blend|TPU\s*95A|PLA(?:\+|\s*(?:Silk|Matte|Basic))?|PETG|ABS|ASA|TPU|PA(?:-CF)?|NYLON|PC|PVA|HIPS|RESIN|RESINA)`;
 const colorPattern = String.raw`(?:preto|branco|vermelho|azul|verde|amarelo|laranja|roxo|rosa|cinza|marrom|black|white|red|blue|green|yellow|orange|purple|pink|gray|grey|brown)`;
+const namedColors: Record<string, string> = {
+  preto: "black", branco: "white", vermelho: "red", azul: "blue", verde: "green", amarelo: "yellow",
+  laranja: "orange", roxo: "purple", rosa: "pink", cinza: "gray", marrom: "brown",
+  black: "black", white: "white", red: "red", blue: "blue", green: "green", yellow: "yellow",
+  orange: "orange", purple: "purple", pink: "pink", gray: "gray", grey: "grey", brown: "brown",
+};
+
+export function slicerColorPresentation(color: unknown) {
+  if (typeof color !== "string" || !color.trim()) return null;
+  const value = color.trim();
+  const normalized = value.toLocaleLowerCase("pt-BR");
+  if (/^#?(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(value)) {
+    const hex = `#${value.replace(/^#/, "")}`;
+    return { label: hex, cssColor: hex };
+  }
+  return { label: value, cssColor: Object.hasOwn(namedColors, normalized) ? namedColors[normalized] : null };
+}
+
 const slicerPatterns: Array<[RegExp, string]> = [
   [/Anycubic\s+Slicer\s+Next/i, "Anycubic Slicer Next"],
   [/OrcaSlicer/i, "OrcaSlicer"],

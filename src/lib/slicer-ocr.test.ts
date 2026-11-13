@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { hasReviewableSlicerOcrData, parseSlicerOcrTexts } from "./slicer-ocr";
+import { hasReviewableSlicerOcrData, parseSlicerOcrTexts, slicerColorPresentation } from "./slicer-ocr";
 
 describe("parseSlicerOcrTexts", () => {
+  it("presents recognized color names safely and keeps hex swatches intact", () => {
+    expect(slicerColorPresentation("azul")).toEqual({ label: "azul", cssColor: "blue" });
+    expect(slicerColorPresentation("red")).toEqual({ label: "red", cssColor: "red" });
+    expect(slicerColorPresentation("#336699")).toEqual({ label: "#336699", cssColor: "#336699" });
+    expect(slicerColorPresentation("unknown; color: red")).toEqual({ label: "unknown; color: red", cssColor: null });
+    expect(slicerColorPresentation("constructor")?.cssColor).toBeNull();
+  });
+
   it("keeps partial recognized data available for manual review", () => {
     expect(hasReviewableSlicerOcrData(parseSlicerOcrTexts(["Estimated cost: R$ 16,79"]))).toBe(true);
     expect(hasReviewableSlicerOcrData(parseSlicerOcrTexts(["Purge: 3 g\nMaterial: PLA"]))).toBe(true);

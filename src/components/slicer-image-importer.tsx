@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ImageUp, LoaderCircle } from "lucide-react";
 import { MAX_SLICER_OCR_IMAGE_BYTES, MAX_SLICER_OCR_IMAGES, MAX_SLICER_OCR_TOTAL_BYTES } from "@/lib/ocr-image-validation";
-import type { parseSlicerOcrTexts } from "@/lib/slicer-ocr";
+import { slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 
 type Extraction = ReturnType<typeof parseSlicerOcrTexts>;
 
@@ -94,7 +94,15 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
           <div><dt>Trocas</dt><dd>{extraction.filamentChanges ?? "Não identificado"}</dd></div>
           <div><dt>Custo reconhecido</dt><dd>{extraction.estimatedCost == null ? "Não identificado" : `${extraction.estimatedCost.toLocaleString("pt-BR")} ${extraction.estimatedCostCurrency ?? "· moeda não identificada"} · confira no fatiador`}</dd></div>
         </dl>
-        {extraction.filaments.length > 0 && <div className="price-ocr-filaments"><strong>Consumo por filamento</strong><ul>{extraction.filaments.map((filament) => <li key={filament.index}><span>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""}</span><b>{filament.grams == null ? "—" : `${filament.grams.toLocaleString("pt-BR")} g`}{filament.lengthMeters == null ? "" : ` · ${filament.lengthMeters.toLocaleString("pt-BR")} m`}</b></li>)}</ul></div>}
+        {extraction.filaments.length > 0 && <div className="price-ocr-filaments"><strong>Consumo por filamento</strong><ul>{extraction.filaments.map((filament) => {
+          const color = slicerColorPresentation(filament.color);
+          return (
+            <li key={filament.index}>
+              <span>{color?.cssColor && <i className="three-mf-filament-color" style={{ backgroundColor: color.cssColor }} aria-hidden="true" />}Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{color ? ` · ${color.label}` : ""}</span>
+              <b>{filament.grams == null ? "—" : `${filament.grams.toLocaleString("pt-BR")} g`}{filament.lengthMeters == null ? "" : ` · ${filament.lengthMeters.toLocaleString("pt-BR")} m`}</b>
+            </li>
+          );
+        })}</ul></div>}
         {extraction.derivedMass && <p className="price-ocr-note">O total foi somado do peso do modelo e dos suportes. Purga e torre aparecem separadas e não são somadas automaticamente.</p>}
         {(extraction.purgeGrams != null || extraction.wipeTowerGrams != null) && <p className="price-ocr-note">Confira se purga e torre já estão incluídas no peso total do fatiador antes de usar o consumo no cálculo; o portal não as soma novamente.</p>}
         {extraction.conflicts.length > 0 && <p className="price-ocr-conflict" role="alert">Valores divergentes entre imagens: {extraction.conflicts.join(", ")}. Eles foram deixados sem preenchimento.</p>}
