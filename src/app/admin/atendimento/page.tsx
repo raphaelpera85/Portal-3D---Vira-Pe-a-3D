@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SupportReplyForm } from "@/components/support-reply-form";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { prioritizeSupportTickets } from "@/lib/support-ticket-queue";
+import { formatSupportTicketAge } from "@/lib/support-ticket-age";
 import { setSupportTicketStatusAction } from "@/app/suporte/actions";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function AdminSupportPage({ searchParams }: { searchParams:
   ]);
   const ticketsError = actionableResult.error ?? otherResult.error;
   const tickets = prioritizeSupportTickets([...(actionableResult.data ?? []), ...(otherResult.data ?? [])]);
+  const now = new Date();
   const ticketGroups = [
     { title: "Precisam de ação da equipe · mais antigos primeiro", tickets: tickets.filter(({ status }) => status === "open" || status === "in_progress") },
     { title: "Aguardando resposta do usuário", tickets: tickets.filter(({ status }) => status === "waiting_user") },
@@ -53,7 +55,7 @@ export default async function AdminSupportPage({ searchParams }: { searchParams:
       {ticketGroups.filter(({ tickets: group }) => group.length > 0).map(({ title, tickets: group }) => <div className="support-ticket-group" key={title}>
       <div className="admin-section-title"><h2>{title}</h2></div>
       {group.map((ticket) => <article className="account-card support-ticket-card" key={ticket.id}>
-        <div className="support-ticket-heading"><div><span className="account-kicker">{statuses[ticket.status] ?? ticket.status} · {categories[ticket.category] ?? "Outro"} · {ticket.requester_role}</span><h2>{ticket.subject}</h2><p>Conta: {ticket.user_id.slice(0, 8)} · criada em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(ticket.created_at))}</p></div>
+        <div className="support-ticket-heading"><div><span className="account-kicker">{statuses[ticket.status] ?? ticket.status} · {categories[ticket.category] ?? "Outro"} · {ticket.requester_role}</span><h2>{ticket.subject}</h2><p>Conta: {ticket.user_id.slice(0, 8)} · criada em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(ticket.created_at))}</p><p className="support-ticket-age"><strong>{ticket.status === "open" ? "Aguardando equipe" : ticket.status === "in_progress" ? "Em análise há" : ticket.status === "waiting_user" ? "Aguardando usuário" : "Última atualização"}:</strong> <time dateTime={ticket.updated_at}>{formatSupportTicketAge(ticket.updated_at, now)} atrás</time></p></div>
           <form action={setSupportTicketStatusAction} className="support-status-form"><input type="hidden" name="ticketId" value={ticket.id} /><label>Status<select name="status" defaultValue={ticket.status}>{Object.entries(statuses).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label><button className="button button-secondary" type="submit">Atualizar</button></form>
         </div>
         {messagesResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar as mensagens.</p> : <ol className="support-message-list">{(messagesByTicket.get(ticket.id) ?? []).map((message) => <li className={`support-message${message.sender_role === "admin" ? " is-admin" : ""}`} key={message.id}><div><strong>{message.sender_role === "admin" ? "Atendimento ViraPeça" : `Usuário · ${message.sender_role}`}</strong><time dateTime={message.created_at}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(message.created_at))}</time></div><p>{message.body}</p>{(attachmentsByMessage.get(message.id) ?? []).map((attachment) => attachment.url && <a className="support-attachment-link" href={attachment.url} key={attachment.id}>{attachment.file_name} · {new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(attachment.size_bytes / 1024)} KB · baixar</a>)}</li>)}</ol>}

@@ -701,6 +701,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .support-ticket-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .support-ticket-heading h2 { margin: 6px 0; font-family: Georgia, serif; font-size: 23px; font-weight: 400; }
 .support-ticket-heading p { margin: 0; color: var(--muted); font-size: 10px; }
+.support-ticket-heading .support-ticket-age { margin-top: 7px; color: var(--ink); font-size: 12px; }
+.support-ticket-age strong { color: var(--blue); }
 .support-status-form { display: flex; align-items: end; gap: 8px; }
 .support-status-form label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
 .support-status-form select { min-height: 38px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); color: var(--ink); }
