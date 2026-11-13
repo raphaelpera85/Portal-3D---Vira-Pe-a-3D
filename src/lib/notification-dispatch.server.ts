@@ -3,6 +3,7 @@ import "server-only";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isNotificationChannelConfigured, sendNotificationDelivery, type NotificationDelivery } from "@/lib/notification-delivery";
 import { getSiteUrl } from "@/lib/site-url";
+import { getNotificationPanelPath } from "@/lib/notification-messages";
 
 export async function dispatchNotificationQueue() {
   const siteUrl = getSiteUrl();
@@ -12,8 +13,6 @@ export async function dispatchNotificationQueue() {
   const { data, error } = await supabase.rpc("claim_store_notification_deliveries", { batch_size: 25 });
   if (error) return { status: 503, body: { error: "notification_queue_unavailable" } };
   const deliveries = (data ?? []) as NotificationDelivery[];
-  const panelUrl = new URL("/painel/maker", siteUrl).toString();
-  const supportUrl = new URL("/suporte", siteUrl).toString();
   let sent = 0;
   let failed = 0;
   let deferred = 0;
@@ -24,7 +23,7 @@ export async function dispatchNotificationQueue() {
       else deferred += 1;
       return;
     }
-    const destinationUrl = delivery.payload.notification_type === "support_reply" ? supportUrl : panelUrl;
+    const destinationUrl = new URL(getNotificationPanelPath(delivery.payload.notification_type), siteUrl).toString();
     const result = await sendNotificationDelivery(delivery, destinationUrl);
     if (result.ok) {
       const { error: completeError } = await supabase.rpc("complete_store_notification_delivery", { delivery_id: delivery.id, message_id: result.messageId });

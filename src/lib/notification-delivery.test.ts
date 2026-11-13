@@ -45,6 +45,19 @@ describe("notification delivery", () => {
     expect(body.text).not.toContain("Suporte");
   });
 
+  it("sends designer service request email without exposing the private brief", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ id: "email-designer-1" }), { status: 200 }));
+    const serviceDelivery = { ...delivery("email"), payload: { notification_type: "designer_service_request", project_title: "Suporte especial", brief: "Brief privado" } };
+    const result = await sendNotificationDelivery(serviceDelivery, "https://virapeca.example/painel/designer", { RESEND_API_KEY: "secret", RESEND_FROM_EMAIL: "pedidos@virapeca.example" }, fetcher);
+    expect(result).toEqual({ ok: true, messageId: "email-designer-1" });
+    const init = fetcher.mock.calls[0][1];
+    expect(new Headers(init?.headers).get("Idempotency-Key")).toBe("virapeca/designer/delivery-1");
+    const body = JSON.parse(String(init?.body));
+    expect(body.subject).toContain("modelagem");
+    expect(body.html).toContain("/painel/designer");
+    expect(JSON.stringify(body)).not.toContain("Brief privado");
+  });
+
   it("sends only an approved WhatsApp template to the registered number", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ messages: [{ id: "wamid-1" }] }), { status: 200 }));
     const env = { WHATSAPP_ACCESS_TOKEN: "secret", WHATSAPP_PHONE_NUMBER_ID: "12345", WHATSAPP_GRAPH_API_VERSION: "v23.0", WHATSAPP_TEMPLATE_NAME: "virapeca_novo_orcamento", WHATSAPP_TEMPLATE_LANGUAGE: "pt_BR" };

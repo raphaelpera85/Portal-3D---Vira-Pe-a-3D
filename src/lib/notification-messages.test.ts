@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildQuoteRequestEmail, buildSupportReplyEmail, buildWhatsAppQuoteRequestPayload } from "./notification-messages";
+import { buildDesignerServiceRequestEmail, buildQuoteRequestEmail, buildSupportReplyEmail, buildWhatsAppQuoteRequestPayload, getNotificationPanelPath } from "./notification-messages";
 
 describe("quote request notifications", () => {
   it("escapes product names in email while linking to the maker panel", () => {
@@ -33,5 +33,22 @@ describe("quote request notifications", () => {
     expect(email.html).toContain("Conta &lt;bloqueada&gt;");
     expect(email.html).toContain("https://virapeca.example/suporte");
     expect(email.text).not.toContain("<bloqueada>");
+  });
+});
+
+describe("designer service notifications", () => {
+  it("sends only a safe project title and opens the designer panel", () => {
+    const email = buildDesignerServiceRequestEmail({ projectTitle: "Suporte <especial>", panelUrl: "https://virapeca.example/painel/designer" });
+    expect(email.subject).toContain("novo pedido de modelagem");
+    expect(email.subject).not.toContain("\n");
+    expect(email.html).toContain("Suporte &lt;especial&gt;");
+    expect(email.text).toContain("https://virapeca.example/painel/designer");
+    expect(email.text).not.toContain("detalhes secretos do comprador");
+  });
+
+  it("routes each queued notification to its relevant panel", () => {
+    expect(getNotificationPanelPath("designer_service_request")).toBe("/painel/designer");
+    expect(getNotificationPanelPath("support_reply")).toBe("/suporte");
+    expect(getNotificationPanelPath("purchase")).toBe("/painel/maker");
   });
 });

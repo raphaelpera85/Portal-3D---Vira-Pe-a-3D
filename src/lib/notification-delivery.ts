@@ -1,4 +1,4 @@
-import { buildQuoteRequestEmail, buildSupportReplyEmail, buildWhatsAppQuoteRequestPayload } from "./notification-messages";
+import { buildDesignerServiceRequestEmail, buildQuoteRequestEmail, buildSupportReplyEmail, buildWhatsAppQuoteRequestPayload } from "./notification-messages";
 
 export type NotificationDelivery = { id: string; channel: "email" | "whatsapp"; destination: string; payload: Record<string, unknown>; attempts: number };
 export type NotificationEnvironment = Record<string, string | undefined>;
@@ -13,6 +13,7 @@ export function isNotificationChannelConfigured(channel: NotificationDelivery["c
 
 export async function sendNotificationDelivery(delivery: NotificationDelivery, actionUrl: string, env: NotificationEnvironment = process.env, fetcher: typeof fetch = fetch): Promise<NotificationSendResult> {
   const isSupportReply = delivery.payload.notification_type === "support_reply";
+  const isDesignerServiceRequest = delivery.payload.notification_type === "designer_service_request";
   const productName = typeof delivery.payload.product_name === "string" ? delivery.payload.product_name : "Produto";
   const requestType = delivery.payload.request_type === "purchase" ? "purchase" : "quote";
   const rawQuantity = Number(delivery.payload.quantity);
@@ -22,16 +23,19 @@ export async function sendNotificationDelivery(delivery: NotificationDelivery, a
       if (!isNotificationChannelConfigured("email", env)) return { ok: false, reason: "email_not_configured" };
       const content = isSupportReply
         ? buildSupportReplyEmail({ ticketSubject: typeof delivery.payload.ticket_subject === "string" ? delivery.payload.ticket_subject : "Atendimento", supportUrl: actionUrl })
-        : buildQuoteRequestEmail({ productName, quantity, panelUrl: actionUrl, requestType });
+        : isDesignerServiceRequest
+          ? buildDesignerServiceRequestEmail({ projectTitle: typeof delivery.payload.project_title === "string" ? delivery.payload.project_title : "Projeto de modelagem", panelUrl: actionUrl })
+          : buildQuoteRequestEmail({ productName, quantity, panelUrl: actionUrl, requestType });
       const response = await fetcher("https://api.resend.com/emails", {
         method: "POST", signal: AbortSignal.timeout(10000),
-        headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json", "Idempotency-Key": `virapeca/${isSupportReply ? "support" : "quote"}/${delivery.id}` },
+        headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json", "Idempotency-Key": `virapeca/${isSupportReply ? "support" : isDesignerServiceRequest ? "designer" : "quote"}/${delivery.id}` },
         body: JSON.stringify({ from: env.RESEND_FROM_EMAIL, to: [delivery.destination], ...content }),
       });
       const data = await response.json().catch(() => ({})) as { id?: string };
       return response.ok ? { ok: true, messageId: data.id ?? null } : { ok: false, reason: `email_http_${response.status}` };
     }
 
+    if (isDesignerServiceRequest) return { ok: false, reason: "designer_whatsapp_template_not_configured" };
     if (!isNotificationChannelConfigured("whatsapp", env)) return { ok: false, reason: "whatsapp_not_configured" };
     const body = buildWhatsAppQuoteRequestPayload({
       recipient: delivery.destination, productName, quantity, panelUrl: actionUrl,

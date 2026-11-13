@@ -18,6 +18,18 @@ export function buildSupportReplyEmail({ ticketSubject, supportUrl }: { ticketSu
   return { subject, text, html };
 }
 
+export function buildDesignerServiceRequestEmail({ projectTitle, panelUrl }: { projectTitle: string; panelUrl: string }) {
+  const safeTitle = projectTitle.replace(/[\r\n\x00-\x1f\x7f]/g, " ").slice(0, 120);
+  const subject = `Você recebeu um novo pedido de modelagem: ${safeTitle}`;
+  const text = `Um comprador enviou um briefing de modelagem chamado ${safeTitle}. Acesse o painel do designer para consultar os detalhes: ${panelUrl}`;
+  const html = `<p>Um comprador enviou um novo briefing de modelagem chamado <strong>${escapeHtml(safeTitle)}</strong>.</p><p>Entre no painel do designer para consultar os detalhes privados do pedido.</p><p><a href="${escapeHtml(panelUrl)}">Abrir painel do designer</a></p>`;
+  return { subject, text, html };
+}
+
+export function getNotificationPanelPath(notificationType: unknown) {
+  return notificationType === "support_reply" ? "/suporte" : notificationType === "designer_service_request" ? "/painel/designer" : "/painel/maker";
+}
+
 export function buildWhatsAppQuoteRequestPayload({ recipient, productName, quantity, panelUrl, templateName, language, requestType = "quote" }: {
   recipient: string; productName: string; quantity: number; panelUrl: string; templateName: string; language: string; requestType?: "quote" | "purchase";
 }) {
