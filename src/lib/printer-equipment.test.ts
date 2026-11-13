@@ -48,6 +48,12 @@ describe("printer equipment validation", () => {
     expect(validateMaintenanceEntry({ performedAt: "2026-10-01", maintenanceType: "preventive", component: "Bico", costBrl: "0", nextDueHours: "1200" }, "2026-11-11", 1200)).toBeNull();
   });
 
+  it("accepts component replacement as a maintenance event", () => {
+    expect(validateMaintenanceEntry({
+      performedAt: "2026-10-01", maintenanceType: "component_replacement", component: "Motor do extrusor", costBrl: "280", hoursAtEvent: "620",
+    }, "2026-11-11")).toMatchObject({ maintenanceType: "component_replacement", component: "Motor do extrusor", costBrl: 280 });
+  });
+
   it("derives calculator rates only from values the maker recorded", () => {
     expect(deriveEquipmentRates({
       purchasePriceBrl: "4500.00", residualValueBrl: "900", usefulLifeHours: "8000",

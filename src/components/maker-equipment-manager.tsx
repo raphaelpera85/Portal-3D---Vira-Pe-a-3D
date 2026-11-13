@@ -14,7 +14,7 @@ type MakerPrinter = {
 };
 
 const statusLabel: Record<string, string> = { available: "Disponível", maintenance: "Em manutenção", inactive: "Inativa" };
-const maintenanceLabel: Record<string, string> = { preventive: "Preventiva", corrective: "Corretiva", nozzle_replacement: "Troca de bico", belt_replacement: "Troca de correias", lubrication: "Lubrificação", bed_replacement: "Troca de mesa", other: "Outra" };
+const maintenanceLabel: Record<string, string> = { preventive: "Preventiva", corrective: "Corretiva", nozzle_replacement: "Troca de bico", belt_replacement: "Troca de correias", lubrication: "Lubrificação", bed_replacement: "Troca de mesa", component_replacement: "Substituição de componentes", other: "Outra" };
 const dateLabel = (value: string | null) => value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value.slice(0, 10)}T00:00:00Z`)) : "—";
 
 function PrinterForm({ storeId, models, printer }: { storeId: string; models: PrinterModel[]; printer?: MakerPrinter }) {
@@ -57,7 +57,7 @@ function MaintenanceForm({ printer }: { printer: MakerPrinter }) {
       <input type="hidden" name="printerId" value={printer.id} />
       <div className="equipment-form-grid">
         <label>Data<input type="date" name="performedAt" required /></label>
-        <label>Tipo<select name="maintenanceType" defaultValue="preventive"><option value="preventive">Preventiva</option><option value="corrective">Corretiva</option><option value="nozzle_replacement">Troca de bico</option><option value="belt_replacement">Troca de correias</option><option value="lubrication">Lubrificação</option><option value="bed_replacement">Troca de mesa</option><option value="other">Outra</option></select></label>
+        <label>Tipo<select name="maintenanceType" defaultValue="preventive"><option value="preventive">Preventiva</option><option value="corrective">Corretiva</option><option value="nozzle_replacement">Troca de bico</option><option value="belt_replacement">Troca de correias</option><option value="lubrication">Lubrificação</option><option value="bed_replacement">Troca de mesa</option><option value="component_replacement">Substituição de componentes</option><option value="other">Outra</option></select></label>
         <label>Componente/serviço<input name="component" minLength={2} maxLength={100} required /></label>
         <label>Custo (R$)<input name="costBrl" inputMode="decimal" defaultValue="0" required /></label>
         <label>Horas de uso no registro<input name="hoursAtEvent" inputMode="decimal" /></label>

@@ -20,7 +20,7 @@ export type MakerPrinterInput = {
 
 export type MaintenanceEntryInput = {
   performedAt: string;
-  maintenanceType: "preventive" | "corrective" | "nozzle_replacement" | "belt_replacement" | "lubrication" | "bed_replacement" | "other";
+  maintenanceType: "preventive" | "corrective" | "nozzle_replacement" | "belt_replacement" | "lubrication" | "bed_replacement" | "component_replacement" | "other";
   component: string;
   costBrl: number;
   hoursAtEvent: number | null;
@@ -109,7 +109,7 @@ export function validateMaintenanceEntry(values: Record<string, unknown>, today 
   const notes = text(values.notes);
   const nextDueAt = text(values.nextDueAt) || null;
   const nextDueHours = numeric(values.nextDueHours);
-  const types = ["preventive", "corrective", "nozzle_replacement", "belt_replacement", "lubrication", "bed_replacement", "other"] as const;
+  const types = ["preventive", "corrective", "nozzle_replacement", "belt_replacement", "lubrication", "bed_replacement", "component_replacement", "other"] as const;
   if (!validDate(performedAt) || performedAt > today || !types.includes(maintenanceType as typeof types[number])) return null;
   if (component.length < 2 || component.length > 100 || notes.length > 1000) return null;
   if (costBrl == null || !Number.isFinite(costBrl) || costBrl < 0 || (hoursAtEvent != null && (!Number.isFinite(hoursAtEvent) || hoursAtEvent < 0))) return null;
