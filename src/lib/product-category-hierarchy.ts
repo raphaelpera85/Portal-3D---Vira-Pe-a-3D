@@ -35,3 +35,19 @@ export function getProductCategoryLabels(categories: NamedProductCategoryNode[])
     return [category.id, path.join(" / ")];
   }));
 }
+
+export function getProductCategoryTreeIds(categoryId: string, categories: ProductCategoryNode[]): string[] {
+  const children = new Map<string, string[]>();
+  for (const category of categories) {
+    if (category.active && category.parent_id) children.set(category.parent_id, [...(children.get(category.parent_id) ?? []), category.id]);
+  }
+  const included = new Set<string>();
+  const pending = [categoryId];
+  while (pending.length) {
+    const current = pending.pop()!;
+    if (included.has(current)) continue;
+    included.add(current);
+    pending.push(...(children.get(current) ?? []));
+  }
+  return categories.filter(({ id, active }) => active && included.has(id)).map(({ id }) => id);
+}
