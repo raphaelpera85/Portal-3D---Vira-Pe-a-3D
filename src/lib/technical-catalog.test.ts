@@ -11,6 +11,67 @@ const ender5MaxMigration = readFileSync(new URL("../../supabase/migrations/20261
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
+  it("keeps the first official catalog seed variants in the local fallback", () => {
+    const seededVariants = [
+      ["Bambu Lab", "A1", "standard"],
+      ["Bambu Lab", "A1", "Combo"],
+      ["Bambu Lab", "A1 mini", "standard"],
+      ["Bambu Lab", "A1 mini", "Combo"],
+      ["Bambu Lab", "H2S", "standard"],
+      ["Bambu Lab", "H2S", "AMS 2 Pro Combo"],
+      ["Bambu Lab", "H3C", "AMS 3H Combo"],
+      ["Bambu Lab", "P2S", "standard"],
+      ["Bambu Lab", "P2S", "AMS 2 Pro Combo"],
+      ["Creality", "K2 Plus", "standard"],
+      ["Creality", "K2 Pro", "standard"],
+      ["Creality", "K2 Pro", "CFS Combo"],
+      ["Prusa Research", "CORE One+", "Gen 2"],
+      ["Prusa Research", "MK4S", "standard"],
+      ["Creality", "Ender-3 V4", "Combo"],
+      ["Creality", "Ender-5 Max", "standard"],
+      ["ELEGOO", "Centauri 2", "standard"],
+      ["ELEGOO", "Centauri 2", "CANVAS Combo"],
+      ["Anycubic", "Kobra 3", "standard"],
+      ["Creality", "K1C", "standard"],
+      ["ELEGOO", "Neptune 4 Pro", "Type-C edition"],
+      ["Flashforge", "Adventurer 5M", "standard"],
+      ["Sovol", "SV08", "standard"],
+      ["QIDI Tech", "Plus4", "standard"],
+      ["Artillery", "M1 Pro", "standard"],
+      ["FLSUN", "V400 Max", "standard"],
+      ["Raise3D", "Pro3 HS", "standard"],
+      ["Formlabs", "Form 4", "standard"],
+      ["Phrozen", "Sonic Mighty Revo 16K", "standard"],
+      ["Ultimaker", "S7", "standard"],
+      ["Snapmaker", "U1", "standard"],
+      ["Creality", "Ender-3 V3 KE", "standard"],
+      ["ELEGOO", "Saturn 4 Ultra", "12K"],
+      ["Anycubic", "Kobra S1", "standard"],
+      ["Anycubic", "Kobra S1", "Combo"],
+      ["Anycubic", "Photon Mono M7", "standard"],
+      ["Anycubic", "Photon Mono M7 Pro", "standard"],
+      ["Anycubic", "Photon Mono M7 Max", "standard"],
+      ["Anycubic", "Photon P1", "standard"],
+      ["Bambu Lab", "H2D", "AMS 2 Pro Combo"],
+      ["Bambu Lab", "P1S", "standard"],
+      ["Bambu Lab", "P1S", "Combo"],
+      ["Creality", "Ender-3 V3", "standard"],
+      ["Creality", "Ender-3 V3 Plus", "standard"],
+      ["Creality", "Ender-3 V3 SE", "standard"],
+      ["ELEGOO", "Centauri Carbon 2", "standard"],
+      ["ELEGOO", "Neptune 4 Plus", "Type-C version"],
+      ["ELEGOO", "Neptune 4 Max", "Type-C version"],
+      ["Flashforge", "AD5X", "standard"],
+      ["Flashforge", "Adventurer 5M Pro", "standard"],
+    ];
+
+    expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
+      expect.objectContaining({ brand, model, variant }))));
+    expect(printers).toHaveLength(50);
+    expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
+    expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
   it("keeps the Bambu Lab A1 and A1 mini variants in the local fallback with exact hotend compatibility", () => {
     const a1 = printers.filter((item) => item.model === "A1");
     const a1Mini = printers.filter((item) => item.model === "A1 mini");
