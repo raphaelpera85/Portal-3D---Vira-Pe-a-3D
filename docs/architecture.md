@@ -28,7 +28,7 @@ flowchart LR
 
 ## Fluxos implementados
 
-- Homepage pública com busca, categorias, paginação, páginas de produto e metadados para indexação.
+- Homepage pública com busca, categorias, paginação e ordenação por novidades ou unidades de produtos pagas, páginas de produto e metadados para indexação.
 - A galeria `/modelos` organiza prévias dos 94 arquivos 3MF únicos do proprietário em sete categorias; busca por texto, tags e imagem. Os arquivos originais ainda não foram vinculados a uma loja aprovada para venda.
 - Diretório público `/lojas` e páginas individuais de fabricantes aprovados, com marca visual, localização aproximada, descrição, anúncios, prazos por produto, políticas comerciais e avaliações moderadas.
 - Supabase Auth com cadastro, confirmação, login e saída; compradores podem solicitar acesso maker e admins aprovam perfis, lojas e anúncios.

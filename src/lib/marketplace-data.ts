@@ -2,6 +2,14 @@ import type { Product, ProductVisual } from "./products";
 import { normalizeProductImageUrls, normalizeProductVideoUrl, normalizeProductVariantOptions, validateProductVariantSelection } from "./marketplace-validation";
 
 type Row = Record<string, unknown>;
+export function orderProductsByIds<T extends { id: string }>(products: T[], orderedIds: string[]) {
+  const byId = new Map(products.map((product) => [product.id, product]));
+  return orderedIds.flatMap((id) => {
+    const product = byId.get(id);
+    return product ? [product] : [];
+  });
+}
+
 const asObject = (value: unknown): Row => Array.isArray(value) ? asObject(value[0]) : value && typeof value === "object" ? value as Row : {};
 const asText = (value: unknown, fallback = "") => typeof value === "string" ? value : fallback;
 const asTextList = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];

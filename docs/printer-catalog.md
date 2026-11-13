@@ -6,7 +6,7 @@ A potência nominal máxima (150 W) fica separada da potência média medida. O 
 
 A migração `20261112130331_seed_official_printer_catalog.sql` amplia o catálogo com Anycubic Kobra 3, Creality K1C, ELEGOO Neptune 4 Pro, Prusa CORE One+, Flashforge Adventurer 5M, Sovol SV08, QIDI Plus4, Artillery M1 Pro, FLSUN V400 Max, Raise3D Pro3 HS, Formlabs Form 4, Phrozen Sonic Mighty Revo 16K, Ultimaker S7 e Snapmaker U1. Cada registro contém link oficial e data de conferência; campos sem confirmação permanecem vazios. A V400 Max é cilíndrica e a Pro3 HS tem volumes diferentes em impressão simples e dupla: seus volumes retangulares ficam vazios para impedir que a verificação de dimensões os trate incorretamente como uma caixa.
 
-A migração `20261113150000_add_raise3d_pro3_plus_hs.sql` inclui a Raise3D Pro3 Plus HS, com os volumes oficiais separados para extrusão simples (300 × 300 × 605 mm) e dupla (255 × 300 × 605 mm). Os campos de volume retangular ficam vazios para não superestimar o espaço quando a máquina imprime com os dois extrusores.
+A migração `20261113092320_add_raise3d_pro3_plus_hs.sql` inclui a Raise3D Pro3 Plus HS, com os volumes oficiais separados para extrusão simples (300 × 300 × 605 mm) e dupla (255 × 300 × 605 mm). Os campos de volume retangular ficam vazios para não superestimar o espaço quando a máquina imprime com os dois extrusores.
 
 A migração `20261112194021_seed_additional_official_printers.sql` adiciona Bambu Lab A1, Creality Ender-3 V3 KE e ELEGOO Saturn 4 Ultra 12K. A velocidade da Saturn permanece em mm/h nas propriedades técnicas, sem conversão para o campo de velocidade FDM em mm/s. Potência e características não publicadas pelas fontes ficam desconhecidas.
 

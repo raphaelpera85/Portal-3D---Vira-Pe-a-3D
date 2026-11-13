@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { mapMarketplaceProduct } from "./marketplace-data";
+import { mapMarketplaceProduct, orderProductsByIds } from "./marketplace-data";
+
+describe("orderProductsByIds", () => {
+  it("preserves ranking order and drops rows that are no longer public", () => {
+    expect(orderProductsByIds([{ id: "new" }, { id: "best" }], ["best", "removed", "new"]))
+      .toEqual([{ id: "best" }, { id: "new" }]);
+  });
+});
 
 describe("mapMarketplaceProduct", () => {
   it("maps only valid image URLs and converts database prices from reais", () => {

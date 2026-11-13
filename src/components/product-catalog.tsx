@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import type { Product } from "@/lib/products";
-import type { MarketplaceCategory } from "@/lib/marketplace.server";
+import type { MarketplaceCategory, MarketplaceSort } from "@/lib/marketplace.server";
 import { ProductIllustration } from "@/components/product-illustration";
 import { FavoriteButton } from "@/components/favorite-button";
 import { CatalogImageSearch } from "@/components/catalog-image-search";
@@ -17,19 +17,21 @@ type Props = {
   category: string;
   page: number;
   pages: number;
+  sort: MarketplaceSort;
   canFavorite?: boolean;
   favoriteProductIds?: string[];
 };
 
-function catalogUrl({ query, category, page }: { query: string; category: string; page?: number }) {
+function catalogUrl({ query, category, page, sort = "newest" }: { query: string; category: string; page?: number; sort?: MarketplaceSort }) {
   const params = new URLSearchParams();
   if (query) params.set("q", query);
   if (category) params.set("categoria", category);
   if (page && page > 1) params.set("pagina", String(page));
+  if (sort === "popular") params.set("ordem", sort);
   return `/${params.size ? `?${params.toString()}` : ""}#produtos`;
 }
 
-export function ProductCatalog({ products, categories, source, unavailable, notice, query, category, page, pages, canFavorite = false, favoriteProductIds = [] }: Props) {
+export function ProductCatalog({ products, categories, source, unavailable, notice, query, category, page, pages, sort, canFavorite = false, favoriteProductIds = [] }: Props) {
   const activeCategory = categories.find((item) => item.slug === category)?.slug ?? "";
   const emptyState = getCatalogEmptyState({ source, unavailable, query, category });
   return (
@@ -42,15 +44,20 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
       <div className="catalog-controls">
         <div className="category-list" aria-label="Filtrar por categoria">
           <Link className={`category-chip${!activeCategory ? " is-active" : ""}`} aria-current={!activeCategory ? "page" : undefined} href={catalogUrl({ query, category: "" })}>Todos</Link>
-          {categories.map((item) => <Link key={item.slug} className={`category-chip${activeCategory === item.slug ? " is-active" : ""}`} aria-current={activeCategory === item.slug ? "page" : undefined} href={catalogUrl({ query, category: item.slug })}>{item.name}</Link>)}
+          {categories.map((item) => <Link key={item.slug} className={`category-chip${activeCategory === item.slug ? " is-active" : ""}`} aria-current={activeCategory === item.slug ? "page" : undefined} href={catalogUrl({ query, category: item.slug, sort })}>{item.name}</Link>)}
         </div>
         <form className="search-field" action="/" method="get">
           <Search size={17} aria-hidden="true" /><label className="sr-only" htmlFor="product-search">Buscar produtos</label>
           <input id="product-search" type="search" name="q" maxLength={100} defaultValue={query} placeholder="O que você imaginou?" />
           {activeCategory && <input type="hidden" name="categoria" value={activeCategory} />}
+          {sort === "popular" && <input type="hidden" name="ordem" value="popular" />}
           <button type="submit" aria-label="Buscar">Buscar</button>
         </form>
       </div>
+      {source === "database" && <nav className="catalog-sort" aria-label="Ordenar produtos">
+        <Link className={sort === "newest" ? "is-active" : ""} aria-current={sort === "newest" ? "page" : undefined} href={catalogUrl({ query, category: activeCategory, sort: "newest" })}>Novidades</Link>
+        <Link className={sort === "popular" ? "is-active" : ""} aria-current={sort === "popular" ? "page" : undefined} href={catalogUrl({ query, category: activeCategory, sort: "popular" })}>Mais vendidos</Link>
+      </nav>}
       <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={activeCategory} />
       <div className="product-grid" aria-live="polite">
         {products.map((product, index) => (
@@ -61,7 +68,7 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
             </Link>{canFavorite && !product.demo && <FavoriteButton productId={product.id} slug={product.slug} initialFavorite={favoriteProductIds.includes(product.id)} />}</div>
             <div className="product-meta"><span>{product.category}</span><span aria-hidden="true">↗</span></div>
             <h3><Link href={`/produtos/${product.slug}`}>{product.name}</Link></h3>
-            {product.tags.length > 0 && <ul className="product-tags" aria-label={`Tags de ${product.name}`}>{product.tags.slice(0, 5).map((tag) => <li key={tag}><Link href={catalogUrl({ query: tag, category: activeCategory })}>{tag}</Link></li>)}</ul>}
+            {product.tags.length > 0 && <ul className="product-tags" aria-label={`Tags de ${product.name}`}>{product.tags.slice(0, 5).map((tag) => <li key={tag}><Link href={catalogUrl({ query: tag, category: activeCategory, sort })}>{tag}</Link></li>)}</ul>}
             <p className="product-maker">{product.storeSlug ? <Link href={`/lojas/${product.storeSlug}`}>{product.maker}</Link> : product.maker}</p>
             <p className="product-price">{product.priceLabel}</p>
           </article>
@@ -69,9 +76,9 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
         {products.length === 0 && <p className="empty-state">{emptyState === "unavailable" ? "O catálogo não pôde ser carregado agora." : emptyState === "no-published-products" ? <>Ainda não há produtos publicados. <Link href="/conta">Cadastre-se para vender</Link>.</> : "Nenhum produto encontrado. Tente outra busca ou categoria."}</p>}
       </div>
       {pages > 1 && <nav className="catalog-pagination" aria-label="Paginação de produtos">
-        {page > 1 ? <Link className="button button-secondary" href={catalogUrl({ query, category, page: page - 1 })}>← Página anterior</Link> : <span />}
+        {page > 1 ? <Link className="button button-secondary" href={catalogUrl({ query, category, page: page - 1, sort })}>← Página anterior</Link> : <span />}
         <span>Página {page} de {pages}</span>
-        {page < pages ? <Link className="button button-secondary" href={catalogUrl({ query, category, page: page + 1 })}>Próxima página →</Link> : <span />}
+        {page < pages ? <Link className="button button-secondary" href={catalogUrl({ query, category, page: page + 1, sort })}>Próxima página →</Link> : <span />}
       </nav>}
       <p className="catalog-disclaimer">{source === "local" ? "Vitrine demonstrativa; produtos e fabricantes são exemplos locais." : "Produtos publicados por lojas aprovadas. Valores e disponibilidade podem mudar; confirme antes de contratar."}</p>
     </section>

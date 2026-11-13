@@ -58,13 +58,15 @@ function PrinterIllustration() {
   );
 }
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; categoria?: string; pagina?: string }> }) {
+export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; categoria?: string; pagina?: string; ordem?: string }> }) {
   const params = await searchParams;
   const modelPreviews = filterModelShowcase(modelShowcase, typeof params.q === "string" ? params.q : "", typeof params.categoria === "string" ? params.categoria : "").slice(0, 6);
+  const sort = params.ordem === "popular" ? "popular" : "newest";
   const [catalog, buyer, featuredStores] = await Promise.all([loadMarketplaceCatalog({
     query: typeof params.q === "string" ? params.q : "",
     category: typeof params.categoria === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(params.categoria) ? params.categoria : "",
     page: typeof params.pagina === "string" && /^\d+$/.test(params.pagina) ? Number(params.pagina) : 1,
+    sort,
   }), getUserWithRole("buyer"), loadRecommendedStores()]);
   const [favoritesResult, bannersResult] = await Promise.all([
     buyer.supabase && buyer.user && buyer.authorized
@@ -129,7 +131,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
           </div>
         </section>
 
-        <ProductCatalog products={catalog.products} categories={catalog.categories} source={catalog.source} unavailable={Boolean(catalog.error)} notice={catalog.error ?? (catalog.source === "local" ? "O catálogo conectado ainda não está configurado; veja produtos de demonstração." : null)} query={catalog.query} category={catalog.category} page={catalog.page} pages={catalog.pages} canFavorite={Boolean(buyer.user && buyer.authorized)} favoriteProductIds={favoriteProductIds} />
+        <ProductCatalog products={catalog.products} categories={catalog.categories} source={catalog.source} unavailable={Boolean(catalog.error)} notice={catalog.error ?? (catalog.source === "local" ? "O catálogo conectado ainda não está configurado; veja produtos de demonstração." : null)} query={catalog.query} category={catalog.category} page={catalog.page} pages={catalog.pages} sort={catalog.sort} canFavorite={Boolean(buyer.user && buyer.authorized)} favoriteProductIds={favoriteProductIds} />
 
         {modelPreviews.length > 0 && <FeaturedModelShowcase models={modelPreviews} />}
 

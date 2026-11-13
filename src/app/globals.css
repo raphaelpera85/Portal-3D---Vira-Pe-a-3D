@@ -242,6 +242,10 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .search-field input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 11px; }
 .search-field input::placeholder { color: var(--muted); }
 .search-field button { padding: 6px 10px; border: 0; border-radius: 4px; background: var(--brand); color: var(--on-brand); font-size: 10px; font-weight: 700; cursor: pointer; }
+.catalog-sort { display: flex; gap: 8px; margin: -8px 0 24px; }
+.catalog-sort a { padding: 8px 13px; border: 1px solid var(--line); border-radius: 24px; color: var(--muted); font-size: 11px; font-weight: 650; text-decoration: none; transition: color .18s, border-color .18s, background .18s; }
+.catalog-sort a:hover { border-color: var(--brand); color: var(--brand); }
+.catalog-sort a.is-active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
 .catalog-image-search { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin: -13px 0 25px auto; max-width: 590px; color: var(--muted); font-size: 11px; }
 .catalog-image-file { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); cursor: pointer; }
 .catalog-image-file input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
