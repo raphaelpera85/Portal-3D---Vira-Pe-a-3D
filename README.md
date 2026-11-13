@@ -49,7 +49,7 @@ O OCR da calculadora está disponível para fabricantes autenticados quando Clou
 
 ## Atendimento
 
-Compradores, fabricantes e designers podem abrir e acompanhar conversas privadas em `/suporte`. A equipe responde e atualiza o status pela caixa de entrada `/admin/atendimento`; uma resposta gera um aviso por e-mail com link para o portal, quando o Resend está configurado. O conteúdo da conversa permanece no portal. Anexos privados estão disponíveis e o prazo de resposta ainda não é monitorado.
+Compradores, fabricantes e designers podem abrir e acompanhar conversas privadas em `/suporte`. A equipe responde e atualiza o status pela caixa de entrada `/admin/atendimento`; uma resposta gera um aviso por e-mail com link para o portal, quando o Resend está configurado. O conteúdo da conversa permanece no portal. Anexos privados estão disponíveis. A fila administrativa mostra o tempo desde a última atualização e a média da primeira resposta em janelas de 7 e 30 dias; metas de SLA ainda não estão configuradas.
 
 ## Supabase
 
