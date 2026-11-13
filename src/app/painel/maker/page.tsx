@@ -48,7 +48,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
   if (!actor.authorized) redirect("/conta");
   const [storeResult, categoryResult, storeProfileResult] = await Promise.all([
     actor.supabase.from("stores").select("id, name, slug, status, description, city, state_code, logo_url, banner_url").eq("owner_user_id", actor.user.id).maybeSingle(),
-    actor.supabase.from("product_categories").select("id, name").eq("active", true).order("sort_order").order("name"),
+    actor.supabase.from("product_categories").select("id, name, parent_id").eq("active", true).order("sort_order").order("name"),
     actor.supabase.from("stores").select("commercial_policies").eq("owner_user_id", actor.user.id).maybeSingle(),
   ]);
   if (storeResult.error) return <main className="account-page shell"><p className="auth-notice is-error">Não foi possível carregar a loja. Confira as migrações do marketplace.</p></main>;

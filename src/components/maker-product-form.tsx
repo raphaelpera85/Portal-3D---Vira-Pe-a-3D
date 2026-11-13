@@ -3,11 +3,13 @@
 import { useActionState, useState } from "react";
 import { createProductDraft, type MakerProductState } from "@/app/painel/maker/actions";
 import { MakerProductVariantPricing } from "@/components/maker-product-variant-pricing";
+import { getProductCategoryLabels } from "@/lib/product-category-hierarchy";
 
 const initialState: MakerProductState = { message: "", success: false };
-type Category = { id: string; name: string };
+type Category = { id: string; name: string; parent_id: string | null };
 
 export function MakerProductForm({ storeId, categories }: { storeId: string; categories: Category[] }) {
+  const categoryLabels = getProductCategoryLabels(categories);
   const [mode, setMode] = useState("quote");
   const [fulfillmentMode, setFulfillmentMode] = useState("made_to_order");
   const [listingType, setListingType] = useState<"physical" | "digital">("physical");
@@ -23,7 +25,7 @@ export function MakerProductForm({ storeId, categories }: { storeId: string; cat
         <label>Nome do produto<input name="name" minLength={3} maxLength={100} required /></label>
         <label>Descrição<textarea name="description" maxLength={2000} rows={4} /></label>
         <label>Tipo de anúncio<select name="listingType" value={listingType} onChange={(event) => { const next = event.target.value === "digital" ? "digital" : "physical"; setListingType(next); if (next === "digital") { setMode("fixed"); setFulfillmentMode("digital"); } else if (fulfillmentMode === "digital") setFulfillmentMode("made_to_order"); }}><option value="physical">Produto físico</option><option value="digital">Arquivo digital 3D</option></select></label>
-        <label>Categoria<select name="categoryId" required defaultValue=""><option value="" disabled>Selecione</option>{categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
+        <label>Categoria<select name="categoryId" required defaultValue=""><option value="" disabled>Selecione</option>{categories.map((category) => <option value={category.id} key={category.id}>{categoryLabels.get(category.id) ?? category.name}</option>)}</select></label>
         {listingType === "physical" && <label>Tipo de preço<select name="priceMode" value={mode} onChange={(event) => { const next = event.target.value; setMode(next); if (next === "quote") setFulfillmentMode("quote"); else if (fulfillmentMode === "quote") setFulfillmentMode("made_to_order"); }}><option value="quote">Sob orçamento</option><option value="fixed">Preço fixo</option><option value="from">A partir de</option></select></label>}
         {listingType === "digital" && <input type="hidden" name="priceMode" value="fixed" />}
         <label>{listingType === "digital" ? "Preço da licença pessoal (R$)" : `Preço em reais ${mode === "quote" ? "(não usado no orçamento)" : "(R$)"}`}<input name={listingType === "physical" && variantOptionsText.trim() && mode === "fixed" ? "variantBasePrice" : "priceBrl"} type="number" min="0.01" max="999999999" step="0.01" value={basePriceBrl} onChange={(event) => setBasePriceBrl(event.target.value)} disabled={listingType === "physical" && mode === "quote"} required={listingType === "digital" || mode !== "quote"} /></label>

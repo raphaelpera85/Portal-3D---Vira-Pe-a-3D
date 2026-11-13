@@ -1,4 +1,5 @@
 type ProductCategoryNode = { id: string; parent_id: string | null; active: boolean };
+type NamedProductCategoryNode = { id: string; parent_id: string | null; name: string };
 
 export function getAssignableCategoryParentIds(categoryId: string | null, categories: ProductCategoryNode[]): string[] {
   const excluded = new Set<string>();
@@ -16,4 +17,21 @@ export function getAssignableCategoryParentIds(categoryId: string | null, catego
     }
   }
   return categories.filter(({ id, active }) => active && !excluded.has(id)).map(({ id }) => id);
+}
+
+export function getProductCategoryLabels(categories: NamedProductCategoryNode[]): Map<string, string> {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  return new Map(categories.map((category) => {
+    const path = [category.name];
+    const seen = new Set([category.id]);
+    let parentId = category.parent_id;
+    while (parentId && !seen.has(parentId)) {
+      const parent = byId.get(parentId);
+      if (!parent) break;
+      seen.add(parentId);
+      path.unshift(parent.name);
+      parentId = parent.parent_id;
+    }
+    return [category.id, path.join(" / ")];
+  }));
 }

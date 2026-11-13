@@ -6,6 +6,7 @@ import { ProductIllustration } from "@/components/product-illustration";
 import { FavoriteButton } from "@/components/favorite-button";
 import { CatalogImageSearch } from "@/components/catalog-image-search";
 import { getCatalogEmptyState } from "@/lib/catalog";
+import { getProductCategoryLabels } from "@/lib/product-category-hierarchy";
 
 type Props = {
   products: Product[];
@@ -33,6 +34,7 @@ function catalogUrl({ query, category, page, sort = "newest" }: { query: string;
 
 export function ProductCatalog({ products, categories, source, unavailable, notice, query, category, page, pages, sort, canFavorite = false, favoriteProductIds = [] }: Props) {
   const activeCategory = categories.find((item) => item.slug === category)?.slug ?? "";
+  const categoryLabels = getProductCategoryLabels(categories);
   const emptyState = getCatalogEmptyState({ source, unavailable, query, category });
   return (
     <section className="catalog-section shell" id="produtos">
@@ -44,7 +46,7 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
       <div className="catalog-controls">
         <div className="category-list" aria-label="Filtrar por categoria">
           <Link className={`category-chip${!activeCategory ? " is-active" : ""}`} aria-current={!activeCategory ? "page" : undefined} href={catalogUrl({ query, category: "" })}>Todos</Link>
-          {categories.map((item) => <Link key={item.slug} className={`category-chip${activeCategory === item.slug ? " is-active" : ""}`} aria-current={activeCategory === item.slug ? "page" : undefined} href={catalogUrl({ query, category: item.slug, sort })}>{item.name}</Link>)}
+          {categories.map((item) => <Link key={item.slug} className={`category-chip${activeCategory === item.slug ? " is-active" : ""}`} aria-current={activeCategory === item.slug ? "page" : undefined} href={catalogUrl({ query, category: item.slug, sort })}>{categoryLabels.get(item.id) ?? item.name}</Link>)}
         </div>
         <form className="search-field" action="/" method="get">
           <Search size={17} aria-hidden="true" /><label className="sr-only" htmlFor="product-search">Buscar produtos</label>

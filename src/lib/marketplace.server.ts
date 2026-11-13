@@ -8,7 +8,7 @@ import { getFavoriteProductRecommendations } from "@/lib/favorite-product-recomm
 
 const pageSize = 24;
 const slugify = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-export type MarketplaceCategory = { name: string; slug: string };
+export type MarketplaceCategory = { id: string; name: string; slug: string; parent_id: string | null };
 export type MarketplaceSort = "newest" | "popular";
 
 export async function loadMarketplaceCatalog({ query = "", category = "", page = 1, sort = "newest" }: { query?: string; category?: string; page?: number; sort?: MarketplaceSort } = {}) {
@@ -16,13 +16,13 @@ export async function loadMarketplaceCatalog({ query = "", category = "", page =
   const selectedPage = Number.isInteger(page) && page > 0 ? page : 1;
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
-    const categories = [...new Set(demoProducts.map((item) => item.category))].map((name) => ({ name, slug: slugify(name) }));
+    const categories = [...new Set(demoProducts.map((item) => item.category))].map((name) => ({ id: slugify(name), name, slug: slugify(name), parent_id: null }));
     const categoryName = categories.find((item) => item.slug === category)?.name;
     const visible = filterProducts(demoProducts, term, categoryName ?? "Todos");
     return { products: visible, categories, source: "local" as const, error: null, query: term, category, page: 1, pages: 1, sort };
   }
 
-  const categoryQuery = supabase.from("product_categories").select("name, slug").eq("active", true).order("sort_order").order("name");
+  const categoryQuery = supabase.from("product_categories").select("id, name, slug, parent_id").eq("active", true).order("sort_order").order("name");
   let productsQuery = supabase.from("marketplace_products").select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, media, video_url, tags, color_theme, visual, digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)", { count: "exact" }).eq("catalog_status", "published").eq("store.status", "published");
   if (category) productsQuery = productsQuery.eq("category.slug", category);
   if (term) productsQuery = productsQuery.textSearch("search_document", term, { config: "portuguese", type: "websearch" });
