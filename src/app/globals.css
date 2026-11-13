@@ -703,6 +703,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .support-ticket-heading p { margin: 0; color: var(--muted); font-size: 10px; }
 .support-ticket-heading .support-ticket-age { margin-top: 7px; color: var(--ink); font-size: 12px; }
 .support-ticket-age strong { color: var(--blue); }
+.support-response-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.support-response-summary article small { color: var(--muted); font-size: 10px; }
 .support-status-form { display: flex; align-items: end; gap: 8px; }
 .support-status-form label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
 .support-status-form select { min-height: 38px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); color: var(--ink); }

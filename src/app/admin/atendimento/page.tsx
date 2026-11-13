@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SupportReplyForm } from "@/components/support-reply-form";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { prioritizeSupportTickets } from "@/lib/support-ticket-queue";
-import { formatSupportTicketAge } from "@/lib/support-ticket-age";
+import { formatSupportElapsedDuration, formatSupportTicketAge } from "@/lib/support-ticket-age";
 import { setSupportTicketStatusAction } from "@/app/suporte/actions";
 
 export const dynamic = "force-dynamic";
@@ -14,15 +14,20 @@ export const metadata: Metadata = { title: "Atendimento | Administração ViraPe
 const statuses: Record<string, string> = { open: "Aberto", in_progress: "Em análise", waiting_user: "Aguardando usuário", resolved: "Resolvido", closed: "Encerrado" };
 const categories: Record<string, string> = { account: "Conta", product: "Produto", order: "Pedido", payment: "Pagamento", delivery: "Entrega", technical: "Problema técnico", other: "Outro" };
 const resultMessages: Record<string, string> = { atualizado: "Status atualizado.", "resposta-enviada": "Resposta enviada ao usuário.", erro: "Não foi possível atualizar o atendimento." };
+type AdminSupportResponseMetric = { window_days: number; ticket_count: number; first_response_count: number; average_first_response_seconds: number | string | null };
 
 export default async function AdminSupportPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
   const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.authorized) redirect("/conta");
   const ticketFields = "id, user_id, requester_role, category, subject, status, created_at, updated_at";
-  const [actionableResult, otherResult] = await Promise.all([
+  const [actionableResult, otherResult, responseMetricsResult] = await Promise.all([
     actor.supabase.from("support_tickets").select(ticketFields).in("status", ["open", "in_progress"]).order("updated_at", { ascending: true }).limit(100),
     actor.supabase.from("support_tickets").select(ticketFields).in("status", ["waiting_user", "resolved", "closed"]).order("updated_at", { ascending: false }).limit(100),
+    actor.supabase.rpc("get_admin_support_response_metrics"),
   ]);
+  const responseMetricsByDays = new Map<number, AdminSupportResponseMetric>(
+    ((responseMetricsResult.data ?? []) as AdminSupportResponseMetric[]).map((metric) => [metric.window_days, metric]),
+  );
   const ticketsError = actionableResult.error ?? otherResult.error;
   const tickets = prioritizeSupportTickets([...(actionableResult.data ?? []), ...(otherResult.data ?? [])]);
   const now = new Date();
@@ -49,6 +54,9 @@ export default async function AdminSupportPage({ searchParams }: { searchParams:
   return <><SiteHeader /><main className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">OPERAÇÃO DA PLATAFORMA</p><h1>Atendimento</h1><p>Responda solicitações privadas e atualize o status de cada conversa.</p></div>
+    {responseMetricsResult.error ? <p className="model-library-note" role="status">Métricas de resposta indisponíveis. A fila continua funcionando.</p> : <section className="seller-finance-summary support-response-summary" aria-label="Tempo médio da primeira resposta">
+      {[7, 30].map((days) => { const metric = responseMetricsByDays.get(days); const average = metric?.average_first_response_seconds; return <article key={days}><span>Últimos {days} dias</span><strong>{average === null || average === undefined ? "Sem respostas" : formatSupportElapsedDuration(Number(average) * 1000)}</strong><small>{metric?.first_response_count ?? 0} de {metric?.ticket_count ?? 0} tickets receberam resposta da equipe</small></article>; })}
+    </section>}
     <p className="model-library-note">A fila mostra até 100 casos em aberto ou em análise, do mais antigo ao mais recente, seguidos pelos 100 casos mais recentes nos demais estados.</p>
     {resultado && resultMessages[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{resultMessages[resultado]}</p>}
     {ticketsError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar a fila. Confira se a migração de suporte foi aplicada.</p> : !tickets.length ? <p className="admin-empty">Nenhuma solicitação de atendimento.</p> : <section className="admin-review-section" aria-label="Solicitações de atendimento">
