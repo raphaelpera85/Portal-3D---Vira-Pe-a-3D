@@ -44,6 +44,25 @@ export async function loadMarketplaceCatalog({ query = "", category = "", page =
   };
 }
 
+export type RecommendedStore = { id: string; name: string; slug: string; productCount: number; reviewCount: number; averageRating: number | null };
+
+export async function loadRecommendedStores(): Promise<RecommendedStore[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("get_recommended_marketplace_stores");
+  if (error) return [];
+  return ((data ?? []) as { store_id: string; store_name: string; store_slug: string; published_product_count: number | string; review_count: number | string; average_rating: number | string | null }[])
+    .flatMap((row) => {
+      const productCount = Number(row.published_product_count);
+      const reviewCount = Number(row.review_count);
+      const rating = row.average_rating == null ? null : Number(row.average_rating);
+      return row.store_id && row.store_name && row.store_slug && Number.isSafeInteger(productCount) && productCount > 0
+        && Number.isSafeInteger(reviewCount) && reviewCount >= 0 && (rating == null || (Number.isFinite(rating) && rating >= 1 && rating <= 5))
+        ? [{ id: row.store_id, name: row.store_name, slug: row.store_slug, productCount, reviewCount, averageRating: rating }]
+        : [];
+    });
+}
+
 export async function loadMarketplaceProduct(slug: string) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return demoProducts.find((product) => product.slug === slug) ?? null;

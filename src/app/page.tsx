@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { ProductCatalog } from "@/components/product-catalog";
-import { loadMarketplaceCatalog } from "@/lib/marketplace.server";
+import { loadMarketplaceCatalog, loadRecommendedStores } from "@/lib/marketplace.server";
 import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { filterModelShowcase, modelShowcase } from "@/lib/model-showcase";
@@ -61,11 +61,11 @@ function PrinterIllustration() {
 export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; categoria?: string; pagina?: string }> }) {
   const params = await searchParams;
   const modelPreviews = filterModelShowcase(modelShowcase, typeof params.q === "string" ? params.q : "", typeof params.categoria === "string" ? params.categoria : "").slice(0, 6);
-  const [catalog, buyer] = await Promise.all([loadMarketplaceCatalog({
+  const [catalog, buyer, featuredStores] = await Promise.all([loadMarketplaceCatalog({
     query: typeof params.q === "string" ? params.q : "",
     category: typeof params.categoria === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(params.categoria) ? params.categoria : "",
     page: typeof params.pagina === "string" && /^\d+$/.test(params.pagina) ? Number(params.pagina) : 1,
-  }), getUserWithRole("buyer")]);
+  }), getUserWithRole("buyer"), loadRecommendedStores()]);
   const [favoritesResult, bannersResult] = await Promise.all([
     buyer.supabase && buyer.user && buyer.authorized
       ? buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id)
@@ -76,8 +76,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
   ]);
   const favoriteProductIds = favoritesResult?.data?.map((favorite) => favorite.product_id) ?? [];
   const banners = bannersResult?.data ?? [];
-  const featuredStores = [...new Map(catalog.products.flatMap((product) => product.storeSlug
-    ? [[product.storeSlug, { slug: product.storeSlug, name: product.maker }] as const] : []).map(([slug, store]) => [slug, store])).values()].slice(0, 4);
   return (
     <>
       <SiteHeader />
@@ -135,7 +133,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
 
         {modelPreviews.length > 0 && <FeaturedModelShowcase models={modelPreviews} />}
 
-        {featuredStores.length > 0 && <section className="featured-stores shell"><div className="section-heading"><div><p className="eyebrow">QUEM FAZ ACONTECER</p><h2>Lojas com novidades</h2></div><Link className="button button-secondary" href="/lojas">Ver todas as lojas</Link></div><div className="featured-store-list">{featuredStores.map((store) => <Link className="featured-store-card" href={`/lojas/${store.slug}`} key={store.slug}><span className="account-kicker">FABRICANTE APROVADO</span><strong>{store.name}</strong><span>Conheça a vitrine →</span></Link>)}</div></section>}
+        <section className="featured-stores shell" aria-labelledby="recommended-stores-title"><div className="section-heading"><div><p className="eyebrow">QUEM FAZ ACONTECER</p><h2 id="recommended-stores-title">Fabricantes recomendados</h2><p>Lojas aprovadas com anúncios ativos, ordenadas pelas avaliações públicas verificadas.</p></div><Link className="button button-secondary" href="/lojas">Ver todas as lojas</Link></div>{featuredStores.length > 0 ? <div className="featured-store-list">{featuredStores.map((store) => <Link className="featured-store-card" href={`/lojas/${store.slug}`} key={store.id}><span className="account-kicker">{store.productCount} {store.productCount === 1 ? "anúncio ativo" : "anúncios ativos"}</span><strong>{store.name}</strong><span className="featured-store-rating">{store.averageRating == null ? "Sem avaliações publicadas" : `★ ${store.averageRating.toFixed(1)} · ${store.reviewCount} ${store.reviewCount === 1 ? "avaliação" : "avaliações"}`}</span><span>Conheça a vitrine →</span></Link>)}</div> : <p className="featured-store-empty">Ainda não há lojas aprovadas com anúncios ativos. Quer transformar seu ateliê em uma vitrine? <Link href="/conta">Quero vender</Link></p>}</section>
 
         <section className="maker-section" id="fabricantes">
           <div className="shell maker-grid">
