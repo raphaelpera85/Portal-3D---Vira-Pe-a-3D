@@ -16,16 +16,16 @@ export async function loadTechnicalCatalog() {
     supabase.from("printer_nozzle_compatibility").select("*").eq("catalog_status", "published"),
   ]);
   const error = [printerResult, materialResult, nozzleResult, materialLinkResult, nozzleLinkResult].find((result) => result.error)?.error;
-  if (error) return { ...fallback, source: "local" as const, error: "Não foi possível carregar o catálogo. Exibimos as referências locais; verifique se a migração técnica foi aplicada e se as tabelas estão acessíveis." };
-
-  if (![printerResult.data, materialResult.data, nozzleResult.data, materialLinkResult.data, nozzleLinkResult.data].some((data) => (data?.length ?? 0) > 0)) {
+  const hasDatabaseRecords = [printerResult.data, materialResult.data, nozzleResult.data, materialLinkResult.data, nozzleLinkResult.data]
+    .some((data) => (data?.length ?? 0) > 0);
+  if (!error && !hasDatabaseRecords) {
     return { ...fallback, source: "local" as const, error: null };
   }
 
   const database = mapTechnicalCatalog(printerResult.data ?? [], materialResult.data ?? [], nozzleResult.data ?? [], materialLinkResult.data ?? [], nozzleLinkResult.data ?? []);
   return {
     ...mergeTechnicalCatalogWithFallback(database, fallback),
-    source: "database" as const,
-    error: null,
+    source: hasDatabaseRecords ? "database" as const : "local" as const,
+    error: error ? "Não foi possível consultar todo o catálogo. Combinamos os dados disponíveis com as referências locais; verifique se as migrações foram aplicadas." : null,
   };
 }
