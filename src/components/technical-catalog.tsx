@@ -14,6 +14,14 @@ const statusText = {
 const processForPrinter = (printer: PrinterEntry) => printer.technology === "FDM" ? "filament" : "resin";
 
 const powerText = (watts: number | null) => watts == null ? "Não medida" : `${watts} W`;
+const volumeDimensions = (value: unknown) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const dimensions = value as Record<string, unknown>;
+  return [dimensions.x, dimensions.y, dimensions.z].every((axis) => typeof axis === "number" && Number.isFinite(axis))
+    ? { x: dimensions.x as number, y: dimensions.y as number, z: dimensions.z as number }
+    : null;
+};
+const volumeText = (volume: { x: number; y: number; z: number }) => `${volume.x.toLocaleString("pt-BR")} × ${volume.y.toLocaleString("pt-BR")} × ${volume.z.toLocaleString("pt-BR")} mm`;
 const numericRange = (value: unknown) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const range = value as Record<string, unknown>;
@@ -49,6 +57,10 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
     ? printerProperties.ratedPowerWatts : null;
   const camera = typeof printerProperties.camera === "string" ? printerProperties.camera : null;
   const airFilter = typeof printerProperties.airFilter === "string" ? printerProperties.airFilter : null;
+  const singleNozzleVolume = volumeDimensions(printerProperties.singleNozzleBuildVolumeMm);
+  const dualNozzleVolume = volumeDimensions(printerProperties.dualNozzleBuildVolumeMm);
+  const combinedNozzleVolume = volumeDimensions(printerProperties.combinedNozzleBuildVolumeMm);
+  const hasNozzleSpecificVolumes = singleNozzleVolume !== null || dualNozzleVolume !== null || combinedNozzleVolume !== null;
   const extraBoxFilamentLimit = typeof printerProperties.maximumMulticolorFilamentsWithExtraBoxes === "number"
     && Number.isInteger(printerProperties.maximumMulticolorFilamentsWithExtraBoxes) && printerProperties.maximumMulticolorFilamentsWithExtraBoxes > 0
     ? printerProperties.maximumMulticolorFilamentsWithExtraBoxes : null;
@@ -122,7 +134,10 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
             </label>
             <dl className="technical-facts">
               <div><dt>Tecnologia</dt><dd>{printer.technology}</dd></div>
-              <div><dt>Volume útil</dt><dd>{printer.buildVolumeDescription ?? (printer.buildVolumeMm ? `${printer.buildVolumeMm.x} × ${printer.buildVolumeMm.y} × ${printer.buildVolumeMm.z} mm` : "Não informado")}</dd></div>
+              {!hasNozzleSpecificVolumes && <div><dt>Volume útil</dt><dd>{printer.buildVolumeDescription ?? (printer.buildVolumeMm ? volumeText(printer.buildVolumeMm) : "Não informado")}</dd></div>}
+              {singleNozzleVolume && <div><dt>Volume útil · 1 bico</dt><dd>{volumeText(singleNozzleVolume)}</dd></div>}
+              {dualNozzleVolume && <div><dt>Volume útil · 2 bicos</dt><dd>{volumeText(dualNozzleVolume)}</dd></div>}
+              {combinedNozzleVolume && <div><dt>Volume útil combinado</dt><dd>{volumeText(combinedNozzleVolume)}</dd></div>}
               <div><dt>Filamento</dt><dd>{printer.filamentDiameterMm ? `${printer.filamentDiameterMm} mm` : "Não informado"}</dd></div>
               <div><dt>Hotend máximo</dt><dd>{printer.maxNozzleTemperatureC ? `${printer.maxNozzleTemperatureC} °C` : "Não informado"}</dd></div>
               <div><dt>Mesa máxima</dt><dd>{printer.maxBedTemperatureC ? `${printer.maxBedTemperatureC} °C` : "Não informado"}</dd></div>

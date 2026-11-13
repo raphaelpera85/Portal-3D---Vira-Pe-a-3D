@@ -72,4 +72,28 @@ describe("TechnicalCatalog manufacturer conditions", () => {
       expect(markup).toContain(`<dt>Câmara ativa máxima</dt><dd>${temperature} °C</dd>`);
     }
   });
+
+  it("shows the H2D's single, dual and combined nozzle build volumes separately", () => {
+    const catalog = mapTechnicalCatalog(
+      [{
+        id: "h2d", manufacturer: "Bambu Lab", model: "H2D", variant: "AMS 2 Pro Combo", technology: "FDM",
+        build_volume_x_mm: 325, build_volume_y_mm: 320, build_volume_z_mm: 325,
+        technical_properties: {
+          singleNozzleBuildVolumeMm: { x: 325, y: 320, z: 325 },
+          dualNozzleBuildVolumeMm: { x: 300, y: 320, z: 325 },
+          combinedNozzleBuildVolumeMm: { x: 350, y: 320, z: 325 },
+        }, source_url: "https://example.com/h2d", verified_at: "2026-11-13",
+      }],
+      [{ id: "pla", manufacturer: "Bambu Lab", product: "PLA", family: "PLA", process: "filament", source_url: "https://example.com/pla", verified_at: "2026-11-13" }],
+      [{ id: "nozzle", manufacturer: "Bambu Lab", model: "H2D nozzle", diameter_mm: 0.4, original: true, source_url: "https://example.com/nozzle", verified_at: "2026-11-13" }],
+      [],
+      [{ printer_id: "h2d", nozzle_id: "nozzle", fit: "compatible" }],
+    );
+
+    const markup = renderToStaticMarkup(<TechnicalCatalog {...catalog} notice={null} />);
+    expect(markup).toContain("Volume útil · 1 bico</dt><dd>325 × 320 × 325 mm");
+    expect(markup).toContain("Volume útil · 2 bicos</dt><dd>300 × 320 × 325 mm");
+    expect(markup).toContain("Volume útil combinado</dt><dd>350 × 320 × 325 mm");
+    expect(markup).not.toContain("<dt>Volume útil</dt>");
+  });
 });

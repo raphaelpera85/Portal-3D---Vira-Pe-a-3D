@@ -106,4 +106,12 @@ test("technical catalog shows Flashforge AD5X conditions after selecting it", as
   await printer.selectOption({ label: "Bambu Lab · H2S · standard" });
   await expect(page.locator(".technical-facts").first()).toContainText("Câmara ativa máxima");
   await expect(page.locator(".technical-facts").first()).toContainText("65 °C");
+
+  await printer.selectOption({ label: "Bambu Lab · H2D · AMS 2 Pro Combo" });
+  await expect(page.locator(".technical-facts").first()).toContainText("Volume útil · 1 bico");
+  await expect(page.locator(".technical-facts").first()).toContainText("325 × 320 × 325 mm");
+  await expect(page.locator(".technical-facts").first()).toContainText("Volume útil · 2 bicos");
+  await expect(page.locator(".technical-facts").first()).toContainText("300 × 320 × 325 mm");
+  await expect(page.locator(".technical-facts").first()).toContainText("Volume útil combinado");
+  await expect(page.locator(".technical-facts").first()).toContainText("350 × 320 × 325 mm");
 });
