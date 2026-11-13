@@ -678,6 +678,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .integration-health-card > a { width: fit-content; color: var(--brand); font-size: 12px; }
 .integration-health-footnote { margin-top: 18px; color: var(--muted); font-size: 12px; }
 .admin-review-section { display: grid; gap: 12px; margin-top: 34px; }
+.support-ticket-group { display: grid; gap: 12px; }
 .admin-section-title { display: flex; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); }
 .admin-section-title h2 { margin: 0 0 12px; font-size: 28px; }
 .admin-review-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .7fr); gap: 22px; padding: 22px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
