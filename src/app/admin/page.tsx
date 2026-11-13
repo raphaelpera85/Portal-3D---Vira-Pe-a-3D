@@ -23,8 +23,9 @@ export default async function AdminPage() {
   if (!actor.supabase || !actor.authorized) redirect("/conta");
 
   const metricsAdmin = createSupabaseAdminClient();
-  const [metricsResult, applications, stores, products, printProfiles, designers, reports, reviews, printerSuggestions, supportTickets] = await Promise.all([
+  const [metricsResult, periodMetricsResult, applications, stores, products, printProfiles, designers, reports, reviews, printerSuggestions, supportTickets] = await Promise.all([
     metricsAdmin ? metricsAdmin.rpc("get_admin_marketplace_metrics") : Promise.resolve({ data: null, error: new Error("Admin database key is not configured") }),
+    metricsAdmin ? metricsAdmin.rpc("get_admin_marketplace_period_metrics") : Promise.resolve({ data: null, error: new Error("Admin database key is not configured") }),
     actor.supabase.from("maker_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
     actor.supabase.from("stores").select("id", { count: "exact", head: true }).eq("status", "pending"),
     actor.supabase.from("marketplace_products").select("id, store:stores!inner(status)", { count: "exact", head: true }).eq("catalog_status", "draft").eq("store.status", "published"),
@@ -48,6 +49,16 @@ export default async function AdminPage() {
     { label: "Atendimentos pendentes", href: "/admin/atendimento", result: supportTickets },
   ];
   const metrics = metricsResult.data?.[0];
+  const periodMetrics = (periodMetricsResult.data ?? []) as Array<{
+    window_days: number;
+    paid_payment_count: string | number;
+    gmv_cents: string | number;
+    gross_marketplace_fee_cents: string | number;
+    processed_refund_count: string | number;
+    processed_refund_cents: string | number;
+    confirmed_cancellation_count: string | number;
+    chargeback_case_count: string | number;
+  }>;
   const metricCards = [
     { label: "GMV bruto · sem frete", value: metrics ? formatBrlCents(metrics.gmv_cents) : "—", detail: "Transações confirmadas, antes de estornos" },
     { label: "Comissão bruta registrada", value: metrics ? formatBrlCents(metrics.gross_marketplace_fee_cents) : "—", detail: "Valor original gravado no checkout" },
@@ -72,6 +83,24 @@ export default async function AdminPage() {
         <span>{metric.label}</span><strong>{metric.value}</strong><small>{metric.detail}</small>
       </article>)}</div>
       <p className="admin-metrics-note">GMV e comissão são valores brutos e incluem transações depois reembolsadas ou contestadas. A comissão é a registrada no checkout; liquidações e receita líquida não são sincronizadas.</p>
+    </section>
+    <section className="admin-overview-section" aria-labelledby="admin-period-metrics-title">
+      <div className="admin-section-title"><span className="account-kicker">JANELAS MÓVEIS</span><h2 id="admin-period-metrics-title">Atividade recente</h2></div>
+      {periodMetricsResult.error && <p className="auth-notice is-error" role="alert">Relatórios por período indisponíveis. Confira se a migração de métricas periódicas foi aplicada.</p>}
+      {periodMetrics.map((period) => <div key={period.window_days}>
+        <h3>{period.window_days} dias</h3>
+        <div className="admin-overview-grid">{[
+          { label: "Pagamentos confirmados", value: formatCount(period.paid_payment_count) },
+          { label: "GMV bruto · sem frete", value: formatBrlCents(period.gmv_cents) },
+          { label: "Comissão bruta registrada", value: formatBrlCents(period.gross_marketplace_fee_cents) },
+          { label: "Reembolsos processados", value: formatBrlCents(period.processed_refund_cents), detail: `${formatCount(period.processed_refund_count)} solicitações` },
+          { label: "Cancelamentos confirmados", value: formatCount(period.confirmed_cancellation_count) },
+          { label: "Contestações registradas", value: formatCount(period.chargeback_case_count) },
+        ].map((metric) => <article className="admin-overview-card" key={metric.label}>
+          <span>{metric.label}</span><strong>{metric.value}</strong><small>{"detail" in metric ? metric.detail : "Criados no período; status atual confirmado"}</small>
+        </article>)}</div>
+      </div>)}
+      <p className="admin-metrics-note">A janela é contada para trás a partir do momento da consulta. Pagamentos são agrupados pela criação e status atual; reembolsos e cancelamentos pela criação da solicitação, se já processados. GMV e comissão permanecem brutos e incluem transações depois reembolsadas ou contestadas.</p>
     </section>
     <section className="admin-overview-section" aria-labelledby="admin-queues-title">
       <div className="admin-section-title"><span className="account-kicker">AGUARDANDO AÇÃO</span><h2 id="admin-queues-title">Filas de revisão</h2></div>
