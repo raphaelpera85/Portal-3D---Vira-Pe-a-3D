@@ -73,6 +73,16 @@ describe("verified technical catalog records", () => {
     expect(printer?.sources[0].url).toBe("https://blog.bambulab.com/h2s-the-ultimate-single-nozzle-3d-printer-now-bigger-than-ever/");
   });
 
+  it("records the H2S AMS 2 Pro Combo without assuming a filament count", () => {
+    expect(printers.find((item) => item.id === "bambu-h2s-ams-2-pro-combo")).toMatchObject({
+      model: "H2S",
+      variant: "AMS 2 Pro Combo",
+      multicolorSystem: "AMS 2 Pro",
+      multicolorSlots: null,
+      technicalProperties: { ams2ProIncluded: true },
+    });
+  });
+
   it("keeps cylindrical build volume descriptive instead of treating it as a rectangular box", () => {
     const catalog = mapTechnicalCatalog([{
       id: "flsun-v400-max",
