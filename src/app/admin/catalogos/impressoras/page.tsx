@@ -30,6 +30,9 @@ function PrinterModelForm({ model }: { model?: PrinterModelRecord }) {
     <label>Status comercial<select name="commercialStatus" defaultValue={field(model, "commercial_status") || "unknown"}><option value="unknown">Não verificado</option><option value="available">Disponível para compra</option><option value="in_production">Em produção</option><option value="discontinued">Descontinuada</option><option value="announced">Anunciada</option></select></label>
     <label>Fonte do status comercial (HTTPS)<input name="commercialStatusSourceUrl" type="url" maxLength={2048} defaultValue={field(model, "commercial_status_source_url")} /></label>
     <label>Verificado em<input name="commercialStatusCheckedAt" type="date" max={new Date().toISOString().slice(0, 10)} defaultValue={field(model, "commercial_status_checked_at")} /></label>
+    <label>Imagem oficial (HTTPS)<input name="officialImageUrl" type="url" maxLength={2048} defaultValue={field(model, "official_image_url")} /></label>
+    <label>Fonte da imagem (HTTPS)<input name="officialImageSourceUrl" type="url" maxLength={2048} defaultValue={field(model, "official_image_source_url")} /></label>
+    <label><input name="officialImageAuthorized" type="checkbox" value="on" defaultChecked={Boolean(field(model, "official_image_authorized_at"))} /> Confirmo que tenho autorização para exibir esta imagem.</label>
     <label>Volume X (mm)<input name="buildVolumeX" type="number" min="0.01" step="any" defaultValue={field(model, "build_volume_x_mm")} /></label>
     <label>Volume Y (mm)<input name="buildVolumeY" type="number" min="0.01" step="any" defaultValue={field(model, "build_volume_y_mm")} /></label>
     <label>Volume Z (mm)<input name="buildVolumeZ" type="number" min="0.01" step="any" defaultValue={field(model, "build_volume_z_mm")} /></label>

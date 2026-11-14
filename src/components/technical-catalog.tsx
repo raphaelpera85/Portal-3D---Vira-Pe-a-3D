@@ -128,6 +128,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
         <div className="technical-records">
           <section className="technical-panel">
             <div className="technical-panel-heading"><span className="technical-panel-icon"><Printer size={17} /></span><div><p>01 / IMPRESSORA</p><h2>Modelo e especificações</h2></div></div>
+            {printer.officialImage && <figure><img src={printer.officialImage.url} alt={`${printer.brand} ${printer.model}`} loading="lazy" referrerPolicy="no-referrer" style={{ display: "block", width: "100%", maxHeight: 280, objectFit: "contain" }} /><figcaption><a href={printer.officialImage.sourceUrl} target="_blank" rel="noreferrer">Fonte da imagem oficial</a></figcaption></figure>}
             <label className="technical-select">Fabricante, modelo e variante
               <select value={printerId} onChange={(event) => {
                 const nextPrinter = printers.find((item) => item.id === event.target.value);

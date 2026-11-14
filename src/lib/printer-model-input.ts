@@ -28,6 +28,9 @@ export function validatePrinterModelInput(values: Record<string, unknown>) {
   const commercialStatus = text(values.commercialStatus) || "unknown";
   const commercialStatusSourceUrl = text(values.commercialStatusSourceUrl);
   const commercialStatusCheckedAt = text(values.commercialStatusCheckedAt);
+  const officialImageUrl = text(values.officialImageUrl);
+  const officialImageSourceUrl = text(values.officialImageSourceUrl);
+  const officialImageAuthorized = values.officialImageAuthorized === "on" || values.officialImageAuthorized === true;
   const sourceUrlRaw = text(values.sourceUrl);
   const documentationUrlRaw = text(values.documentationUrl);
   const verifiedAtRaw = text(values.verifiedAt);
@@ -68,6 +71,9 @@ export function validatePrinterModelInput(values: Record<string, unknown>) {
     || (commercialStatusSourceUrl && (commercialStatusSourceUrl.length > 2048 || !isHttpsUrl(commercialStatusSourceUrl)))
     || (commercialStatusCheckedAt && !isValidDate(commercialStatusCheckedAt))
     || (commercialStatus !== "unknown" && (!commercialStatusSourceUrl || !commercialStatusCheckedAt))
+    || (officialImageUrl && (officialImageUrl.length > 2048 || !isHttpsUrl(officialImageUrl)))
+    || (officialImageSourceUrl && (officialImageSourceUrl.length > 2048 || !isHttpsUrl(officialImageSourceUrl)))
+    || (Boolean(officialImageUrl || officialImageSourceUrl) && (!officialImageUrl || !officialImageSourceUrl || !officialImageAuthorized))
     || (documentationUrlRaw && (documentationUrlRaw.length > 2048 || !isHttpsUrl(documentationUrlRaw)))
     || (verifiedAtRaw && !isValidDate(verifiedAtRaw))
     || (catalogStatus === "published" && (!sourceUrlRaw || !verifiedAtRaw))) return null;
@@ -75,6 +81,8 @@ export function validatePrinterModelInput(values: Record<string, unknown>) {
   return {
     manufacturer, model, variant, model_year: modelYear, technology, catalog_status: catalogStatus, commercial_status: commercialStatus,
     commercial_status_source_url: commercialStatusSourceUrl || null, commercial_status_checked_at: commercialStatusCheckedAt || null,
+    official_image_url: officialImageUrl || null, official_image_source_url: officialImageSourceUrl || null,
+    official_image_authorized_at: officialImageUrl ? new Date().toISOString() : null,
     build_volume_x_mm: buildX, build_volume_y_mm: buildY, build_volume_z_mm: buildZ,
     extruder_count: extruders, filament_diameter_mm: filamentDiameter,
     nozzle_interface: optionalTextValues[0], original_nozzle_diameter_mm: originalNozzle,

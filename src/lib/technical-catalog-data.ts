@@ -72,6 +72,10 @@ export function mapTechnicalCatalog(
         ? row.commercial_status : "unknown",
       commercialStatusSource: typeof row.commercial_status_source_url === "string" && row.commercial_status_source_url.startsWith("https://")
         ? { label: `${text(row.manufacturer)} — disponibilidade comercial`, url: row.commercial_status_source_url, checkedAt: text(row.commercial_status_checked_at) } : null,
+      officialImage: typeof row.official_image_url === "string" && row.official_image_url.startsWith("https://")
+        && typeof row.official_image_source_url === "string" && row.official_image_source_url.startsWith("https://")
+        && typeof row.official_image_authorized_at === "string"
+        ? { url: row.official_image_url, sourceUrl: row.official_image_source_url } : null,
       technicalProperties: properties,
       supportedMaterials, sources: source(row),
     };
