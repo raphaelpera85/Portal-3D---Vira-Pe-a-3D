@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { startSellerOrderPayment } from "@/app/orcamentos/payment-actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { isMercadoPagoCheckoutUrl } from "@/lib/mercado-pago-payments";
-import { getPaginationRedirectPage } from "@/lib/pagination";
+import { fetchAllPages, getPaginationRedirectPage } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Pedidos de modelagem | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -35,9 +35,10 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
     }));
     deliveriesByRequest.set(delivery.request_id, { notes: delivery.notes, created_at: delivery.created_at, files });
   }
-  const paymentResult = requestIds.length ? await actor.supabase.from("seller_order_payments")
+  const paymentResult = requestIds.length ? await fetchAllPages((from, to) => actor.supabase!.from("seller_order_payments")
     .select("id, designer_service_request_id, status, checkout_url, created_at")
-    .eq("buyer_id", actor.user!.id).in("designer_service_request_id", requestIds).order("created_at", { ascending: false }) : { data: [], error: null };
+    .eq("buyer_id", actor.user!.id).in("designer_service_request_id", requestIds)
+    .order("designer_service_request_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)) : { data: [], error: null };
   const paymentsByRequest = new Map<string, NonNullable<typeof paymentResult.data>[number]>();
   for (const payment of paymentResult.data ?? []) if (payment.designer_service_request_id && !paymentsByRequest.has(payment.designer_service_request_id)) {
     paymentsByRequest.set(payment.designer_service_request_id, payment);
@@ -75,7 +76,7 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
             : checkoutUrl ? <><p>O pagamento está pendente no Mercado Pago.</p><a className="button button-primary" href={checkoutUrl} rel="noreferrer">Continuar pagamento</a></>
             : payment?.status === "creating" ? <p>Estamos preparando o checkout. Atualize a página em instantes.</p>
             : payment && ["partially_refunded", "refunded", "charged_back"].includes(payment.status) ? <p>Este pagamento precisa de atendimento antes de uma nova tentativa.</p>
-            : <form action={startSellerOrderPayment} className="auth-form"><input type="hidden" name="designerServiceRequestId" value={request.id} /><button className="button button-primary" type="submit">Aceitar proposta e pagar</button><small>Você será direcionado ao checkout seguro do Mercado Pago.</small></form>}
+            : paymentResult.error ? null : <form action={startSellerOrderPayment} className="auth-form"><input type="hidden" name="designerServiceRequestId" value={request.id} /><button className="button button-primary" type="submit">Aceitar proposta e pagar</button><small>Você será direcionado ao checkout seguro do Mercado Pago.</small></form>}
           {request.status === "completed" && deliveriesByRequest.get(request.id) && <div className="designer-service-delivery-result"><h3>Arquivos da modelagem</h3>
             {deliveriesByRequest.get(request.id)!.notes && <p>{deliveriesByRequest.get(request.id)!.notes}</p>}
             {deliveriesByRequest.get(request.id)!.files.map((file) => file.downloadUrl ? <p key={file.id}><a href={file.downloadUrl}>{file.file_name} · {(Number(file.file_size) / 1024 / 1024).toFixed(1)} MiB ↓</a></p> : <p key={file.id}>{file.file_name} · download indisponível</p>)}

@@ -20,6 +20,7 @@ import { validateDigitalAsset } from "@/lib/digital-assets";
 import { calculateMelhorEnvioRates, requestMelhorEnvio } from "@/lib/melhor-envio.server";
 import { getModelAssetUrl, getShowcaseModel } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
+import { fetchAllPages } from "@/lib/pagination";
 
 export type MakerProductState = { message: string; success: boolean; productId?: string; personalPriceBrl?: number };
 export type StoreNotificationContactState = { message: string; success: boolean };
@@ -202,11 +203,13 @@ export async function calculateAndOfferSellerOrderShippingQuote(formData: FormDa
   if (!store || !order || order.status !== "accepted" || !["awaiting_quote", "declined"].includes(order.shipping_quote_status)) {
     redirect(getMakerOrderActionHref("frete-erro", orderId));
   }
-  const [{ data: origin }, { data: items, error: itemError }] = await Promise.all([
+  const [{ data: origin }, itemsResult] = await Promise.all([
     admin.from("store_shipping_origins").select("postal_code").eq("store_id", store.id).maybeSingle(),
-    admin.from("seller_purchase_order_items").select("id, product_id, unit_price_brl, quantity").eq("order_id", orderId),
+    fetchAllPages((from, to) => admin.from("seller_purchase_order_items").select("id, product_id, unit_price_brl, quantity")
+      .eq("order_id", orderId).order("id").range(from, to)),
   ]);
-  if (!origin || !/^\d{8}$/.test(order.delivery_postal_code ?? "") || itemError || !items?.length) {
+  const items = itemsResult.data;
+  if (!origin || !/^\d{8}$/.test(order.delivery_postal_code ?? "") || itemsResult.error || !items?.length) {
     redirect(getMakerOrderActionHref("frete-pacote-erro", orderId));
   }
   const { data: products, error: productError } = await admin.from("marketplace_products")
@@ -482,11 +485,13 @@ export async function addSellerOrderShippingLabelToCart(formData: FormData): Pro
   const admin = createSupabaseAdminClient();
   if (!admin) redirect(getMakerOrderActionHref("etiqueta-configurar", orderId, "frete"));
   const { data: store } = await actor.supabase.from("stores").select("id, name").eq("owner_user_id", actor.user.id).maybeSingle();
-  const [{ data: order }, { data: origin }, { data: items }] = await Promise.all([
+  const [{ data: order }, { data: origin }, itemsResult] = await Promise.all([
     store ? admin.from("seller_purchase_orders").select("*").eq("id", orderId).eq("store_id", store.id).maybeSingle() : Promise.resolve({ data: null }),
     store ? admin.from("store_shipping_origins").select("*").eq("store_id", store.id).maybeSingle() : Promise.resolve({ data: null }),
-    admin.from("seller_purchase_order_items").select("id, product_id, product_name, unit_price_brl, quantity").eq("order_id", orderId),
+    fetchAllPages((from, to) => admin.from("seller_purchase_order_items").select("id, product_id, product_name, unit_price_brl, quantity")
+      .eq("order_id", orderId).order("id").range(from, to)),
   ]);
+  const items = itemsResult.data;
   const sender = origin ? validateMelhorEnvioSender({
     senderName: origin.sender_name, senderEmail: origin.sender_email, senderPhone: origin.sender_phone,
     senderDocument: origin.sender_document, senderStateRegister: origin.sender_state_register,
@@ -500,6 +505,7 @@ export async function addSellerOrderShippingLabelToCart(formData: FormData): Pro
   if (!store || !order || order.status !== "accepted" || order.shipping_quote_status !== "accepted"
     || order.shipping_carrier !== "melhor_envio" || !order.shipping_provider_service_id
     || order.shipment_status !== "awaiting_shipment" || !sender || !origin || !validateShippingOriginPostalCode(origin.postal_code) || !items?.length
+    || itemsResult.error
     || !order.delivery_postal_code || !order.buyer_id || !paidPayments?.length || chargebacks?.length) {
     redirect(getMakerOrderActionHref("etiqueta-pedido-erro", orderId));
   }
