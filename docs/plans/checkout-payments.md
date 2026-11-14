@@ -12,7 +12,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Exibir extrato dos 500 pagamentos mais recentes por loja, com totais pagos e comissão registrada.
 - [x] Vincular contas de vendedor com OAuth PKCE e persistência criptografada dos tokens.
 - [x] Desconectar localmente a loja, remover tokens cifrados e bloquear novos checkouts.
-- [ ] Orientar o vendedor a revogar a autorização remota na própria conta Mercado Pago.
+- [x] Orientar o vendedor a revogar a autorização remota na própria conta Mercado Pago, com link às instruções oficiais no fluxo de desconexão.
 - [x] Implementar refresh token, Checkout Pro para pedidos de carrinho, compras diretas e propostas de impressão aceitos, taxa de marketplace configurável e idempotência.
 - [x] Implementar webhook assinado, consulta server-to-server e transição auditável do pagamento.
 - [x] Registrar o status de contestação quando a order consultada no webhook retorna `charged_back`, bloquear nova cobrança da mesma origem e exibir o caso nos painéis.
