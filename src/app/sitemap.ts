@@ -41,8 +41,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Paginate within the database API row cap and keep the sitemap below Google's 50,000-URL limit.
   let remaining = Math.max(0, sitemapLimit - fixedPages.length - modelPages.length);
   const products = await fetchRowsInPages(
-    (from, to) => supabase.from("marketplace_products").select("slug, updated_at, media")
-      .eq("catalog_status", "published").order("slug").range(from, to), remaining,
+    (from, to) => supabase.from("marketplace_products")
+      .select("slug, updated_at, media, store:stores!inner(status), category:product_categories!inner(active)")
+      .eq("catalog_status", "published").eq("store.status", "published").eq("category.active", true)
+      .order("slug").range(from, to), remaining,
   );
   remaining -= products.length;
   const designers = await fetchRowsInPages(
