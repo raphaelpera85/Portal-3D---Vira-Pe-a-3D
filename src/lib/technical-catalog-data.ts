@@ -68,8 +68,10 @@ export function mapTechnicalCatalog(
       multicolorSlots: number(row.multicolor_filament_count), multicolorSystem: text(row.multicolor_system) || null,
       multicolorSupported: typeof properties.multicolorSupported === "boolean" ? properties.multicolorSupported
         : number(row.multicolor_filament_count) != null || Boolean(text(row.multicolor_system)) ? true : null,
-      commercialStatus: row.commercial_status === "in_production" || row.commercial_status === "discontinued" || row.commercial_status === "announced"
+      commercialStatus: row.commercial_status === "available" || row.commercial_status === "in_production" || row.commercial_status === "discontinued" || row.commercial_status === "announced"
         ? row.commercial_status : "unknown",
+      commercialStatusSource: typeof row.commercial_status_source_url === "string" && row.commercial_status_source_url.startsWith("https://")
+        ? { label: `${text(row.manufacturer)} — disponibilidade comercial`, url: row.commercial_status_source_url, checkedAt: text(row.commercial_status_checked_at) } : null,
       technicalProperties: properties,
       supportedMaterials, sources: source(row),
     };

@@ -26,6 +26,8 @@ export function validatePrinterModelInput(values: Record<string, unknown>) {
   const technology = text(values.technology);
   const catalogStatus = text(values.catalogStatus);
   const commercialStatus = text(values.commercialStatus) || "unknown";
+  const commercialStatusSourceUrl = text(values.commercialStatusSourceUrl);
+  const commercialStatusCheckedAt = text(values.commercialStatusCheckedAt);
   const sourceUrlRaw = text(values.sourceUrl);
   const documentationUrlRaw = text(values.documentationUrl);
   const verifiedAtRaw = text(values.verifiedAt);
@@ -58,17 +60,21 @@ export function validatePrinterModelInput(values: Record<string, unknown>) {
   ];
   if (!manufacturer || manufacturer.length > 100 || !model || model.length > 120 || variant.length > 80
     || !["FDM", "SLA", "MSLA", "DLP"].includes(technology) || !["draft", "published", "archived"].includes(catalogStatus)
-    || !["in_production", "discontinued", "announced", "unknown"].includes(commercialStatus)
+    || !["available", "in_production", "discontinued", "announced", "unknown"].includes(commercialStatus)
     || [buildX, buildY, buildZ, extruders, filamentDiameter, originalNozzle, nozzleTemperature, bedTemperature, maximumSpeed, maximumPower, averagePower, multicolorCount].includes(undefined)
     || optionalTextValues.includes(undefined) || (yearRaw && (modelYear === undefined || !Number.isInteger(modelYear)))
     || (extruders != null && !Number.isInteger(extruders)) || (multicolorCount != null && !Number.isInteger(multicolorCount))
     || (sourceUrlRaw && (sourceUrlRaw.length > 2048 || !isHttpsUrl(sourceUrlRaw)))
+    || (commercialStatusSourceUrl && (commercialStatusSourceUrl.length > 2048 || !isHttpsUrl(commercialStatusSourceUrl)))
+    || (commercialStatusCheckedAt && !isValidDate(commercialStatusCheckedAt))
+    || (commercialStatus !== "unknown" && (!commercialStatusSourceUrl || !commercialStatusCheckedAt))
     || (documentationUrlRaw && (documentationUrlRaw.length > 2048 || !isHttpsUrl(documentationUrlRaw)))
     || (verifiedAtRaw && !isValidDate(verifiedAtRaw))
     || (catalogStatus === "published" && (!sourceUrlRaw || !verifiedAtRaw))) return null;
 
   return {
     manufacturer, model, variant, model_year: modelYear, technology, catalog_status: catalogStatus, commercial_status: commercialStatus,
+    commercial_status_source_url: commercialStatusSourceUrl || null, commercial_status_checked_at: commercialStatusCheckedAt || null,
     build_volume_x_mm: buildX, build_volume_y_mm: buildY, build_volume_z_mm: buildZ,
     extruder_count: extruders, filament_diameter_mm: filamentDiameter,
     nozzle_interface: optionalTextValues[0], original_nozzle_diameter_mm: originalNozzle,

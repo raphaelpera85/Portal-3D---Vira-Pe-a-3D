@@ -194,7 +194,7 @@ const sovolSv06AceNozzleSource = {
   checkedAt: "2026-11-14",
 };
 type SeededPrinterFields = Partial<Pick<PrinterEntry,
-  "commercialStatus" | "buildVolumeDescription" | "buildVolumeMm" | "extruders" | "filamentDiameterMm" | "maxNozzleTemperatureC"
+  "commercialStatus" | "commercialStatusSource" | "buildVolumeDescription" | "buildVolumeMm" | "extruders" | "filamentDiameterMm" | "maxNozzleTemperatureC"
   | "maxBedTemperatureC" | "heatedBed" | "enclosure" | "maximumSpeedMmPerSecond" | "maximumSpeedDescription"
   | "maximumPowerWatts" | "measuredAveragePowerWatts" | "multicolorSlots" | "multicolorSystem" | "supportedMaterials" | "technicalProperties"
 >>;
@@ -207,6 +207,7 @@ function seededPrinter(
   return {
     name: `${fields.brand} ${fields.model}${variantName}`,
     commercialStatus: fields.commercialStatus ?? "unknown",
+    commercialStatusSource: fields.commercialStatusSource ?? null,
     buildVolumeDescription: null, buildVolumeMm: null, extruders: null, filamentDiameterMm: null,
     maxNozzleTemperatureC: null, maxBedTemperatureC: null, heatedBed: null, enclosure: null,
     maximumSpeedMmPerSecond: null, maximumPowerWatts: null, measuredAveragePowerWatts: null,
@@ -238,7 +239,7 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "elegoo-neptune-4-type-c", brand: "ELEGOO", model: "Neptune 4", variant: "Type-C version", technology: "FDM", buildVolumeMm: { x: 225, y: 225, z: 265 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true, maximumSpeedDescription: "500 mm/s de deslocamento do cabeçote; velocidade de impressão recomendada não informada", technicalProperties: { maxToolheadSpeedMmPerSecond: 500, maxAccelerationMmPerSecondSquared: 20000, ratedPowerWatts: 310, manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "Nylon"] }, sourceUrl: "https://www.elegoo.com/products/elegoo-neptune-4-fdm-3d-printer", documentationUrl: "https://eu.elegoo.com/en-be/collections/edm-exclude/products/elegoo-neptune-4-fdm-3d-printer", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "flashforge-adventurer-5m", brand: "Flashforge", model: "Adventurer 5M", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 220 }, maximumSpeedMmPerSecond: 600, sourceUrl: "https://www.flashforge.com/products/adventurer-5m-3d-printer" }),
   seededPrinter({ id: "sovol-sv08", brand: "Sovol", model: "SV08", variant: "standard", technology: "FDM", buildVolumeMm: { x: 350, y: 350, z: 345 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 700, sourceUrl: "https://www.sovol3d.com/products/sovol-sv08-3d-printer" }),
-  seededPrinter({ id: "sovol-sv06-ace", brand: "Sovol", model: "SV06 ACE", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 250 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: false, maximumSpeedMmPerSecond: 600, technicalProperties: { maxAccelerationMmPerSecondSquared: 20000, typicalPrintSpeedRangeMmPerSecond: { min: 250, max: 300 }, supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8], manufacturerSupportedMaterials: ["PLA", "PETG", "TPU", "PVA", "ABS"], manufacturerMaterialConditions: { ABS: "O fabricante recomenda gabinete para ABS." }, manufacturerSpecificationNotes: ["A tabela lista PLA, PETG, TPU e PVA; o FAQ também cita ABS e recomenda gabinete."] }, sourceUrl: sovolSv06AceSource.url, sourceLabel: sovolSv06AceSource.label, documentationUrl: "https://www.sovol3d.com/pages/download", checkedAt: sovolSv06AceSource.checkedAt }),
+  seededPrinter({ id: "sovol-sv06-ace", brand: "Sovol", model: "SV06 ACE", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 250 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: false, maximumSpeedMmPerSecond: 600, commercialStatus: "available", commercialStatusSource: { label: "Sovol — SV06 ACE disponível para compra", url: sovolSv06AceSource.url, checkedAt: sovolSv06AceSource.checkedAt }, technicalProperties: { maxAccelerationMmPerSecondSquared: 20000, typicalPrintSpeedRangeMmPerSecond: { min: 250, max: 300 }, supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8], manufacturerSupportedMaterials: ["PLA", "PETG", "TPU", "PVA", "ABS"], manufacturerMaterialConditions: { ABS: "O fabricante recomenda gabinete para ABS." }, manufacturerSpecificationNotes: ["A tabela lista PLA, PETG, TPU e PVA; o FAQ também cita ABS e recomenda gabinete."] }, sourceUrl: sovolSv06AceSource.url, sourceLabel: sovolSv06AceSource.label, documentationUrl: "https://www.sovol3d.com/pages/download", checkedAt: sovolSv06AceSource.checkedAt }),
   seededPrinter({ id: "sovol-sv08-max", brand: "Sovol", model: "SV08 Max", variant: "standard", technology: "FDM", buildVolumeMm: { x: 500, y: 500, z: 500 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 700, technicalProperties: { motionSystem: "CoreXY", maxAccelerationMmPerSecondSquared: 40000, maxVolumetricFlowRateMm3PerSecond: 50, originalNozzleDiameterMm: 0.4, includedNozzleCount: 2, supportedNozzleDiametersMm: [0.4, 0.6, 0.8], chamberHeatingModule: "Opcional; vendido separadamente", ratedBedPowerWatts: 1300, ratedBedPowerNote: "Potência nominal da mesa; consumo médio não informado.", manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "PA", "PC", "PLA-CF", "PETG-CF", "HP-PLA"] }, sourceUrl: sovolSv08MaxSource.url, sourceLabel: sovolSv08MaxSource.label, checkedAt: sovolSv08MaxSource.checkedAt }),
   seededPrinter({ id: "sovol-sv08-max-enclosure", brand: "Sovol", model: "SV08 Max", variant: "com gabinete", technology: "FDM", buildVolumeMm: { x: 500, y: 500, z: 450 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 700, technicalProperties: { motionSystem: "CoreXY", maxAccelerationMmPerSecondSquared: 40000, maxVolumetricFlowRateMm3PerSecond: 50, originalNozzleDiameterMm: 0.4, includedNozzleCount: 2, supportedNozzleDiametersMm: [0.4, 0.6, 0.8], chamberHeatingModule: "Opcional; vendido separadamente", ratedBedPowerWatts: 1300, ratedBedPowerNote: "Potência nominal da mesa; consumo médio não informado.", enclosureKitIncluded: true, manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "PA", "PC", "PLA-CF", "PETG-CF", "HP-PLA"] }, sourceUrl: sovolSv08MaxSource.url, sourceLabel: sovolSv08MaxSource.label, checkedAt: sovolSv08MaxSource.checkedAt }),
   seededPrinter({ id: "qidi-plus4", brand: "QIDI Tech", model: "Plus4", variant: "standard", technology: "FDM", buildVolumeMm: { x: 305, y: 305, z: 280 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 850, technicalProperties: { activeChamberMaximumTemperatureC: 65, ratedPowerComponentsW: [450, 400] }, sourceUrl: "https://us.qidi3d.com/pages/qidi-plus-4-techspecs" }),
@@ -538,6 +539,8 @@ export const printers: PrinterEntry[] = [{
   brand: "Creality",
   model: "K2",
   variant: "standard",
+  commercialStatus: "available",
+  commercialStatusSource: { label: "Creality — K2 disponível para compra", url: "https://store.creality.com/products/k2-combo-3d-printer", checkedAt: "2026-11-14" },
   buildVolumeDescription: null,
   technology: "FDM",
   buildVolumeMm: { x: 260, y: 260, z: 260 },
@@ -567,6 +570,8 @@ export const printers: PrinterEntry[] = [{
   brand: "Creality",
   model: "K2",
   variant: "CFS Combo",
+  commercialStatus: "available",
+  commercialStatusSource: { label: "Creality — K2 Combo disponível para compra", url: "https://store.creality.com/products/k2-combo-3d-printer", checkedAt: "2026-11-14" },
   buildVolumeDescription: null,
   technology: "FDM",
   buildVolumeMm: { x: 260, y: 260, z: 260 },

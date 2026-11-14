@@ -12,6 +12,7 @@ const statusText = {
   unverified: "Não verificado",
 };
 const commercialStatusText = {
+  available: "Disponível para compra",
   in_production: "Em produção",
   discontinued: "Descontinuada",
   announced: "Anunciada",
@@ -139,7 +140,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               </select>
             </label>
             <dl className="technical-facts">
-              <div><dt>Status comercial</dt><dd>{commercialStatusText[printer.commercialStatus ?? "unknown"]}</dd></div>
+              <div><dt>Status comercial</dt><dd>{commercialStatusText[printer.commercialStatus ?? "unknown"]}{printer.commercialStatusSource?.checkedAt ? ` · conferido em ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${printer.commercialStatusSource.checkedAt}T00:00:00Z`))}` : ""}</dd></div>
               <div><dt>Tecnologia</dt><dd>{printer.technology}</dd></div>
               {!hasNozzleSpecificVolumes && <div><dt>Volume útil</dt><dd>{printer.buildVolumeDescription ?? (printer.buildVolumeMm ? volumeText(printer.buildVolumeMm) : "Não informado")}</dd></div>}
               {singleNozzleVolume && <div><dt>Volume útil · 1 bico</dt><dd>{volumeText(singleNozzleVolume)}</dd></div>}
@@ -163,6 +164,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
             {supportedMaterials.length > 0 && <p className="catalog-source-note">Filamentos citados pelo fabricante: {supportedMaterials.join(" · ")}</p>}
             {materialNozzleConditions.map(([name, conditions]) => <p className="catalog-source-note" key={name}>{name}: {conditions}</p>)}
             {specificationNotes.map((note) => <p className="catalog-source-note" key={note}>{note}</p>)}
+            {printer.commercialStatusSource && <SourceLinks sources={[printer.commercialStatusSource]} />}
             <SourceLinks sources={printer.sources} />
           </section>
 
