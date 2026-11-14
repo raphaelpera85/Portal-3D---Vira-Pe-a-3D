@@ -6,16 +6,24 @@ import { getShowcaseModel, getShowcaseModelIds } from "@/lib/model-showcase";
 import { validateModelPrintProfile } from "@/lib/model-print-profiles";
 import { parseSavedSlicerMetrics } from "@/lib/saved-calculation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { fetchAllPages, parsePageNumber } from "@/lib/pagination";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function redirectToModelProfile(modelSlug: string, result: string, pageValue: unknown): never {
+  const params = new URLSearchParams({ perfil: result });
+  const page = parsePageNumber(pageValue);
+  if (page && page > 1) params.set("perfilPagina", String(page));
+  redirect(`/modelos/${encodeURIComponent(modelSlug)}?${params.toString()}`);
+}
 
 export async function loadVisibleModelPrintProfiles(modelSlug: string) {
   if (!getShowcaseModel(modelSlug)) return { profiles: [], error: true };
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { profiles: [], error: true };
-  const { data, error } = await supabase.from("visible_model_print_profiles")
+  const { data, error } = await fetchAllPages((from, to) => supabase.from("visible_model_print_profiles")
     .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, sharing_scope, review_status")
-    .in("model_slug", getShowcaseModelIds(modelSlug)).order("created_at", { ascending: false }).limit(100);
+    .in("model_slug", getShowcaseModelIds(modelSlug)).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to));
   if (error) return { profiles: [], error: true };
   const profiles = (data ?? []).flatMap((profile) => {
     const metrics = parseSavedSlicerMetrics(profile.slicer_metrics);
@@ -35,8 +43,13 @@ export async function loadVisibleModelPrintProfiles(modelSlug: string) {
 
 export async function saveModelPrintProfile(formData: FormData) {
   const input = validateModelPrintProfile(Object.fromEntries(formData));
-  const model = input && getShowcaseModel(input.modelSlug);
-  if (!input || !model) redirect("/modelos?perfil=erro");
+  const modelSlug = String(formData.get("modelSlug") ?? "");
+  const model = getShowcaseModel(modelSlug);
+  const profilePage = formData.get("perfilPagina");
+  if (!input || !model || input.modelSlug !== model.id) {
+    if (model) redirectToModelProfile(model.id, "erro", profilePage);
+    redirect("/modelos?perfil=erro");
+  }
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   if (!supabase || !auth.user) redirect("/conta");
@@ -54,45 +67,53 @@ export async function saveModelPrintProfile(formData: FormData) {
   const result = input.id
     ? await supabase.from("model_print_profiles").update(payload).eq("id", input.id).in("model_slug", getShowcaseModelIds(model.id)).select("id").maybeSingle()
     : await supabase.from("model_print_profiles").insert(payload).select("id").single();
-  if (result.error || !result.data) redirect(`/modelos/${model.id}?perfil=erro`);
+  if (result.error || !result.data) redirectToModelProfile(model.id, "erro", profilePage);
   revalidatePath(`/modelos/${model.id}`);
   revalidatePath("/calculadora");
-  redirect(`/modelos/${model.id}?perfil=${input.sharingScope === "community" ? "enviado" : "salvo"}`);
+  redirectToModelProfile(model.id, input.sharingScope === "community" ? "enviado" : "salvo", profilePage);
 }
 
 export async function copyPublishedModelPrintProfile(formData: FormData) {
   const modelSlug = String(formData.get("modelSlug") ?? "");
   const profileId = String(formData.get("profileId") ?? "");
   const model = getShowcaseModel(modelSlug);
-  if (!model || !uuidPattern.test(profileId)) redirect("/modelos?perfil=erro");
+  const profilePage = formData.get("perfilPagina");
+  if (!model || !uuidPattern.test(profileId)) {
+    if (model) redirectToModelProfile(model.id, "erro", profilePage);
+    redirect("/modelos?perfil=erro");
+  }
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   if (!supabase || !auth.user) redirect("/conta");
   const { data: source, error: sourceError } = await supabase.from("visible_model_print_profiles")
     .select("profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, sharing_scope, review_status")
     .eq("id", profileId).in("model_slug", getShowcaseModelIds(model.id)).maybeSingle();
-  if (sourceError || !source || !["community", "official"].includes(source.sharing_scope) || source.review_status !== "published") redirect(`/modelos/${model.id}?perfil=erro`);
+  if (sourceError || !source || !["community", "official"].includes(source.sharing_scope) || source.review_status !== "published") redirectToModelProfile(model.id, "erro", profilePage);
   const { error } = await supabase.from("model_print_profiles").insert({
     ...source, user_id: auth.user.id, model_slug: model.id, profile_name: `Cópia de ${source.profile_name}`.slice(0, 80),
     sharing_scope: "private", review_status: "draft", reviewed_by: null, reviewed_at: null, review_note: null,
   });
-  if (error) redirect(`/modelos/${model.id}?perfil=erro`);
+  if (error) redirectToModelProfile(model.id, "erro", profilePage);
   revalidatePath(`/modelos/${model.id}`);
   revalidatePath("/calculadora");
-  redirect(`/modelos/${model.id}?perfil=copiado`);
+  redirectToModelProfile(model.id, "copiado", profilePage);
 }
 
 export async function deleteModelPrintProfile(formData: FormData) {
   const modelSlug = String(formData.get("modelSlug") ?? "");
   const profileId = String(formData.get("profileId") ?? "");
   const model = getShowcaseModel(modelSlug);
-  if (!model || !uuidPattern.test(profileId)) redirect("/modelos?perfil=erro");
+  const profilePage = formData.get("perfilPagina");
+  if (!model || !uuidPattern.test(profileId)) {
+    if (model) redirectToModelProfile(model.id, "erro", profilePage);
+    redirect("/modelos?perfil=erro");
+  }
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   if (!supabase || !auth.user) redirect("/conta");
   const { error } = await supabase.from("model_print_profiles").delete().eq("id", profileId).in("model_slug", getShowcaseModelIds(model.id));
-  if (error) redirect(`/modelos/${model.id}?perfil=erro`);
+  if (error) redirectToModelProfile(model.id, "erro", profilePage);
   revalidatePath(`/modelos/${model.id}`);
   revalidatePath("/calculadora");
-  redirect(`/modelos/${model.id}?perfil=excluido`);
+  redirectToModelProfile(model.id, "excluido", profilePage);
 }

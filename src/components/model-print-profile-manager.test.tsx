@@ -16,7 +16,7 @@ describe("ModelPrintProfileManager", () => {
       ],
     };
     const markup = renderToStaticMarkup(<ModelPrintProfileManager
-      modelSlug="70bda315e46e" authenticated canUseOcr ocrConfigured notice={null} plates={[]}
+      modelSlug="70bda315e46e" profilesPage={2} profilesPages={3} profilesCount={40} authenticated canUseOcr ocrConfigured notice={null} plates={[]}
       profiles={[{
         id: "123e4567-e89b-42d3-a456-426614174000", profile_name: "PLA", profile_type: "custom", slicer: "OrcaSlicer",
         printer_snapshot: "Printer", material_snapshot: "PLA Basic", nozzle_snapshot: "0.4 mm",
@@ -30,5 +30,16 @@ describe("ModelPrintProfileManager", () => {
     expect(markup).toContain("azul; PETG; ; ; 4");
     expect(markup).toContain("Ler imagem do fatiador");
     expect(markup).toContain("o custo estimado mostrado pelo fatiador não é salvo como preço de material");
+    expect(markup.match(/name="perfilPagina" value="2"/g)).toHaveLength(3);
+  });
+
+  it("shows profile page navigation and keeps the model action notice", () => {
+    const markup = renderToStaticMarkup(<ModelPrintProfileManager
+      modelSlug="70bda315e46e" profiles={[]} profilesPage={1} profilesPages={2} profilesCount={25}
+      authenticated={false} canUseOcr={false} ocrConfigured={false} notice="salvo" plates={[]}
+    />);
+
+    expect(markup).toContain("Página 1 de 2 · 25 perfis");
+    expect(markup).toContain("perfil=salvo&amp;perfilPagina=2");
   });
 });

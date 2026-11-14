@@ -18,7 +18,7 @@ const profileId = "76543210-abcd-4123-8123-abcdef123456";
 function configure() {
   const builder = {
     select: vi.fn(() => builder), eq: vi.fn(() => builder), in: vi.fn(() => builder), order: vi.fn(() => builder),
-    limit: vi.fn(async () => ({ data: mocks.rows, error: mocks.queryError })),
+    range: vi.fn(async (from: number, to: number) => ({ data: mocks.rows.slice(from, to + 1), error: mocks.queryError })),
   };
   const from = vi.fn(() => builder);
   mocks.createSupabaseServerClient.mockResolvedValue({ from });
@@ -38,11 +38,23 @@ describe("loadVisibleModelPrintProfiles", () => {
 
     expect(from).toHaveBeenCalledWith("visible_model_print_profiles");
     expect(builder.in).toHaveBeenCalledWith("model_slug", [modelSlug, "ed02512a7e12"]);
-    expect(builder.limit).toHaveBeenCalledWith(100);
+    expect(builder.range).toHaveBeenCalledWith(0, 999);
     expect(result.error).toBe(false);
     expect(result.profiles).toHaveLength(1);
     expect(result.profiles[0]).toMatchObject({ id: profileId, profile_name: "PLA detalhado", metrics: { filamentGrams: 20 } });
     expect(JSON.stringify(result.profiles[0])).not.toContain("privateText");
+  });
+
+  it("loads profiles beyond the database row limit", async () => {
+    const { builder } = configure();
+    const profile = mocks.rows[0];
+    mocks.rows = Array.from({ length: 1001 }, (_, index) => ({ ...profile, id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}` }));
+
+    const result = await loadVisibleModelPrintProfiles(modelSlug);
+
+    expect(builder.range).toHaveBeenNthCalledWith(1, 0, 999);
+    expect(builder.range).toHaveBeenNthCalledWith(2, 1000, 1999);
+    expect(result.profiles).toHaveLength(1001);
   });
 
   it("rejects unknown model IDs and reports unavailable profile storage", async () => {

@@ -28,8 +28,8 @@ const filamentLines = (filaments: SavedSlicerMetrics["filaments"]) => filaments.
   return `${color}; ${item.material ?? ""}; ${metricNumber(item.grams)}; ${metricNumber(item.lengthMeters)}; ${item.index}`;
 }).join("\n");
 
-export function ModelPrintProfileManager({ modelSlug, profiles, plates, authenticated, canUseOcr, ocrConfigured, notice }: {
-  modelSlug: string; profiles: ModelPrintProfileRecord[]; plates: ThreeMfSlicePlate[]; authenticated: boolean;
+export function ModelPrintProfileManager({ modelSlug, profiles, profilesPage, profilesPages, profilesCount, plates, authenticated, canUseOcr, ocrConfigured, notice }: {
+  modelSlug: string; profiles: ModelPrintProfileRecord[]; profilesPage: number; profilesPages: number; profilesCount: number; plates: ThreeMfSlicePlate[]; authenticated: boolean;
   canUseOcr: boolean; ocrConfigured: boolean; notice: string | null;
 }) {
   const noticeLabels: Record<string, string> = {
@@ -37,23 +37,30 @@ export function ModelPrintProfileManager({ modelSlug, profiles, plates, authenti
     copiado: "Cópia particular adicionada à sua conta.", retirado: "Perfil removido da comunidade e tornado particular.",
     excluido: "Perfil removido.", erro: "Não foi possível salvar o perfil. Confira os dados e tente novamente.",
   };
+  const profilePageHref = (page: number) => {
+    const params = new URLSearchParams();
+    if (notice) params.set("perfil", notice);
+    if (page > 1) params.set("perfilPagina", String(page));
+    return `/modelos/${encodeURIComponent(modelSlug)}${params.size ? `?${params.toString()}` : ""}`;
+  };
   return <section className="shell model-print-profiles" aria-labelledby="model-print-profiles-title">
-    <div className="model-print-profiles-heading"><div><p className="eyebrow">DADOS DE PRODUÇÃO</p><h2 id="model-print-profiles-title">Perfis de impressão deste modelo</h2><p>Consulte perfis comunitários e oficiais; seus próprios perfis podem ser particulares ou enviados à comunidade para revisão.</p></div><span>{profiles.length} {profiles.length === 1 ? "perfil" : "perfis"}</span></div>
+    <div className="model-print-profiles-heading"><div><p className="eyebrow">DADOS DE PRODUÇÃO</p><h2 id="model-print-profiles-title">Perfis de impressão deste modelo</h2><p>Consulte perfis comunitários e oficiais; seus próprios perfis podem ser particulares ou enviados à comunidade para revisão.</p></div><span>{profilesCount} {profilesCount === 1 ? "perfil" : "perfis"}</span></div>
     {notice && <p className={`auth-notice${notice === "erro" ? " is-error" : ""}`} role={notice === "erro" ? "alert" : "status"}>{noticeLabels[notice] ?? "Ação concluída."}</p>}
     {profiles.length > 0 && <div className="model-print-profile-list">{profiles.map((profile) => <details className="model-print-profile-card" key={profile.id}>
       <summary><span><strong>{profile.profile_name}</strong><small>{scopeLabels[profile.sharing_scope]} · {statusLabels[profile.review_status]} · {labelType[profile.profile_type] ?? profile.profile_type} · {profile.printer_snapshot || "Impressora não informada"} · {profile.material_snapshot || "Material não informado"}</small></span><span>{profile.slicer_metrics.filamentGrams == null ? "Consumo não informado" : `${profile.slicer_metrics.filamentGrams.toLocaleString("pt-BR")} g`}</span></summary>
       <div className="model-print-profile-details"><p>{profile.slicer} · {profile.quantity} peça(s) · {profile.scale_percent}% · {profile.layer_height_mm ?? "camada não informada"} mm</p>{profile.review_note && profile.isOwner && <p>Retorno da equipe: {profile.review_note}</p>}</div>
       {profile.isOwner && profile.sharing_scope !== "official" && <>
-        <ModelPrintProfileForm modelSlug={modelSlug} profile={profile} plates={plates} canUseOcr={false} ocrConfigured={ocrConfigured} />
-        {(profile.sharing_scope === "private" || ["pending", "rejected"].includes(profile.review_status)) && <form action={deleteModelPrintProfile} onSubmit={(event) => { if (!window.confirm(`Excluir o perfil “${profile.profile_name}”?`)) event.preventDefault(); }}><input type="hidden" name="modelSlug" value={modelSlug} /><input type="hidden" name="profileId" value={profile.id} /><button type="submit" className="model-print-profile-delete">Excluir perfil</button></form>}
+        <ModelPrintProfileForm modelSlug={modelSlug} profilesPage={profilesPage} profile={profile} plates={plates} canUseOcr={false} ocrConfigured={ocrConfigured} />
+        {(profile.sharing_scope === "private" || ["pending", "rejected"].includes(profile.review_status)) && <form action={deleteModelPrintProfile} onSubmit={(event) => { if (!window.confirm(`Excluir o perfil “${profile.profile_name}”?`)) event.preventDefault(); }}><input type="hidden" name="modelSlug" value={modelSlug} /><input type="hidden" name="profileId" value={profile.id} /><input type="hidden" name="perfilPagina" value={profilesPage} /><button type="submit" className="model-print-profile-delete">Excluir perfil</button></form>}
       </>}
-      {!profile.isOwner && authenticated && profile.sharing_scope !== "private" && profile.review_status === "published" && <form action={copyPublishedModelPrintProfile}><input type="hidden" name="modelSlug" value={modelSlug} /><input type="hidden" name="profileId" value={profile.id} /><button className="button button-secondary" type="submit">Salvar cópia particular</button></form>}
+      {!profile.isOwner && authenticated && profile.sharing_scope !== "private" && profile.review_status === "published" && <form action={copyPublishedModelPrintProfile}><input type="hidden" name="modelSlug" value={modelSlug} /><input type="hidden" name="profileId" value={profile.id} /><input type="hidden" name="perfilPagina" value={profilesPage} /><button className="button button-secondary" type="submit">Salvar cópia particular</button></form>}
     </details>)}</div>}
-    {!authenticated ? <p className="model-print-profiles-login">Entre para salvar um perfil particular ou compartilhar o seu com a comunidade. <Link href="/conta">Acessar conta</Link></p> : <div className="model-print-profile-card model-print-profile-new"><h3>Novo perfil</h3><ModelPrintProfileForm modelSlug={modelSlug} plates={plates} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} /></div>}
+    {profilesCount > profiles.length && <nav className="catalog-pagination" aria-label="Paginação dos perfis de impressão"><span>Página {profilesPage} de {profilesPages} · {profilesCount} perfis</span><div>{profilesPage > 1 && <Link className="button button-secondary" href={profilePageHref(profilesPage - 1)}>← Página anterior</Link>}{profilesPage < profilesPages && <Link className="button button-secondary" href={profilePageHref(profilesPage + 1)}>Próxima página →</Link>}</div></nav>}
+    {!authenticated ? <p className="model-print-profiles-login">Entre para salvar um perfil particular ou compartilhar o seu com a comunidade. <Link href="/conta">Acessar conta</Link></p> : <div className="model-print-profile-card model-print-profile-new"><h3>Novo perfil</h3><ModelPrintProfileForm modelSlug={modelSlug} profilesPage={profilesPage} plates={plates} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} /></div>}
   </section>;
 }
 
-function ModelPrintProfileForm({ modelSlug, profile, plates, canUseOcr, ocrConfigured }: { modelSlug: string; profile?: ModelPrintProfileRecord; plates: ThreeMfSlicePlate[]; canUseOcr: boolean; ocrConfigured: boolean }) {
+function ModelPrintProfileForm({ modelSlug, profilesPage, profile, plates, canUseOcr, ocrConfigured }: { modelSlug: string; profilesPage: number; profile?: ModelPrintProfileRecord; plates: ThreeMfSlicePlate[]; canUseOcr: boolean; ocrConfigured: boolean }) {
   const [plateIndex, setPlateIndex] = useState("");
   const [ocrMetrics, setOcrMetrics] = useState<SavedSlicerMetrics | null>(null);
   const [slicer, setSlicer] = useState(modelProfileSlicers.includes(profile?.slicer as typeof modelProfileSlicers[number]) ? profile!.slicer : "Manual");
@@ -74,6 +81,7 @@ function ModelPrintProfileForm({ modelSlug, profile, plates, canUseOcr, ocrConfi
   };
   return <form className="model-print-profile-form" action={saveModelPrintProfile}>
     <input type="hidden" name="modelSlug" value={modelSlug} />
+    <input type="hidden" name="perfilPagina" value={profilesPage} />
     {profile && <input type="hidden" name="id" value={profile.id} />}
     <label>Nome do perfil<input name="name" required minLength={2} maxLength={80} defaultValue={profile?.profile_name ?? ""} placeholder="PLA detalhado 0,20 mm" /></label>
     <label>Tipo<select name="profileType" defaultValue={profile?.profile_type ?? "custom"}>{modelProfileTypes.map((type) => <option key={type} value={type}>{labelType[type]}</option>)}</select></label>

@@ -7,9 +7,11 @@ import { SiteHeader } from "@/components/site-header";
 import { getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
 
-type ModelPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ perfil?: string }> };
+type ModelPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ perfil?: string; perfilPagina?: string }> };
 export const dynamic = "force-dynamic";
+const profilePageSize = 24;
 
 export function generateStaticParams() {
   return modelShowcase.map(({ id }) => ({ id }));
@@ -41,7 +43,7 @@ export async function generateMetadata({ params }: ModelPageProps): Promise<Meta
 }
 
 export default async function ModelPage({ params, searchParams }: ModelPageProps) {
-  const [{ id }, { perfil }] = await Promise.all([params, searchParams]);
+  const [{ id }, { perfil, perfilPagina }] = await Promise.all([params, searchParams]);
   const model = getShowcaseModel(id);
   if (!model) notFound();
   if (model.id !== id) redirect(`/modelos/${encodeURIComponent(model.id)}`);
@@ -71,14 +73,26 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   const recommendations = getRecommendedModels(model);
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+  const requestedProfilePage = parsePageNumber(perfilPagina) ?? 1;
   const [profileResult, makerRoleResult] = await Promise.all([
     supabase ? supabase.from("visible_model_print_profiles")
-      .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at, sharing_scope, review_status, review_note, is_owner")
-      .in("model_slug", getShowcaseModelIds(model.id)).order("created_at", { ascending: false }).limit(100) : Promise.resolve(null),
+      .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at, sharing_scope, review_status, review_note, is_owner", { count: "exact" })
+      .in("model_slug", getShowcaseModelIds(model.id)).order("created_at", { ascending: false }).order("id", { ascending: false })
+      .range((requestedProfilePage - 1) * profilePageSize, requestedProfilePage * profilePageSize - 1) : Promise.resolve(null),
     supabase && auth.user ? supabase.from("user_roles").select("role").eq("user_id", auth.user.id).eq("role", "maker").maybeSingle() : Promise.resolve(null),
   ]);
+  const profilePages = Math.max(1, Math.min(maxPageNumber, Math.ceil((profileResult?.count ?? 0) / profilePageSize)));
+  const resultNotices = ["salvo", "enviado", "copiado", "retirado", "excluido", "erro"];
+  const profilePageHref = (page: number) => {
+    const query = new URLSearchParams();
+    if (resultNotices.includes(perfil ?? "")) query.set("perfil", perfil!);
+    if (page > 1) query.set("perfilPagina", String(page));
+    return `/modelos/${encodeURIComponent(model.id)}${query.size ? `?${query.toString()}` : ""}`;
+  };
+  const profileRedirectPage = getPaginationRedirectPage(requestedProfilePage, profilePages);
+  if (profileResult && !profileResult.error && profileRedirectPage !== null) redirect(profilePageHref(profileRedirectPage));
   const profiles = (profileResult?.data ?? []).map(({ is_owner, ...profile }) => ({ ...profile, isOwner: is_owner })) as import("@/components/model-print-profile-manager").ModelPrintProfileRecord[];
-  const notice = profileResult?.error ? "erro" : ["salvo", "enviado", "copiado", "retirado", "excluido", "erro"].includes(perfil ?? "") ? perfil! : null;
+  const notice = profileResult?.error ? "erro" : resultNotices.includes(perfil ?? "") ? perfil! : null;
 
   return <>
     <SiteHeader />
@@ -90,7 +104,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
         <h1>{model.name}</h1>
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={`/modelos?q=${encodeURIComponent(tag)}#modelos`}>{tag}</Link></li>)}</ul>
       </div>
-      <ModelDetailContent key={model.id} modelId={model.id} modelName={model.name} previewUrl={previewUrl} previewVersions={previewVersions} today={new Date().toISOString().slice(0, 10)} profiles={profiles} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />
+      <ModelDetailContent key={model.id} modelId={model.id} modelName={model.name} previewUrl={previewUrl} previewVersions={previewVersions} today={new Date().toISOString().slice(0, 10)} profiles={profiles} profilesPage={requestedProfilePage} profilesPages={profilePages} profilesCount={profileResult?.count ?? 0} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />
       <ModelRecommendations models={recommendations} />
       <section className="shell model-detail-download" aria-label="Download do modelo">
         <div><p className="eyebrow">ARQUIVOS ORIGINAIS</p><h2>{model.name}</h2><p>Escolha a versão 3MF para abrir no seu fatiador ou programa de modelagem.</p></div>
