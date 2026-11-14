@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
-import { cancelCustomPrintRequest, cancelProductQuoteRequest, confirmCustomPrintDelivery, confirmSellerPurchaseOrderDelivery, respondToCustomPrintOffer, respondToCustomPrintShippingQuote, respondToProductQuoteOffer, respondToSellerOrderShippingQuote, saveCustomPrintDeliveryAddress, submitMarketplaceReviewAction } from "./actions";
+import { cancelCustomPrintRequest, cancelProductQuoteRequest, cancelSellerPurchaseOrder, confirmCustomPrintDelivery, confirmSellerPurchaseOrderDelivery, respondToCustomPrintOffer, respondToCustomPrintShippingQuote, respondToProductQuoteOffer, respondToSellerOrderShippingQuote, saveCustomPrintDeliveryAddress, submitMarketplaceReviewAction } from "./actions";
 import { cancelPendingSellerPayment, startSellerOrderPayment } from "./payment-actions";
 import { downloadDigitalAssetAction } from "./digital-actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
@@ -30,6 +30,7 @@ const resultMessages: Record<string, string> = {
   "cancelamento-pendente": "O Mercado Pago ainda não confirmou o cancelamento. Atualize a página e tente novamente; a solicitação será repetida com segurança.",
   "cancelamento-indisponivel": "Esta cobrança já está em processamento ou foi concluída e não pode ser cancelada.",
   "cancelamento-dados-invalidos": "Confirme o cancelamento e tente novamente.",
+  "pedido-cancelado": "Pedido cancelado. A loja foi atualizada.",
   "download-erro": "O download não está disponível. Confirme o pagamento ou tente novamente.",
   "retorno-pagamento": "Retorno recebido. A confirmação do pagamento pode levar alguns instantes; consulte o status abaixo.",
   "frete-aceito": "Opção de entrega aceita. Você já pode pagar o pedido.", "frete-recusado": "Opção recusada. A loja poderá enviar outra.",
@@ -166,7 +167,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
           const storeReview = reviews.find((review) => review.order_id === order.id && review.review_type === "store");
           const carrierLabel = ({ correios: "Correios", melhor_envio: "Melhor Envio", transportadora: "Transportadora", retirada_local: "Retirada local" } as Record<string, string>)[order.shipping_carrier ?? ""] ?? "Frete";
           return <article className="account-card quote-card" key={order.id}>
-            <div className="quote-card-heading"><div><span className="account-kicker">PEDIDO DO CARRINHO · {order.store_name}</span><h2>{order.items?.length ?? 0} produto(s)</h2></div><span className={`quote-status status-${order.status}`}>{order.status === "pending" ? "Aguardando fabricante" : order.status === "accepted" ? "Disponibilidade confirmada" : "Pedido recusado"}</span></div>
+            <div className="quote-card-heading"><div><span className="account-kicker">PEDIDO DO CARRINHO · {order.store_name}</span><h2>{order.items?.length ?? 0} produto(s)</h2></div><span className={`quote-status status-${order.status}`}>{order.status === "pending" ? "Aguardando fabricante" : order.status === "accepted" ? "Disponibilidade confirmada" : order.status === "cancelled" ? "Cancelado" : "Pedido recusado"}</span></div>
             <ul className="cart-order-items">{order.items?.map((item) => <li key={item.id}><span>{item.quantity} × {item.product_name}</span><strong>{formatBrlTotal(item.unit_price_brl, item.quantity)}</strong></li>)}</ul>
             <p className="cart-store-total">Subtotal dos produtos: <strong>{formatBrl(subtotalCents / 100)}</strong></p>
             {couponDiscountCents > 0 && <><p className="cart-store-total">Cupom {order.coupon_code}: <strong>−{formatBrl(couponDiscountCents / 100)}</strong></p><p className="cart-store-total">Produtos após desconto: <strong>{formatBrl(payableSubtotalCents / 100)}</strong></p></>}
@@ -189,6 +190,12 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
               {payment?.status !== "paid" && payment?.status !== "refunded" && payment?.status !== "partially_refunded" && payment?.status !== "charged_back" && payment?.status !== "pending" && <form action={startSellerOrderPayment}><input type="hidden" name="orderId" value={order.id} /><button className="button button-primary" type="submit">{payment?.status === "creating" ? "Retomar checkout" : "Pagar com Mercado Pago"} · {formatBrl(totalCents / 100)}</button></form>}
               <p className="quote-small-note">O checkout cobra os produtos e o frete aceito. A comissão da plataforma é calculada sobre o subtotal dos produtos.</p>
             </>}
+            {["pending", "accepted"].includes(order.status) && order.shipment_status === "awaiting_shipment"
+              && (order.payments ?? []).every((item) => ["failed", "expired", "cancelled"].includes(item.status))
+              && <details className="seller-refund-details"><summary>Cancelar pedido</summary><form action={cancelSellerPurchaseOrder} className="seller-refund-form">
+                <label className="seller-refund-confirm"><input type="checkbox" name="confirmCancel" value="yes" required />Confirmo o cancelamento deste pedido antes do pagamento e do envio.</label>
+                <input type="hidden" name="orderId" value={order.id} /><button className="button button-secondary" type="submit">Cancelar pedido</button>
+              </form></details>}
             {order.shipment_status !== "awaiting_shipment" && <div className="order-delivery-address"><span className="account-kicker">RASTREAMENTO · {order.shipment_status === "ready_for_pickup" ? "PRONTO PARA RETIRADA" : order.shipment_status === "shipped" ? "ENVIADO" : order.shipment_status === "delivered" ? "ENTREGUE" : "CONCLUÍDO"}</span><strong>{carrierLabel} · {order.shipping_service}</strong>{order.shipment_status === "shipped" && <>{(shippingPackagesByOrder.get(order.id) ?? []).length ? shippingPackagesByOrder.get(order.id)!.map((parcel) => <span key={parcel.package_index}>Remessa {parcel.package_index}{parcel.packages.length > 1 ? ` · ${parcel.packages.length} volumes` : ""}: {parcel.tracking_code ?? "rastreio pendente"}{parcel.tracking_url && <> · <a href={parcel.tracking_url} target="_blank" rel="noreferrer">acompanhar</a></>}</span>) : <span>Código: {order.shipping_tracking_code}</span>}</>}{order.shipping_expected_date && <span>Previsão de entrega: {dateLabel(order.shipping_expected_date)}</span>}{order.shipping_tracking_url && !(shippingPackagesByOrder.get(order.id)?.length) && <a href={order.shipping_tracking_url} target="_blank" rel="noreferrer">Rastrear envio</a>}
               {(order.shipment_status === "shipped" || order.shipment_status === "ready_for_pickup") && <form action={confirmSellerPurchaseOrderDelivery}><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="complete" value="false" /><button className="button button-secondary" type="submit">Confirmar recebimento</button></form>}
               {order.shipment_status === "delivered" && <form action={confirmSellerPurchaseOrderDelivery}><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="complete" value="true" /><button className="button button-primary" type="submit">Concluir pedido</button></form>}

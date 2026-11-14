@@ -18,6 +18,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Registrar o status de contestação quando a order consultada no webhook retorna `charged_back`, bloquear nova cobrança da mesma origem e exibir o caso nos painéis.
 - [x] Permitir ao fabricante pedir reembolso total ou parcial com confirmação, reserva transacional e idempotência no Mercado Pago.
 - [x] Permitir ao comprador cancelar uma cobrança ainda não paga, com validação da order, idempotência e liberação do estoque reservado.
+- [x] Permitir ao comprador cancelar pedido do carrinho sem pagamento ou envio, com transação que bloqueia cobranças ativas e etiquetas existentes.
 - [x] Reconciliar diariamente até oito reembolsos pendentes por execução usando a mesma chave idempotente.
 - [x] Receber o tópico `chargebacks`, consultar os detalhes pelo token OAuth do vendedor e exibir status, valor, cobertura e prazo no extrato.
 - [x] Enviar evidências de contestação uma única vez pelo painel do fabricante e sincronizar o status do provedor.
@@ -36,6 +37,7 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - Credenciais e aplicação Mercado Pago com marketplace Split 1:1 e URL de callback cadastrada.
 - Cada vendedor precisa autorizar OAuth e atender ao nível de identificação solicitado pelo provedor.
 - Definir a comissão do ViraPeça antes de emitir preferências. Nenhuma taxa é presumida no código.
+- Aplicar `20261115230000_buyer_cancel_seller_purchase_orders.sql` ao Supabase para habilitar cancelamento de pedidos do carrinho.
 - Testar Pix/cartão e notificações com contas sandbox; não liberar produção até confirmar conciliação e política de reembolso.
 - Configurar as credenciais Melhor Envio antes de habilitar cotações ao vivo no ambiente publicado.
 

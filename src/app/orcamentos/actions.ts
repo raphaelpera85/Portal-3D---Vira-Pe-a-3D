@@ -76,6 +76,20 @@ export async function cancelCustomPrintRequest(formData: FormData): Promise<void
   redirect("/orcamentos?resultado=custom-cancelada");
 }
 
+export async function cancelSellerPurchaseOrder(formData: FormData): Promise<void> {
+  const orderId = formData.get("orderId");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || formData.get("confirmCancel") !== "yes") {
+    redirect("/orcamentos?resultado=cancelamento-dados-invalidos");
+  }
+  const actor = await getUserWithRole("buyer");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { error } = await actor.supabase.rpc("cancel_seller_purchase_order", { p_order_id: orderId });
+  if (error) redirect("/orcamentos?resultado=cancelamento-indisponivel");
+  revalidatePath("/orcamentos");
+  revalidatePath("/painel/maker");
+  redirect("/orcamentos?resultado=pedido-cancelado");
+}
+
 export async function saveCustomPrintDeliveryAddress(formData: FormData): Promise<void> {
   const requestId = formData.get("requestId");
   const addressId = formData.get("addressId");
