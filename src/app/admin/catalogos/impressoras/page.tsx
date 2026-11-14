@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { getPaginationRedirectPage } from "@/lib/pagination";
 import { reviewPrinterModelSuggestionAction, savePrinterModelAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -59,17 +60,31 @@ function PrinterModelForm({ model }: { model?: PrinterModelRecord }) {
   </form>;
 }
 
-export default async function PrinterCatalogAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string }> }) {
-  const [{ resultado, pagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
+export default async function PrinterCatalogAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string; sugestaoPagina?: string }> }) {
+  const [{ resultado, pagina, sugestaoPagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const requestedPage = typeof pagina === "string" && /^[1-9]\d{0,3}$/.test(pagina) ? Number(pagina) : 1;
   const pageSize = 30;
+  const requestedSuggestionPage = typeof sugestaoPagina === "string" && /^\d+$/.test(sugestaoPagina) ? Number(sugestaoPagina) : 1;
+  const suggestionPage = Number.isSafeInteger(requestedSuggestionPage) && requestedSuggestionPage > 0 ? Math.min(requestedSuggestionPage, 10000) : 1;
+  const suggestionPageSize = 24;
   const [models, suggestions] = await Promise.all([
     actor.supabase.from("printer_models").select("*", { count: "exact" }).order("manufacturer").order("model").range((requestedPage - 1) * pageSize, requestedPage * pageSize - 1),
-    actor.supabase.from("printer_model_suggestions").select("id, suggested_by, manufacturer, model, variant, technology, source_url, notes, created_at").eq("status", "pending").order("created_at").limit(100),
+    actor.supabase.from("printer_model_suggestions").select("id, suggested_by, manufacturer, model, variant, technology, source_url, notes, created_at", { count: "exact" }).eq("status", "pending").order("created_at").order("id").range((suggestionPage - 1) * suggestionPageSize, suggestionPage * suggestionPageSize - 1),
   ]);
   const pages = Math.max(1, Math.ceil((models.count ?? 0) / pageSize));
-  if (requestedPage > pages) redirect(`/admin/catalogos/impressoras?pagina=${pages}`);
+  const suggestionPages = Math.max(1, Math.ceil((suggestions.count ?? 0) / suggestionPageSize));
+  const paginationHref = (modelPage: number, targetSuggestionPage: number) => {
+    const params = new URLSearchParams();
+    if (modelPage > 1) params.set("pagina", String(modelPage));
+    if (targetSuggestionPage > 1) params.set("sugestaoPagina", String(targetSuggestionPage));
+    if (resultado) params.set("resultado", resultado);
+    return `/admin/catalogos/impressoras${params.size ? `?${params.toString()}` : ""}`;
+  };
+  const modelRedirectPage = getPaginationRedirectPage(requestedPage, pages);
+  if (!models.error && modelRedirectPage !== null) redirect(paginationHref(modelRedirectPage, suggestionPage));
+  const suggestionRedirectPage = getPaginationRedirectPage(suggestionPage, suggestionPages);
+  if (!suggestions.error && suggestionRedirectPage !== null) redirect(paginationHref(requestedPage, suggestionRedirectPage));
 
   return <>
     <SiteHeader />
@@ -88,8 +103,9 @@ export default async function PrinterCatalogAdminPage({ searchParams }: { search
             {suggestion.notes && <p>{suggestion.notes}</p>}
             <p>A aprovação associa o modelo se já existir; um modelo novo vira rascunho. Especificações e fonte precisam ser revisadas antes da publicação.</p>
           </div>
-          <form action={reviewPrinterModelSuggestionAction}><input type="hidden" name="suggestionId" value={suggestion.id} /><label>Retorno ao fabricante (opcional)<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="approve" type="submit">Aprovar sugestão</button><button className="button button-secondary" name="decision" value="reject" type="submit">Recusar</button></div></form>
+          <form action={reviewPrinterModelSuggestionAction}><input type="hidden" name="suggestionId" value={suggestion.id} /><input type="hidden" name="pagina" value={requestedPage} /><input type="hidden" name="sugestaoPagina" value={suggestionPage} /><label>Retorno ao fabricante (opcional)<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="approve" type="submit">Aprovar sugestão</button><button className="button button-secondary" name="decision" value="reject" type="submit">Recusar</button></div></form>
         </article>)}
+        {!suggestions.error && (suggestions.count ?? 0) > suggestionPageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação das sugestões de impressoras"><span>Página {suggestionPage} de {suggestionPages} · {suggestions.count} sugestões</span><div>{suggestionPage > 1 && <Link className="button button-secondary" href={paginationHref(requestedPage, suggestionPage - 1)}>Anterior</Link>}{suggestionPage < suggestionPages && <Link className="button button-secondary" href={paginationHref(requestedPage, suggestionPage + 1)}>Próxima</Link>}</div></nav>}
       </section>
       <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">CATÁLOGO MESTRE</span><h2>Modelos cadastrados</h2></div>
         {models.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar modelos. Confira a migração 002.</p> : !models.data?.length ? <p className="admin-empty">Nenhum modelo cadastrado no banco. As referências locais não são copiadas automaticamente para o catálogo compartilhado.</p> : models.data.map((row) => {
@@ -99,7 +115,7 @@ export default async function PrinterCatalogAdminPage({ searchParams }: { search
             <details className="equipment-edit-form"><summary>Editar especificações</summary><PrinterModelForm model={model} /></details>
           </article>;
         })}
-        {(models.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação dos modelos de impressora"><span>Página {requestedPage} de {pages} · {models.count} modelos</span><div>{requestedPage > 1 && <Link className="button button-secondary" href={`/admin/catalogos/impressoras?pagina=${requestedPage - 1}`}>Anterior</Link>}{requestedPage < pages && <Link className="button button-secondary" href={`/admin/catalogos/impressoras?pagina=${requestedPage + 1}`}>Próxima</Link>}</div></nav>}
+        {(models.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação dos modelos de impressora"><span>Página {requestedPage} de {pages} · {models.count} modelos</span><div>{requestedPage > 1 && <Link className="button button-secondary" href={paginationHref(requestedPage - 1, suggestionPage)}>Anterior</Link>}{requestedPage < pages && <Link className="button button-secondary" href={paginationHref(requestedPage + 1, suggestionPage)}>Próxima</Link>}</div></nav>}
       </section>
     </main>
     <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Catálogo mestre ViraPeça 3D.</p><span>© 2026 ViraPeça 3D</span></div></footer>

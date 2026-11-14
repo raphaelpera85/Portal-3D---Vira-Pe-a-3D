@@ -7,6 +7,17 @@ import { validatePrinterModelInput } from "@/lib/printer-model-input";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const finish = (result: string): never => redirect(`/admin/catalogos/impressoras?resultado=${result}`);
+const parsePage = (value: FormDataEntryValue | null) => {
+  if (typeof value !== "string" || !/^[1-9]\d{0,4}$/.test(value)) return null;
+  const page = Number(value);
+  return Number.isSafeInteger(page) && page <= 10000 ? page : null;
+};
+const finishSuggestionReview = (result: string, modelPage: number | null, suggestionPage: number | null): never => {
+  const params = new URLSearchParams({ resultado: result });
+  if (modelPage !== null) params.set("pagina", String(modelPage));
+  if (suggestionPage !== null) params.set("sugestaoPagina", String(suggestionPage));
+  return redirect(`/admin/catalogos/impressoras?${params.toString()}`);
+};
 const savePrinterModel = (supabase: NonNullable<Awaited<ReturnType<typeof getUserWithRole>>["supabase"]>, id: string | null, payload: Record<string, unknown>, userId: string) =>
   id ? supabase.from("printer_models").update(payload).eq("id", id).select("id").maybeSingle()
     : supabase.from("printer_models").insert({ ...payload, created_by: userId }).select("id").single();
@@ -34,20 +45,22 @@ export async function savePrinterModelAction(formData: FormData): Promise<void> 
 }
 
 export async function reviewPrinterModelSuggestionAction(formData: FormData): Promise<void> {
+  const modelPage = parsePage(formData.get("pagina"));
+  const suggestionPage = parsePage(formData.get("sugestaoPagina"));
   const suggestionId = formData.get("suggestionId");
   const decision = formData.get("decision");
   const noteValue = formData.get("note");
   if (typeof suggestionId !== "string" || !uuidPattern.test(suggestionId)
     || (decision !== "approve" && decision !== "reject")
-    || (noteValue != null && (typeof noteValue !== "string" || noteValue.length > 1000))) finish("erro");
+    || (noteValue != null && (typeof noteValue !== "string" || noteValue.length > 1000))) finishSuggestionReview("erro", modelPage, suggestionPage);
   const actor = await getUserWithRole("admin");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("review_printer_model_suggestion", {
     p_suggestion_id: suggestionId, p_decision: decision, p_note: typeof noteValue === "string" ? noteValue.trim() : "",
   });
-  if (error) finish(error.message.includes("no longer pending") ? "sugestao-analisada" : "erro");
+  if (error) finishSuggestionReview(error.message.includes("no longer pending") ? "sugestao-analisada" : "erro", modelPage, suggestionPage);
   revalidatePath("/admin/catalogos/impressoras");
   revalidatePath("/painel/maker");
   revalidatePath("/catalogos");
-  finish(decision === "approve" ? "sugestao-aprovada" : "sugestao-recusada");
+  finishSuggestionReview(decision === "approve" ? "sugestao-aprovada" : "sugestao-recusada", modelPage, suggestionPage);
 }
