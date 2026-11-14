@@ -20,6 +20,7 @@ const bambuX1CarbonMaterialMigration = readFileSync(new URL("../../supabase/migr
 const bambuX1CarbonAdditionalMaterialMigration = readFileSync(new URL("../../supabase/migrations/20261114190000_link_bambu_x1_carbon_additional_materials.sql", import.meta.url), "utf8");
 const prusaXlPlusMigration = readFileSync(new URL("../../supabase/migrations/20261114200000_seed_prusa_xl_plus.sql", import.meta.url), "utf8");
 const prusaCoreOneLPlusMigration = readFileSync(new URL("../../supabase/migrations/20261114210000_seed_prusa_core_one_l_plus.sql", import.meta.url), "utf8");
+const flsunS1SeriesMigration = readFileSync(new URL("../../supabase/migrations/20261114220000_seed_flsun_s1_series.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -65,6 +66,8 @@ describe("verified technical catalog records", () => {
       ["QIDI Tech", "Q2C", "QIDI Box Combo"],
       ["Artillery", "M1 Pro", "standard"],
       ["FLSUN", "V400 Max", "standard"],
+      ["FLSUN", "S1", "standard"],
+      ["FLSUN", "S1 Pro", "standard"],
       ["Raise3D", "Pro3 HS", "standard"],
       ["Formlabs", "Form 4", "standard"],
       ["Phrozen", "Sonic Mighty Revo 16K", "standard"],
@@ -93,7 +96,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(64);
+    expect(printers).toHaveLength(66);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -645,6 +648,28 @@ describe("verified technical catalog records", () => {
 
     expect(catalog.printers[0].buildVolumeMm).toBeNull();
     expect(catalog.printers[0].buildVolumeDescription).toBe("Cilíndrico · Ø500 × 550 mm");
+  });
+
+  it("keeps FLSUN S1 volumes and nozzles tied to their exact models", () => {
+    const s1 = printers.find((printer) => printer.id === "flsun-s1");
+    const s1Pro = printers.find((printer) => printer.id === "flsun-s1-pro");
+    const s1Nozzle = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["flsun-s1"] === "compatible");
+    const s1ProNozzle = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["flsun-s1-pro"] === "compatible");
+
+    expect(s1).toMatchObject({
+      buildVolumeMm: null, buildVolumeDescription: "320 × 320 × 430 mm (geometria do volume não detalhada pela fonte)",
+      maxNozzleTemperatureC: 350, maxBedTemperatureC: 120, maximumSpeedMmPerSecond: 1200,
+      technicalProperties: { activeChamberHeating: false, maximumChamberTemperatureC: 50, maxAccelerationMmPerSecondSquared: 40000 },
+    });
+    expect(s1Pro).toMatchObject({
+      buildVolumeMm: null, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 350, maxBedTemperatureC: 120,
+      technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 320, buildHeightMm: 430, maximumHeightAtOuterEdgeMm: 383 },
+    });
+    expect(s1Nozzle).toEqual([expect.objectContaining({ id: "flsun-s1-0.4", diameterMm: 0.4, abrasionResistant: true })]);
+    expect(s1ProNozzle).toEqual([expect.objectContaining({ id: "flsun-s1-pro-0.4", diameterMm: 0.4, abrasionResistant: true })]);
+    expect(flsunS1SeriesMigration).toContain("('FLSUN', 'S1', 'standard'");
+    expect(flsunS1SeriesMigration).toContain("('FLSUN', 'S1 Pro', 'standard'");
+    expect(flsunS1SeriesMigration).toContain("and nozzle.model = 'S1 Pro hardened steel nozzle'");
   });
 
   it("keeps Raise3D single- and dual-extrusion volumes distinct", () => {
