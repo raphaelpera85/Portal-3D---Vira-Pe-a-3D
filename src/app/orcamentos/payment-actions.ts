@@ -8,6 +8,7 @@ import { getMercadoPagoOrderCancellationStatus } from "@/lib/mercado-pago-cancel
 import { getSiteUrl } from "@/lib/site-url";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { fetchAllPages } from "@/lib/pagination";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const objectValue = (value: unknown): Record<string, unknown> => Array.isArray(value) ? objectValue(value[0]) : value && typeof value === "object" ? value as Record<string, unknown> : {};
@@ -37,23 +38,33 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
 
   const { data: order, error: orderError } = isOrder
     ? await actor.supabase.from("seller_purchase_orders")
-      .select("id, store_id, store_name, status, coupon_code, coupon_discount_cents, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, items:seller_purchase_order_items(product_name, unit_price_brl, quantity)")
+      .select("id, store_id, store_name, status, coupon_code, coupon_discount_cents, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents")
       .eq("id", orderId).eq("buyer_id", actor.user.id).maybeSingle()
     : isDirectPurchase ? await actor.supabase.from("product_quote_requests")
       .select("id, store_id, store_name, product_name, unit_price_brl, quantity, status, request_type, license_type")
       .eq("id", purchaseRequestId).eq("buyer_id", actor.user.id).maybeSingle()
     : isCustomPrint ? await actor.supabase.from("custom_print_requests")
-        .select("id, status, winning_store_id, model_name, offer:custom_print_offers(status, store_id, total_brl), delivery:custom_print_deliveries(shipping_quote_status, shipping_service, shipping_cost_cents)")
+        .select("id, status, winning_store_id, model_name, delivery:custom_print_deliveries(shipping_quote_status, shipping_service, shipping_cost_cents)")
       .eq("id", customPrintRequestId).eq("buyer_id", actor.user.id).maybeSingle()
     : await actor.supabase.from("designer_service_requests")
       .select("id, title, status, quote_amount_cents, designer_profile_id")
       .eq("id", designerServiceRequestId).eq("buyer_id", actor.user.id).maybeSingle();
   const orderRow = objectValue(order);
   const customPrintDelivery = objectValue(orderRow.delivery);
-  const customPrintItem = isCustomPrint ? customPrintOfferPaymentItem(order) : null;
+  const [orderItemsResult, customPrintOfferResult] = await Promise.all([
+    isOrder && !orderError && typeof orderRow.id === "string"
+      ? fetchAllPages((from, to) => actor.supabase!.from("seller_purchase_order_items")
+        .select("product_name, unit_price_brl, quantity").eq("order_id", orderRow.id as string).order("id").range(from, to))
+      : Promise.resolve({ data: [], error: null }),
+    isCustomPrint && !orderError && typeof orderRow.winning_store_id === "string"
+      ? actor.supabase.from("custom_print_offers").select("status, store_id, total_brl")
+        .eq("request_id", customPrintRequestId as string).eq("store_id", orderRow.winning_store_id).eq("status", "accepted").maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+  const customPrintItem = isCustomPrint ? customPrintOfferPaymentItem({ ...orderRow, offer: customPrintOfferResult.data }) : null;
   const licensedProductName = typeof orderRow.product_name === "string" && typeof orderRow.license_type === "string"
     ? `${orderRow.product_name} · licença ${orderRow.license_type === "commercial" ? "comercial" : "pessoal"}` : orderRow.product_name;
-  const itemsSource = isOrder ? orderRow.items : isDirectPurchase ? [{ product_name: licensedProductName, unit_price_brl: orderRow.unit_price_brl, quantity: orderRow.quantity }]
+  const itemsSource = isOrder ? orderItemsResult.data : isDirectPurchase ? [{ product_name: licensedProductName, unit_price_brl: orderRow.unit_price_brl, quantity: orderRow.quantity }]
     : isDesignerService ? [{ product_name: orderRow.title, unit_price_brl: Number(orderRow.quote_amount_cents) / 100, quantity: 1 }] : [];
   const sourceId = typeof orderRow.id === "string" ? orderRow.id : "";
   let storeId = typeof orderRow.store_id === "string" ? orderRow.store_id : typeof orderRow.winning_store_id === "string" ? orderRow.winning_store_id : "";
@@ -64,7 +75,7 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
       .eq("owner_user_id", designer.user_id).maybeSingle() : { data: null };
     storeId = designerStore?.status === "published" ? designerStore.id : "";
   }
-  if (orderError || !order || !uuidPattern.test(sourceId) || !uuidPattern.test(storeId)
+  if (orderError || orderItemsResult.error || customPrintOfferResult.error || !order || !uuidPattern.test(sourceId) || !uuidPattern.test(storeId)
     || (isDesignerService ? !["quoted", "accepted"].includes(String(orderRow.status)) : orderRow.status !== "accepted")
     || (isDirectPurchase && orderRow.request_type !== "purchase") || (isCustomPrint && !customPrintItem)) {
     resultPage(isDesignerService ? "pagamento-conta-vendedor" : "pagamento-erro");
