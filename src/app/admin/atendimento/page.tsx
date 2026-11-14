@@ -51,7 +51,7 @@ export default async function AdminSupportPage({ searchParams }: { searchParams:
   const messagesByTicket = new Map<string, NonNullable<typeof messagesResult.data>>();
   for (const message of messagesResult.data ?? []) messagesByTicket.set(message.ticket_id, [...(messagesByTicket.get(message.ticket_id) ?? []), message]);
 
-  return <><SiteHeader /><main className="admin-dashboard shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">OPERAÇÃO DA PLATAFORMA</p><h1>Atendimento</h1><p>Responda solicitações privadas e atualize o status de cada conversa.</p></div>
     {responseMetricsResult.error ? <p className="model-library-note" role="status">Métricas de resposta indisponíveis. A fila continua funcionando.</p> : <section className="seller-finance-summary support-response-summary" aria-label="Tempo médio da primeira resposta">

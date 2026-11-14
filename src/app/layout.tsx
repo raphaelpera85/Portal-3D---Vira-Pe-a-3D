@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { SkipLink } from "@/components/skip-link";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body>
+        <SkipLink />
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {`try { if (localStorage.getItem("virapeca-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch {}`}
         </Script>

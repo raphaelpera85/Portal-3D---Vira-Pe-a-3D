@@ -137,7 +137,7 @@ export default async function MakerPaymentReconciliationPage({ searchParams }: {
 
   const feedback = params.resultado ? resultMessages[params.resultado] : null;
   const total = (rows: NonNullable<typeof reconciliation>['reconciled'], field: "expectedGrossCents" | "reportedGrossCents" | "netCreditCents" | "netDebitCents" | "providerFeeCents") => rows.reduce((sum, row) => sum + row[field], 0);
-  return <><SiteHeader /><main className="maker-dashboard shell maker-finance-page">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="maker-dashboard shell maker-finance-page">
     <Link className="viewer-back-link" href="/painel/maker/financeiro">← Voltar ao financeiro</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">EXTRATO DO PROVEDOR</p><h1>Conciliação financeira · {store.name}</h1><p>Compare os movimentos liberados no Mercado Pago com as cobranças e comissões registradas pelo portal.</p></div>
     {feedback && <p className={`auth-notice ${feedback.error ? "is-error" : "is-success"}`} role="status">{feedback.message}</p>}

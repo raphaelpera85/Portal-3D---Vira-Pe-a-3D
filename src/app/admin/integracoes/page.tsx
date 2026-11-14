@@ -14,7 +14,7 @@ export default async function AdminIntegrationsPage() {
   const integrations = getIntegrationHealth(process.env);
   const configured = integrations.filter((item) => item.status === "configured").length;
 
-  return <><SiteHeader /><main className="admin-dashboard shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Voltar ao painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">OPERAÇÃO DA PLATAFORMA</p><h1>Integrações</h1><p>{configured} de {integrations.length} grupos de configuração detectados no ambiente que está servindo esta página.</p></div>
     <p className="auth-notice">Esta tela confirma apenas a presença e o formato básico das variáveis. Ela não mostra valores secretos nem testa autenticação com os provedores.</p>

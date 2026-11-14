@@ -120,7 +120,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   return (
     <>
       <SiteHeader />
-      <main className="product-detail shell">
+      <main id="main-content" tabIndex={-1} className="product-detail shell">
         <Link className="viewer-back-link" href="/#produtos">← Voltar aos produtos</Link>
         {productStructuredData && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productStructuredData).replace(/</g, "\\u003c") }} />}
         {query.compra === "indisponivel" && <p className="auth-notice is-error" role="alert">A licença selecionada não está disponível para compra.</p>}

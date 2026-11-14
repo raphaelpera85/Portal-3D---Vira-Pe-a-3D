@@ -82,7 +82,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
 
   return <>
     <SiteHeader />
-    <main className="model-detail-page">
+    <main id="main-content" tabIndex={-1} className="model-detail-page">
       <div className="shell model-detail-heading">
         {structuredData && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />}
         <Link href="/modelos" className="model-detail-back">← Voltar à coleção</Link>

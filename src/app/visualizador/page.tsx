@@ -55,7 +55,7 @@ export default async function ViewerPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <SiteHeader />
-      <main className="viewer-page">
+      <main id="main-content" tabIndex={-1} className="viewer-page">
         <div className="viewer-page-intro shell">
           <a href="/" className="viewer-back-link">← Voltar à vitrine</a>
           <p>DO ARQUIVO À PEÇA</p>

@@ -44,7 +44,7 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
     "pagamento-email": "Sua conta precisa ter um e-mail confirmado para iniciar o checkout.",
   };
 
-  return <><SiteHeader /><main className="account-page shell designer-buyer-requests">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="account-page shell designer-buyer-requests">
     <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
     <div className="account-heading"><p className="eyebrow">SERVIÇOS CRIATIVOS</p><h1>Pedidos de <em>modelagem.</em></h1><p>Acompanhe os briefings enviados e as propostas recebidas.</p><Link className="button button-secondary" href="/conta/notificacoes">Ver notificações</Link></div>
     {resultado && resultMessages[resultado] && <p className={`auth-notice ${resultado === "retorno-pagamento" ? "is-success" : "is-error"}`} role="status">{resultMessages[resultado]}</p>}

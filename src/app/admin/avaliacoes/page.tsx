@@ -14,7 +14,7 @@ export default async function MarketplaceReviewsAdminPage({ searchParams }: { se
   const { data, error } = await actor.supabase.from("marketplace_reviews")
     .select("id, review_type, rating, body, order_id, created_at, product:marketplace_products(name, slug), store:stores!inner(name)")
     .eq("status", "pending").order("created_at").limit(100);
-  return <><SiteHeader /><main className="admin-dashboard shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CONFIANÇA NO MARKETPLACE</p><h1>Moderação de avaliações</h1><p>Somente compras pagas e concluídas podem receber avaliação. Aprove comentários antes de exibi-los publicamente.</p></div>
     {resultado && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{resultado === "erro" ? "Não foi possível salvar a análise." : resultado === "publicada" ? "Avaliação publicada." : "Avaliação recusada."}</p>}

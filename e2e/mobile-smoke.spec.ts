@@ -1,6 +1,29 @@
 import { expect, test } from "@playwright/test";
 import { resolve } from "node:path";
 
+test("keyboard skip link focuses the main content", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Sua ideia" })).toBeVisible();
+  const skipLink = page.getByRole("link", { name: "Pular para o conteúdo principal" });
+  await page.keyboard.press("Tab");
+  await expect(skipLink).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#main-content")).toBeFocused();
+  await expect(page).toHaveURL(/#main-content$/);
+});
+
+test("skip link restores focus when streamed main content becomes visible", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Sua ideia" })).toBeVisible();
+  await page.locator("#main-content").evaluate((main) => {
+    const target = main as HTMLElement;
+    target.style.display = "none";
+    window.location.hash = "#main-content";
+    window.setTimeout(() => target.style.removeProperty("display"), 100);
+  });
+  await expect(page.locator("#main-content")).toBeFocused();
+});
+
 test("mobile navigation opens the model catalog and a model detail", async ({ page }) => {
   await page.setViewportSize({ width: 400, height: 608 });
   await page.goto("/");

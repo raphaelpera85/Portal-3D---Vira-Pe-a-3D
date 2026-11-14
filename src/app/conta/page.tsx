@@ -45,7 +45,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <SiteHeader />
-      <main className="account-page shell">
+      <main id="main-content" tabIndex={-1} className="account-page shell">
         <Link className="viewer-back-link" href="/">← Voltar para o início</Link>
         <div className="account-heading"><p className="eyebrow">VIRAPEÇA 3D · SUA CONTA</p><h1>{user ? `Olá, ${displayName ?? "criador(a)"}.` : <>Sua próxima ideia<br /><em>começa por aqui.</em></>}</h1><p>Salve suas escolhas e prepare seu espaço para comprar, fabricar e criar.</p></div>
         {confirmacao === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível confirmar o e-mail. Solicite um novo link de confirmação.</p>}

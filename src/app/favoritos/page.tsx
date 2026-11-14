@@ -32,7 +32,7 @@ export default async function FavoritesPage() {
 
   return <>
     <SiteHeader />
-    <main className="account-page shell favorites-page">
+    <main id="main-content" tabIndex={-1} className="account-page shell favorites-page">
       <Link className="viewer-back-link" href="/#produtos">← Voltar aos produtos</Link>
       <div className="account-heading"><p className="eyebrow"><Heart size={15} aria-hidden="true" /> ÁREA DO COMPRADOR</p><h1>Seus favoritos</h1><p>Guarde as peças que quer encontrar de novo.</p></div>
       {favoritesResult.error || productsResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar os favoritos. Confira se a migração do marketplace está aplicada.</p> : products.length === 0 && unavailableIds.length === 0 ? <section className="account-card"><h2>Nenhum favorito salvo</h2><p>Explore a vitrine e salve produtos publicados para encontrá-los aqui.</p><Link className="button button-primary" href="/#produtos">Explorar produtos</Link></section> : <div className="favorite-grid">

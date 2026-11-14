@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function RecoverPasswordPage() {
-  return <><SiteHeader /><main className="account-page shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="account-page shell">
     <Link className="viewer-back-link" href="/conta">← Voltar para sua conta</Link>
     <div className="account-heading"><p className="eyebrow">VIRAPEÇA 3D · ACESSO</p><h1>Vamos recuperar<br /><em>sua conta.</em></h1><p>Enviaremos um link seguro para o e-mail cadastrado.</p></div>
     <PasswordResetRequestForm />

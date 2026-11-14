@@ -28,7 +28,7 @@ export default async function ProductCategoriesAdminPage({ searchParams }: { sea
 
   return <>
     <SiteHeader />
-    <main className="admin-dashboard shell">
+    <main id="main-content" tabIndex={-1} className="admin-dashboard shell">
       <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">GESTÃO DO MARKETPLACE</p><h1>Categorias</h1><p>Organize a navegação da vitrine. Slugs formam os filtros públicos e precisam ser únicos.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" || resultado === "tem-anuncios" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}

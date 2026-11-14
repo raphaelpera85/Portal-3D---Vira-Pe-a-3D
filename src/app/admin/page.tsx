@@ -77,7 +77,7 @@ export default async function AdminPage() {
   const reportEnd = new Date().toISOString().slice(0, 10);
   const reportStart = new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10);
 
-  return <><SiteHeader /><main className="admin-dashboard shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">OPERAÇÃO DA PLATAFORMA</p><h1>Painel administrativo</h1><p>Veja as filas de revisão e acesse os módulos de gestão do ViraPeça 3D.</p></div>
     <section className="admin-overview-section" aria-labelledby="admin-metrics-title">

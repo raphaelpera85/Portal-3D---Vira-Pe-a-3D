@@ -89,7 +89,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
         url: getSiteUrl()?.toString(),
         inLanguage: "pt-BR",
       }).replace(/</g, "\\u003c") }} />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <section className="hero shell">
           <div className="hero-copy">
             <p className="eyebrow"><span className="eyebrow-dot" /> FEITO PERTO. FEITO DO SEU JEITO.</p>

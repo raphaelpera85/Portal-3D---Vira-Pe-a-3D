@@ -22,7 +22,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
   const pages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
   if (!error && requestedPage > pages) redirect(`/admin/auditoria?pagina=${pages}`);
 
-  return <><SiteHeader /><main className="admin-dashboard shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CONTROLE DA PLATAFORMA</p><h1>Auditoria</h1><p>Histórico de mudanças de status feitas pela equipe administrativa.</p></div>
     <p className="model-library-note">O registro guarda somente entidade, identificador, status anterior e novo status.</p>

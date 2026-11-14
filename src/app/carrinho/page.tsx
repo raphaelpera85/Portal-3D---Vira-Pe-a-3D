@@ -52,7 +52,7 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
   const netTotalCents = totalCents - discountCents;
   return <>
     <SiteHeader />
-    <main className="account-page shell quote-page">
+    <main id="main-content" tabIndex={-1} className="account-page shell quote-page">
       <Link className="viewer-back-link" href="/#produtos">← Continuar explorando</Link>
       <div className="account-heading"><p className="eyebrow">ÁREA DO COMPRADOR</p><h1>Seu carrinho</h1><p>Itens de cada loja serão enviados em pedidos separados.</p></div>
       {resultado && notices[resultado] && !(resultado === "cupom-invalido" && needsCouponReview) && <p className={`auth-notice ${["erro", "indisponivel", "cupom-invalido"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}

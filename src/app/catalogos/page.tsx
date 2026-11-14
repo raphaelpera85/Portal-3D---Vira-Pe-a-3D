@@ -18,7 +18,7 @@ export default async function CatalogPage() {
   return (
     <>
       <SiteHeader />
-      <main className="technical-page">
+      <main id="main-content" tabIndex={-1} className="technical-page">
         <div className="technical-page-back shell"><Link className="viewer-back-link" href="/">← Voltar para o início</Link><span>ESPECIFICAÇÕES COM FONTE</span></div>
         <TechnicalCatalog printers={catalog.printers} materials={catalog.materials} nozzles={catalog.nozzles} notice={catalog.error ?? (catalog.source === "local" ? "Ainda não há registros publicados no catálogo técnico; exibimos referências locais com fonte identificada." : null)} />
       </main>

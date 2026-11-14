@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default async function NewPasswordPage() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-  return <><SiteHeader /><main className="account-page shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="account-page shell">
     <Link className="viewer-back-link" href="/conta">← Voltar para sua conta</Link>
     <div className="account-heading"><p className="eyebrow">VIRAPEÇA 3D · ACESSO</p><h1>Um novo começo<br /><em>para sua senha.</em></h1></div>
     {user ? <PasswordUpdateForm /> : <section className="account-card password-recovery-card">

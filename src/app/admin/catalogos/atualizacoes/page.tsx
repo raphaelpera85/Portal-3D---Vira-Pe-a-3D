@@ -41,7 +41,7 @@ export default async function CatalogUpdatesPage({ searchParams }: { searchParam
 
   return <>
     <SiteHeader />
-    <main className="admin-dashboard shell">
+    <main id="main-content" tabIndex={-1} className="admin-dashboard shell">
       <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
       <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link href="/admin/catalogos/impressoras">Impressoras</Link><Link href="/admin/catalogos/materiais">Materiais e resinas</Link><Link href="/admin/catalogos/bicos">Bicos e compatibilidade</Link><Link aria-current="page" href="/admin/catalogos/atualizacoes">Atualizações</Link></nav>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Atualizações dos catálogos</h1><p>Uma vez por semana, o sistema consulta cabeçalhos HTTP e, quando faltam validadores, compara o conteúdo de fontes pequenas por SHA-256. Nenhuma especificação é atualizada sem conferência administrativa.</p></div>

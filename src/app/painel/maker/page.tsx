@@ -54,7 +54,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     actor.supabase.from("product_categories").select("id, name, parent_id").eq("active", true).order("sort_order").order("name"),
     actor.supabase.from("stores").select("commercial_policies").eq("owner_user_id", actor.user.id).maybeSingle(),
   ]);
-  if (storeResult.error) return <main className="account-page shell"><p className="auth-notice is-error">Não foi possível carregar a loja. Confira as migrações do marketplace.</p></main>;
+  if (storeResult.error) return <main id="main-content" tabIndex={-1} className="account-page shell"><p className="auth-notice is-error">Não foi possível carregar a loja. Confira as migrações do marketplace.</p></main>;
   const store = storeResult.data;
   const paymentAdmin = store ? createSupabaseAdminClient() : null;
   const [paymentConnection, shippingOriginResult, shippingConnection, shippingLabelsResult, shippingLabelPackagesResult] = await Promise.all([
@@ -106,7 +106,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     <>
       <SiteHeader />
       {store && <MakerNotificationUpdates storeId={store.id} />}
-      <main className="maker-dashboard shell">
+      <main id="main-content" tabIndex={-1} className="maker-dashboard shell">
         <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
         <div className="account-heading maker-dashboard-heading"><p className="eyebrow">ÁREA DO FABRICANTE</p><h1>{store?.name ?? "Sua loja"}</h1><p>Cadastre rascunhos e acompanhe a análise de publicação.</p></div>
         {store && <p className="maker-finance-link"><Link className="button button-secondary" href="/painel/maker/financeiro">Abrir financeiro e pagamentos →</Link></p>}

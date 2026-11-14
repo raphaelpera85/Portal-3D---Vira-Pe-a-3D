@@ -37,7 +37,7 @@ export default async function DesignerDashboard({ searchParams }: { searchParams
     "modelagem-erro": "Não foi possível atualizar o serviço. Confirme o pagamento e tente novamente.",
   };
 
-  return <><SiteHeader /><main className="account-page shell"><Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="account-page shell"><Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">ESPAÇO DO CRIADOR</p><h1>Seu perfil, <em>seu trabalho.</em></h1><p>Atualize as informações que aparecem no diretório público de designers.</p></div>
     {resultado && resultMessages[resultado] && <p className={`auth-notice ${resultado === "modelagem-erro" ? "is-error" : "is-success"}`} role="status">{resultMessages[resultado]}</p>}
     <p className="maker-finance-link"><Link className="button button-secondary" href="/painel/maker/financeiro">Vendas e financeiro →</Link> <Link className="button button-secondary" href="/suporte">Central de atendimento →</Link></p>

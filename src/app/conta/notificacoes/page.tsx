@@ -16,7 +16,7 @@ export default async function UserNotificationsPage({ searchParams }: { searchPa
     .eq("user_id", actor.user.id).order("created_at", { ascending: false }).limit(100);
   const unreadCount = (notifications ?? []).filter((item) => !item.read_at).length;
 
-  return <><SiteHeader /><main className="account-page shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="account-page shell">
     <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
     <div className="account-heading"><p className="eyebrow">SUA CONTA</p><h1>Notificações.</h1><p>Acompanhe propostas, pagamentos e o andamento dos seus serviços de modelagem.</p></div>
     {resultado === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível atualizar a notificação. Atualize a página e tente novamente.</p>}

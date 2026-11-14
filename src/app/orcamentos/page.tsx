@@ -95,7 +95,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
 
   return <>
     <SiteHeader />
-    <main className="account-page shell quote-page">
+    <main id="main-content" tabIndex={-1} className="account-page shell quote-page">
       <Link className="viewer-back-link" href="/">← Voltar para o início</Link>
       <div className="account-heading"><p className="eyebrow">ÁREA DO COMPRADOR</p><h1>Meus pedidos e orçamentos</h1><p>Acompanhe solicitações e propostas dos fabricantes.</p></div>
       {resultado && resultMessages[resultado] && <p className={`auth-notice ${["erro", "pagamento-configurar", "pagamento-conta-vendedor", "pagamento-email", "pagamento-erro", "avaliacao-erro"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{resultMessages[resultado]}</p>}

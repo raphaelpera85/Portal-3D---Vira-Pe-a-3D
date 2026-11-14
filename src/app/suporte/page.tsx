@@ -40,7 +40,7 @@ export default async function SupportPage({ searchParams }: { searchParams: Prom
   const messagesByTicket = new Map<string, NonNullable<typeof messagesResult.data>>();
   for (const message of messagesResult.data ?? []) messagesByTicket.set(message.ticket_id, [...(messagesByTicket.get(message.ticket_id) ?? []), message]);
 
-  return <><SiteHeader /><main className="account-page shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="account-page shell">
     <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">VIRAPEÇA 3D · AJUDA</p><h1>Central de atendimento</h1><p>Abra uma solicitação e acompanhe as respostas da equipe por aqui.</p></div>
     {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}

@@ -26,7 +26,7 @@ export default async function CouponAdminPage({ searchParams }: { searchParams: 
   const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.authorized) redirect("/conta");
   const coupons = await actor.supabase.from("marketplace_coupons").select("id, code, discount_percent_bps, discount_fixed_cents, active, created_at").order("created_at", { ascending: false }).limit(250);
-  return <><SiteHeader /><main className="admin-dashboard shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">GESTÃO DO MARKETPLACE</p><h1>Cupons</h1><p>Cupons são pagos pelos vendedores. A comissão da plataforma é calculada após o desconto.</p></div>
     {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" || resultado === "duplicado" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}

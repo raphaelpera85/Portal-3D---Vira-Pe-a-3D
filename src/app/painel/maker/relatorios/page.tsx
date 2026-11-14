@@ -20,7 +20,7 @@ export default async function MakerReportsPage() {
   return (
     <>
       <SiteHeader />
-      <main className="maker-dashboard shell maker-finance-page">
+      <main id="main-content" tabIndex={-1} className="maker-dashboard shell maker-finance-page">
         <Link className="viewer-back-link" href="/painel/maker">← Voltar ao painel</Link>
         <div className="account-heading maker-dashboard-heading">
           <p className="eyebrow">RELATÓRIOS DA LOJA</p>

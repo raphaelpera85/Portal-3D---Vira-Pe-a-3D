@@ -36,7 +36,7 @@ export default async function DesignerProfilePage({ params }: Props) {
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   const { data: buyerRole } = auth.user && supabase ? await supabase.from("user_roles").select("role")
     .eq("user_id", auth.user.id).eq("role", "buyer").maybeSingle() : { data: null };
-  return <><SiteHeader /><main className="account-page shell designer-profile-page"><Link className="viewer-back-link" href="/designers">← Ver designers</Link>
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="account-page shell designer-profile-page"><Link className="viewer-back-link" href="/designers">← Ver designers</Link>
     <article className="designer-profile-card"><span className="account-kicker">DESIGNER 3D{profile.city ? ` · ${profile.city}${profile.state_code ? `/${profile.state_code}` : ""}` : ""}</span><h1>{profile.display_name}</h1><p className="designer-biography">{profile.biography}</p>
       <h2>Especialidades</h2><ul>{profile.specialties.map((specialty: string) => <li key={specialty}>{specialty}</li>)}</ul>
       {profile.portfolio_url && <a className="button button-primary" href={profile.portfolio_url} target="_blank" rel="noopener noreferrer">Abrir portfólio ↗</a>}

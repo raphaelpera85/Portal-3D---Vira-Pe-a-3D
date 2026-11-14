@@ -175,7 +175,7 @@ export default async function CalculatorPage() {
   return (
     <>
       <SiteHeader />
-      <main className="calculator-page">
+      <main id="main-content" tabIndex={-1} className="calculator-page">
         <div className="calculator-page-back shell"><Link className="viewer-back-link" href="/">← Voltar para o início</Link><span>FERRAMENTA PARA MAKERS</span></div>
         <PriceCalculator equipment={equipment.map((item) => ({ ...item, catalogPrinter: catalog.printers.find((printer) => printer.id === item.catalogPrinterId) ?? null }))} products={products} profiles={profiles} materials={catalog.materials} nozzles={catalog.nozzles} materialNotice={catalog.error} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} storeId={calculationStoreId} sourceAttachmentsError={sourceAttachmentsError} />
       </main>

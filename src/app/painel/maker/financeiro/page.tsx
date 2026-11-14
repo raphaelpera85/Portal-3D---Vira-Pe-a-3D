@@ -66,7 +66,7 @@ export default async function MakerFinancePage({ searchParams }: { searchParams:
   return (
     <>
       <SiteHeader />
-      <main className="maker-dashboard shell maker-finance-page">
+      <main id="main-content" tabIndex={-1} className="maker-dashboard shell maker-finance-page">
         <Link className="viewer-back-link" href="/painel/maker">← Voltar ao painel</Link>
         <div className="account-heading maker-dashboard-heading"><p className="eyebrow">FINANCEIRO DA LOJA</p><h1>{store.name}</h1><p>Registro das cobranças e das comissões da plataforma nos últimos 500 pagamentos.</p></div>
         <p><Link className="button button-secondary" href="/painel/maker/financeiro/conciliacao">Relatórios e conciliação Mercado Pago</Link></p>

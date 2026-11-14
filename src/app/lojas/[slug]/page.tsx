@@ -66,7 +66,7 @@ export default async function StoreProfilePage({ params, searchParams }: Props) 
     <h3><Link href={`/produtos/${product.slug}`}>{product.name}</Link></h3><p className="product-price">{product.priceLabel}</p><Link className="button button-secondary" href={`/produtos/${product.slug}`}>Ver produto</Link>
   </article>);
   const base = getSiteUrl();
-  return <><SiteHeader /><main className="store-profile-page shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="store-profile-page shell">
     <Link className="viewer-back-link" href="/lojas">← Todas as lojas</Link>
     <header className="store-profile-hero">
       {store.banner_url && <img className="store-profile-banner" src={store.banner_url} alt="" aria-hidden="true" />}

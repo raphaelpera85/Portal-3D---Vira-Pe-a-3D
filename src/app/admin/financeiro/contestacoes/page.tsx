@@ -26,7 +26,7 @@ export default async function AdminChargebacksPage() {
     .order("provider_updated_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }).limit(250)
     : { data: null, error: new Error("Admin database key is not configured") };
 
-  return <><SiteHeader /><main className="admin-dashboard shell">
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">FINANCEIRO DA PLATAFORMA</p><h1>Contestações de pagamento</h1><p>Acompanhe os estados sincronizados do Mercado Pago e os prazos de documentação informados ao fabricante.</p></div>
     {result.error ? <section className="admin-review-section"><p className="auth-notice is-error" role="alert">Não foi possível carregar as contestações. Confira a configuração administrativa do banco.</p></section>
