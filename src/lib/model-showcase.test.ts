@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { filterModelShowcase, getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase, modelShowcaseCategories, type ShowcaseModel } from "./model-showcase";
 import visualIndex from "./model-showcase-visual-index.json";
@@ -8,6 +8,15 @@ const models: ShowcaseModel[] = [
   { id: "owl", name: "Coruja descanso", category: "Suporte para Óculos", categorySlug: "suporte-para-oculos", image: "/modelos/coruja.png", filePath: "models/owl.3mf", tags: ["suporte", "óculos", "coruja"] },
   { id: "cat", name: "Gato articulado", category: "Chaveiros", categorySlug: "chaveiros", image: "/modelos/gato.png", filePath: "models/cat.3mf", tags: ["chaveiro", "gato", "articulado"] },
 ];
+
+function listThreeMfFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const filePath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return listThreeMfFiles(filePath);
+    if (!entry.isFile() || path.extname(entry.name).toLowerCase() !== ".3mf") return [];
+    return [path.relative(process.cwd(), filePath).split(path.sep).join("/")];
+  });
+}
 
 describe("filterModelShowcase", () => {
   it("keeps all included previews backed by image files in the three requested categories", () => {
@@ -22,6 +31,13 @@ describe("filterModelShowcase", () => {
     expect(new Set(allFiles).size).toBe(108);
     expect(allFiles.every((filePath) => existsSync(path.join(process.cwd(), filePath)))).toBe(true);
     expect(modelShowcase.find(({ id }) => id === "9492febb5ebe")?.downloads).toHaveLength(2);
+  });
+
+  it("references every 3MF in the repository models directory", () => {
+    const referencedFiles = modelShowcase.flatMap((model) => [model.filePath, ...(model.downloads ?? []).map(({ filePath }) => filePath)]);
+    const referencedSet = [...new Set(referencedFiles)].sort();
+    const repositoryFiles = listThreeMfFiles(path.join(process.cwd(), "models")).sort();
+    expect(referencedSet).toEqual(repositoryFiles);
   });
 
   it("opens a model by id and returns no model for unknown ids", () => {
