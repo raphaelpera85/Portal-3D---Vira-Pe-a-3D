@@ -27,6 +27,7 @@ const flsunT1MaxMigration = readFileSync(new URL("../../supabase/migrations/2026
 const flsunV400Migration = readFileSync(new URL("../../supabase/migrations/20261115020000_seed_flsun_v400.sql", import.meta.url), "utf8");
 const elegooNeptune4Migration = readFileSync(new URL("../../supabase/migrations/20261115030000_seed_elegoo_neptune_4_type_c.sql", import.meta.url), "utf8");
 const anycubicKobraXMigration = readFileSync(new URL("../../supabase/migrations/20261115060000_seed_anycubic_kobra_x.sql", import.meta.url), "utf8");
+const anycubicS1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261115070000_seed_anycubic_kobra_s1_max_and_photon_p1_max.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -109,7 +110,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(77);
+    expect(printers).toHaveLength(80);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -137,6 +138,32 @@ describe("verified technical catalog records", () => {
     expect(nozzles.some((nozzle) => nozzle.printerCompatibility?.["anycubic-kobra-x-ace-2-pro"] === "compatible")).toBe(true);
     expect(anycubicKobraXMigration).toContain("maximumMulticolorFilaments");
     expect(anycubicKobraXMigration).toContain("Anycubic Kobra X quick-release printhead");
+  });
+
+  it("keeps S1 Max variants and Photon P1 Max in the local catalog and migration", () => {
+    const s1Max = printers.find((printer) => printer.id === "anycubic-kobra-s1-max");
+    const s1MaxCombo = printers.find((printer) => printer.id === "anycubic-kobra-s1-max-ace-2-pro");
+    const photonP1Max = printers.find((printer) => printer.id === "anycubic-photon-p1-max");
+    const s1MaxNozzles = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["anycubic-kobra-s1-max"] === "compatible");
+
+    expect(s1Max).toMatchObject({
+      buildVolumeMm: { x: 350, y: 350, z: 350 }, maxNozzleTemperatureC: 350, maxBedTemperatureC: 120,
+      maximumSpeedMmPerSecond: 600, multicolorSlots: null,
+      technicalProperties: { recommendedPrintSpeedMmPerSecond: 300, activeChamberMaximumTemperatureC: 65, maximumMulticolorFilaments: 16 },
+    });
+    expect(s1MaxCombo).toMatchObject({ multicolorSystem: "ACE 2 Pro", multicolorSlots: 4, technicalProperties: { maximumMulticolorFilaments: 16, extraACE2ProUnitsForMaximumColors: 3, ace2ProDryingMaxTemperatureC: 65 } });
+    expect(s1MaxNozzles.map(({ diameterMm, material, original }) => ({ diameterMm, material, original }))).toEqual([
+      { diameterMm: 0.25, material: "Latão", original: false },
+      { diameterMm: 0.4, material: "Aço endurecido", original: true },
+      { diameterMm: 0.6, material: "Aço endurecido", original: false },
+      { diameterMm: 0.8, material: "Aço endurecido", original: false },
+    ]);
+    expect(photonP1Max).toMatchObject({
+      technology: "MSLA", buildVolumeMm: { x: 285.5, y: 214, z: 300 }, maximumPowerWatts: null,
+      technicalProperties: { lcdResolution: expect.stringContaining("12K"), xyResolutionMicrons: [24.8, 24.8], resinVatCapacityLiters: 1.9, standardResinPrintSpeedMmPerHour: { min: 15, max: 25, layerHeightMm: 0.05 }, ratedPowerSupplyWatts: 296 },
+    });
+    expect(anycubicS1MaxMigration).toContain("Anycubic Kobra S1 Max quick-release printhead");
+    expect(anycubicS1MaxMigration).toContain("Photon P1 Max");
   });
 
   it("keeps the Kobra 4 Combo's four-color base and marks TPU conditional for ACE 2 Pro", () => {
