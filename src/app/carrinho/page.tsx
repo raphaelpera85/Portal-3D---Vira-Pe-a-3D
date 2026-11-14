@@ -39,6 +39,7 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
   const needsCouponReview = couponNeedsReview(couponCode, Boolean(cartItems?.length), Boolean(couponQuote));
   const error = cartResult.error ?? itemsError;
   const rows: CartRow[] = (cartItems ?? []).map((item) => ({
+    id: item.id,
     store_id: item.store_id, store_name: item.store_name, product_id: item.product_id,
     product_name: item.product_name, quantity: item.quantity, price_brl: item.price_brl,
   }));
@@ -49,8 +50,6 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
     key: group.storeId, subtotalCents: Math.round(group.totalBrl * 100),
   })), discountCents) : {};
   const netTotalCents = totalCents - discountCents;
-  const itemIds = new Map((cartItems ?? []).map((item, index) => [`${item.store_id}:${item.product_id}`, item.id]));
-
   return <>
     <SiteHeader />
     <main className="account-page shell quote-page">
@@ -63,12 +62,11 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
           {grouped.map((group) => <section className="account-card" key={group.storeId}>
             <span className="account-kicker">PEDIDO DA LOJA</span><h2>{group.storeName}</h2>
             <ul className="cart-items-list">{group.items.map((item) => {
-              const itemId = itemIds.get(`${group.storeId}:${item.productId}`)!;
-              return <li key={item.productId}>
+              return <li key={item.id}>
                 <div><strong>{item.productName}</strong><span>{formatBrl(item.priceBrl)} cada · subtotal {formatBrl(item.totalBrl)}</span></div>
                 <div className="cart-item-actions">
-                  <form action={setCartItemQuantity}><input type="hidden" name="itemId" value={itemId} />{couponCode && <input type="hidden" name="couponCode" value={couponCode} />}<label><span className="sr-only">Quantidade de {item.productName}</span><input aria-label={`Quantidade de ${item.productName}`} name="quantity" type="number" min="1" max="100" defaultValue={item.quantity} /></label><button className="button button-secondary" type="submit">Atualizar</button></form>
-                  <form action={removeCartItem}><input type="hidden" name="itemId" value={itemId} />{couponCode && <input type="hidden" name="couponCode" value={couponCode} />}<button className="button button-secondary" type="submit">Remover</button></form>
+                  <form action={setCartItemQuantity}><input type="hidden" name="itemId" value={item.id} />{couponCode && <input type="hidden" name="couponCode" value={couponCode} />}<label><span className="sr-only">Quantidade de {item.productName}</span><input aria-label={`Quantidade de ${item.productName}`} name="quantity" type="number" min="1" max="100" defaultValue={item.quantity} /></label><button className="button button-secondary" type="submit">Atualizar</button></form>
+                  <form action={removeCartItem}><input type="hidden" name="itemId" value={item.id} />{couponCode && <input type="hidden" name="couponCode" value={couponCode} />}<button className="button button-secondary" type="submit">Remover</button></form>
                 </div>
               </li>;
             })}</ul>
