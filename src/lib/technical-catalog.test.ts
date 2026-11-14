@@ -209,6 +209,7 @@ describe("verified technical catalog records", () => {
     });
     expect(elegooCentauriCarbon2ComboMigration).toContain("'ELEGOO', 'Centauri Carbon 2', 'CANVAS Combo'");
     expect(elegooCentauriCarbon2ComboMigration).toContain("multicolor_filament_count");
+    expect(elegooCentauriCarbon2ComboMigration).toContain("source_url = 'https://us.elegoo.com/products/centauri-carbon-2'");
   });
 
   it("distinguishes SPARKX i7 filament system configurations", () => {

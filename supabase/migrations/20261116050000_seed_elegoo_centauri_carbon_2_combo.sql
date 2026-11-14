@@ -1,3 +1,11 @@
+update public.printer_models
+set source_url = 'https://us.elegoo.com/products/centauri-carbon-2',
+    documentation_url = 'https://us.elegoo.com/products/centauri-carbon-2',
+    verified_at = date '2026-11-14'
+where manufacturer = 'ELEGOO'
+  and model = 'Centauri Carbon 2'
+  and variant = 'standard';
+
 insert into public.printer_models (
   manufacturer, model, variant, technology, catalog_status,
   build_volume_x_mm, build_volume_y_mm, build_volume_z_mm,
