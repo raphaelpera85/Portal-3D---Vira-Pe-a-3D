@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
+import { CatalogOptionSelect } from "@/components/catalog-option-select";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { fetchAllPages, getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
 import { getAssignableCategoryParentIds } from "@/lib/product-category-hierarchy";
@@ -25,15 +26,23 @@ export default async function ProductCategoriesAdminPage({ searchParams }: { sea
 
   const supabase = actor.supabase;
   const requestedPage = parsePageNumber(pagina) ?? 1;
-  const [allCategories, categoryPage] = await Promise.all([
-    fetchAllPages((from, to) => supabase.from("product_categories")
-      .select("id, parent_id, name, slug, active, sort_order").order("sort_order").order("name").order("id").range(from, to)),
+  const [categoryOptionsPage, categoryPage] = await Promise.all([
+    supabase.from("product_categories").select("id, parent_id, name, slug, active, sort_order")
+      .eq("active", true).order("name").order("id").range(0, 49),
     supabase.from("product_categories").select("id, parent_id, name, slug, active, sort_order", { count: "exact" })
       .order("sort_order").order("name").order("id").range((requestedPage - 1) * pageSize, requestedPage * pageSize - 1),
   ]);
-  const categories = allCategories.data ?? [];
+  const categories = categoryOptionsPage.data ?? [];
   const rows = categoryPage.data ?? [];
-  const error = allCategories.error ?? categoryPage.error;
+  const editCategory = editar ? rows.find((category) => category.id === editar) : undefined;
+  const parentIds = [...new Set(rows.flatMap((category) => category.parent_id ? [category.parent_id] : []))]
+    .filter((id) => !categories.some((category) => category.id === id));
+  const hierarchy = editCategory ? await fetchAllPages((from, to) => supabase.from("product_categories")
+    .select("id, parent_id, active").order("id").range(from, to)) : null;
+  const missingParents = parentIds.length
+    ? await supabase.from("product_categories").select("id, name, slug, active").in("id", parentIds)
+    : { data: [], error: null };
+  const error = categoryOptionsPage.error ?? categoryPage.error ?? hierarchy?.error ?? missingParents.error;
   const totalCategories = categoryPage.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCategories / pageSize));
   const pageHref = (page: number, categoryId?: string) => {
@@ -45,12 +54,17 @@ export default async function ProductCategoriesAdminPage({ searchParams }: { sea
   };
   const redirectPage = getPaginationRedirectPage(requestedPage, totalPages);
   if (!error && redirectPage !== null) redirect(pageHref(redirectPage));
-  const names = new Map(categories.map((category) => [category.id, category.name]));
-  const editCategory = editar ? categories.find((category) => category.id === editar) : undefined;
-  const assignableParents = editCategory ? new Set([
-    ...getAssignableCategoryParentIds(editCategory.id, categories),
-    ...(editCategory.parent_id ? [editCategory.parent_id] : []),
-  ]) : new Set<string>();
+  const allParentOptions = [...categories, ...(missingParents.data ?? [])];
+  const names = new Map(allParentOptions.map((category) => [category.id, category.name]));
+  const assignableParents = editCategory && hierarchy?.data
+    ? new Set([...getAssignableCategoryParentIds(editCategory.id, hierarchy.data), ...(editCategory.parent_id ? [editCategory.parent_id] : [])])
+    : null;
+  const editParent = editCategory?.parent_id ? allParentOptions.find((parent) => parent.id === editCategory.parent_id) : undefined;
+  const parentOptions = categories.filter((parent) => !assignableParents || assignableParents.has(parent.id))
+    .map(({ id, name, slug, active }) => ({ id, name, slug, active }));
+  if (editParent && assignableParents?.has(editParent.id) && !parentOptions.some((parent) => parent.id === editParent.id)) {
+    parentOptions.push({ id: editParent.id, name: editParent.name, slug: editParent.slug, active: editParent.active });
+  }
 
   return <>
     <SiteHeader />
@@ -64,7 +78,7 @@ export default async function ProductCategoriesAdminPage({ searchParams }: { sea
           <input type="hidden" name="pagina" value={requestedPage} />
           <label>Nome<input name="name" minLength={2} maxLength={80} required /></label>
           <label>Slug público<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={100} placeholder="exemplo-de-categoria" required /></label>
-          <label>Categoria-pai<select name="parentId" defaultValue=""><option value="">Sem categoria-pai</option>{categories.filter((category) => category.active).map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
+          <CatalogOptionSelect kind="category" name="parentId" label="Categoria-pai" selectedValue="" options={categories.map((category) => ({ id: category.id, label: `${category.name} · /${category.slug}` }))} required={false} />
           <label>Ordem na vitrine<input name="sortOrder" type="number" min="0" max="32767" step="1" defaultValue="0" required /></label>
           <button className="button button-primary" type="submit">Adicionar categoria</button>
         </form>
@@ -74,7 +88,7 @@ export default async function ProductCategoriesAdminPage({ searchParams }: { sea
           <div className="admin-banner-record-heading"><div><span className="account-kicker">{category.active ? "ATIVA" : "INATIVA"} · ORDEM {category.sort_order}</span><h3>{category.name}</h3><p>/{category.slug} · {category.parent_id ? `Subcategoria de ${names.get(category.parent_id) ?? "categoria removida"}` : "Categoria principal"}</p></div>
             <div className="admin-banner-record-actions"><Link className="button button-secondary" href={pageHref(requestedPage, category.id)}>Editar</Link><form action={setProductCategoryActiveAction}><input type="hidden" name="categoryId" value={category.id} /><input type="hidden" name="active" value={String(!category.active)} /><input type="hidden" name="pagina" value={requestedPage} /><button className="button button-secondary" type="submit">{category.active ? "Desativar" : "Ativar"}</button></form></div>
           </div>
-          {editCategory?.id === category.id && <details className="equipment-edit-form" open><summary>Editar nome, slug, categoria-pai ou ordem</summary><p><Link href={pageHref(requestedPage)}>Cancelar edição</Link></p><form action={saveProductCategoryAction} className="printer-model-form"><input type="hidden" name="categoryId" value={category.id} /><input type="hidden" name="pagina" value={requestedPage} /><label>Nome<input name="name" minLength={2} maxLength={80} defaultValue={category.name} required /></label><label>Slug público<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={100} defaultValue={category.slug} required /></label><label>Categoria-pai<select name="parentId" defaultValue={category.parent_id ?? ""}><option value="">Sem categoria-pai</option>{categories.filter((parent) => assignableParents.has(parent.id)).map((parent) => <option value={parent.id} key={parent.id}>{parent.name}{parent.active ? "" : " (inativa)"}</option>)}</select></label><label>Ordem na vitrine<input name="sortOrder" type="number" min="0" max="32767" step="1" defaultValue={category.sort_order} required /></label><button className="button button-primary" type="submit">Salvar alterações</button></form></details>}
+          {editCategory?.id === category.id && <details className="equipment-edit-form" open><summary>Editar nome, slug, categoria-pai ou ordem</summary><p><Link href={pageHref(requestedPage)}>Cancelar edição</Link></p><form action={saveProductCategoryAction} className="printer-model-form"><input type="hidden" name="categoryId" value={category.id} /><input type="hidden" name="pagina" value={requestedPage} /><label>Nome<input name="name" minLength={2} maxLength={80} defaultValue={category.name} required /></label><label>Slug público<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={100} defaultValue={category.slug} required /></label><CatalogOptionSelect key={`${category.id}:${category.parent_id ?? "none"}`} kind="category" name="parentId" label="Categoria-pai" selectedValue={category.parent_id ?? ""} options={parentOptions.map((parent) => ({ id: parent.id, label: `${parent.name} · /${parent.slug}${"active" in parent && !parent.active ? " (inativa)" : ""}` }))} required={false} excludeId={category.id} availableIds={assignableParents ? [...assignableParents] : []} /><label>Ordem na vitrine<input name="sortOrder" type="number" min="0" max="32767" step="1" defaultValue={category.sort_order} required /></label><button className="button button-primary" type="submit">Salvar alterações</button></form></details>}
         </article>)}
         {!error && totalCategories > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação das categorias"><span>Página {requestedPage} de {totalPages} · {totalCategories} categorias</span><div>{requestedPage > 1 && <Link className="button button-secondary" href={pageHref(requestedPage - 1)}>Anterior</Link>}{requestedPage < totalPages && requestedPage < maxPageNumber && <Link className="button button-secondary" href={pageHref(requestedPage + 1)}>Próxima</Link>}</div></nav>}
       </section>

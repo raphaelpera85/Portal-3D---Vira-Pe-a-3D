@@ -6,8 +6,8 @@ import type { CatalogOptionKind } from "@/lib/catalog-options";
 type Option = { id: string; label: string };
 
 export function CatalogOptionSelect({
-  kind, name, label, selectedValue, options: initialOptions,
-}: { kind: CatalogOptionKind; name: string; label: string; selectedValue: string; options: Option[] }) {
+  kind, name, label, selectedValue, options: initialOptions, required = true, excludeId, availableIds,
+}: { kind: CatalogOptionKind; name: string; label: string; selectedValue: string; options: Option[]; required?: boolean; excludeId?: string; availableIds?: string[] }) {
   const [options, setOptions] = useState(initialOptions);
   const [selected, setSelected] = useState(selectedValue);
   const [query, setQuery] = useState("");
@@ -15,6 +15,7 @@ export function CatalogOptionSelect({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [page, setPage] = useState(0);
+  const visibleOptions = availableIds ? options.filter((option) => availableIds.includes(option.id)) : options;
 
   async function load(reset: boolean) {
     if (loading) return;
@@ -23,6 +24,7 @@ export function CatalogOptionSelect({
     setError(false);
     try {
       const params = new URLSearchParams({ kind, q: query, offset: String(nextPage * 50) });
+      if (excludeId) params.set("excludeId", excludeId);
       const response = await fetch(`/api/admin/catalog-options?${params.toString()}`, { cache: "no-store" });
       const data = await response.json() as { options?: Option[]; total?: number };
       if (!response.ok || !data.options || typeof data.total !== "number") throw new Error("catalog_search_failed");
@@ -43,9 +45,9 @@ export function CatalogOptionSelect({
   }
 
   return <div className="catalog-option-picker">
-    <label>{label}<select name={name} value={selected} onChange={(event) => setSelected(event.currentTarget.value)} required>
-      <option value="" disabled>Selecione</option>
-      {options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+    <label>{label}<select name={name} value={selected} onChange={(event) => setSelected(event.currentTarget.value)} required={required}>
+      {required ? <option value="" disabled>Selecione</option> : <option value="">Sem categoria-pai</option>}
+      {visibleOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
     </select></label>
     <div className="catalog-option-search"><label>Buscar {label.toLocaleLowerCase("pt-BR")}<input type="search" value={query} maxLength={160} disabled={loading} onChange={(event) => { setQuery(event.currentTarget.value); setPage(0); setHasMore(false); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void load(true); } }} /></label><button className="button button-secondary" type="button" onClick={() => void load(true)} disabled={loading}>{loading ? "Buscando…" : "Buscar"}</button></div>
     {hasMore && <button className="button button-secondary" type="button" onClick={() => void load(false)} disabled={loading}>{loading ? "Carregando…" : "Carregar mais opções"}</button>}

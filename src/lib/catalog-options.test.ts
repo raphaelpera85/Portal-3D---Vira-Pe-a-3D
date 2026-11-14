@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { normalizeCatalogOptionSearch } from "./catalog-options";
+import { isCatalogOptionKind, normalizeCatalogOptionSearch } from "./catalog-options";
+
+describe("isCatalogOptionKind", () => {
+  it("accepts supported catalog kinds, including product categories", () => {
+    expect(isCatalogOptionKind("category")).toBe(true);
+    expect(isCatalogOptionKind("printer")).toBe(true);
+    expect(isCatalogOptionKind("unknown")).toBe(false);
+  });
+});
 
 describe("normalizeCatalogOptionSearch", () => {
   it("keeps ordinary names and removes filter syntax", () => {
