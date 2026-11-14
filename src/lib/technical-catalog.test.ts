@@ -21,6 +21,7 @@ const bambuX1CarbonAdditionalMaterialMigration = readFileSync(new URL("../../sup
 const prusaXlPlusMigration = readFileSync(new URL("../../supabase/migrations/20261114200000_seed_prusa_xl_plus.sql", import.meta.url), "utf8");
 const prusaCoreOneLPlusMigration = readFileSync(new URL("../../supabase/migrations/20261114210000_seed_prusa_core_one_l_plus.sql", import.meta.url), "utf8");
 const flsunS1SeriesMigration = readFileSync(new URL("../../supabase/migrations/20261114220000_seed_flsun_s1_series.sql", import.meta.url), "utf8");
+const flsunT1Migration = readFileSync(new URL("../../supabase/migrations/20261114230000_seed_flsun_t1.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -96,7 +97,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(66);
+    expect(printers).toHaveLength(67);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -670,6 +671,19 @@ describe("verified technical catalog records", () => {
     expect(flsunS1SeriesMigration).toContain("('FLSUN', 'S1', 'standard'");
     expect(flsunS1SeriesMigration).toContain("('FLSUN', 'S1 Pro', 'standard'");
     expect(flsunS1SeriesMigration).toContain("and nozzle.model = 'S1 Pro hardened steel nozzle'");
+  });
+
+  it("keeps the FLSUN T1 cylindrical volume and factory nozzle explicit", () => {
+    const t1 = printers.find((printer) => printer.id === "flsun-t1");
+
+    expect(t1).toMatchObject({
+      buildVolumeMm: null, buildVolumeDescription: "Cilíndrico · Ø260 × 330 mm",
+      filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110,
+      maximumSpeedMmPerSecond: 1000, maximumPowerWatts: 400,
+      technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 260, buildHeightMm: 330, originalNozzleMaterial: "latão", originalNozzleDiameterMm: 0.4 },
+    });
+    expect(flsunT1Migration).toContain("'FLSUN', 'T1', 'standard', 'FDM'");
+    expect(flsunT1Migration).toContain("T1 brass nozzle");
   });
 
   it("keeps Raise3D single- and dual-extrusion volumes distinct", () => {
