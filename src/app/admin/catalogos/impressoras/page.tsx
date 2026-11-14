@@ -16,6 +16,7 @@ const notices: Record<string, string> = {
   "sugestao-recusada": "Sugestão recusada.",
   "sugestao-analisada": "Essa sugestão já foi analisada por outro administrador.",
   erro: "Não foi possível salvar. Confira os campos, a URL de fonte e a migração do catálogo técnico.",
+  "imagem-migration": "Aplique a migração 20261115170000_printer_official_images.sql no Supabase antes de cadastrar a imagem oficial.",
 };
 
 function PrinterModelForm({ model }: { model?: PrinterModelRecord }) {

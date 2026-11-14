@@ -7,6 +7,9 @@ import { validatePrinterModelInput } from "@/lib/printer-model-input";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const finish = (result: string): never => redirect(`/admin/catalogos/impressoras?resultado=${result}`);
+const savePrinterModel = (supabase: NonNullable<Awaited<ReturnType<typeof getUserWithRole>>["supabase"]>, id: string | null, payload: Record<string, unknown>, userId: string) =>
+  id ? supabase.from("printer_models").update(payload).eq("id", id).select("id").maybeSingle()
+    : supabase.from("printer_models").insert({ ...payload, created_by: userId }).select("id").single();
 
 export async function savePrinterModelAction(formData: FormData): Promise<void> {
   const rawId = formData.get("modelId");
@@ -17,9 +20,12 @@ export async function savePrinterModelAction(formData: FormData): Promise<void> 
   const actor = await getUserWithRole("admin");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
 
-  const result = id
-    ? await actor.supabase.from("printer_models").update(model).eq("id", id).select("id").maybeSingle()
-    : await actor.supabase.from("printer_models").insert({ ...model, created_by: actor.user.id }).select("id").single();
+  let result = await savePrinterModel(actor.supabase, id, model, actor.user.id);
+  if (result.error?.code === "PGRST204" && result.error.message.includes("official_image")) {
+    if (model.official_image_url || model.official_image_source_url) finish("imagem-migration");
+    const { official_image_url: _imageUrl, official_image_source_url: _sourceUrl, official_image_authorized_at: _authorizedAt, ...legacyModel } = model;
+    result = await savePrinterModel(actor.supabase, id, legacyModel, actor.user.id);
+  }
   if (result.error || !result.data) finish("erro");
   revalidatePath("/catalogos");
   revalidatePath("/painel/maker");
