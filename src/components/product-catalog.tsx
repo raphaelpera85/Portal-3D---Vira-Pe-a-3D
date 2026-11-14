@@ -45,7 +45,7 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
       {notice && <p className="catalog-disclaimer" role="status">{notice}</p>}
       <div className="catalog-controls">
         <div className="category-list" aria-label="Filtrar por categoria">
-          <Link className={`category-chip${!activeCategory ? " is-active" : ""}`} aria-current={!activeCategory ? "page" : undefined} href={catalogUrl({ query, category: "" })}>Todos</Link>
+          <Link className={`category-chip${!activeCategory ? " is-active" : ""}`} aria-current={!activeCategory ? "page" : undefined} href={catalogUrl({ query, category: "", sort })}>Todos</Link>
           {categories.map((item) => <Link key={item.slug} className={`category-chip${activeCategory === item.slug ? " is-active" : ""}`} aria-current={activeCategory === item.slug ? "page" : undefined} href={catalogUrl({ query, category: item.slug, sort })}>{categoryLabels.get(item.id) ?? item.name}</Link>)}
         </div>
         <form className="search-field" action="/" method="get">
