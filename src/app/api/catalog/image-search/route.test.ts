@@ -37,4 +37,18 @@ describe("catalog image search consent", () => {
     expect(mocks.createSupabaseAdminClient).not.toHaveBeenCalled();
     expect(mocks.recognizeCatalogImage).not.toHaveBeenCalled();
   });
+
+  it("rejects an oversized streamed body even when Content-Length is absent", async () => {
+    const body = new Blob([new ArrayBuffer(Math.floor(2.25 * 1024 * 1024) + 1)]);
+    const oversized = new Request("https://virapeca3d.example/api/catalog/image-search", {
+      method: "POST", headers: { "content-type": "multipart/form-data; boundary=x" }, body,
+    });
+
+    const response = await POST(oversized);
+
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "image_too_large" });
+    expect(mocks.createSupabaseAdminClient).not.toHaveBeenCalled();
+    expect(mocks.recognizeCatalogImage).not.toHaveBeenCalled();
+  });
 });

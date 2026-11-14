@@ -1,6 +1,7 @@
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { recognizeSlicerImages } from "@/lib/google-vision-ocr";
 import { MAX_SLICER_OCR_IMAGE_BYTES, validateSlicerOcrImages } from "@/lib/ocr-image-validation";
+import { readLimitedBody } from "@/lib/request-body";
 import { parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 
 export const runtime = "nodejs";
@@ -19,8 +20,14 @@ export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > MAX_MULTIPART_BYTES) return Response.json({ error: "images_too_large" }, { status: 413 });
 
+  let body: Uint8Array | null;
+  try { body = await readLimitedBody(request.body, MAX_MULTIPART_BYTES); } catch { return Response.json({ error: "invalid_multipart_request" }, { status: 400 }); }
+  if (body === null) return Response.json({ error: "images_too_large" }, { status: 413 });
+  const headers = new Headers(request.headers);
+  headers.delete("content-length");
+  const bodyBuffer = body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer;
   let form: FormData;
-  try { form = await request.formData(); } catch { return Response.json({ error: "invalid_multipart_request" }, { status: 400 }); }
+  try { form = await new Request(request.url, { method: "POST", headers, body: bodyBuffer }).formData(); } catch { return Response.json({ error: "invalid_multipart_request" }, { status: 400 }); }
   const entries = form.getAll("images");
   if (entries.length < 1 || entries.length > 3 || entries.some((entry) => !(entry instanceof File))) {
     return Response.json({ error: "invalid_image_count" }, { status: 400 });
