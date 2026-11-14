@@ -1281,7 +1281,8 @@
     "downloads": [
       { "label": "Versão Forever Together", "filePath": "models/casal-forever-together.3mf" },
       { "label": "Forever Together · variação", "filePath": "models/casal-forever-together-v2.3mf" },
-      { "label": "Versão texturizada", "filePath": "models/casal-forever-together-texturizado.3mf" }
+      { "label": "Versão texturizada", "filePath": "models/casal-forever-together-texturizado.3mf" },
+      { "label": "Texturizada · variação 2", "filePath": "models/casal-forever-together-texturizado-v2.3mf" }
     ]
   },
   {
