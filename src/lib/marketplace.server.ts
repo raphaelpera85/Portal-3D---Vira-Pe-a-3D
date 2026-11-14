@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { filterProducts } from "@/lib/catalog";
 import { products as demoProducts, type Product } from "@/lib/products";
@@ -118,7 +119,7 @@ export async function loadFavoriteProductRecommendations(favorites: Product[]) {
   return getFavoriteProductRecommendations(favorites, candidates);
 }
 
-export async function loadMarketplaceProduct(slug: string) {
+export const loadMarketplaceProduct = cache(async (slug: string) => {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return demoProducts.find((product) => product.slug === slug) ?? null;
   const { data, error } = await supabase.from("marketplace_products").select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, product_properties, media, video_url, tags, color_theme, visual, variants:marketplace_product_variants(id, variant_options, price_brl, stock_quantity), digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)").eq("slug", slug).eq("catalog_status", "published").eq("store.status", "published").maybeSingle();
@@ -131,4 +132,4 @@ export async function loadMarketplaceProduct(slug: string) {
   if (!asset?.preview_path) return product;
   const { data: preview } = await admin.storage.from("digital-assets").createSignedUrl(asset.preview_path, 600);
   return preview?.signedUrl ? { ...product, digitalAsset: { ...product.digitalAsset, previewUrl: preview.signedUrl } } : product;
-}
+});
