@@ -91,7 +91,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
   const [productResult, quoteResult, customPrintResult, contactResult, orderResult, unreadOrderResult, equipmentResult, printerModelsResult, consignmentResult, printProfileResult, materialsResult, nozzlesResult, printerSuggestionsResult] = store ? await Promise.all([
     fetchAllPages((from, to) => actor.supabase.from("marketplace_products").select("id, name, slug, listing_type, catalog_status, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, package_weight_g, package_length_cm, package_width_cm, package_height_cm, product_properties, updated_at, variants:marketplace_product_variants(variant_options, price_brl, stock_quantity), digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("product_quote_requests").select("id, request_type, unit_price_brl, product_name, quantity, customization, due_date, status, created_at, maker_read_at, offer:product_quote_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
-    fetchAllPages((from, to) => actor.supabase.from("custom_print_request_targets").select("id, status, compatibility, maker_read_at, request:custom_print_requests!inner(id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, production_started_at, production_completed_at, delivery:custom_print_deliveries(*)), offer:custom_print_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
+    fetchAllPages((from, to) => actor.supabase.from("custom_print_request_targets").select("id, status, compatibility, maker_read_at, request:custom_print_requests!inner(id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, production_started_at, production_completed_at, delivery:custom_print_deliveries(*)), offer:custom_print_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     actor.supabase.from("store_notification_contacts").select("email, whatsapp, whatsapp_opt_in").eq("store_id", store.id).maybeSingle(),
     orderQuery ? orderQuery.order("created_at", { ascending: false }).order("id", { ascending: false }).range((requestedOrdersPage - 1) * purchaseOrdersPageSize, requestedOrdersPage * purchaseOrdersPageSize - 1) : Promise.resolve({ data: [], count: 0, error: null }),
     actor.supabase.from("seller_purchase_orders").select("id, store_name, created_at", { count: "exact" }).eq("store_id", store.id).is("maker_read_at", null).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(50),
@@ -108,7 +108,8 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     const request = Array.isArray(target.request) ? target.request[0] : target.request;
     return request ? [request.id] : [];
   }))];
-  const [orderPaymentsResult, orderEventsResult, quotePaymentsResult, customPaymentsResult, orderItemsResult, printerMaintenanceResult] = await Promise.all([
+  const customPrintTargetIds = customPrintTargetsForPayments.map((target) => target.id);
+  const [orderPaymentsResult, orderEventsResult, quotePaymentsResult, customPaymentsResult, customPrintEventsResult, orderItemsResult, printerMaintenanceResult] = await Promise.all([
     fetchInChunks((orderResult.data ?? []).map((order) => order.id), (ids) => fetchAllPages((from, to) => actor.supabase.from("seller_order_payments")
       .select("id, order_id, status, total_cents, marketplace_fee_cents, created_at").in("order_id", ids)
       .order("order_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to))),
@@ -121,6 +122,9 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     fetchInChunks(makerCustomRequestIds, (ids) => fetchAllPages((from, to) => actor.supabase.from("seller_order_payments")
       .select("id, custom_print_request_id, status, total_cents, marketplace_fee_cents, created_at").in("custom_print_request_id", ids)
       .order("custom_print_request_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to))),
+    fetchInChunks(customPrintTargetIds, (ids) => fetchAllPages((from, to) => actor.supabase.from("custom_print_request_events")
+      .select("id, target_id, event_type, event_data, actor_user_id, created_at").in("target_id", ids)
+      .order("target_id").order("created_at").order("id").range(from, to))),
     fetchInChunks((orderResult.data ?? []).map((order) => order.id), (orderIds) => fetchAllPages((from, to) => actor.supabase.from("seller_purchase_order_items")
       .select("id, order_id, product_name, unit_price_brl, quantity, created_at").in("order_id", orderIds)
       .order("order_id").order("created_at").order("id").range(from, to))),
@@ -140,11 +144,13 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
   const quotePaymentsById = groupRowsByKey(quotePaymentsResult.data ?? [], (payment) => payment.purchase_request_id);
   const quoteRequests = (quoteResult.data ?? []).map((request) => ({ ...request, payments: quotePaymentsById.get(request.id) ?? [] }));
   const customPaymentsById = groupRowsByKey(customPaymentsResult.data ?? [], (payment) => payment.custom_print_request_id);
+  const customEventsByTargetId = groupRowsByKey(customPrintEventsResult.data ?? [], (event) => event.target_id);
   const customPrintTargets = customPrintTargetsForPayments.map((target) => {
     const request = Array.isArray(target.request) ? target.request[0] : target.request;
-    if (!request) return target;
+    const events = customEventsByTargetId.get(target.id) ?? [];
+    if (!request) return { ...target, events };
     const payments = customPaymentsById.get(request.id) ?? [];
-    return { ...target, request: { ...request, payments } };
+    return { ...target, events, request: { ...request, payments } };
   });
   const maintenanceByPrinter = new Map<string, NonNullable<typeof printerMaintenanceResult.data>>();
   for (const event of printerMaintenanceResult.data ?? []) {
@@ -159,7 +165,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
   const equipmentHistoryError = Boolean(equipmentResult.error || printerMaintenanceResult.error);
   const orderLoadError = Boolean(orderResult.error || orderItemsResult.error || orderPaymentsResult.error || orderEventsResult.error);
   const quotePaymentLoadError = Boolean(quotePaymentsResult.error);
-  const customPaymentLoadError = Boolean(customPaymentsResult.error);
+  const customPaymentLoadError = Boolean(customPaymentsResult.error || customPrintEventsResult.error);
   const consignmentMovementsResult = await fetchInChunks((consignmentResult.data ?? []).map((item) => item.id), (itemIds) => fetchAllPages((from, to) => actor.supabase.from("maker_consignment_movements")
     .select("id, item_id, movement_type, quantity, notes, created_at").in("item_id", itemIds)
     .order("item_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)));
