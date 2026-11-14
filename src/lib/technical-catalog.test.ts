@@ -40,6 +40,7 @@ const elegooMars5UltraMigration = readFileSync(new URL("../../supabase/migration
 const elegooMars5Migration = readFileSync(new URL("../../supabase/migrations/20261116040000_seed_elegoo_mars_5.sql", import.meta.url), "utf8");
 const elegooCentauriCarbon2ComboMigration = readFileSync(new URL("../../supabase/migrations/20261116050000_seed_elegoo_centauri_carbon_2_combo.sql", import.meta.url), "utf8");
 const elegooSaturn4Migration = readFileSync(new URL("../../supabase/migrations/20261116060000_seed_elegoo_saturn_4.sql", import.meta.url), "utf8");
+const elegooNeptune4MaxRibbonMigration = readFileSync(new URL("../../supabase/migrations/20261116070000_seed_elegoo_neptune_4_max_ribbon_cable.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("includes official Hyper PLA temperatures, settings, and named colors without guessed hex values", () => {
@@ -154,6 +155,7 @@ describe("verified technical catalog records", () => {
       ["ELEGOO", "Centauri Carbon 2", "CANVAS Combo"],
       ["ELEGOO", "Neptune 4 Plus", "Type-C version"],
       ["ELEGOO", "Neptune 4 Max", "Type-C version"],
+      ["ELEGOO", "Neptune 4 Max", "Ribbon-Cable version"],
       ["ELEGOO", "Saturn 4 Ultra", "16K"],
       ["ELEGOO", "Saturn 4", "standard"],
       ["ELEGOO", "Mars 5 Ultra", "standard"],
@@ -164,7 +166,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(105);
+    expect(printers).toHaveLength(106);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -442,6 +444,18 @@ describe("verified technical catalog records", () => {
     expect(compatibleNozzles.every((nozzle) => nozzle.printerCompatibilityConditions?.["elegoo-neptune-4-type-c"]?.includes("Type-C"))).toBe(true);
     expect(elegooNeptune4Migration).toContain("Neptune 4/4 Pro Type-C");
     expect(elegooNeptune4Migration).toContain("0.4, 0.6, 0.8, 1.0");
+  });
+
+  it("separates Neptune 4 Max Ribbon-Cable firmware from Type-C", () => {
+    const ribbonCable = printers.find((printer) => printer.id === "elegoo-neptune-4-max-ribbon-cable");
+
+    expect(ribbonCable).toMatchObject({
+      variant: "Ribbon-Cable version", buildVolumeMm: { x: 420, y: 420, z: 480 }, extruders: 1,
+      maxNozzleTemperatureC: 300, maxBedTemperatureC: 85, maximumSpeedMmPerSecond: 500,
+      technicalProperties: { firmwareNotInterchangeableWithTypeC: true },
+    });
+    expect(elegooNeptune4MaxRibbonMigration).toContain("'Ribbon-Cable version'");
+    expect(elegooNeptune4MaxRibbonMigration).toContain("firmwareNotInterchangeableWithTypeC");
   });
 
   it("keeps the H2C's nozzle-specific volumes and optional Vortek-to-AMS filament expansion", () => {
