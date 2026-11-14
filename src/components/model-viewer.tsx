@@ -801,24 +801,36 @@ function applyTrianglePaint(object: THREE.Object3D, triangleColors: string[], TH
     const geometry = source.index ? source.toNonIndexed() : source.clone();
     const positions = geometry.getAttribute("position");
     const previousColors = geometry.getAttribute("color");
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const materialColors = materials.map((material) => {
+      const color = (material as THREE.Material & { color?: THREE.Color }).color;
+      return color?.isColor ? color : new THREE.Color(0xffffff);
+    });
     const values = new Float32Array(positions.count * 3);
     const color = new THREE.Color();
+    let groupIndex = 0;
     for (let triangleIndex = 0; triangleIndex < triangleColors.length; triangleIndex++) {
       const hex = triangleColors[triangleIndex];
       if (hex) color.set(`#${hex}`);
+      const vertexStart = triangleIndex * 3;
+      while (groupIndex < geometry.groups.length && vertexStart >= geometry.groups[groupIndex].start + geometry.groups[groupIndex].count) groupIndex++;
+      const group = geometry.groups[groupIndex];
+      const materialIndex = group && vertexStart >= group.start ? group.materialIndex ?? 0 : 0;
+      const baseColor = materialColors[materialIndex] ?? materialColors[0] ?? new THREE.Color(0xffffff);
       for (let vertex = 0; vertex < 3; vertex++) {
         const index = triangleIndex * 3 + vertex;
-        values[index * 3] = hex ? color.r : previousColors?.getX(index) ?? 1;
-        values[index * 3 + 1] = hex ? color.g : previousColors?.getY(index) ?? 1;
-        values[index * 3 + 2] = hex ? color.b : previousColors?.getZ(index) ?? 1;
+        values[index * 3] = hex ? color.r : previousColors ? previousColors.getX(index) * baseColor.r : baseColor.r;
+        values[index * 3 + 1] = hex ? color.g : previousColors ? previousColors.getY(index) * baseColor.g : baseColor.g;
+        values[index * 3 + 2] = hex ? color.b : previousColors ? previousColors.getZ(index) * baseColor.b : baseColor.b;
       }
     }
     geometry.setAttribute("color", new THREE.Float32BufferAttribute(values, 3));
     if (geometry !== source) source.dispose();
     mesh.geometry = geometry;
     const withVertexColors = (material: THREE.Material) => {
-      const clone = material.clone() as THREE.Material & { vertexColors?: boolean };
+      const clone = material.clone() as THREE.Material & { color?: THREE.Color; vertexColors?: boolean };
       clone.vertexColors = true;
+      clone.color?.set(0xffffff);
       return clone;
     };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(withVertexColors) : withVertexColors(mesh.material);
