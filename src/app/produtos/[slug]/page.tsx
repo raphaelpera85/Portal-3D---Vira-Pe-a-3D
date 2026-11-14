@@ -160,6 +160,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
             {!product.demo && product.listingType === "digital" && <DigitalAssetReportForm productId={product.id} slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} />}
           </section>
         </div>
+        {product.modelPreview && <div className="product-model-preview"><p className="account-kicker">PRÉVIA 3D · {product.modelPreview.name}</p><ModelViewer buyerId={null} today={new Date().toISOString().slice(0, 10)} previewUrl={product.modelPreview.url} modelName={product.modelPreview.name} readOnly /></div>}
         {product.digitalAsset?.previewUrl && <div className="product-model-preview"><p className="account-kicker">PRÉVIA INTERATIVA · ARQUIVO GLB</p><ModelViewer buyerId={null} today={new Date().toISOString().slice(0, 10)} previewUrl={product.digitalAsset.previewUrl} readOnly /></div>}
         {!product.demo && <section className="product-reviews" aria-label="Avaliações verificadas">
           <p className="eyebrow">COMPRAS VERIFICADAS</p><h2>Avaliações de {product.name}</h2>

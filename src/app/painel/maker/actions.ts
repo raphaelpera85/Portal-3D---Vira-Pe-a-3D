@@ -17,6 +17,7 @@ import { validateShipmentTracking, validateShippingOriginPostalCode, validateShi
 import { groupMelhorEnvioPackages, melhorEnvioLabelScopes, normalizeMelhorEnvioPackages, validateMelhorEnvioPackage, validateMelhorEnvioSender, validateMelhorEnvioShipment, type MelhorEnvioPackage } from "@/lib/melhor-envio";
 import { validateDigitalAsset } from "@/lib/digital-assets";
 import { calculateMelhorEnvioRates, requestMelhorEnvio } from "@/lib/melhor-envio.server";
+import { getModelAssetUrl, getShowcaseModel } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
 
 export type MakerProductState = { message: string; success: boolean; productId?: string; personalPriceBrl?: number };
@@ -246,6 +247,10 @@ export async function calculateAndOfferSellerOrderShippingQuote(formData: FormDa
 
 export async function createProductDraft(_previous: MakerProductState, formData: FormData): Promise<MakerProductState> {
   const itemSpecifications = validateProductItemSpecifications(formData);
+  const rawModelSlug = formData.get("modelSlug");
+  const modelSlug = rawModelSlug == null || rawModelSlug === "" ? null : typeof rawModelSlug === "string" ? rawModelSlug : undefined;
+  const previewModel = modelSlug ? getShowcaseModel(modelSlug) : null;
+  const previewUrl = previewModel ? getModelAssetUrl(previewModel.filePath) : null;
   const product = validateProductDraft({
     name: formData.get("name"), description: formData.get("description"), categoryId: formData.get("categoryId"), listingType: formData.get("listingType"),
     priceMode: formData.get("priceMode"), priceBrl: formData.get("priceBrl"), imageUrls: formData.get("imageUrls"), imageUrl: formData.get("imageUrl"), tags: formData.get("tags"),
@@ -256,7 +261,9 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     videoUrl: formData.get("videoUrl"),
   });
   const storeId = formData.get("storeId");
-  if (!product || !itemSpecifications || typeof storeId !== "string" || !uuidPattern.test(storeId)) return { message: "Confira os dados e as especificações do anúncio.", success: false };
+  if (!product || !itemSpecifications || modelSlug === undefined
+    || (modelSlug != null && (!previewModel || !previewUrl)) || (product.listingType === "digital" && modelSlug != null)
+    || typeof storeId !== "string" || !uuidPattern.test(storeId)) return { message: "Confira os dados e as especificações do anúncio.", success: false };
 
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user) return { message: "Entre na conta para continuar.", success: false };
@@ -279,6 +286,7 @@ export async function createProductDraft(_previous: MakerProductState, formData:
         ...(itemSpecifications.color ? { color: itemSpecifications.color } : {}),
         ...(itemSpecifications.weightG != null ? { item_weight_g: itemSpecifications.weightG } : {}),
         ...(itemSpecifications.dimensionsCm ? { item_dimensions_cm: itemSpecifications.dimensionsCm } : {}),
+        ...(modelSlug ? { model_preview_id: modelSlug } : {}),
       } : {}),
     },
     catalog_status: "draft", created_by: actor.user.id,

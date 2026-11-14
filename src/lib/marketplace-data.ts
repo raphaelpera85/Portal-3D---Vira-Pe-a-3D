@@ -1,5 +1,6 @@
 import type { Product, ProductVisual } from "./products";
 import { normalizeProductImageUrls, normalizeProductVideoUrl, normalizeProductVariantOptions, validateProductVariantSelection } from "./marketplace-validation";
+import { getModelAssetUrl, getShowcaseModel } from "./model-showcase";
 
 type Row = Record<string, unknown>;
 export function orderProductsByIds<T extends { id: string }>(products: T[], orderedIds: string[]) {
@@ -34,6 +35,8 @@ export function mapMarketplaceProduct(row: Row): Product {
   const visual = visuals.has(row.visual as ProductVisual) ? row.visual as ProductVisual : null;
   const rawTheme = asText(row.color_theme);
   const variantOptions = normalizeProductVariantOptions(properties.variant_options ?? {}) ?? {};
+  const previewModel = listingType === "physical" ? getShowcaseModel(asText(properties.model_preview_id)) : null;
+  const previewUrl = previewModel ? getModelAssetUrl(previewModel.filePath) : null;
   const optionalText = (value: unknown, maxLength: number) => typeof value === "string" && value.trim().length > 0 && value.trim().length <= maxLength ? value.trim() : undefined;
   const optionalPositiveNumber = (value: unknown, max: number) => {
     const number = typeof value === "number" || typeof value === "string" && value.trim() ? Number(value) : Number.NaN;
@@ -73,6 +76,7 @@ export function mapMarketplaceProduct(row: Row): Product {
     priceBrl: priceMode === "quote" ? null : priceBrl, priceMode, fulfillmentMode, stockQuantity, preparationDays,
     variantOptions, variants,
     ...(physicalSpecifications && Object.keys(physicalSpecifications).length ? { physicalSpecifications } : {}),
+    ...(previewModel && previewUrl ? { modelPreview: { name: previewModel.name, url: previewUrl } } : {}),
     priceLabel: priceMode === "quote" ? "Sob orçamento" : priceBrl == null ? "Preço indisponível" : `${priceMode === "from" || variants.length > 0 ? "A partir de " : ""}${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(priceBrl)}`,
     media, videoUrl: normalizeProductVideoUrl(row.video_url), storeId: asText(row.store_id) || null, storeSlug: asText(store.slug) || null, demo: false, listingType,
     digitalAsset: listingType === "digital" && Number.isFinite(personalLicense) && personalLicense > 0

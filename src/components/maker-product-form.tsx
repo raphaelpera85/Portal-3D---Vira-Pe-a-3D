@@ -8,7 +8,7 @@ import { getProductCategoryLabels } from "@/lib/product-category-hierarchy";
 const initialState: MakerProductState = { message: "", success: false };
 type Category = { id: string; name: string; parent_id: string | null };
 
-export function MakerProductForm({ storeId, categories }: { storeId: string; categories: Category[] }) {
+export function MakerProductForm({ storeId, categories, modelPreviews }: { storeId: string; categories: Category[]; modelPreviews: { id: string; name: string }[] }) {
   const categoryLabels = getProductCategoryLabels(categories);
   const [mode, setMode] = useState("quote");
   const [fulfillmentMode, setFulfillmentMode] = useState("made_to_order");
@@ -29,6 +29,7 @@ export function MakerProductForm({ storeId, categories }: { storeId: string; cat
         {listingType === "physical" && <label>Tipo de preço<select name="priceMode" value={mode} onChange={(event) => { const next = event.target.value; setMode(next); if (next === "quote") setFulfillmentMode("quote"); else if (fulfillmentMode === "quote") setFulfillmentMode("made_to_order"); }}><option value="quote">Sob orçamento</option><option value="fixed">Preço fixo</option><option value="from">A partir de</option></select></label>}
         {listingType === "digital" && <input type="hidden" name="priceMode" value="fixed" />}
         <label>{listingType === "digital" ? "Preço da licença pessoal (R$)" : `Preço em reais ${mode === "quote" ? "(não usado no orçamento)" : "(R$)"}`}<input name={listingType === "physical" && variantOptionsText.trim() && mode === "fixed" ? "variantBasePrice" : "priceBrl"} type="number" min="0.01" max="999999999" step="0.01" value={basePriceBrl} onChange={(event) => setBasePriceBrl(event.target.value)} disabled={listingType === "physical" && mode === "quote"} required={listingType === "digital" || mode !== "quote"} /></label>
+        {listingType === "physical" && <label>Modelo público para prévia 3D (opcional)<select name="modelSlug" defaultValue=""><option value="">Sem modelo vinculado</option>{modelPreviews.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}</select><small>Use um modelo do catálogo público ViraPeça 3D como referência visual do produto.</small></label>}
         {listingType === "digital" ? <input type="hidden" name="fulfillmentMode" value="digital" /> : mode === "quote" ? <input type="hidden" name="fulfillmentMode" value="quote" /> : <>
           <label>Forma de atendimento<select name="fulfillmentMode" value={fulfillmentMode} onChange={(event) => setFulfillmentMode(event.target.value)}><option value="made_to_order">Produzido sob encomenda</option><option value="ready_to_ship">Pronta entrega</option></select></label>
           {fulfillmentMode === "ready_to_ship" && !variantOptionsText.trim() && <label>Unidades em estoque<input name="stockQuantity" type="number" min="0" max="1000000" step="1" defaultValue="1" required /><small>Informe 0 para pausar novas solicitações. O estoque não é reservado sem pagamento.</small></label>}

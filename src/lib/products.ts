@@ -22,6 +22,7 @@ export type Product = {
   stockQuantity: number | null;
   preparationDays: number | null;
   physicalSpecifications?: ProductPhysicalSpecifications;
+  modelPreview?: { name: string; url: string };
   variantOptions?: Record<string, string[]>;
   variants?: ProductVariant[];
   priceLabel: string;

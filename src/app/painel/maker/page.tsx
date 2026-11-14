@@ -26,6 +26,7 @@ import { readPrintProfileColors } from "@/lib/print-profile-colors";
 import { normalizeProductVariantOptions, validateProductVariantSelection } from "@/lib/marketplace-validation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { melhorEnvioLabelScopes } from "@/lib/melhor-envio";
+import { getModelAssetUrl, modelShowcase } from "@/lib/model-showcase";
 import { disconnectMercadoPago, startMercadoPagoConnect } from "./payment-actions";
 
 const mercadoPagoOAuthManagementUrl = "https://www.mercadopago.com.br/developers/pt/docs/subscriptions/additional-content/security/oauth/management?scope=prod";
@@ -328,7 +329,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
                 </article>)}
               </div>}
             </section>
-            {store.status === "published" && !productResult.error && !categoryResult.error && <MakerProductForm storeId={store.id} categories={categoryResult.data ?? []} />}
+            {store.status === "published" && !productResult.error && !categoryResult.error && <MakerProductForm storeId={store.id} categories={categoryResult.data ?? []} modelPreviews={modelShowcase.flatMap(({ id, name, filePath }) => getModelAssetUrl(filePath) ? [{ id, name }] : [])} />}
             {store.status !== "published" && <p className="account-next-step">O cadastro de anúncios será liberado quando a loja for aprovada pela equipe.</p>}
           </>
         )}
