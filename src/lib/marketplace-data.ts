@@ -34,6 +34,24 @@ export function mapMarketplaceProduct(row: Row): Product {
   const visual = visuals.has(row.visual as ProductVisual) ? row.visual as ProductVisual : null;
   const rawTheme = asText(row.color_theme);
   const variantOptions = normalizeProductVariantOptions(properties.variant_options ?? {}) ?? {};
+  const optionalText = (value: unknown, maxLength: number) => typeof value === "string" && value.trim().length > 0 && value.trim().length <= maxLength ? value.trim() : undefined;
+  const optionalPositiveNumber = (value: unknown, max: number) => {
+    const number = typeof value === "number" || typeof value === "string" && value.trim() ? Number(value) : Number.NaN;
+    return Number.isFinite(number) && number > 0 && number <= max ? number : undefined;
+  };
+  const rawDimensions = asObject(properties.item_dimensions_cm);
+  const length = optionalPositiveNumber(rawDimensions.length, 500);
+  const width = optionalPositiveNumber(rawDimensions.width, 500);
+  const height = optionalPositiveNumber(rawDimensions.height, 500);
+  const material = optionalText(properties.material, 100);
+  const color = optionalText(properties.color, 80);
+  const weightG = optionalPositiveNumber(properties.item_weight_g, 100_000);
+  const physicalSpecifications = listingType === "physical" ? {
+    ...(material ? { material } : {}),
+    ...(color ? { color } : {}),
+    ...(weightG != null ? { weightG } : {}),
+    ...(length != null && width != null && height != null ? { dimensionsCm: { length, width, height } } : {}),
+  } : undefined;
   const variants = (Array.isArray(row.variants) ? row.variants : []).flatMap((item) => {
     const variant = asObject(item);
     const selected = validateProductVariantSelection(JSON.stringify(variant.variant_options), properties);
@@ -54,6 +72,7 @@ export function mapMarketplaceProduct(row: Row): Product {
     maker, color: themes.has(rawTheme) ? rawTheme : "blue", visual,
     priceBrl: priceMode === "quote" ? null : priceBrl, priceMode, fulfillmentMode, stockQuantity, preparationDays,
     variantOptions, variants,
+    ...(physicalSpecifications && Object.keys(physicalSpecifications).length ? { physicalSpecifications } : {}),
     priceLabel: priceMode === "quote" ? "Sob orçamento" : priceBrl == null ? "Preço indisponível" : `${priceMode === "from" || variants.length > 0 ? "A partir de " : ""}${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(priceBrl)}`,
     media, videoUrl: normalizeProductVideoUrl(row.video_url), storeId: asText(row.store_id) || null, storeSlug: asText(store.slug) || null, demo: false, listingType,
     digitalAsset: listingType === "digital" && Number.isFinite(personalLicense) && personalLicense > 0

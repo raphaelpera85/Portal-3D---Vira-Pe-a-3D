@@ -145,6 +145,12 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
             {!product.demo && <p className="product-availability">{availabilityLabel}</p>}
             {!product.demo && buyer?.user && buyer.authorized && <FavoriteButton productId={product.id} slug={product.slug} initialFavorite={Boolean(favoriteResult?.data)} />}
             <p className="product-detail-description">{product.description || "O fabricante ainda não adicionou uma descrição para este produto."}</p>
+            {product.physicalSpecifications && <div className="product-detail-note"><strong>Especificações da peça</strong>
+              {product.physicalSpecifications.material && <p>Material: {product.physicalSpecifications.material}</p>}
+              {product.physicalSpecifications.color && <p>Cor: {product.physicalSpecifications.color}</p>}
+              {product.physicalSpecifications.dimensionsCm && <p>Dimensões: {Object.values(product.physicalSpecifications.dimensionsCm).map((value) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(value)).join(" × ")} cm</p>}
+              {product.physicalSpecifications.weightG != null && <p>Peso da peça: {new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(product.physicalSpecifications.weightG)} g</p>}
+            </div>}
             {product.tags.length > 0 && <div className="product-tags" aria-label="Características">{product.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
             {!product.demo && product.variants?.length ? <ProductVariantChooser variants={product.variants} options={product.variantOptions ?? {}} /> : null}
             {!product.demo && product.listingType === "digital" ? product.digitalAsset

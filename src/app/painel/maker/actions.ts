@@ -24,6 +24,37 @@ export type StoreNotificationContactState = { message: string; success: boolean 
 export type CustomPrintFileLinksState = { message: string; links: { name: string; url: string }[] };
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const melhorEnvioCallbackPath = "/api/shipping/melhor-envio/callback";
+type ProductItemSpecifications = { material: string | null; color: string | null; weightG: number | null; dimensionsCm: { length: number; width: number; height: number } | null };
+
+function validateProductItemSpecifications(formData: FormData): ProductItemSpecifications | null {
+  const optionalText = (name: string, maxLength: number) => {
+    const raw = formData.get(name);
+    if (raw == null || raw === "") return null;
+    if (typeof raw !== "string") return undefined;
+    const value = raw.trim();
+    return value.length <= maxLength && !/[\u0000-\u001f\u007f]/.test(value) ? value || null : undefined;
+  };
+  const optionalNumber = (name: string, integer = false) => {
+    const raw = formData.get(name);
+    if (raw == null || raw === "") return null;
+    if (typeof raw !== "string" || !(integer ? /^\d{1,6}$/ : /^\d{1,3}(?:\.\d{1,2})?$/).test(raw)) return undefined;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= (integer ? 1 : 0.1) && value <= (integer ? 100_000 : 500) ? value : undefined;
+  };
+  const material = optionalText("productMaterial", 100);
+  const color = optionalText("productColor", 80);
+  const weightG = optionalNumber("itemWeightG", true);
+  const length = optionalNumber("itemLengthCm");
+  const width = optionalNumber("itemWidthCm");
+  const height = optionalNumber("itemHeightCm");
+  const dimensions = [length, width, height];
+  if (material === undefined || color === undefined || weightG === undefined || dimensions.some((value) => value === undefined)
+    || dimensions.some((value) => value !== null) && dimensions.some((value) => value === null)) return null;
+  return {
+    material, color, weightG,
+    dimensionsCm: dimensions.every((value): value is number => value !== null) ? { length: length!, width: width!, height: height! } : null,
+  };
+}
 
 function getMelhorEnvioPackageList(formData: FormData, fallback: MelhorEnvioPackage[]) {
   const value = formData.get("packageVolumes");
@@ -214,6 +245,7 @@ export async function calculateAndOfferSellerOrderShippingQuote(formData: FormDa
 }
 
 export async function createProductDraft(_previous: MakerProductState, formData: FormData): Promise<MakerProductState> {
+  const itemSpecifications = validateProductItemSpecifications(formData);
   const product = validateProductDraft({
     name: formData.get("name"), description: formData.get("description"), categoryId: formData.get("categoryId"), listingType: formData.get("listingType"),
     priceMode: formData.get("priceMode"), priceBrl: formData.get("priceBrl"), imageUrls: formData.get("imageUrls"), imageUrl: formData.get("imageUrl"), tags: formData.get("tags"),
@@ -224,7 +256,7 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     videoUrl: formData.get("videoUrl"),
   });
   const storeId = formData.get("storeId");
-  if (!product || typeof storeId !== "string" || !uuidPattern.test(storeId)) return { message: "Confira nome, categoria e preço do anúncio.", success: false };
+  if (!product || !itemSpecifications || typeof storeId !== "string" || !uuidPattern.test(storeId)) return { message: "Confira os dados e as especificações do anúncio.", success: false };
 
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user) return { message: "Entre na conta para continuar.", success: false };
@@ -240,7 +272,15 @@ export async function createProductDraft(_previous: MakerProductState, formData:
     stock_quantity: product.stockQuantity, preparation_days: product.preparationDays,
     package_weight_g: product.shippingPackage?.weightG ?? null, package_length_cm: product.shippingPackage?.lengthCm ?? null,
     package_width_cm: product.shippingPackage?.widthCm ?? null, package_height_cm: product.shippingPackage?.heightCm ?? null,
-    product_properties: { variant_options: product.variantOptions },
+    product_properties: {
+      variant_options: product.variantOptions,
+      ...(product.listingType === "physical" ? {
+        ...(itemSpecifications.material ? { material: itemSpecifications.material } : {}),
+        ...(itemSpecifications.color ? { color: itemSpecifications.color } : {}),
+        ...(itemSpecifications.weightG != null ? { item_weight_g: itemSpecifications.weightG } : {}),
+        ...(itemSpecifications.dimensionsCm ? { item_dimensions_cm: itemSpecifications.dimensionsCm } : {}),
+      } : {}),
+    },
     catalog_status: "draft", created_by: actor.user.id,
   }).select("id").single();
   if (error) return { message: "Não foi possível salvar o rascunho. Confira a categoria e tente novamente.", success: false };

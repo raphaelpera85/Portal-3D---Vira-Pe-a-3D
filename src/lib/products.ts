@@ -1,5 +1,11 @@
 export type ProductVisual = "vase" | "dragon" | "organizer" | "keychain";
 export type ProductVariant = { id: string; options: Record<string, string>; priceBrl: number; stockQuantity: number | null };
+export type ProductPhysicalSpecifications = {
+  material?: string;
+  color?: string;
+  weightG?: number;
+  dimensionsCm?: { length: number; width: number; height: number };
+};
 export type Product = {
   id: string;
   slug: string;
@@ -15,6 +21,7 @@ export type Product = {
   fulfillmentMode: "ready_to_ship" | "made_to_order" | "digital" | "quote";
   stockQuantity: number | null;
   preparationDays: number | null;
+  physicalSpecifications?: ProductPhysicalSpecifications;
   variantOptions?: Record<string, string[]>;
   variants?: ProductVariant[];
   priceLabel: string;

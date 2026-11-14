@@ -43,6 +43,14 @@ export function MakerProductForm({ storeId, categories }: { storeId: string; cat
           <label>Largura (cm)<input name="packageWidthCm" type="number" min="0.1" max="500" step="0.01" /></label>
           <label>Altura (cm)<input name="packageHeightCm" type="number" min="0.1" max="500" step="0.01" /></label>
         </div></fieldset>}
+        {listingType === "physical" && <fieldset className="shipping-package-fields"><legend>Especificações da peça</legend><small>Informe características comuns a todas as variações, sem incluir a embalagem. Use as opções do produto para diferenças de cor ou medidas.</small><div>
+          <label>Material (opcional)<input name="productMaterial" maxLength={100} placeholder="Ex.: PLA, madeira, aço" /></label>
+          <label>Cor real (opcional)<input name="productColor" maxLength={80} placeholder="Ex.: azul-marinho" /></label>
+          <label>Peso da peça (g)<input name="itemWeightG" type="number" min="1" max="100000" step="1" /></label>
+          <label>Comprimento da peça (cm)<input name="itemLengthCm" type="number" min="0.1" max="500" step="0.01" /></label>
+          <label>Largura da peça (cm)<input name="itemWidthCm" type="number" min="0.1" max="500" step="0.01" /></label>
+          <label>Altura da peça (cm)<input name="itemHeightCm" type="number" min="0.1" max="500" step="0.01" /></label>
+        </div></fieldset>}
         <label>Imagens públicas HTTPS (opcional)<textarea name="imageUrls" maxLength={8007} rows={4} placeholder={"https://.../frente.webp\nhttps://.../detalhe.webp"} /><small>Uma URL por linha, até 8 imagens. Cada endereço deve ser público e usar HTTPS.</small></label>
         <label>Vídeo público MP4 ou WebM (opcional)<input name="videoUrl" type="url" maxLength={1000} placeholder="https://.../demonstracao.mp4" /><small>Link direto para o arquivo, em HTTPS. O portal aceita MP4 e WebM.</small></label>
         <label>Tags separadas por vírgula (opcional)<input name="tags" maxLength={260} placeholder="miniatura, RPG, articulado" /></label>
