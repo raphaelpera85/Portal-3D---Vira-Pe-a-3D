@@ -18,6 +18,7 @@ import { ProductVariantChooser, ProductVariantSummary } from "@/components/produ
 import { ProductImageGallery } from "@/components/product-image-gallery";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

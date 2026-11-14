@@ -9,6 +9,7 @@ import { formatSupportElapsedDuration, formatSupportTicketAge } from "@/lib/supp
 import { setSupportTicketStatusAction } from "@/app/suporte/actions";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 export const metadata: Metadata = { title: "Atendimento | Administração ViraPeça 3D", robots: { index: false, follow: false } };
 
 const statuses: Record<string, string> = { open: "Aberto", in_progress: "Em análise", waiting_user: "Aguardando usuário", resolved: "Resolvido", closed: "Encerrado" };

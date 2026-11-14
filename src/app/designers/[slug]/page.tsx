@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBrazilianCalendarDate } from "@/lib/maintenance-reminders";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 type Props = { params: Promise<{ slug: string }> };
 
 async function getProfile(slug: string) {

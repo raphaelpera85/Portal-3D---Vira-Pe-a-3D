@@ -9,6 +9,7 @@ import { groupCartItemsByStore, type CartRow } from "@/lib/cart";
 import { allocateCouponDiscountCents, couponNeedsReview, normalizeCouponCode } from "@/lib/coupon";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 export const metadata: Metadata = { title: "Carrinho | ViraPeça 3D", robots: { index: false, follow: false } };
 
 const notices: Record<string, string> = {

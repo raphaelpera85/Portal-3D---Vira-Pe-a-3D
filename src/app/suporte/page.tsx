@@ -7,6 +7,7 @@ import { getUserWithRole } from "@/lib/auth-role.server";
 import { createSupportTicketAction } from "./actions";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 export const metadata: Metadata = { title: "Atendimento | ViraPeça 3D", robots: { index: false, follow: false } };
 
 const categories = [

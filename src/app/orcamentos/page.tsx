@@ -12,7 +12,7 @@ import { getCustomPrintEventLabel } from "@/lib/custom-print-events";
 import { isMercadoPagoCheckoutUrl } from "@/lib/mercado-pago-payments";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 export const metadata: Metadata = { title: "Meus pedidos e orçamentos | ViraPeça 3D", robots: { index: false, follow: false } };
 
 const resultMessages: Record<string, string> = {

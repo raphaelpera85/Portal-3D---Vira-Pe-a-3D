@@ -58,4 +58,48 @@ describe("notification dispatch consent checks", () => {
     expect(rpc).toHaveBeenCalledWith("fail_store_notification_delivery", { delivery_id: "delivery-1", reason: "whatsapp_consent_check_failed" });
     expect(mocks.sendNotificationDelivery).not.toHaveBeenCalled();
   });
+
+  it("dispatches queued notifications beyond one batch and leaves overflow for the next run", async () => {
+    const deliveries = Array.from({ length: 101 }, (_, index) => ({
+      id: `delivery-${index + 1}`, channel: "email", destination: `maker${index + 1}@example.com`,
+      payload: { notification_type: "purchase", product_name: "Peça" }, attempts: 1,
+    }));
+    let offset = 0;
+    const rpc = vi.fn(async (name: string) => {
+      if (name === "claim_store_notification_deliveries") {
+        const batch = deliveries.slice(offset, offset + 25);
+        offset += 25;
+        return { data: batch, error: null };
+      }
+      return { data: null, error: null };
+    });
+    mocks.createSupabaseAdminClient.mockReturnValue({ rpc });
+
+    await expect(dispatchNotificationQueue()).resolves.toMatchObject({
+      status: 202,
+      body: { processed: 100, sent: 100, failed: 0, deferred: 0, hasMore: true },
+    });
+    expect(rpc.mock.calls.filter(([name]) => name === "claim_store_notification_deliveries")).toHaveLength(4);
+    expect(offset).toBe(100);
+    expect(mocks.sendNotificationDelivery).toHaveBeenCalledTimes(100);
+  });
+
+  it("returns completed batch counts when a later queue claim fails", async () => {
+    const deliveries = Array.from({ length: 25 }, (_, index) => ({
+      id: `delivery-${index + 1}`, channel: "email", destination: `maker${index + 1}@example.com`,
+      payload: { notification_type: "purchase", product_name: "Peça" }, attempts: 1,
+    }));
+    const rpc = vi.fn(async (name: string) => {
+      if (name !== "claim_store_notification_deliveries") return { data: null, error: null };
+      return rpc.mock.calls.filter(([calledName]) => calledName === name).length === 1
+        ? { data: deliveries, error: null }
+        : { data: null, error: { message: "database unavailable" } };
+    });
+    mocks.createSupabaseAdminClient.mockReturnValue({ rpc });
+
+    await expect(dispatchNotificationQueue()).resolves.toEqual({
+      status: 503,
+      body: { error: "notification_queue_unavailable", processed: 25, sent: 25, failed: 0, deferred: 0 },
+    });
+  });
 });
