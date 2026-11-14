@@ -10,13 +10,17 @@ const models: ShowcaseModel[] = [
 
 describe("filterModelShowcase", () => {
   it("keeps all included previews backed by image files in the three requested categories", () => {
-    expect(modelShowcase).toHaveLength(94);
+    expect(modelShowcase).toHaveLength(101);
     expect(Object.fromEntries(modelShowcaseCategories.map(({ slug }) => [slug, modelShowcase.filter((model) => model.categorySlug === slug).length])))
-      .toEqual({ "suporte-para-oculos": 8, chaveiros: 60, infantil: 7, "jogos-de-mesa": 3, diversos: 4, natal: 7, "acessorios-para-impressora-3d": 5 });
+      .toEqual({ "suporte-para-oculos": 8, chaveiros: 60, infantil: 8, "jogos-de-mesa": 3, diversos: 6, natal: 11, "acessorios-para-impressora-3d": 5 });
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), "public", model.image.slice(1))))).toBe(true);
     expect(modelShowcase.every((model) => /^models\/[a-z0-9]+(?:-[a-z0-9]+)*\.3mf$/.test(model.filePath))).toBe(true);
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), model.filePath)))).toBe(true);
-    expect(new Set(modelShowcase.map((model) => model.filePath)).size).toBe(94);
+    expect(new Set(modelShowcase.map((model) => model.filePath)).size).toBe(101);
+    const allFiles = modelShowcase.flatMap((model) => [model.filePath, ...(model.downloads ?? []).map(({ filePath }) => filePath)]);
+    expect(new Set(allFiles).size).toBe(107);
+    expect(allFiles.every((filePath) => existsSync(path.join(process.cwd(), filePath)))).toBe(true);
+    expect(modelShowcase.find(({ id }) => id === "9492febb5ebe")?.downloads).toHaveLength(2);
   });
 
   it("opens a model by id and returns no model for unknown ids", () => {

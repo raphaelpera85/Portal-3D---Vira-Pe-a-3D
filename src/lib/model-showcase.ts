@@ -1,6 +1,6 @@
 import models from "./model-showcase-data.json";
 
-export type ShowcaseModel = { id: string; name: string; category: string; categorySlug: string; image: string; filePath: string; tags: string[] };
+export type ShowcaseModel = { id: string; name: string; category: string; categorySlug: string; image: string; filePath: string; tags: string[]; downloads?: { label: string; filePath: string }[] };
 export const modelShowcase = models as ShowcaseModel[];
 export const modelShowcaseCategories = [
   { name: "Suporte para Óculos", slug: "suporte-para-oculos" },

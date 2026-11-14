@@ -46,6 +46,10 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   if (!model) notFound();
   const previewUrl = getModelAssetUrl(model.filePath);
   const downloadUrl = previewUrl;
+  const downloadVariants = (model.downloads ?? []).flatMap(({ label, filePath }) => {
+    const url = getModelAssetUrl(filePath);
+    return url ? [{ label, filePath, url }] : [];
+  });
   const siteUrl = getSiteUrl();
   const modelUrl = siteUrl ? new URL(`/modelos/${encodeURIComponent(model.id)}`, siteUrl).toString() : null;
   const structuredData = modelUrl ? {
@@ -84,8 +88,12 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
       <ModelDetailContent modelId={model.id} modelName={model.name} previewUrl={previewUrl} today={new Date().toISOString().slice(0, 10)} profiles={profiles} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />
       <ModelRecommendations models={recommendations} />
       <section className="shell model-detail-download" aria-label="Download do modelo">
-        <div><p className="eyebrow">ARQUIVO ORIGINAL</p><h2>{model.name}.3mf</h2><p>Baixe o arquivo 3MF para abrir no seu fatiador ou programa de modelagem.</p></div>
-        {downloadUrl ? <a className="button button-primary" href={downloadUrl} download={`${model.name}.3mf`}>Baixar arquivo 3MF</a> : <span className="button button-primary" aria-disabled="true">Download indisponível</span>}
+        <div><p className="eyebrow">ARQUIVOS ORIGINAIS</p><h2>{model.name}</h2><p>Escolha a versão 3MF para abrir no seu fatiador ou programa de modelagem.</p></div>
+        <ul className="model-download-options">
+          {downloadUrl && <li><a className="button button-primary" href={downloadUrl} download={`${model.name}.3mf`}>Baixar arquivo principal</a></li>}
+          {downloadVariants.map(({ label, filePath, url }) => <li key={filePath}><a className="button button-secondary" href={url} download={filePath.split("/").at(-1)}>{label}</a></li>)}
+          {!downloadUrl && <li><span className="button button-primary" aria-disabled="true">Download indisponível</span></li>}
+        </ul>
       </section>
     </main>
     <footer className="site-footer"><div className="shell footer-inner"><a className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></a><p>Sua ideia vira realidade.</p><span>© 2026 ViraPeça 3D</span></div></footer>

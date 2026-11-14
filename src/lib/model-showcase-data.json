@@ -1260,5 +1260,80 @@
       "two",
       "colours"
     ]
+  },
+  {
+    "id": "06b1b4d1984e",
+    "name": "Polvo Fofo",
+    "category": "Infantil",
+    "categorySlug": "infantil",
+    "image": "/modelos/06b1b4d1984e.png",
+    "filePath": "models/polvo-fofo.3mf",
+    "tags": ["polvo", "animal", "fofo", "infantil", "articulado"]
+  },
+  {
+    "id": "0e214be34b87",
+    "name": "Casal em Miniatura · 6 Cores",
+    "category": "Diversos",
+    "categorySlug": "diversos",
+    "image": "/modelos/0e214be34b87.png",
+    "filePath": "models/casal-100mm-6-cores-anycubic-experimental.3mf",
+    "tags": ["casal", "miniatura", "multicolorido", "presente", "6 cores"],
+    "downloads": [
+      { "label": "Versão Forever Together", "filePath": "models/casal-forever-together.3mf" },
+      { "label": "Forever Together · variação", "filePath": "models/casal-forever-together-v2.3mf" },
+      { "label": "Versão texturizada", "filePath": "models/casal-forever-together-texturizado.3mf" }
+    ]
+  },
+  {
+    "id": "9492febb5ebe",
+    "name": "Gorro de Natal para Pote",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/9492febb5ebe.png",
+    "filePath": "models/gorro-de-pote.3mf",
+    "tags": ["natal", "gorro", "pote", "decoração", "crochê"],
+    "downloads": [
+      { "label": "Versão Papai Noel em crochê", "filePath": "models/gorro-de-pote-papai-noel-croche.3mf" },
+      { "label": "Versão multicolorida", "filePath": "models/gorro-de-pote-multicolor.3mf" }
+    ]
+  },
+  {
+    "id": "b775843041e5",
+    "name": "Grinch com Gorro de Natal",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/b775843041e5.png",
+    "filePath": "models/grinch.3mf",
+    "tags": ["grinch", "natal", "personagem", "decoração"]
+  },
+  {
+    "id": "2baf73896077",
+    "name": "Miniaturas de Gorro de Papai Noel",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/2baf73896077.png",
+    "filePath": "models/chapeus-papai-noel-multicolor.3mf",
+    "tags": ["natal", "papai noel", "gorro", "miniatura", "multicolorido"]
+  },
+  {
+    "id": "79c18aefe674",
+    "name": "Nossa Senhora Aparecida",
+    "category": "Diversos",
+    "categorySlug": "diversos",
+    "image": "/modelos/79c18aefe674.png",
+    "filePath": "models/nossa-senhora-aparecida.3mf",
+    "tags": ["nossa senhora", "aparecida", "religioso", "imagem", "multicolorido"],
+    "downloads": [
+      { "label": "Versão para AMS · 37 mm", "filePath": "models/nossa-senhora-aparecida-37mm.3mf" }
+    ]
+  },
+  {
+    "id": "54f47885f43c",
+    "name": "Presépio Exclusivo",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/54f47885f43c.png",
+    "filePath": "models/presepio-exclusivo-final.3mf",
+    "tags": ["natal", "presépio", "decoração", "religioso"]
   }
 ]
