@@ -14,7 +14,7 @@ export async function dispatchNotificationQueue() {
   let sent = 0;
   let failed = 0;
   let deferred = 0;
-  let hasMore = false;
+  let reachedBatchLimit = false;
   // shortcut: 100 deliveries per invocation; raise after adding a queue continuation worker.
   for (let batch = 0; batch < 4; batch += 1) {
     const { data, error } = await supabase.rpc("claim_store_notification_deliveries", { batch_size: 25 });
@@ -49,8 +49,20 @@ export async function dispatchNotificationQueue() {
         failed += 1;
       }
     }));
-    hasMore = batch === 3 && deliveries.length === 25;
+    reachedBatchLimit = batch === 3 && deliveries.length === 25;
     if (deliveries.length < 25) break;
+  }
+  let hasMore = false;
+  if (reachedBatchLimit) {
+    const now = new Date().toISOString();
+    const staleBefore = new Date(Date.now() - 10 * 60_000).toISOString();
+    const [pending, stale] = await Promise.all([
+      supabase.from("store_notification_deliveries").select("id", { count: "exact", head: true })
+        .lt("attempts", 5).eq("status", "pending").lte("next_attempt_at", now),
+      supabase.from("store_notification_deliveries").select("id", { count: "exact", head: true })
+        .lt("attempts", 5).eq("status", "sending").lt("updated_at", staleBefore),
+    ]);
+    hasMore = Boolean(pending.error || stale.error || pending.count || stale.count);
   }
   return { status: hasMore ? 202 : 200, body: { processed, sent, failed, deferred, hasMore } };
 }

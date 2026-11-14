@@ -19,6 +19,22 @@ vi.mock("@/lib/notification-delivery", () => ({
 
 import { dispatchNotificationQueue } from "./notification-dispatch.server";
 
+const adminClient = (rpc: ReturnType<typeof vi.fn>, pendingCount: number, staleCount = 0) => {
+  const pendingQuery = { lt: vi.fn(), eq: vi.fn(), lte: vi.fn().mockResolvedValue({ count: pendingCount, error: null }) };
+  const staleQuery = { lt: vi.fn(), eq: vi.fn() };
+  pendingQuery.lt.mockReturnValue(pendingQuery);
+  pendingQuery.eq.mockReturnValue(pendingQuery);
+  staleQuery.lt.mockReturnValueOnce(staleQuery).mockResolvedValueOnce({ count: staleCount, error: null });
+  staleQuery.eq.mockReturnValue(staleQuery);
+  let queueQueryIndex = 0;
+  return {
+    rpc,
+    pendingQuery,
+    staleQuery,
+    from: vi.fn(() => ({ select: vi.fn(() => queueQueryIndex++ === 0 ? pendingQuery : staleQuery) })),
+  };
+};
+
 describe("notification dispatch consent checks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -59,8 +75,12 @@ describe("notification dispatch consent checks", () => {
     expect(mocks.sendNotificationDelivery).not.toHaveBeenCalled();
   });
 
-  it("dispatches queued notifications beyond one batch and leaves overflow for the next run", async () => {
-    const deliveries = Array.from({ length: 101 }, (_, index) => ({
+  it.each([
+    { queueLength: 100, pendingCount: 0, status: 200, hasMore: false },
+    { queueLength: 101, pendingCount: 1, status: 202, hasMore: true },
+    { queueLength: 100, pendingCount: 0, staleCount: 1, status: 202, hasMore: true },
+  ])("drains 100 notifications and reports whether queue has overflow", async ({ queueLength, pendingCount, staleCount = 0, status, hasMore }) => {
+    const deliveries = Array.from({ length: queueLength }, (_, index) => ({
       id: `delivery-${index + 1}`, channel: "email", destination: `maker${index + 1}@example.com`,
       payload: { notification_type: "purchase", product_name: "Peça" }, attempts: 1,
     }));
@@ -73,13 +93,18 @@ describe("notification dispatch consent checks", () => {
       }
       return { data: null, error: null };
     });
-    mocks.createSupabaseAdminClient.mockReturnValue({ rpc });
+    const client = adminClient(rpc, pendingCount, staleCount);
+    mocks.createSupabaseAdminClient.mockReturnValue(client);
 
     await expect(dispatchNotificationQueue()).resolves.toMatchObject({
-      status: 202,
-      body: { processed: 100, sent: 100, failed: 0, deferred: 0, hasMore: true },
+      status,
+      body: { processed: 100, sent: 100, failed: 0, deferred: 0, hasMore },
     });
     expect(rpc.mock.calls.filter(([name]) => name === "claim_store_notification_deliveries")).toHaveLength(4);
+    expect(client.pendingQuery.lt).toHaveBeenCalledWith("attempts", 5);
+    expect(client.pendingQuery.eq).toHaveBeenCalledWith("status", "pending");
+    expect(client.staleQuery.lt).toHaveBeenCalledWith("updated_at", expect.any(String));
+    expect(client.staleQuery.eq).toHaveBeenCalledWith("status", "sending");
     expect(offset).toBe(100);
     expect(mocks.sendNotificationDelivery).toHaveBeenCalledTimes(100);
   });
