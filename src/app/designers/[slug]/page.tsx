@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
@@ -10,13 +11,13 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 type Props = { params: Promise<{ slug: string }> };
 
-async function getProfile(slug: string) {
+const getProfile = cache(async (slug: string) => {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const { data } = await supabase.from("designer_profiles").select("slug, display_name, biography, portfolio_url, city, state_code, specialties")
     .eq("slug", slug).eq("status", "published").maybeSingle();
   return data;
-}
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
