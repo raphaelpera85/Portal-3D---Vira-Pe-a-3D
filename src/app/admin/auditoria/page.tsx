@@ -10,18 +10,22 @@ export const metadata: Metadata = { title: "Auditoria | Administração ViraPeç
 
 const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Sao_Paulo" });
 
-export default async function AdminAuditPage() {
-  const actor = await getUserWithRole("admin");
+export default async function AdminAuditPage({ searchParams }: { searchParams: Promise<{ pagina?: string }> }) {
+  const [{ pagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.authorized) redirect("/conta");
-  // shortcut: shows the 200 newest events; add cursor pagination when deeper review is needed.
-  const { data: events, error } = await actor.supabase.from("admin_audit_events")
-    .select("id, actor_user_id, entity_type, entity_id, field_name, previous_value, new_value, created_at")
-    .order("created_at", { ascending: false }).limit(200);
+  const requestedPage = typeof pagina === "string" && /^[1-9]\d{0,3}$/.test(pagina) ? Number(pagina) : 1;
+  const pageSize = 200;
+  const { data: events, error, count } = await actor.supabase.from("admin_audit_events")
+    .select("id, actor_user_id, entity_type, entity_id, field_name, previous_value, new_value, created_at", { count: "exact" })
+    .order("created_at", { ascending: false }).order("id", { ascending: false })
+    .range((requestedPage - 1) * pageSize, requestedPage * pageSize - 1);
+  const pages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
+  if (!error && requestedPage > pages) redirect(`/admin/auditoria?pagina=${pages}`);
 
   return <><SiteHeader /><main className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CONTROLE DA PLATAFORMA</p><h1>Auditoria</h1><p>Histórico de mudanças de status feitas pela equipe administrativa.</p></div>
-    <p className="model-library-note">O registro guarda somente entidade, identificador, status anterior e novo status. Mostrando até 200 eventos mais recentes.</p>
+    <p className="model-library-note">O registro guarda somente entidade, identificador, status anterior e novo status.</p>
     {error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar a auditoria. Confira se a migração de auditoria foi aplicada.</p> : !events?.length ? <p className="admin-empty">Nenhuma mudança administrativa registrada.</p> : <section className="account-card maker-products-card seller-finance-ledger">
       <div className="seller-finance-table-wrap"><table className="seller-finance-table">
         <caption className="sr-only">Mudanças de status administrativas mais recentes</caption>
@@ -34,5 +38,6 @@ export default async function AdminAuditPage() {
         </tr>)}</tbody>
       </table></div>
     </section>}
+    {!error && (count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação da auditoria"><span>Página {requestedPage} de {pages} · {count} eventos</span><div>{requestedPage > 1 && <Link className="button button-secondary" href={`/admin/auditoria?pagina=${requestedPage - 1}`}>Anterior</Link>}{requestedPage < pages && <Link className="button button-secondary" href={`/admin/auditoria?pagina=${requestedPage + 1}`}>Próxima</Link>}</div></nav>}
   </main></>;
 }
