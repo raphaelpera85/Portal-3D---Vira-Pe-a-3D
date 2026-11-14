@@ -1,9 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { evaluateCompatibility } from "./compatibility";
+import { evaluateBuildVolume, evaluateCompatibility } from "./compatibility";
 import { mapTechnicalCatalog, mergeTechnicalCatalogWithFallback } from "./technical-catalog-data";
 import { materials, nozzles, printers } from "./technical-catalog";
 
 describe("mapTechnicalCatalog", () => {
+  it("keeps Sovol M1D variants, pre-order status and mode-specific volumes explicit", () => {
+    const m1d = printers.filter((printer) => printer.model === "M1D");
+    expect(m1d.map(({ variant, commercialStatus, enclosure }) => ({ variant, commercialStatus, enclosure }))).toEqual([
+      { variant: "Essential", commercialStatus: "announced", enclosure: false },
+      { variant: "Advanced", commercialStatus: "announced", enclosure: true },
+    ]);
+    expect(m1d[0].buildVolumeMm).toBeNull();
+    expect(evaluateBuildVolume(m1d[0].buildVolumeMm, { x: 250, y: 250, z: 250 }).status).toBe("unverified");
+    expect(m1d[0].technicalProperties).toMatchObject({
+      toolheadCount: 7,
+      activeChamberHeatingIncluded: false,
+      toolheadModes: [
+        { mode: "fixed toolhead or right-side toolhead switching", dimensionsMm: { x: 300, y: 300, z: 350 } },
+        { mode: "seven-toolhead printing", dimensionsMm: { x: 240, y: 300, z: 350 } },
+        { mode: "copy", dimensionsMm: { x: 178, y: 300, z: 350 }, simultaneousParts: 2 },
+        { mode: "mirror", dimensionsMm: { x: 138, y: 300, z: 350 }, simultaneousParts: 2 },
+      ],
+    });
+    expect(m1d[1].technicalProperties).toMatchObject({ activeChamberMaximumTemperatureC: 60, activeChamberHeatingIncluded: true });
+    expect(nozzles.filter((nozzle) => nozzle.id.startsWith("sovol-m1d-")).map(({ diameterMm, material, original }) => ({ diameterMm, material, original }))).toEqual([
+      { diameterMm: 0.4, material: "Aço endurecido", original: true },
+      { diameterMm: 0.6, material: null, original: false },
+      { diameterMm: 0.8, material: null, original: false },
+    ]);
+  });
+
   it("deduplicates database catalog records by natural identity and remaps compatibility links", () => {
     const fallbackPrinter = printers.find((printer) => printer.id === "prusa-mk4s")!;
     const fallbackNozzle = nozzles.find((nozzle) => nozzle.id === "prusa-mk4s-hardened-0.4")!;

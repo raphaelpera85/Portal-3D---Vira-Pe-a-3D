@@ -72,6 +72,8 @@ describe("verified technical catalog records", () => {
       ["ELEGOO", "Neptune 4", "Type-C version"],
       ["Flashforge", "Adventurer 5M", "standard"],
       ["Sovol", "SV08", "standard"],
+      ["Sovol", "M1D", "Essential"],
+      ["Sovol", "M1D", "Advanced"],
       ["QIDI Tech", "Plus4", "standard"],
       ["QIDI Tech", "Max4", "standard"],
       ["QIDI Tech", "Q2", "standard"],
@@ -131,7 +133,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(98);
+    expect(printers).toHaveLength(100);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });

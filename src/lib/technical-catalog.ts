@@ -197,6 +197,11 @@ const sovolSv06AceNozzleSource = {
   url: "https://www.sovol3d.com/products/sv06-ace-nozzle-kit-0-2-0-4mm-0-6mm-0-8mm",
   checkedAt: "2026-11-14",
 };
+const sovolM1dSource = {
+  label: "Sovol — M1D official specifications and pre-order status",
+  url: "https://www.sovol3d.com/products/sovol-m1d-3d-printer",
+  checkedAt: "2026-11-14",
+};
 type SeededPrinterFields = Partial<Pick<PrinterEntry,
   "commercialStatus" | "commercialStatusSource" | "buildVolumeDescription" | "buildVolumeMm" | "extruders" | "filamentDiameterMm" | "maxNozzleTemperatureC"
   | "maxBedTemperatureC" | "heatedBed" | "enclosure" | "maximumSpeedMmPerSecond" | "maximumSpeedDescription"
@@ -244,6 +249,26 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "flashforge-adventurer-5m", brand: "Flashforge", model: "Adventurer 5M", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 220 }, maximumSpeedMmPerSecond: 600, sourceUrl: "https://www.flashforge.com/products/adventurer-5m-3d-printer" }),
   seededPrinter({ id: "sovol-sv08", brand: "Sovol", model: "SV08", variant: "standard", technology: "FDM", buildVolumeMm: { x: 350, y: 350, z: 345 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 700, sourceUrl: "https://www.sovol3d.com/products/sovol-sv08-3d-printer" }),
   seededPrinter({ id: "sovol-sv06-ace", brand: "Sovol", model: "SV06 ACE", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 250 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: false, maximumSpeedMmPerSecond: 600, commercialStatus: "available", commercialStatusSource: { label: "Sovol — SV06 ACE disponível para compra", url: sovolSv06AceSource.url, checkedAt: sovolSv06AceSource.checkedAt }, technicalProperties: { maxAccelerationMmPerSecondSquared: 20000, typicalPrintSpeedRangeMmPerSecond: { min: 250, max: 300 }, supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8], manufacturerSupportedMaterials: ["PLA", "PETG", "TPU", "PVA", "ABS"], manufacturerMaterialConditions: { ABS: "O fabricante recomenda gabinete para ABS." }, manufacturerSpecificationNotes: ["A tabela lista PLA, PETG, TPU e PVA; o FAQ também cita ABS e recomenda gabinete."] }, sourceUrl: sovolSv06AceSource.url, sourceLabel: sovolSv06AceSource.label, documentationUrl: "https://www.sovol3d.com/pages/download", checkedAt: sovolSv06AceSource.checkedAt }),
+  ...(["Essential", "Advanced"] as const).map((variant) => seededPrinter({
+    id: `sovol-m1d-${variant.toLowerCase()}`, brand: "Sovol", model: "M1D", variant, technology: "FDM",
+    buildVolumeMm: null, buildVolumeDescription: "Varia conforme o modo de impressão; consulte os volumes por modo abaixo.",
+    filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100,
+    heatedBed: true, enclosure: variant === "Advanced", maximumSpeedMmPerSecond: 600, multicolorSlots: 7, multicolorSystem: "DualX tool-changing",
+    commercialStatus: "announced", commercialStatusSource: { label: "Sovol — M1D em pré-venda", url: sovolM1dSource.url, checkedAt: sovolM1dSource.checkedAt },
+    technicalProperties: {
+      maxAccelerationMmPerSecondSquared: 10000, maxVolumetricFlowRateMm3PerSecond: 30, toolheadCount: 7,
+      toolheadModes: [
+        { mode: "fixed toolhead or right-side toolhead switching", dimensionsMm: { x: 300, y: 300, z: 350 } },
+        { mode: "seven-toolhead printing", dimensionsMm: { x: 240, y: 300, z: 350 } },
+        { mode: "copy", dimensionsMm: { x: 178, y: 300, z: 350 }, simultaneousParts: 2 },
+        { mode: "mirror", dimensionsMm: { x: 138, y: 300, z: 350 }, simultaneousParts: 2 },
+      ],
+      manufacturerSupportedMaterials: variant === "Advanced" ? ["PLA", "PETG", "TPU", "PVA", "ABS", "ASA", "PA", "PC"] : ["PLA", "PETG", "TPU", "PVA"],
+      buildVolumeDescription: "Varia conforme o modo de impressão; o visualizador não verifica o encaixe sem seleção de modo.",
+      manufacturerSpecificationNotes: ["Volumes por modo: ferramenta fixa ou troca lateral 300 × 300 × 350 mm; sete ferramentas 240 × 300 × 350 mm; cópia 178 × 300 × 350 mm por peça; espelho 138 × 300 × 350 mm por peça. Confira o modo antes de validar o encaixe.", "O aquecimento ativo da câmara até 60 °C está incluído apenas na versão Advanced.", "A potência publicada refere-se ao aquecimento adaptativo AC; consumo médio não informado."],
+      ...(variant === "Advanced" ? { activeChamberMaximumTemperatureC: 60, activeChamberHeatingIncluded: true } : { activeChamberHeatingIncluded: false }),
+    }, sourceUrl: sovolM1dSource.url, sourceLabel: sovolM1dSource.label, checkedAt: sovolM1dSource.checkedAt,
+  })),
   seededPrinter({ id: "sovol-sv08-max", brand: "Sovol", model: "SV08 Max", variant: "standard", technology: "FDM", buildVolumeMm: { x: 500, y: 500, z: 500 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 700, technicalProperties: { motionSystem: "CoreXY", maxAccelerationMmPerSecondSquared: 40000, maxVolumetricFlowRateMm3PerSecond: 50, originalNozzleDiameterMm: 0.4, includedNozzleCount: 2, supportedNozzleDiametersMm: [0.4, 0.6, 0.8], chamberHeatingModule: "Opcional; vendido separadamente", ratedBedPowerWatts: 1300, ratedBedPowerNote: "Potência nominal da mesa; consumo médio não informado.", manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "PA", "PC", "PLA-CF", "PETG-CF", "HP-PLA"] }, sourceUrl: sovolSv08MaxSource.url, sourceLabel: sovolSv08MaxSource.label, checkedAt: sovolSv08MaxSource.checkedAt }),
   seededPrinter({ id: "sovol-sv08-max-enclosure", brand: "Sovol", model: "SV08 Max", variant: "com gabinete", technology: "FDM", buildVolumeMm: { x: 500, y: 500, z: 450 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 700, technicalProperties: { motionSystem: "CoreXY", maxAccelerationMmPerSecondSquared: 40000, maxVolumetricFlowRateMm3PerSecond: 50, originalNozzleDiameterMm: 0.4, includedNozzleCount: 2, supportedNozzleDiametersMm: [0.4, 0.6, 0.8], chamberHeatingModule: "Opcional; vendido separadamente", ratedBedPowerWatts: 1300, ratedBedPowerNote: "Potência nominal da mesa; consumo médio não informado.", enclosureKitIncluded: true, manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "PA", "PC", "PLA-CF", "PETG-CF", "HP-PLA"] }, sourceUrl: sovolSv08MaxSource.url, sourceLabel: sovolSv08MaxSource.label, checkedAt: sovolSv08MaxSource.checkedAt }),
   seededPrinter({ id: "qidi-plus4", brand: "QIDI Tech", model: "Plus4", variant: "standard", technology: "FDM", buildVolumeMm: { x: 305, y: 305, z: 280 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 850, technicalProperties: { activeChamberMaximumTemperatureC: 65, ratedPowerComponentsW: [450, 400] }, sourceUrl: "https://us.qidi3d.com/pages/qidi-plus-4-techspecs" }),
@@ -1507,6 +1532,22 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[0.4, 0.6, 0.8].map((diameter) => ({
+    id: `sovol-m1d-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · Sovol M1D`,
+    brand: "Sovol",
+    diameterMm: diameter,
+    material: diameter === 0.4 ? "Aço endurecido" : null,
+    maxTemperatureC: 300,
+    abrasionResistant: diameter === 0.4,
+    printerCompatibility: { "sovol-m1d-essential": "compatible" as const, "sovol-m1d-advanced": "compatible" as const },
+    printerCompatibilityConditions: {
+      "sovol-m1d-essential": diameter === 0.4 ? "Bico padrão de aço endurecido." : "Diâmetro opcional listado pela Sovol; material não especificado.",
+      "sovol-m1d-advanced": diameter === 0.4 ? "Bico padrão de aço endurecido." : "Diâmetro opcional listado pela Sovol; material não especificado.",
+    },
+    original: diameter === 0.4,
+    sources: [sovolM1dSource],
+  })),
   ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `sovol-sv06-ace-brass-${diameter}`,
     name: `Bico de latão ${diameter.toLocaleString("pt-BR")} mm · Sovol SV06 ACE`,
