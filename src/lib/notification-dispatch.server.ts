@@ -31,6 +31,7 @@ export async function dispatchNotificationQueue() {
         else deferred += 1;
         return;
       }
+      let deliveryForSend = delivery;
       if (delivery.channel === "whatsapp") {
         const { data: authorized, error: authorizationError } = await supabase.rpc("authorize_store_notification_whatsapp_delivery", { delivery_id: delivery.id });
         if (authorizationError || authorized !== true) {
@@ -39,8 +40,21 @@ export async function dispatchNotificationQueue() {
           return;
         }
       }
+      if (delivery.channel === "email" && delivery.payload.notification_type !== "support_reply" && delivery.payload.notification_type !== "designer_service_request") {
+        const { data: currentEmail, error: authorizationError } = await supabase.rpc("authorize_store_notification_email_delivery", { delivery_id: delivery.id });
+        if (authorizationError) {
+          await supabase.rpc("fail_store_notification_delivery", { delivery_id: delivery.id, reason: "email_contact_check_failed" });
+          failed += 1;
+          return;
+        }
+        if (typeof currentEmail !== "string" || !currentEmail) {
+          failed += 1;
+          return;
+        }
+        deliveryForSend = { ...delivery, destination: currentEmail };
+      }
       const destinationUrl = new URL(getNotificationPanelPath(delivery.payload.notification_type), siteUrl).toString();
-      const result = await sendNotificationDelivery(delivery, destinationUrl);
+      const result = await sendNotificationDelivery(deliveryForSend, destinationUrl);
       if (result.ok) {
         const { error: completeError } = await supabase.rpc("complete_store_notification_delivery", { delivery_id: delivery.id, message_id: result.messageId });
         if (completeError) failed += 1;

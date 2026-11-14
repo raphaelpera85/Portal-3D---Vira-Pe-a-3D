@@ -29,8 +29,13 @@ const adminClient = (rpc: ReturnType<typeof vi.fn>, pendingCount: number, staleC
   staleQuery.lt.mockReturnValueOnce(staleQuery).mockResolvedValueOnce({ count: staleCount, error: null });
   staleQuery.eq.mockReturnValue(staleQuery);
   let queueQueryIndex = 0;
+  const callRpc = rpc as unknown as (name: string, args?: unknown) => Promise<unknown>;
+  const authorizedRpc = vi.fn(async (name: string, args?: unknown) => {
+    if (name === "authorize_store_notification_email_delivery") return { data: "current@example.com", error: null };
+    return callRpc(name, args);
+  });
   return {
-    rpc,
+    rpc: authorizedRpc,
     pendingQuery,
     staleQuery,
     from: vi.fn(() => ({ select: vi.fn(() => queueQueryIndex++ === 0 ? pendingQuery : staleQuery) })),
@@ -76,6 +81,21 @@ describe("notification dispatch consent checks", () => {
 
     expect(rpc).toHaveBeenCalledWith("fail_store_notification_delivery", { delivery_id: "delivery-1", reason: "whatsapp_consent_check_failed" });
     expect(mocks.sendNotificationDelivery).not.toHaveBeenCalled();
+  });
+
+  it("sends queued seller email to the currently registered address", async () => {
+    const delivery = { id: "delivery-1", channel: "email", destination: "old@example.com", payload: { request_type: "purchase", product_name: "Suporte", quantity: 1 }, attempts: 1 };
+    const rpc = vi.fn(async (name: string) => {
+      if (name === "claim_store_notification_deliveries") return { data: [delivery], error: null };
+      return { data: null, error: null };
+    });
+    const client = adminClient(rpc, 0);
+    mocks.createSupabaseAdminClient.mockReturnValue(client);
+
+    await dispatchNotificationQueue();
+
+    expect(client.rpc).toHaveBeenCalledWith("authorize_store_notification_email_delivery", { delivery_id: "delivery-1" });
+    expect(mocks.sendNotificationDelivery).toHaveBeenCalledWith(expect.objectContaining({ destination: "current@example.com" }), expect.any(String));
   });
 
   it.each([
@@ -147,6 +167,7 @@ describe("notification dispatch consent checks", () => {
       payload: { notification_type: "purchase", product_name: "Peça" }, attempts: 1,
     }));
     const rpc = vi.fn(async (name: string) => {
+      if (name === "authorize_store_notification_email_delivery") return { data: "maker@example.com", error: null };
       if (name !== "claim_store_notification_deliveries") return { data: null, error: null };
       return rpc.mock.calls.filter(([calledName]) => calledName === name).length === 1
         ? { data: deliveries, error: null }
