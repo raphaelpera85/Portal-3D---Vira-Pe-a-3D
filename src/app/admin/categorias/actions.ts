@@ -3,12 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { fetchAllPages, parsePageNumber } from "@/lib/pagination";
 import { getAssignableCategoryParentIds } from "@/lib/product-category-hierarchy";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const finish = (result: string): never => redirect(`/admin/categorias?resultado=${result}`);
+const finish = (result: string, page = 1): never => {
+  const params = new URLSearchParams({ resultado: result });
+  if (page > 1) params.set("pagina", String(page));
+  redirect(`/admin/categorias?${params.toString()}`);
+};
 
 export async function saveProductCategoryAction(formData: FormData): Promise<void> {
+  const page = parsePageNumber(formData.get("pagina")) ?? 1;
   const rawId = formData.get("categoryId");
   const id = typeof rawId === "string" && rawId ? rawId : null;
   const name = formData.get("name");
@@ -18,8 +24,8 @@ export async function saveProductCategoryAction(formData: FormData): Promise<voi
   const parentId = typeof rawParent === "string" && rawParent ? rawParent : null;
   const sortOrder = typeof rawOrder === "string" && /^\d{1,5}$/.test(rawOrder) ? Number(rawOrder) : NaN;
 
-  if (typeof name !== "string" || typeof slug !== "string") return finish("erro");
-  if ((id && !uuidPattern.test(id)) || (parentId && !uuidPattern.test(parentId)) || (parentId && id && parentId === id) || name.trim().length < 2 || name.trim().length > 80 || slug.length > 100 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 32767) finish("erro");
+  if (typeof name !== "string" || typeof slug !== "string") return finish("erro", page);
+  if ((id && !uuidPattern.test(id)) || (parentId && !uuidPattern.test(parentId)) || (parentId && id && parentId === id) || name.trim().length < 2 || name.trim().length > 80 || slug.length > 100 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 32767) finish("erro", page);
 
   const actor = await getUserWithRole("admin");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
@@ -29,42 +35,38 @@ export async function saveProductCategoryAction(formData: FormData): Promise<voi
   if (id) {
     const { data: existing, error: existingError } = await actor.supabase.from("product_categories")
       .select("id, parent_id").eq("id", id).maybeSingle();
-    if (existingError) finish("erro");
-    if (!existing) return finish("erro");
+    if (existingError) finish("erro", page);
+    if (!existing) return finish("erro", page);
     if (parentId && parentId !== existing.parent_id) {
-      const categories: { id: string; parent_id: string | null; active: boolean }[] = [];
-      for (let from = 0; ; from += 1000) {
-        const { data: page, error: categoriesError } = await actor.supabase.from("product_categories")
-          .select("id, parent_id, active").order("id").range(from, from + 999);
-        if (categoriesError) finish("erro");
-        categories.push(...(page ?? []));
-        if ((page ?? []).length < 1000) break;
-      }
-      if (!getAssignableCategoryParentIds(id, categories).includes(parentId)) finish("erro");
+      const { data: categories, error: categoriesError } = await fetchAllPages((from, to) => actor.supabase!.from("product_categories")
+        .select("id, parent_id, active").order("id").range(from, to));
+      if (categoriesError || categories === null) return finish("erro", page);
+      if (!getAssignableCategoryParentIds(id, categories).includes(parentId)) finish("erro", page);
     }
     result = await actor.supabase.from("product_categories").update({ ...values, parent_id: parentId })
       .eq("id", id).select("id").maybeSingle();
   } else {
     if (parentId) {
       const { data: parent } = await actor.supabase.from("product_categories").select("id").eq("id", parentId).eq("active", true).maybeSingle();
-      if (!parent) finish("erro");
+      if (!parent) finish("erro", page);
     }
     result = await actor.supabase.from("product_categories").insert({ ...values, parent_id: parentId })
       .select("id").single();
   }
-  if (result.error || !result.data) finish("erro");
+  if (result.error || !result.data) finish("erro", page);
 
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/categorias");
   revalidatePath("/painel/maker");
-  finish("salvo");
+  finish("salvo", page);
 }
 
 export async function setProductCategoryActiveAction(formData: FormData): Promise<void> {
+  const page = parsePageNumber(formData.get("pagina")) ?? 1;
   const id = formData.get("categoryId");
   const activeValue = formData.get("active");
-  if (typeof id !== "string" || !uuidPattern.test(id) || (activeValue !== "true" && activeValue !== "false")) finish("erro");
+  if (typeof id !== "string" || !uuidPattern.test(id) || (activeValue !== "true" && activeValue !== "false")) finish("erro", page);
 
   const actor = await getUserWithRole("admin");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
@@ -72,16 +74,16 @@ export async function setProductCategoryActiveAction(formData: FormData): Promis
   const active = activeValue === "true";
   if (!active) {
     const { count, error } = await actor.supabase.from("marketplace_products").select("id", { count: "exact", head: true }).eq("category_id", id).eq("catalog_status", "published");
-    if (error) finish("erro");
-    if (count) finish("tem-anuncios");
+    if (error) finish("erro", page);
+    if (count) finish("tem-anuncios", page);
   }
 
   const { data, error } = await actor.supabase.from("product_categories").update({ active }).eq("id", id).select("id").maybeSingle();
-  if (error || !data) finish("erro");
+  if (error || !data) finish("erro", page);
 
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/categorias");
   revalidatePath("/painel/maker");
-  finish(active ? "ativada" : "desativada");
+  finish(active ? "ativada" : "desativada", page);
 }

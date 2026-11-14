@@ -243,6 +243,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .admin-banner-record-heading h3 { margin: 4px 0; font-family: Georgia, serif; font-size: 23px; font-weight: 400; }
 .admin-banner-record-heading p { max-width: 700px; margin: 0; color: var(--muted); font-size: 12px; }
 .admin-banner-record-heading form { flex: 0 0 auto; }
+.admin-banner-record-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .admin-banner-record .equipment-edit-form { border-top: 1px solid var(--line); padding-top: 13px; }
 
 .catalog-section { padding-block: 110px 118px; }
