@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { getMakerOrderActionHref } from "@/lib/maker-order-navigation";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeProductVariantOptions, validateProductDraft, validateProductInventory, validateProductShippingPackage, validateProductVariantPricing, validateStoreNotificationContacts } from "@/lib/marketplace-validation";
@@ -189,31 +190,31 @@ export async function startMelhorEnvioConnect(): Promise<void> {
 
 export async function calculateAndOfferSellerOrderShippingQuote(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect("/painel/maker?resultado=frete-erro#pedidos");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect(getMakerOrderActionHref("frete-erro", orderId));
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const admin = createSupabaseAdminClient();
-  if (!admin) redirect("/painel/maker?resultado=melhor-envio-configurar#frete");
+  if (!admin) redirect(getMakerOrderActionHref("melhor-envio-configurar", orderId, "frete"));
   const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
   const { data: order } = store ? await admin.from("seller_purchase_orders")
     .select("id, store_id, status, shipping_quote_status, delivery_postal_code")
     .eq("id", orderId).eq("store_id", store.id).maybeSingle() : { data: null };
   if (!store || !order || order.status !== "accepted" || !["awaiting_quote", "declined"].includes(order.shipping_quote_status)) {
-    redirect("/painel/maker?resultado=frete-erro#pedidos");
+    redirect(getMakerOrderActionHref("frete-erro", orderId));
   }
   const [{ data: origin }, { data: items, error: itemError }] = await Promise.all([
     admin.from("store_shipping_origins").select("postal_code").eq("store_id", store.id).maybeSingle(),
     admin.from("seller_purchase_order_items").select("id, product_id, unit_price_brl, quantity").eq("order_id", orderId),
   ]);
   if (!origin || !/^\d{8}$/.test(order.delivery_postal_code ?? "") || itemError || !items?.length) {
-    redirect("/painel/maker?resultado=frete-pacote-erro#pedidos");
+    redirect(getMakerOrderActionHref("frete-pacote-erro", orderId));
   }
   const { data: products, error: productError } = await admin.from("marketplace_products")
     .select("id, package_weight_g, package_length_cm, package_width_cm, package_height_cm")
     .eq("store_id", store.id).in("id", items.map((item) => item.product_id));
   if (productError || products?.length !== new Set(items.map((item) => item.product_id)).size || products.some((product) =>
     !product.package_weight_g || !product.package_length_cm || !product.package_width_cm || !product.package_height_cm)) {
-    redirect("/painel/maker?resultado=frete-pacote-erro#pedidos");
+    redirect(getMakerOrderActionHref("frete-pacote-erro", orderId));
   }
   const byId = new Map(products.map((product) => [product.id, product]));
   let rates;
@@ -227,11 +228,11 @@ export async function calculateAndOfferSellerOrderShippingQuote(formData: FormDa
       };
     }));
   } catch {
-    redirect("/painel/maker?resultado=melhor-envio-erro#frete");
+    redirect(getMakerOrderActionHref("melhor-envio-erro", orderId, "frete"));
   }
-  if (!rates.length) redirect("/painel/maker?resultado=frete-sem-opcoes#pedidos");
+  if (!rates.length) redirect(getMakerOrderActionHref("frete-sem-opcoes", orderId));
   const purchasableRates = rates.filter((rate) => !/azul\s*cargo/i.test(rate.company));
-  if (!purchasableRates.length) redirect("/painel/maker?resultado=frete-sem-opcoes#pedidos");
+  if (!purchasableRates.length) redirect(getMakerOrderActionHref("frete-sem-opcoes", orderId));
   const cheapest = purchasableRates[0];
   const { error } = await actor.supabase.rpc("set_seller_order_shipping_quote_with_packages", {
     p_order_id: orderId, p_carrier: "melhor_envio", p_service: cheapest.name,
@@ -239,10 +240,10 @@ export async function calculateAndOfferSellerOrderShippingQuote(formData: FormDa
     p_provider_service_id: cheapest.id,
     p_packages: cheapest.packages,
   });
-  if (error) redirect("/painel/maker?resultado=frete-erro#pedidos");
+  if (error) redirect(getMakerOrderActionHref("frete-erro", orderId));
   revalidatePath("/painel/maker");
   revalidatePath("/orcamentos");
-  redirect("/painel/maker?resultado=frete-ofertado#pedidos");
+  redirect(getMakerOrderActionHref("frete-ofertado", orderId));
 }
 
 export async function createProductDraft(_previous: MakerProductState, formData: FormData): Promise<MakerProductState> {
@@ -475,11 +476,11 @@ export async function saveMakerShippingOrigin(formData: FormData): Promise<void>
 export async function addSellerOrderShippingLabelToCart(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
   const shipment = validateMelhorEnvioShipment(Object.fromEntries(formData));
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || !shipment) redirect("/painel/maker?resultado=etiqueta-dados-erro#pedidos");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || !shipment) redirect(getMakerOrderActionHref("etiqueta-dados-erro", orderId));
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const admin = createSupabaseAdminClient();
-  if (!admin) redirect("/painel/maker?resultado=etiqueta-configurar#frete");
+  if (!admin) redirect(getMakerOrderActionHref("etiqueta-configurar", orderId, "frete"));
   const { data: store } = await actor.supabase.from("stores").select("id, name").eq("owner_user_id", actor.user.id).maybeSingle();
   const [{ data: order }, { data: origin }, { data: items }] = await Promise.all([
     store ? admin.from("seller_purchase_orders").select("*").eq("id", orderId).eq("store_id", store.id).maybeSingle() : Promise.resolve({ data: null }),
@@ -500,18 +501,18 @@ export async function addSellerOrderShippingLabelToCart(formData: FormData): Pro
     || order.shipping_carrier !== "melhor_envio" || !order.shipping_provider_service_id
     || order.shipment_status !== "awaiting_shipment" || !sender || !origin || !validateShippingOriginPostalCode(origin.postal_code) || !items?.length
     || !order.delivery_postal_code || !order.buyer_id || !paidPayments?.length || chargebacks?.length) {
-    redirect("/painel/maker?resultado=etiqueta-pedido-erro#pedidos");
+    redirect(getMakerOrderActionHref("etiqueta-pedido-erro", orderId));
   }
   const quotedPackages = normalizeMelhorEnvioPackages(order.shipping_quote_packages) ?? [{
     height: shipment.heightCm, width: shipment.widthCm, length: shipment.lengthCm, weight: shipment.weightKg,
   }];
   const packages = getMelhorEnvioPackageList(formData, quotedPackages);
-  if (!packages || JSON.stringify(packages) !== JSON.stringify(quotedPackages)) redirect("/painel/maker?resultado=etiqueta-pacote-diverge#pedidos");
+  if (!packages || JSON.stringify(packages) !== JSON.stringify(quotedPackages)) redirect(getMakerOrderActionHref("etiqueta-pacote-diverge", orderId));
   const { data: buyerAuth } = await admin.auth.admin.getUserById(order.buyer_id);
-  if (!buyerAuth.user?.email) redirect("/painel/maker?resultado=etiqueta-pedido-erro#pedidos");
+  if (!buyerAuth.user?.email) redirect(getMakerOrderActionHref("etiqueta-pedido-erro", orderId));
   const { data: label, error: createError } = await admin.from("seller_order_shipping_labels")
     .insert({ order_id: orderId, store_id: store.id, status: "creating" }).select("id").maybeSingle();
-  if (createError || !label) redirect("/painel/maker?resultado=etiqueta-ja-criada#pedidos");
+  if (createError || !label) redirect(getMakerOrderActionHref("etiqueta-ja-criada", orderId));
   try {
     const created = await createMelhorEnvioCartShipments(admin, store.id, label.id, Number(order.shipping_provider_service_id),
       String(order.shipping_service), packages, items.map((item) => ({ id: item.id, name: item.product_name,
@@ -538,15 +539,15 @@ export async function addSellerOrderShippingLabelToCart(formData: FormData): Pro
   } catch (error) {
     const uncertain = Boolean(error && typeof error === "object" && "remoteAttempted" in error && error.remoteAttempted);
     await admin.from("seller_order_shipping_labels").update({ status: uncertain ? "cart_partial_uncertain" : "failed", updated_at: new Date().toISOString() }).eq("id", label.id).eq("status", "creating");
-    redirect(`/painel/maker?resultado=${uncertain ? "etiqueta-erro" : "etiqueta-pacote-diverge"}#pedidos`);
+    redirect(getMakerOrderActionHref(uncertain ? "etiqueta-erro" : "etiqueta-pacote-diverge", orderId));
   }
   revalidatePath("/painel/maker");
-  redirect("/painel/maker?resultado=etiqueta-no-carrinho#pedidos");
+  redirect(getMakerOrderActionHref("etiqueta-no-carrinho", orderId));
 }
 
 export async function buySellerOrderShippingLabel(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || formData.get("confirmPurchase") !== "yes") redirect("/painel/maker?resultado=etiqueta-compra-erro#pedidos");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || formData.get("confirmPurchase") !== "yes") redirect(getMakerOrderActionHref("etiqueta-compra-erro", orderId));
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const admin = createSupabaseAdminClient();
@@ -559,29 +560,29 @@ export async function buySellerOrderShippingLabel(formData: FormData): Promise<v
   ]) : [{ data: null }, { data: null }, { data: null }];
   if (!admin || !store || !label || !label.provider_order_id || label.status !== "carted" || label.shipping_cost_cents === null
     || order?.status !== "accepted" || order.shipping_quote_status !== "accepted" || order.shipment_status !== "awaiting_shipment"
-    || !paid?.length || chargeback?.length) redirect("/painel/maker?resultado=etiqueta-compra-erro#pedidos");
+    || !paid?.length || chargeback?.length) redirect(getMakerOrderActionHref("etiqueta-compra-erro", orderId));
   const { data: shipments } = await admin.from("seller_order_shipping_label_packages").select("id, provider_order_id")
     .eq("label_id", label.id).eq("status", "carted").order("package_index");
-  if (!shipments?.length) redirect("/painel/maker?resultado=etiqueta-compra-erro#pedidos");
+  if (!shipments?.length) redirect(getMakerOrderActionHref("etiqueta-compra-erro", orderId));
   const { data: claimed } = await admin.from("seller_order_shipping_labels").update({ status: "checkout_started", updated_at: new Date().toISOString() })
     .eq("id", label.id).eq("status", "carted").select("id").maybeSingle();
-  if (!claimed) redirect("/painel/maker?resultado=etiqueta-ja-comprada#pedidos");
+  if (!claimed) redirect(getMakerOrderActionHref("etiqueta-ja-comprada", orderId));
   try {
     await requestMelhorEnvio(store.id, ["shipping-checkout", "cart-read"], "/api/v2/me/shipment/checkout", { orders: shipments.map((shipment) => shipment.provider_order_id) });
   } catch {
     await admin.from("seller_order_shipping_labels").update({ status: "checkout_uncertain", updated_at: new Date().toISOString() }).eq("id", label.id).eq("status", "checkout_started");
     await admin.from("seller_order_shipping_label_packages").update({ status: "checkout_uncertain", updated_at: new Date().toISOString() }).in("id", shipments.map((shipment) => shipment.id));
-    redirect("/painel/maker?resultado=etiqueta-compra-incerta#pedidos");
+    redirect(getMakerOrderActionHref("etiqueta-compra-incerta", orderId));
   }
   await admin.from("seller_order_shipping_label_packages").update({ status: "paid", updated_at: new Date().toISOString() }).in("id", shipments.map((shipment) => shipment.id));
   await admin.from("seller_order_shipping_labels").update({ status: "paid", updated_at: new Date().toISOString() }).eq("id", label.id).eq("status", "checkout_started");
   revalidatePath("/painel/maker");
-  redirect("/painel/maker?resultado=etiqueta-paga#pedidos");
+  redirect(getMakerOrderActionHref("etiqueta-paga", orderId));
 }
 
 export async function generateSellerOrderShippingLabel(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect("/painel/maker?resultado=etiqueta-geracao-erro#pedidos");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect(getMakerOrderActionHref("etiqueta-geracao-erro", orderId));
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const admin = createSupabaseAdminClient();
@@ -593,37 +594,37 @@ export async function generateSellerOrderShippingLabel(formData: FormData): Prom
     admin.from("seller_order_payments").select("id").eq("order_id", orderId).eq("status", "charged_back").limit(1),
   ]) : [{ data: null }, { data: null }, { data: null }];
   if (!admin || !store || !label?.provider_order_id || label.status !== "paid" || order?.status !== "accepted"
-    || order.shipping_quote_status !== "accepted" || !paid?.length || chargeback?.length) redirect("/painel/maker?resultado=etiqueta-geracao-erro#pedidos");
+    || order.shipping_quote_status !== "accepted" || !paid?.length || chargeback?.length) redirect(getMakerOrderActionHref("etiqueta-geracao-erro", orderId));
   const { data: shipments } = await admin.from("seller_order_shipping_label_packages").select("id, provider_order_id")
     .eq("label_id", label.id).eq("status", "paid").order("package_index");
-  if (!shipments?.length) redirect("/painel/maker?resultado=etiqueta-geracao-erro#pedidos");
+  if (!shipments?.length) redirect(getMakerOrderActionHref("etiqueta-geracao-erro", orderId));
   const { data: claimed } = await admin.from("seller_order_shipping_labels").update({ status: "generating", updated_at: new Date().toISOString() })
     .eq("id", label.id).eq("status", "paid").select("id").maybeSingle();
-  if (!claimed) redirect("/painel/maker?resultado=etiqueta-geracao-erro#pedidos");
+  if (!claimed) redirect(getMakerOrderActionHref("etiqueta-geracao-erro", orderId));
   try {
     await requestMelhorEnvio(store.id, ["shipping-generate"], "/api/v2/me/shipment/generate", { orders: shipments.map((shipment) => shipment.provider_order_id) });
   } catch {
     await admin.from("seller_order_shipping_labels").update({ status: "paid", updated_at: new Date().toISOString() }).eq("id", label.id).eq("status", "generating");
     await admin.from("seller_order_shipping_label_packages").update({ status: "paid", updated_at: new Date().toISOString() }).in("id", shipments.map((shipment) => shipment.id));
-    redirect("/painel/maker?resultado=etiqueta-geracao-erro#pedidos");
+    redirect(getMakerOrderActionHref("etiqueta-geracao-erro", orderId));
   }
   await admin.from("seller_order_shipping_label_packages").update({ status: "generating", updated_at: new Date().toISOString() }).in("id", shipments.map((shipment) => shipment.id));
   revalidatePath("/painel/maker");
-  redirect("/painel/maker?resultado=etiqueta-gerando#pedidos");
+  redirect(getMakerOrderActionHref("etiqueta-gerando", orderId));
 }
 
 export async function printSellerOrderShippingLabel(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect("/painel/maker?resultado=etiqueta-impressao-erro#pedidos");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect(getMakerOrderActionHref("etiqueta-impressao-erro", orderId));
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const admin = createSupabaseAdminClient();
   const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
   const { data: label } = admin && store ? await admin.from("seller_order_shipping_labels").select("id, provider_order_id, status").eq("order_id", orderId).eq("store_id", store.id).maybeSingle() : { data: null };
-  if (!admin || !store || !label?.provider_order_id || label.status !== "generated") redirect("/painel/maker?resultado=etiqueta-impressao-erro#pedidos");
+  if (!admin || !store || !label?.provider_order_id || label.status !== "generated") redirect(getMakerOrderActionHref("etiqueta-impressao-erro", orderId));
   const { data: shipments } = await admin.from("seller_order_shipping_label_packages").select("id, provider_order_id")
     .eq("label_id", label.id).eq("status", "generated").order("package_index");
-  if (!shipments?.length) redirect("/painel/maker?resultado=etiqueta-impressao-erro#pedidos");
+  if (!shipments?.length) redirect(getMakerOrderActionHref("etiqueta-impressao-erro", orderId));
   try {
     const result = await requestMelhorEnvio(store.id, ["shipping-print"], "/api/v2/me/shipment/print", { orders: shipments.map((shipment) => shipment.provider_order_id), mode: "private" });
     const data = result && typeof result === "object" && "data" in result ? (result as { data: unknown }).data : result;
@@ -631,9 +632,9 @@ export async function printSellerOrderShippingLabel(formData: FormData): Promise
     if (typeof printUrl !== "string" || !printUrl.startsWith("https://") || printUrl.length > 2048) throw new Error("Link privado da etiqueta indisponível");
     await admin.from("seller_order_shipping_labels").update({ print_url: printUrl, updated_at: new Date().toISOString() }).eq("id", label.id);
     await admin.from("seller_order_shipping_label_packages").update({ print_url: printUrl, updated_at: new Date().toISOString() }).in("id", shipments.map((shipment) => shipment.id));
-  } catch { redirect("/painel/maker?resultado=etiqueta-impressao-erro#pedidos"); }
+  } catch { redirect(getMakerOrderActionHref("etiqueta-impressao-erro", orderId)); }
   revalidatePath("/painel/maker");
-  redirect("/painel/maker?resultado=etiqueta-impressa#pedidos");
+  redirect(getMakerOrderActionHref("etiqueta-impressa", orderId));
 }
 
 export async function addCustomPrintShippingLabelToCart(formData: FormData): Promise<void> {
@@ -899,17 +900,17 @@ export async function markCustomPrintReadyForPickup(formData: FormData): Promise
 export async function submitSellerOrderShippingQuote(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
   const quote = validateShippingQuote({ carrier: formData.get("carrier"), service: formData.get("service"), price: formData.get("price"), deliveryDays: formData.get("deliveryDays") });
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || !quote) redirect("/painel/maker?resultado=frete-erro");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || !quote) redirect(getMakerOrderActionHref("frete-erro", orderId));
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("set_seller_order_shipping_quote", {
     p_order_id: orderId, p_carrier: quote.carrier, p_service: quote.service,
     p_shipping_cents: quote.shippingCents, p_delivery_days: quote.deliveryDays,
   });
-  if (error) redirect("/painel/maker?resultado=frete-erro");
+  if (error) redirect(getMakerOrderActionHref("frete-erro", orderId));
   revalidatePath("/painel/maker");
   revalidatePath("/orcamentos");
-  redirect("/painel/maker?resultado=frete-ofertado");
+  redirect(getMakerOrderActionHref("frete-ofertado", orderId));
 }
 
 export async function markSellerPurchaseOrderShipped(formData: FormData): Promise<void> {
@@ -917,28 +918,28 @@ export async function markSellerPurchaseOrderShipped(formData: FormData): Promis
   const shipment = validateShipmentTracking({
     trackingCode: formData.get("trackingCode"), trackingUrl: formData.get("trackingUrl"), expectedDate: formData.get("expectedDate"),
   });
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || !shipment) redirect("/painel/maker?resultado=envio-erro");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || !shipment) redirect(getMakerOrderActionHref("envio-erro", orderId));
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("mark_seller_purchase_order_shipped", {
     p_order_id: orderId, p_tracking_code: shipment.trackingCode, p_tracking_url: shipment.trackingUrl, p_expected_date: shipment.expectedDate,
   });
-  if (error) redirect("/painel/maker?resultado=envio-erro");
+  if (error) redirect(getMakerOrderActionHref("envio-erro", orderId));
   revalidatePath("/painel/maker");
   revalidatePath("/orcamentos");
-  redirect("/painel/maker?resultado=pedido-enviado");
+  redirect(getMakerOrderActionHref("pedido-enviado", orderId));
 }
 
 export async function markSellerPurchaseOrderReadyForPickup(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect("/painel/maker?resultado=envio-erro");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId)) redirect(getMakerOrderActionHref("envio-erro", orderId));
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("mark_seller_purchase_order_ready_for_pickup", { p_order_id: orderId });
-  if (error) redirect("/painel/maker?resultado=envio-erro");
+  if (error) redirect(getMakerOrderActionHref("envio-erro", orderId));
   revalidatePath("/painel/maker");
   revalidatePath("/orcamentos");
-  redirect("/painel/maker?resultado=pedido-pronto-retirada");
+  redirect(getMakerOrderActionHref("pedido-pronto-retirada", orderId));
 }
 
 export async function retryCustomPrintNotificationDelivery(formData: FormData): Promise<void> {
@@ -987,7 +988,7 @@ export async function markSellerOrderNotificationRead(formData: FormData): Promi
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) return;
   const { error } = await actor.supabase.rpc("mark_seller_order_read", { p_order_id: orderId });
-  if (error) redirect("/painel/maker?resultado=notificacao-lida-erro#notificacoes");
+  if (error) redirect(getMakerOrderActionHref("notificacao-lida-erro", orderId, "notificacoes"));
   revalidatePath("/painel/maker");
 }
 

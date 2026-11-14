@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { getMakerOrderActionHref } from "@/lib/maker-order-navigation";
 import { validateProductQuoteOffer, validateProductQuoteRequest } from "@/lib/marketplace-validation";
 import { validateCustomPrintRequest } from "@/lib/custom-print-request";
 import { dispatchNotificationQueue } from "@/lib/notification-dispatch.server";
@@ -202,14 +203,14 @@ export async function respondToProductPurchaseRequest(formData: FormData): Promi
 export async function respondToSellerPurchaseOrder(formData: FormData): Promise<void> {
   const orderId = formData.get("orderId");
   const response = formData.get("response");
-  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || (response !== "accept" && response !== "decline")) redirect("/painel/maker?resultado=erro");
+  if (typeof orderId !== "string" || !uuidPattern.test(orderId) || (response !== "accept" && response !== "decline")) redirect(getMakerOrderActionHref("erro", orderId));
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("respond_to_seller_purchase_order", { p_order_id: orderId, p_response: response });
-  if (error) redirect("/painel/maker?resultado=erro");
+  if (error) redirect(getMakerOrderActionHref("erro", orderId));
   revalidatePath("/painel/maker");
   revalidatePath("/orcamentos");
-  redirect(`/painel/maker?resultado=pedido-${response === "accept" ? "aceito" : "recusado"}`);
+  redirect(getMakerOrderActionHref(`pedido-${response === "accept" ? "aceito" : "recusado"}`, orderId));
 }
 
 export async function respondToSellerOrderShippingQuote(formData: FormData): Promise<void> {
