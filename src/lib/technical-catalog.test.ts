@@ -31,6 +31,7 @@ const anycubicS1MaxMigration = readFileSync(new URL("../../supabase/migrations/2
 const crealityK2Migration = readFileSync(new URL("../../supabase/migrations/20261115080000_seed_creality_k2.sql", import.meta.url), "utf8");
 const bambuH2dVariantsMigration = readFileSync(new URL("../../supabase/migrations/20261115090000_expand_bambu_h2d_variants.sql", import.meta.url), "utf8");
 const crealityEnderV3NeoMegaMigration = readFileSync(new URL("../../supabase/migrations/20261115100000_seed_creality_ender_v3_neo_mega.sql", import.meta.url), "utf8");
+const crealitySparkXI7Migration = readFileSync(new URL("../../supabase/migrations/20261115110000_seed_creality_sparkx_i7.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -110,6 +111,10 @@ describe("verified technical catalog records", () => {
       ["Creality", "Ender-3 V3 Neo", "CFS nano Combo"],
       ["Creality", "Ender-3 V3 Mega", "standard"],
       ["Creality", "Ender-3 V3 Mega", "CFS nano Combo"],
+      ["Creality", "SPARKX i7", "standard"],
+      ["Creality", "SPARKX i7", "CFS Lite Color Combo"],
+      ["Creality", "SPARKX i7", "CFS Mini AutoFill"],
+      ["Creality", "SPARKX i7", "CFS nano Combo"],
       ["Creality", "Ender-3 V3 Plus", "standard"],
       ["Creality", "Ender-3 V3 SE", "standard"],
       ["ELEGOO", "Centauri Carbon 2", "standard"],
@@ -121,9 +126,32 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(88);
+    expect(printers).toHaveLength(92);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("distinguishes SPARKX i7 filament system configurations", () => {
+    const standard = printers.find((printer) => printer.id === "creality-sparkx-i7");
+    const lite = printers.find((printer) => printer.id === "creality-sparkx-i7-cfs-lite");
+    const mini = printers.find((printer) => printer.id === "creality-sparkx-i7-cfs-mini");
+    const nano = printers.find((printer) => printer.id === "creality-sparkx-i7-cfs-nano");
+    const compatibleNozzles = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["creality-sparkx-i7"] === "compatible");
+
+    expect(standard).toMatchObject({ buildVolumeMm: { x: 260, y: 260, z: 255 }, maximumSpeedMmPerSecond: 500, maximumPowerWatts: null });
+    expect(standard?.multicolorSlots).toBeNull();
+    expect(lite).toMatchObject({ multicolorSystem: "CFS Lite", multicolorSlots: 4, technicalProperties: { cfsLiteIncluded: true, cfsLiteSlots: 4 } });
+    expect(mini).toMatchObject({ multicolorSlots: null, technicalProperties: { includedFilamentSystem: "CFS Mini", cfsMiniSlots: 2, cfsMiniSupportsMulticolor: false } });
+    expect(nano).toMatchObject({ multicolorSystem: "CFS nano", multicolorSlots: 4, technicalProperties: { cfsNanoIncluded: true, cfsNanoSlots: 4 } });
+    expect(compatibleNozzles.map(({ diameterMm, material, original }) => ({ diameterMm, material, original }))).toEqual([
+      { diameterMm: 0.2, material: "Aço endurecido", original: false },
+      { diameterMm: 0.4, material: "Aço endurecido", original: true },
+      { diameterMm: 0.6, material: "Aço endurecido", original: false },
+      { diameterMm: 0.8, material: "Aço endurecido", original: false },
+    ]);
+    expect(crealitySparkXI7Migration).toContain("'SPARKX i7', 'CFS Mini AutoFill'");
+    expect(crealitySparkXI7Migration).toContain("'SPARKX i7', 'CFS nano Combo'");
+    expect(crealitySparkXI7Migration).toContain("'SPARKX i7 hotend'");
   });
 
   it("keeps Ender-3 V3 Neo and Mega specs and CFS nano bundles distinct", () => {
