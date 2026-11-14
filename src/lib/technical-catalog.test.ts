@@ -17,6 +17,7 @@ const qidiQ2cPowerMigration = readFileSync(new URL("../../supabase/migrations/20
 const bambuH2cMigration = readFileSync(new URL("../../supabase/migrations/20261114160000_seed_bambu_h2c.sql", import.meta.url), "utf8");
 const bambuX1CarbonMigration = readFileSync(new URL("../../supabase/migrations/20261114170000_seed_bambu_x1_carbon.sql", import.meta.url), "utf8");
 const bambuX1CarbonMaterialMigration = readFileSync(new URL("../../supabase/migrations/20261114180000_link_bambu_x1_carbon_materials.sql", import.meta.url), "utf8");
+const bambuX1CarbonAdditionalMaterialMigration = readFileSync(new URL("../../supabase/migrations/20261114190000_link_bambu_x1_carbon_additional_materials.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -424,10 +425,16 @@ describe("verified technical catalog records", () => {
     expect(standard?.supportedMaterials["bambu-petg-hf"]).toMatchObject({ status: "compatible" });
     expect(standard?.supportedMaterials["bambu-ppa-cf"]).toMatchObject({ status: "conditional" });
     expect(combo?.supportedMaterials["bambu-ppa-cf"]).toMatchObject({ status: "conditional" });
+    expect(standard?.supportedMaterials["prusament-petg-cf"]).toMatchObject({ status: "compatible" });
+    expect(standard?.supportedMaterials["prusament-pa11"]).toMatchObject({ status: "conditional" });
+    expect(standard?.supportedMaterials["creality-hp-tpu"]).toMatchObject({ status: "compatible" });
+    expect(combo?.supportedMaterials["creality-hp-tpu"]).toMatchObject({ status: "conditional" });
     expect(evaluateCompatibility(standard!, materials.find((item) => item.id === "bambu-pla-basic")!).checks.find((item) => item.key === "material")?.status).toBe("compatible");
     expect(evaluateCompatibility(standard!, materials.find((item) => item.id === "bambu-ppa-cf")!).checks.find((item) => item.key === "material")?.status).toBe("conditional");
     expect(bambuX1CarbonMaterialMigration).toContain("printer_material_compatibility");
     expect(bambuX1CarbonMaterialMigration).toContain("'PPA-CF'");
+    expect(bambuX1CarbonAdditionalMaterialMigration).toContain("'Prusament PA11 Carbon Fiber'");
+    expect(bambuX1CarbonAdditionalMaterialMigration).toContain("'conditional'");
   });
 
   it("includes Centauri 2 variants and keeps the CANVAS upgrade distinct from the included Combo", () => {
