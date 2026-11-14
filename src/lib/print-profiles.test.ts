@@ -42,8 +42,17 @@ describe("validatePrintProfile", () => {
       quantity: 2,
       printHours: 3.5,
       materialGrams: 24,
-      materialByColor: [{ color: "#336699", grams: 20 }, { color: "#FFAA00", grams: 4 }],
+      materialByColor: [{ color: "#336699", grams: 20, lengthMeters: null }, { color: "#FFAA00", grams: 4, lengthMeters: null }],
     });
+  });
+
+  it("accepts per-color lengths with optional grams and keeps legacy rows compatible", () => {
+    expect(validatePrintProfile({ ...sample, materialByColor: "#336699; 20; 4,8\n#FFAA00; ; 1,2" })?.materialByColor).toEqual([
+      { color: "#336699", grams: 20, lengthMeters: 4.8 }, { color: "#FFAA00", grams: null, lengthMeters: 1.2 },
+    ]);
+    expect(validatePrintProfile({ ...sample, materialByColor: "#336699; 20" })?.materialByColor).toEqual([
+      { color: "#336699", grams: 20, lengthMeters: null },
+    ]);
   });
 
   it("rejects unsafe quantities, invalid catalog references, and color totals above the total", () => {
@@ -51,6 +60,8 @@ describe("validatePrintProfile", () => {
     expect(validatePrintProfile({ ...sample, materialId: "invalid-id" })).toBeNull();
     expect(validatePrintProfile({ ...sample, materialByColor: "#336699; 25" })).toBeNull();
     expect(validatePrintProfile({ ...sample, materialByColor: "#336699; 20\n#336699; 2" })).toBeNull();
+    expect(validatePrintProfile({ ...sample, materialByColor: "#336699; ; " })).toBeNull();
+    expect(validatePrintProfile({ ...sample, materialByColor: "#336699; 20; 1000000000,001" })).toBeNull();
   });
 
   it("accepts catalog selections without requiring duplicate manual names", () => {

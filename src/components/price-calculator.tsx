@@ -26,7 +26,7 @@ type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
 type CalculatorEquipment = EquipmentRateInput & { id: string; label: string; catalogPrinter?: CatalogPrinter | null };
 export type CalculatorProduct = { id: string; name: string; slug: string; published: boolean; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; variants: Array<{ id: string; options: Record<string, string>; priceBrl: number }>; canApplyPrice: boolean };
-type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics };
+type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number | null; lengthMeters: number | null }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics };
 type CalculatorMaterial = MaterialEntry;
 type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string };
 const initialFields: FormFields = {
@@ -285,8 +285,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     setFields((current) => ({
       ...current,
       material: values.material || current.material,
-      filamentGrams: values.filamentGrams === null ? current.filamentGrams : String(values.filamentGrams),
-      printHours: values.printHours === null ? current.printHours : String(values.printHours),
+      filamentGrams: values.filamentGrams === null ? "" : String(values.filamentGrams),
+      printHours: values.printHours === null ? "" : String(values.printHours),
     }));
     setSlicerMetrics(values.slicerMetrics);
     setCalculationOrigin("profile");

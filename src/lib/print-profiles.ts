@@ -20,7 +20,7 @@ export type PrintProfileInput = {
   quantity: number;
   printHours: number | null;
   materialGrams: number | null;
-  materialByColor: Array<{ color: string; grams: number }>;
+  materialByColor: Array<{ color: string; grams: number | null; lengthMeters: number | null }>;
 };
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -61,6 +61,7 @@ export function validatePrintProfile(values: Record<string, unknown>): PrintProf
   if ((materialId && !uuidPattern.test(materialId)) || materialName.length > 120 || (!materialId && materialName.length < 2)) return null;
   if ((nozzleId && !uuidPattern.test(nozzleId)) || nozzleName.length > 120 || (!nozzleId && nozzleName.length < 2)) return null;
   if (orientation.length > 80) return null;
+  if (materialByColorText.length > 600) return null;
   if ([layerHeightMm, infillPercent, wallCount, scalePercent, quantity, printHours, materialGrams].some((value) => value != null && (!Number.isFinite(value) || value < 0))) return null;
   if ((layerHeightMm != null && (layerHeightMm <= 0 || layerHeightMm > 5))
     || (infillPercent != null && infillPercent > 100)
@@ -75,15 +76,21 @@ export function validatePrintProfile(values: Record<string, unknown>): PrintProf
   const lines = materialByColorText ? materialByColorText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [];
   if (lines.length > 12) return null;
   const materialByColor = lines.map((line) => {
-    const match = line.match(/^#?([0-9a-f]{6})\s*[;=]\s*(\d{1,9}(?:[,.]\d{1,3})?)$/i);
-    if (!match) return null;
-    const grams = Number(match[2].replace(",", "."));
-    return Number.isFinite(grams) && grams > 0 ? { color: `#${match[1].toUpperCase()}`, grams } : null;
+    const parts = line.split(/[;=]/).map((part) => part.trim());
+    if (parts.length < 2 || parts.length > 3 || !/^#?[0-9a-f]{6}$/i.test(parts[0])) return null;
+    const parseMeasurement = (value: string) => value ? decimal(value) : null;
+    const grams = parseMeasurement(parts[1]);
+    const lengthMeters = parseMeasurement(parts[2] ?? "");
+    const validGrams = grams === null || Number.isFinite(grams) && grams > 0 && grams <= 1_000_000;
+    const validLength = lengthMeters === null || Number.isFinite(lengthMeters) && lengthMeters > 0 && lengthMeters <= 1_000_000_000;
+    return (grams !== null || lengthMeters !== null) && validGrams && validLength
+      ? { color: `#${parts[0].replace(/^#/, "").toUpperCase()}`, grams, lengthMeters }
+      : null;
   });
   if (materialByColor.some((item) => item === null)) return null;
-  const validColorConsumption = materialByColor.filter((item): item is { color: string; grams: number } => item !== null);
+  const validColorConsumption = materialByColor.filter((item): item is { color: string; grams: number | null; lengthMeters: number | null } => item !== null);
   if (new Set(validColorConsumption.map(({ color }) => color)).size !== validColorConsumption.length) return null;
-  if (materialGrams != null && validColorConsumption.reduce((sum, item) => sum + item.grams, 0) > materialGrams + 0.001) return null;
+  if (materialGrams != null && validColorConsumption.reduce((sum, item) => sum + (item.grams ?? 0), 0) > materialGrams + 0.001) return null;
 
   return {
     productId, name, profileType: profileType as PrintProfileType, sharingScope,

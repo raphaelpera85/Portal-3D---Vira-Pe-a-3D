@@ -23,7 +23,7 @@ export default async function CalculatorPage() {
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
   let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string; catalogPrinterId: string | null }> = [];
   let products: CalculatorProduct[] = [];
-  let profiles: Array<{ id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics }> = [];
+  let profiles: Array<{ id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number | null; lengthMeters: number | null }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics }> = [];
   let equipmentNotice: string | null = null;
   let productNotice: string | null = null;
   let profileNotice: string | null = null;
@@ -106,7 +106,7 @@ export default async function CalculatorPage() {
         return model && metrics && Array.isArray(metrics.filaments) ? [{
           id: `model:${profile.id}`, name: `${model.name} · ${profile.profile_name}`, productId: null, quantity: profile.quantity,
           materialName: profile.material_snapshot, printHours: metrics.printHours, materialGrams: metrics.filamentGrams,
-          materialByColor: metrics.filaments.flatMap((item) => item.color && item.grams != null && /^#[0-9a-f]{6}$/i.test(item.color) ? [{ color: item.color, grams: item.grams }] : []),
+          materialByColor: metrics.filaments.flatMap((item) => item.color && /^#[0-9a-f]{6}$/i.test(item.color) && (item.grams != null || item.lengthMeters != null) ? [{ color: item.color, grams: item.grams, lengthMeters: item.lengthMeters }] : []),
           equipmentId: null, kind: "model" as const, modelMetrics: metrics,
         }] : [];
       });

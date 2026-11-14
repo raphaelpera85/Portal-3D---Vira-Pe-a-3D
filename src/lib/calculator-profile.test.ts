@@ -7,7 +7,7 @@ const profile = {
   quantity: 2,
   printHours: 3.5,
   materialGrams: 24,
-  materialByColor: [{ color: "#336699", grams: 20 }, { color: "#FFAA00", grams: 4 }],
+  materialByColor: [{ color: "#336699", grams: 20, lengthMeters: 4.8 }, { color: "#FFAA00", grams: 4, lengthMeters: 1.2 }],
 };
 
 describe("mapPrintProfileToCalculator", () => {
@@ -27,11 +27,11 @@ describe("mapPrintProfileToCalculator", () => {
       { index: 1, grams: 1, lengthMeters: null, pricePerKg: 99, material: "PLA", color: "#336699" },
     ])).toMatchObject({
       material: "PLA fosco", filamentGrams: 48, printHours: 7,
-      slicerMetrics: {
-        slicer: "Perfil · PLA bicolor", filamentGrams: 48, printHours: 7,
+        slicerMetrics: {
+        slicer: "Perfil · PLA bicolor", filamentGrams: 48, printHours: 7, lengthMeters: 12,
         filaments: [
-          { index: 1, grams: 40, pricePerKg: 99, material: "PLA fosco", color: "#336699" },
-          { index: 2, grams: 8, pricePerKg: null, material: "PLA fosco", color: "#FFAA00" },
+          { index: 1, grams: 40, lengthMeters: 9.6, pricePerKg: 99, material: "PLA fosco", color: "#336699" },
+          { index: 2, grams: 8, lengthMeters: 2.4, pricePerKg: null, material: "PLA fosco", color: "#FFAA00" },
         ],
       },
     });
@@ -45,6 +45,24 @@ describe("mapPrintProfileToCalculator", () => {
 
   it("uses the color total when the profile has no overall material weight", () => {
     expect(mapPrintProfileToCalculator({ ...profile, materialGrams: null }, 1)?.filamentGrams).toBe(24);
+  });
+
+  it("applies per-color lengths without inventing a mass when only length is known", () => {
+    const result = mapPrintProfileToCalculator({
+      ...profile, materialGrams: null, materialByColor: [{ color: "#336699", grams: null, lengthMeters: 4.8 }],
+    }, 3);
+    expect(result).toMatchObject({ filamentGrams: null, slicerMetrics: {
+      filamentGrams: null, totalGrams: null, lengthMeters: 9.6,
+      filaments: [{ grams: null, lengthMeters: 9.6, color: "#336699" }],
+    } });
+  });
+
+  it("does not treat a partial color-mass breakdown as the total mass", () => {
+    const result = mapPrintProfileToCalculator({
+      ...profile, materialGrams: null,
+      materialByColor: [{ color: "#336699", grams: 20, lengthMeters: 4.8 }, { color: "#FFAA00", grams: null, lengthMeters: 1.2 }],
+    }, 1);
+    expect(result).toMatchObject({ filamentGrams: null, slicerMetrics: { lengthMeters: 6, filaments: [{ grams: 20 }, { grams: null }] } });
   });
 
   it("rejects profiles whose scaled values exceed calculator limits", () => {

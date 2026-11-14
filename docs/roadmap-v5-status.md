@@ -53,12 +53,13 @@ Revisão em 13 de novembro de 2026. Esta página compara os requisitos de produt
 - A edição manual de perfis agora preserva a cor e o material de um filamento mesmo quando massa e comprimento ainda não foram medidos; uma linha sem qualquer dado útil continua inválida.
 
 - Fabricantes aprovados também podem importar OCR de capturas direto ao criar um perfil por modelo. A rota exige novamente o papel maker; os dados passam pela revisão do fabricante, o custo do fatiador é descartado e as cores nomeadas seguras são preservadas sem aceitar CSS arbitrário. Não depende de migration.
+- Perfis do fabricante vinculados a produtos agora salvam gramas e metros por cor no JSONB existente. Os valores ficam editáveis, aparecem nos perfis públicos e na revisão administrativa, e passam para a calculadora escalados pelo número de execuções; a leitura ainda aceita linhas antigas só com gramas. Não exige migration.
 
 ## Próximas entregas
 
 1. Configurar Google Vision, Resend e WhatsApp na Vercel e validar reconhecimento semântico de imagem, OCR e notificações externas sem expor segredos no Git.
 2. Configurar e testar o OAuth, compra de etiquetas e webhook Melhor Envio em sandbox; depois validar o fluxo de produção com vendedores reconectados.
-3. Ampliar consumo editável por modelo/perfil e campos de OCR para todos os slicers; validar com imagens e fatiamentos reais.
+3. Validar com imagens e fatiamentos reais o consumo editável por cor e a extração de campos OCR dos slicers; a cobertura sintética existe, mas ainda não há um corpus versionado de capturas reais.
 4. Expandir a curadoria oficial dos catálogos e estados de produção, depois testar compra e pós-venda ponta a ponta com contas sandbox. A migration de fingerprints e as migrations de segurança de notificações/gatilhos constam no histórico remoto do Supabase.
 
 Os detalhes de instalação, banco, segurança, operação e integrações continuam nos documentos vinculados pelo [README](../README.md).

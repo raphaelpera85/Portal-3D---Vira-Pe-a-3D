@@ -11,7 +11,7 @@ type PrintProfile = {
   nozzle_id: string | null; nozzle_snapshot: string; layer_height_mm: number | string | null;
   infill_percent: number | string | null; wall_count: number | null; supports: boolean; orientation: string;
   scale_percent: number | string; quantity: number; print_hours: number | string | null;
-  material_grams: number | string | null; material_by_color: Array<{ color: string; grams: number }>;
+  material_grams: number | string | null; material_by_color: Array<{ color: string; grams: number | null; lengthMeters: number | null }>;
 };
 
 const profileTypes: Array<{ value: PrintProfileType; label: string }> = [
@@ -52,7 +52,7 @@ function ProfileForm({ storeId, products, printers, materials, nozzles, profile 
       <label>Material total (g)<input name="materialGrams" type="number" min="0" max="1000000" step="0.001" defaultValue={value(profile?.material_grams)} /></label>
     </div>
     <label className="profile-supports"><input name="supports" type="checkbox" defaultChecked={profile?.supports ?? false} /> Usa suportes</label>
-    <label>Consumo por cor (opcional)<textarea name="materialByColor" rows={3} maxLength={400} defaultValue={(profile?.material_by_color ?? []).map(({ color, grams }) => `${color}; ${grams}`).join("\n")} placeholder="#336699; 20&#10;#FFAA00; 4" /><small>Uma cor por linha no formato hexadecimal; gramas. A soma não pode exceder o material total.</small></label>
+    <label>Consumo por cor (opcional)<textarea name="materialByColor" rows={3} maxLength={600} defaultValue={(profile?.material_by_color ?? []).map(({ color, grams, lengthMeters }) => `${color}; ${grams ?? ""}; ${lengthMeters ?? ""}`).join("\n")} placeholder="#336699; 20; 4,8&#10;#FFAA00; ; 1,2" /><small>Uma cor por linha: #hexadecimal; gramas; metros. Você pode deixar um dos dois valores vazio. A soma das gramas não pode exceder o material total.</small></label>
     <button className="button button-primary" type="submit">{profile ? "Salvar perfil" : "Cadastrar perfil"}</button>
   </form>;
 }
@@ -78,7 +78,7 @@ export function MakerPrintProfileManager({ storeId, products, printers, material
           <div><dt>Consumo total</dt><dd>{profile.material_grams == null ? "Não informado" : `${value(profile.material_grams)} g`}</dd></div>
           <div><dt>Configuração</dt><dd>{profile.layer_height_mm == null ? "Camada não informada" : `${value(profile.layer_height_mm)} mm`}{profile.infill_percent == null ? "" : ` · ${value(profile.infill_percent)}% preenchimento`}{profile.wall_count == null ? "" : ` · ${profile.wall_count} paredes`}{profile.supports ? " · suportes" : ""}</dd></div>
         </dl>
-        {profile.material_by_color?.length > 0 && <ul className="print-profile-colors">{profile.material_by_color.map(({ color, grams }) => <li key={color}><i style={{ backgroundColor: color }} />{color} · {value(grams)} g</li>)}</ul>}
+        {profile.material_by_color?.length > 0 && <ul className="print-profile-colors">{profile.material_by_color.map(({ color, grams, lengthMeters }) => <li key={color}><i style={{ backgroundColor: color }} />{color}{grams == null ? "" : ` · ${value(grams)} g`}{lengthMeters == null ? "" : ` · ${value(lengthMeters)} m`}</li>)}</ul>}
         {(profile.sharing_scope === "private" || profile.review_status === "pending" || profile.review_status === "rejected") && <details className="equipment-edit-form"><summary>{profile.sharing_scope === "private" ? "Editar perfil" : "Editar e reenviar à revisão"}</summary><ProfileForm storeId={storeId} products={products} printers={printers} materials={materials} nozzles={nozzles} profile={profile} /></details>}
         {(profile.sharing_scope === "private" || profile.review_status === "pending" || profile.review_status === "rejected") && <form action={deleteMakerPrintProfile} onSubmit={(event) => { if (!window.confirm(`Excluir o perfil “${profile.profile_name}”?`)) event.preventDefault(); }}><input type="hidden" name="profileId" value={profile.id} /><button className="price-history-delete" type="submit">{profile.sharing_scope === "private" ? "Excluir perfil" : "Retirar submissão"}</button></form>}
       </article>)}</div>}

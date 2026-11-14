@@ -7,7 +7,7 @@ type Profile = {
   printer: string; material: string; nozzle: string; layerHeight: number | string | null;
   infill: number | string | null; walls: number | null; supports: boolean; orientation: string;
   scale: number | string; quantity: number; hours: number | string | null; grams: number | string | null;
-  colors: Array<{ color: string; grams: number }>;
+  colors: Array<{ color: string; grams: number | null; lengthMeters: number | null }>;
 };
 
 const typeNames: Record<string, string> = { economic: "Econômico", fast: "Rápido", detailed: "Detalhado", multicolor: "Multicolorido", custom: "Personalizado" };
@@ -32,7 +32,7 @@ export function ProductPrintProfiles({ profiles, error }: { profiles: Profile[];
         <div><dt>Preenchimento e paredes</dt><dd>{selected.infill == null ? "Preenchimento não informado" : `${selected.infill}%`}{selected.walls == null ? "" : ` · ${selected.walls} paredes`}</dd></div>
         <div><dt>Suportes e orientação</dt><dd>{selected.supports ? "Com suportes" : "Sem suportes"}{selected.orientation ? ` · ${selected.orientation}` : ""}</dd></div>
       </dl>
-      {selected.colors.length > 0 && <ul className="print-profile-colors" aria-label="Consumo por cor">{selected.colors.map(({ color, grams }) => <li key={color}><i style={{ backgroundColor: color }} />{color} · {grams} g</li>)}</ul>}
+      {selected.colors.length > 0 && <ul className="print-profile-colors" aria-label="Consumo por cor">{selected.colors.map(({ color, grams, lengthMeters }) => <li key={color}><i style={{ backgroundColor: color }} />{color}{grams == null ? "" : ` · ${grams} g`}{lengthMeters == null ? "" : ` · ${lengthMeters} m`}</li>)}</ul>}
     </article>
   </section>;
 }
