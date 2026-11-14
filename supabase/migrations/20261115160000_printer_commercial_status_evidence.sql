@@ -1,6 +1,13 @@
 alter table public.printer_models
   add column commercial_status_source_url text,
-  add column commercial_status_checked_at date,
+  add column commercial_status_checked_at date;
+
+-- Older status values have no recorded commercial evidence, so return them to the explicit unknown state.
+update public.printer_models
+set commercial_status = 'unknown', commercial_status_source_url = null, commercial_status_checked_at = null
+where commercial_status <> 'unknown';
+
+alter table public.printer_models
   add constraint printer_models_commercial_status_evidence_check check (
     commercial_status = 'unknown'
     or (commercial_status_source_url like 'https://%' and commercial_status_checked_at is not null)
