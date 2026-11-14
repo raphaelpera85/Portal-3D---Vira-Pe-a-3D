@@ -36,6 +36,7 @@ const crealityK2SeMigration = readFileSync(new URL("../../supabase/migrations/20
 const crealityK1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261112232005_seed_creality_k1_max.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 const crealityHyperPlaMigration = readFileSync(new URL("../../supabase/migrations/20261116000000_enrich_creality_hyper_pla.sql", import.meta.url), "utf8");
+const elegooMars5UltraMigration = readFileSync(new URL("../../supabase/migrations/20261116030000_seed_elegoo_mars_5_ultra.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("includes official Hyper PLA temperatures, settings, and named colors without guessed hex values", () => {
@@ -150,15 +151,31 @@ describe("verified technical catalog records", () => {
       ["ELEGOO", "Neptune 4 Plus", "Type-C version"],
       ["ELEGOO", "Neptune 4 Max", "Type-C version"],
       ["ELEGOO", "Saturn 4 Ultra", "16K"],
+      ["ELEGOO", "Mars 5 Ultra", "standard"],
       ["Flashforge", "AD5X", "standard"],
       ["Flashforge", "Adventurer 5M Pro", "standard"],
     ];
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(101);
+    expect(printers).toHaveLength(102);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("keeps official Mars 5 Ultra MSLA specifications in fallback and migration", () => {
+    const mars5Ultra = printers.find((printer) => printer.id === "elegoo-mars-5-ultra");
+
+    expect(mars5Ultra).toMatchObject({
+      technology: "MSLA", buildVolumeMm: { x: 153.36, y: 77.76, z: 165 },
+      technicalProperties: {
+        resolution: "9K", resolutionPixels: "8520x4320", resolutionXYMicrons: [18, 18],
+        layerHeightRangeMm: { min: 0.01, max: 0.2 }, zAxisAccuracyMm: 0.02,
+        maxPrintSpeedMmPerHour: 150, wavelengthNm: 405,
+      },
+    });
+    expect(elegooMars5UltraMigration).toContain("'ELEGOO', 'Mars 5 Ultra', 'standard', 'MSLA', 'published'");
+    expect(elegooMars5UltraMigration).toContain('"resolutionPixels":"8520x4320"');
   });
 
   it("distinguishes SPARKX i7 filament system configurations", () => {
