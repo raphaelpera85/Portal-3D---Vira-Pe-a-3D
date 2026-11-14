@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ getUserWithRole: vi.fn(), from: vi.fn(), rpc: vi.fn(), revalidatePath: vi.fn(), redirect: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getUserWithRole: vi.fn(), from: vi.fn(), rpc: vi.fn(), revalidatePath: vi.fn(), redirect: vi.fn(), after: vi.fn(), dispatchNotificationQueue: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
-vi.mock("next/server", () => ({ after: vi.fn() }));
+vi.mock("next/server", () => ({ after: mocks.after }));
 vi.mock("@/lib/auth-role.server", () => ({ getUserWithRole: mocks.getUserWithRole }));
+vi.mock("@/lib/notification-dispatch.server", () => ({ dispatchNotificationQueue: mocks.dispatchNotificationQueue }));
 
 import { checkoutCart, removeCartItem, setCartItemQuantity } from "./actions";
 
@@ -29,6 +30,8 @@ describe("cart item actions with coupons", () => {
       maybeSingle: vi.fn().mockResolvedValue({ data: { id: itemId } }),
     });
     mocks.revalidatePath.mockReset();
+    mocks.after.mockReset();
+    mocks.dispatchNotificationQueue.mockReset();
     mocks.redirect.mockReset().mockImplementation((url: string) => { throw new Error(`redirect:${url}`); });
     mocks.getUserWithRole.mockReset().mockResolvedValue({ supabase: { from: mocks.from, rpc: mocks.rpc }, user: { id: "buyer-user" }, authorized: true });
   });
@@ -84,5 +87,26 @@ describe("cart item actions with coupons", () => {
     data.set("couponCode", "SAVE_10");
 
     await expect(checkoutCart(data)).rejects.toThrow("redirect:/carrinho?resultado=indisponivel&cupom=SAVE_10");
+  });
+
+  it("dispatches seller notifications only after the order transaction succeeds", async () => {
+    const data = new FormData();
+    data.set("addressId", itemId);
+
+    await expect(checkoutCart(data)).rejects.toThrow("redirect:/orcamentos?resultado=pedido-enviado");
+
+    expect(mocks.rpc).toHaveBeenCalledWith("create_orders_from_cart", { p_buyer_address_id: itemId, p_coupon_code: null });
+    expect(mocks.after).toHaveBeenCalledOnce();
+    expect(mocks.after).toHaveBeenCalledWith(mocks.dispatchNotificationQueue);
+  });
+
+  it("does not schedule seller notifications when order creation fails", async () => {
+    mocks.rpc.mockResolvedValue({ error: { message: "cart unavailable" } });
+    const data = new FormData();
+    data.set("addressId", itemId);
+
+    await expect(checkoutCart(data)).rejects.toThrow("redirect:/carrinho?resultado=indisponivel");
+
+    expect(mocks.after).not.toHaveBeenCalled();
   });
 });
