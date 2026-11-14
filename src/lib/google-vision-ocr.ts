@@ -27,14 +27,14 @@ export async function recognizeCatalogImage(image: VisionImage, apiKey: string, 
     headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({ requests: [{
       image: { content: Buffer.from(image.content).toString("base64") },
-      features: [{ type: "WEB_DETECTION", maxResults: 10 }, { type: "LABEL_DETECTION", maxResults: 10 }],
+      features: [{ type: "OBJECT_LOCALIZATION", maxResults: 5 }, { type: "WEB_DETECTION", maxResults: 10 }, { type: "LABEL_DETECTION", maxResults: 10 }],
     }] }),
   });
   if (!response.ok) throw new Error(`image_search_provider_http_${response.status}`);
-  const data = await response.json().catch(() => null) as { responses?: Array<{ webDetection?: { webEntities?: Array<{ description?: string }> }; labelAnnotations?: Array<{ description?: string }>; error?: { message?: string } }> } | null;
+  const data = await response.json().catch(() => null) as { responses?: Array<{ localizedObjectAnnotations?: Array<{ name?: string }>; webDetection?: { webEntities?: Array<{ description?: string }> }; labelAnnotations?: Array<{ description?: string }>; error?: { message?: string } }> } | null;
   const result = data?.responses?.[0];
   if (!result || result.error) throw new Error("image_search_provider_invalid_response");
-  const terms = [...(result.webDetection?.webEntities ?? []).map((item) => item.description), ...(result.labelAnnotations ?? []).map((item) => item.description)]
+  const terms = [...(result.localizedObjectAnnotations ?? []).map((item) => item.name), ...(result.webDetection?.webEntities ?? []).map((item) => item.description), ...(result.labelAnnotations ?? []).map((item) => item.description)]
     .filter((item): item is string => typeof item === "string")
     .map((item) => item.trim().replace(/[^\p{L}\p{N} -]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 20))
     .filter((item, index, all) => item.length > 1 && all.indexOf(item) === index)
