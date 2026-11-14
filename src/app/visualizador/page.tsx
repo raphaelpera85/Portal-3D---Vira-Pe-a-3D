@@ -34,13 +34,14 @@ export default async function ViewerPage({ searchParams }: { searchParams: Promi
     filamentDiameterMm: item.filamentDiameterMm, nozzleTemperatureC: item.nozzleTemperatureC, bedTemperatureC: item.bedTemperatureC,
     nozzleDiametersMm: item.nozzleDiametersMm, enclosureRequired: item.enclosureRequired, abrasive: item.abrasive,
     multicolorCompatible: item.multicolorCompatible, resinWavelengthNm: item.resinWavelengthNm, resinExposureSeconds: item.resinExposureSeconds,
+    technicalProperties: item.technicalProperties,
   }));
   const printers = catalog.printers.map((printer) => {
     const properties = printer.technicalProperties ?? {};
     const volumeModes = getBuildVolumeModes(properties);
     const cylindrical = properties.buildVolumeShape === "cylindrical";
     return {
-      id: printer.id, name: printer.name, technology: printer.technology,
+      id: printer.id, name: printer.name, model: printer.model, technology: printer.technology, technicalProperties: properties,
       buildVolumeMm: volumeModes.length || cylindrical ? null : printer.buildVolumeMm,
       filamentDiameterMm: printer.filamentDiameterMm, maxNozzleTemperatureC: printer.maxNozzleTemperatureC,
       maxBedTemperatureC: printer.maxBedTemperatureC, heatedBed: printer.heatedBed, enclosure: printer.enclosure,
