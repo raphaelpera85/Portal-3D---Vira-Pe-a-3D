@@ -69,6 +69,7 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
     || (isDirectPurchase && orderRow.request_type !== "purchase") || (isCustomPrint && !customPrintItem)) {
     resultPage(isDesignerService ? "pagamento-conta-vendedor" : "pagamento-erro");
   }
+  if (isDirectPurchase && typeof orderRow.license_type !== "string") resultPage("compra-carrinho");
   if (isOrder && orderRow.shipping_quote_status !== "accepted") resultPage("pagamento-frete");
   if (isCustomPrint && customPrintDelivery.shipping_quote_status !== "accepted") resultPage("pagamento-frete");
   const items = isCustomPrint && customPrintItem ? [

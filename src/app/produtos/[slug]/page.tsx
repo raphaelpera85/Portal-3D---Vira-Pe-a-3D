@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { ProductIllustration } from "@/components/product-illustration";
 import { ProductQuoteRequestForm } from "@/components/product-quote-request-form";
-import { ProductPurchaseRequestForm } from "@/components/product-purchase-request-form";
 import { ProductCartForm } from "@/components/product-cart-form";
 import { loadMarketplaceProduct } from "@/lib/marketplace.server";
 import { getUserWithRole } from "@/lib/auth-role.server";
@@ -156,7 +155,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
             {!product.demo && product.listingType === "digital" ? product.digitalAsset
               ? <DigitalAssetPurchaseForm productId={product.id} slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} personalPriceBrl={product.digitalAsset.personalPriceBrl} commercialPriceBrl={product.digitalAsset.commercialPriceBrl} />
               : <div className="product-detail-note"><strong>Arquivo digital</strong><p>As licenças estão temporariamente indisponíveis.</p></div>
-              : !product.demo && product.priceMode === "fixed" ? <><ProductCartForm slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} result={query.carrinho} stockQuantity={product.stockQuantity} variantOptions={product.variantOptions} variants={product.variants} /><ProductPurchaseRequestForm slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} result={query.compra} stockQuantity={product.stockQuantity} variantOptions={product.variantOptions} variants={product.variants} /></> : !product.demo && (product.priceMode === "quote" || product.priceMode === "from") ? <ProductQuoteRequestForm slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} result={query.orcamento} /> : <div className="product-detail-note"><strong>Compra</strong><p>Os produtos demonstrativos não aceitam pedidos.</p></div>}
+              : !product.demo && product.priceMode === "fixed" ? <ProductCartForm slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} result={query.carrinho} purchaseResult={query.compra} stockQuantity={product.stockQuantity} variantOptions={product.variantOptions} variants={product.variants} /> : !product.demo && (product.priceMode === "quote" || product.priceMode === "from") ? <ProductQuoteRequestForm slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} result={query.orcamento} /> : <div className="product-detail-note"><strong>Compra</strong><p>Os produtos demonstrativos não aceitam pedidos.</p></div>}
             {!product.demo && product.listingType === "digital" && <DigitalAssetReportForm productId={product.id} slug={product.slug} authorized={Boolean(buyer?.user && buyer.authorized)} />}
           </section>
         </div>

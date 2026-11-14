@@ -5,14 +5,15 @@ import { useSearchParams } from "next/navigation";
 import { addProductToCart } from "@/app/carrinho/actions";
 import type { ProductVariant } from "@/lib/products";
 
-export function ProductCartForm({ slug, authorized, result, stockQuantity = null, variantOptions = {}, variants = [] }: { slug: string; authorized: boolean; result?: string; stockQuantity?: number | null; variantOptions?: Record<string, string[]>; variants?: ProductVariant[] }) {
+export function ProductCartForm({ slug, authorized, result, purchaseResult, stockQuantity = null, variantOptions = {}, variants = [] }: { slug: string; authorized: boolean; result?: string; purchaseResult?: string; stockQuantity?: number | null; variantOptions?: Record<string, string[]>; variants?: ProductVariant[] }) {
   const selectedVariantId = useSearchParams().get("variant");
   const variant = variants.find((item) => item.id === selectedVariantId) ?? variants[0] ?? null;
   const selected = variant?.options ?? Object.fromEntries(Object.entries(variantOptions).map(([name, values]) => [name, values[0] ?? ""]));
   const available = variants.length ? variant?.stockQuantity ?? (variant ? null : 0) : stockQuantity;
   const soldOut = available === 0;
-  return <div className="product-detail-note quote-request-card">
+  return <div className="product-detail-note quote-request-card" id="comprar">
     <strong>Adicionar ao carrinho</strong>
+    {purchaseResult === "usar-carrinho" && <p className="quote-small-note" role="status">Para comprar este produto físico, adicione-o ao carrinho. A loja aceitará o pedido e enviará uma proposta de entrega ou retirada antes do pagamento.</p>}
     {soldOut && <p className="quote-inline-error" role="status">Esta combinação está sem unidades disponíveis.</p>}
     {result === "erro" && <p className="quote-inline-error" role="alert">Não foi possível adicionar este produto. Tente novamente.</p>}
     {result === "indisponivel" && <p className="quote-inline-error" role="alert">Este produto não está disponível para compra no momento.</p>}

@@ -25,6 +25,7 @@ const resultMessages: Record<string, string> = {
   "pagamento-erro": "Não foi possível iniciar o pagamento. Atualize a página e tente novamente.",
   "pagamento-aguardando": "Estamos confirmando a criação do checkout. Atualize esta página em instantes.",
   "pagamento-frete": "Aceite a cotação de frete da loja antes de iniciar o pagamento.",
+  "compra-carrinho": "Compras físicas precisam passar pelo carrinho para informar endereço e receber uma proposta de entrega antes do pagamento.",
   "pagamento-cancelado": "Checkout cancelado no Mercado Pago. O estoque reservado foi liberado.",
   "cancelamento-pendente": "O Mercado Pago ainda não confirmou o cancelamento. Atualize a página e tente novamente; a solicitação será repetida com segurança.",
   "cancelamento-indisponivel": "Esta cobrança já está em processamento ou foi concluída e não pode ser cancelada.",
@@ -66,7 +67,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
   const [addressResult, requestResult, orderResult, customResult] = await Promise.all([
     actor.supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default").eq("buyer_id", actor.user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
     actor.supabase.from("product_quote_requests")
-      .select("id, request_type, license_type, product_id, unit_price_brl, product_name, store_name, quantity, customization, due_date, status, created_at, offer:product_quote_offers(id, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), downloads:digital_asset_downloads(id, created_at)")
+      .select("id, request_type, license_type, product_id, unit_price_brl, product_name, store_name, quantity, customization, due_date, status, created_at, product:marketplace_products(slug), offer:product_quote_offers(id, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), downloads:digital_asset_downloads(id, created_at)")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
     actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, shipping_shipped_at, shipping_delivered_at, completed_at, items:seller_purchase_order_items(id, product_id, product_name, unit_price_brl, quantity), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), events:seller_purchase_order_events(id, event_type, description, created_at)")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
@@ -216,7 +217,14 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
               {request.status === "offered" && <div className="quote-actions"><form action={respondToProductQuoteOffer}><input type="hidden" name="offerId" value={offer.id} /><input type="hidden" name="response" value="accept" /><button className="button button-primary" type="submit">Aceitar proposta</button></form><form action={respondToProductQuoteOffer}><input type="hidden" name="offerId" value={offer.id} /><input type="hidden" name="response" value="decline" /><button className="button button-secondary" type="submit">Recusar</button></form></div>}
             </div>}
             {(request.status === "pending" || request.status === "offered") && <form action={cancelProductQuoteRequest} className="quote-cancel-form"><input type="hidden" name="requestId" value={request.id} /><button className="button button-secondary" type="submit">Cancelar pedido</button></form>}
-            {request.status === "accepted" && request.request_type === "purchase" && <>
+            {request.status === "accepted" && request.request_type === "purchase" && !request.license_type && <>
+              <p className="auth-notice is-error" role="status">Esta solicitação física foi criada pelo fluxo antigo e não inclui endereço nem frete. Refaça o pedido pelo carrinho para receber uma proposta de entrega antes de pagar.</p>
+              {payment?.status === "creating" && <p className="quote-small-note" role="status">O checkout antigo ainda está sendo preparado. Atualize esta página antes de enviar outro pedido.</p>}
+              {payment?.status === "pending" && <PendingPaymentCancellation payment={payment} />}
+              {payment?.status === "paid" && <p className="quote-small-note">Este pedido já foi pago. Entre em contato com a loja para combinar a entrega.</p>}
+              {!payment || !["creating", "pending", "paid"].includes(payment.status) ? typeof request.product?.slug === "string" && <Link className="button button-secondary" href={`/produtos/${encodeURIComponent(request.product.slug)}#comprar`}>Abrir produto e adicionar ao carrinho</Link> : null}
+            </>}
+            {request.status === "accepted" && request.request_type === "purchase" && request.license_type && <>
               {payment?.status === "charged_back" ? <p className="auth-notice is-error" role="status">O Mercado Pago registrou uma contestação deste pagamento. Não faça outro pagamento; fale com a loja e consulte sua conta Mercado Pago.</p>
                 : payment?.status === "paid" ? request.license_type ? <><p className="auth-notice is-success" role="status">Pagamento aprovado. Sua licença {request.license_type === "commercial" ? "comercial" : "pessoal"} está ativa.</p><form action={downloadDigitalAssetAction}><input type="hidden" name="requestId" value={request.id} /><button className="button button-primary" type="submit">Baixar arquivo privado</button></form><p className="quote-small-note">Downloads registrados: {request.downloads?.length ?? 0}{request.downloads?.length ? ` · último em ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(request.downloads[request.downloads.length - 1].created_at))}` : ""}. Cada link seguro expira em 2 minutos.</p></> : <p className="auth-notice is-success" role="status">Pagamento aprovado pelo Mercado Pago: {formatBrl(payment.total_cents / 100)}.</p>
                 : payment?.status === "refunded" ? <p className="auth-notice" role="status">Pagamento reembolsado pelo Mercado Pago.</p>
@@ -228,12 +236,12 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
               {payment?.status === "pending" && <PendingPaymentCancellation payment={payment} />}
               {payment?.status !== "paid" && payment?.status !== "refunded" && payment?.status !== "partially_refunded" && payment?.status !== "charged_back" && payment?.status !== "pending" && <form action={startSellerOrderPayment}><input type="hidden" name="purchaseRequestId" value={request.id} /><button className="button button-primary" type="submit">{payment?.status === "creating" ? "Retomar checkout" : "Pagar com Mercado Pago"} · {formatBrlTotal(request.unit_price_brl!, request.quantity)}</button></form>}
               <p className="quote-small-note">{request.license_type ? "O download fica disponível somente após confirmação do pagamento." : "O fabricante confirmou a disponibilidade. O checkout cobra os produtos; o frete é combinado com a loja."}</p>
-              {payment?.status === "paid" && !purchaseReviews.error && <section className="marketplace-order-reviews" aria-label="Avaliar sua compra"><h3>Avaliações da compra</h3>{(["store", "product"] as const).map((reviewType) => {
-                const review = reviews.find((item) => item.purchase_request_id === request.id && item.review_type === reviewType);
-                const label = reviewType === "store" ? `loja ${request.store_name}` : request.product_name;
-                return <div className="marketplace-review-form-card" key={reviewType}><strong>Avalie {label}</strong>{review ? <p className="quote-small-note">{reviewStatus(review)}</p> : <ReviewForm sourceType="purchase" sourceId={request.id} reviewType={reviewType} label={`Enviar avaliação ${reviewType === "store" ? "da loja" : "do produto"}`} />}</div>;
-              })}</section>}
             </>}
+            {request.status === "accepted" && request.request_type === "purchase" && payment?.status === "paid" && !purchaseReviews.error && <section className="marketplace-order-reviews" aria-label="Avaliar sua compra"><h3>Avaliações da compra</h3>{(["store", "product"] as const).map((reviewType) => {
+              const review = reviews.find((item) => item.purchase_request_id === request.id && item.review_type === reviewType);
+              const label = reviewType === "store" ? `loja ${request.store_name}` : request.product_name;
+              return <div className="marketplace-review-form-card" key={reviewType}><strong>Avalie {label}</strong>{review ? <p className="quote-small-note">{reviewStatus(review)}</p> : <ReviewForm sourceType="purchase" sourceId={request.id} reviewType={reviewType} label={`Enviar avaliação ${reviewType === "store" ? "da loja" : "do produto"}`} />}</div>;
+            })}</section>}
             {request.status === "accepted" && request.request_type !== "purchase" && <p className="quote-small-note">A proposta foi aceita. O pagamento e a contratação serão combinados fora da plataforma nesta versão.</p>}
           </article>;
         })}
