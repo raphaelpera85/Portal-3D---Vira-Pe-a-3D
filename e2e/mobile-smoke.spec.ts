@@ -33,7 +33,7 @@ test("mobile navigation opens the model catalog and a model detail", async ({ pa
   await page.locator(".model-gallery-image").first().click();
   await expect(page).toHaveURL(/\/modelos\/[a-z0-9-]+$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Baixar arquivo 3MF" })).toHaveAttribute("href", /raw\.githubusercontent\.com/);
+  await expect(page.getByRole("link", { name: "Baixar arquivo principal" })).toHaveAttribute("href", /raw\.githubusercontent\.com/);
 
   const layoutFitsViewport = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
   expect(layoutFitsViewport).toBe(true);
