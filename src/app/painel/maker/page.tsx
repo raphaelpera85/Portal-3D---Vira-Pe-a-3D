@@ -190,6 +190,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
               {products.length === 0 ? <p>Ainda não há anúncios nesta loja.</p> : <ul className="maker-product-list">{products.map((product) => {
                 const asset = Array.isArray(product.digital_asset) ? product.digital_asset[0] : product.digital_asset;
                 return <li key={product.id}><div><strong>{product.name}</strong><span>{product.listing_type === "digital" ? "Arquivo digital" : product.price_mode === "quote" ? "Sob orçamento" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(product.price_brl))} · {product.catalog_status === "published" ? "Publicado" : product.catalog_status === "archived" ? "Arquivado" : "Rascunho em revisão"}</span></div>
+                  {product.listing_type === "physical" && product.price_mode !== "quote" && product.catalog_status !== "archived" && <Link className="button button-secondary" href={`/calculadora?produto=${encodeURIComponent(product.id)}`}>Calcular custo e preço de venda</Link>}
                   {product.listing_type === "digital" ? <MakerDigitalAssetManager productId={product.id} storeId={store.id} personalPriceBrl={Number(product.price_brl)} status={product.catalog_status} asset={asset ?? null} /> : (() => {
                     const properties = product.product_properties && typeof product.product_properties === "object" && !Array.isArray(product.product_properties)
                       ? product.product_properties as Record<string, unknown> : {};

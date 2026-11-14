@@ -8,6 +8,7 @@ import { validateCalculationToSave, type CalculationOrigin, type SavedSlicerMetr
 import { readPrintProfileColors } from "@/lib/print-profile-colors";
 import { loadTechnicalCatalog } from "@/lib/technical-catalog.server";
 import { getShowcaseModel } from "@/lib/model-showcase";
+import { getCalculatorProductPrefill } from "@/lib/calculator-price-target";
 
 export const metadata: Metadata = {
   title: "Calculadora de impressão 3D | ViraPeça 3D",
@@ -17,7 +18,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function CalculatorPage() {
+export default async function CalculatorPage({ searchParams }: { searchParams: Promise<{ produto?: string | string[] }> }) {
+  const { produto } = await searchParams;
   const [actor, catalog] = await Promise.all([getUserWithRole("maker"), loadTechnicalCatalog()]);
   const canUseOcr = Boolean(actor.supabase && actor.user && actor.authorized);
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
@@ -172,12 +174,13 @@ export default async function CalculatorPage() {
       });
     }
   }
+  const productPrefill = getCalculatorProductPrefill(products, produto);
   return (
     <>
       <SiteHeader />
       <main id="main-content" tabIndex={-1} className="calculator-page">
         <div className="calculator-page-back shell"><Link className="viewer-back-link" href="/">← Voltar para o início</Link><span>FERRAMENTA PARA MAKERS</span></div>
-        <PriceCalculator equipment={equipment.map((item) => ({ ...item, catalogPrinter: catalog.printers.find((printer) => printer.id === item.catalogPrinterId) ?? null }))} products={products} profiles={profiles} materials={catalog.materials} nozzles={catalog.nozzles} materialNotice={catalog.error} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} storeId={calculationStoreId} sourceAttachmentsError={sourceAttachmentsError} />
+        <PriceCalculator key={`${productPrefill?.productId ?? ""}:${productPrefill?.priceTargetId ?? ""}`} initialProductId={productPrefill?.productId ?? ""} initialPriceTargetId={productPrefill?.priceTargetId ?? ""} equipment={equipment.map((item) => ({ ...item, catalogPrinter: catalog.printers.find((printer) => printer.id === item.catalogPrinterId) ?? null }))} products={products} profiles={profiles} materials={catalog.materials} nozzles={catalog.nozzles} materialNotice={catalog.error} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} storeId={calculationStoreId} sourceAttachmentsError={sourceAttachmentsError} />
       </main>
       <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Custos claros para produzir com confiança.</p><span>© 2026 ViraPeça 3D</span></div></footer>
     </>

@@ -108,11 +108,12 @@ function CostField({ label, suffix, hint, value, onChange, step = "any", min = 0
   );
 }
 
-export function PriceCalculator({ equipment = [], products = [], profiles = [], materials = [], nozzles = [], materialNotice = null, equipmentNotice = null, productNotice = null, profileNotice = null, canSaveCalculations = false, canUseOcr = false, ocrConfigured = false, savedCalculations = [], savedCalculationsError = false, storeId = null, sourceAttachmentsError = false }: {
+export function PriceCalculator({ equipment = [], products = [], profiles = [], materials = [], nozzles = [], materialNotice = null, equipmentNotice = null, productNotice = null, profileNotice = null, canSaveCalculations = false, canUseOcr = false, ocrConfigured = false, savedCalculations = [], savedCalculationsError = false, storeId = null, sourceAttachmentsError = false, initialProductId = "", initialPriceTargetId = "" }: {
   equipment?: CalculatorEquipment[]; equipmentNotice?: string | null; canSaveCalculations?: boolean; canUseOcr?: boolean; ocrConfigured?: boolean;
   products?: CalculatorProduct[]; productNotice?: string | null; profiles?: CalculatorProfile[]; profileNotice?: string | null;
   materials?: CalculatorMaterial[]; nozzles?: NozzleEntry[]; materialNotice?: string | null;
   savedCalculations?: SavedCalculation[]; savedCalculationsError?: boolean; storeId?: string | null; sourceAttachmentsError?: boolean;
+  initialProductId?: string; initialPriceTargetId?: string;
 }) {
   const [fields, setFields] = useState(initialFields);
   const [extras, setExtras] = useState<ExtraField[]>([]);
@@ -123,8 +124,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [selectedNozzleId, setSelectedNozzleId] = useState("");
   const [componentNozzleIds, setComponentNozzleIds] = useState<Record<string, string>>({});
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [selectedPriceTargetId, setSelectedPriceTargetId] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState(initialProductId);
+  const [selectedPriceTargetId, setSelectedPriceTargetId] = useState(initialPriceTargetId);
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [appliedProfileId, setAppliedProfileId] = useState("");
   const [profileApplyNotice, setProfileApplyNotice] = useState("");
