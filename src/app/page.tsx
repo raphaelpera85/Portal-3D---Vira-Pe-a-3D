@@ -69,8 +69,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
     sort,
   }), getUserWithRole("buyer"), loadRecommendedStores()]);
   const [favoritesResult, bannersResult] = await Promise.all([
-    buyer.supabase && buyer.user && buyer.authorized
-      ? buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id)
+    buyer.supabase && buyer.user && buyer.authorized && catalog.products.length > 0
+      ? buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id).in("product_id", catalog.products.map((product) => product.id))
       : Promise.resolve(null),
     buyer.supabase
       ? buyer.supabase.from("homepage_banners").select("id, eyebrow, title, description, image_url, image_alt, action_label, action_href").eq("is_active", true).order("sort_order").order("created_at", { ascending: false }).limit(6)

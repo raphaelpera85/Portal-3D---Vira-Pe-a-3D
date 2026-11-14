@@ -29,7 +29,7 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
   const cartResult = await actor.supabase.from("buyer_carts").select("id").eq("buyer_id", actor.user.id).maybeSingle();
   const cart = cartResult.data;
   const [itemsResult, addressesResult] = await Promise.all([
-    cart ? actor.supabase.from("buyer_cart_items").select("id, product_id, store_id, store_name, product_name, price_brl, quantity").eq("cart_id", cart.id).order("created_at") : Promise.resolve({ data: [], error: null }),
+    cart ? fetchAllPages((from, to) => actor.supabase!.from("buyer_cart_items").select("id, product_id, store_id, store_name, product_name, price_brl, quantity").eq("cart_id", cart.id).order("created_at").order("id").range(from, to)) : Promise.resolve({ data: [], error: null }),
     fetchAllPages((from, to) => actor.supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default").eq("buyer_id", actor.user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
   ]);
   const { data: cartItems, error: itemsError } = itemsResult;
