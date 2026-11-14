@@ -194,6 +194,10 @@ Material Cost: $0.72`]);
     const result = parseSlicerOcrTexts(["Cost: R$ 10.00", "Cost: USD 10.00"]);
     expect(result.estimatedCostCurrency).toBeNull();
     expect(result.conflicts).toContain("moeda do custo");
+
+    const sameImage = parseSlicerOcrTexts(["Cost: 10 BRL\nCost: 10 USD"]);
+    expect(sameImage.estimatedCostCurrency).toBeNull();
+    expect(sameImage.conflicts).toContain("moeda do custo");
   });
 
   it("recognizes the slicers used by Creality, ELEGOO, Flashforge, Raise3D, and UltiMaker", () => {
@@ -225,6 +229,14 @@ Material Cost: $0.72`]);
     expect(result.filamentGrams).toBeNull();
     expect(result.lengthMeters).toBeNull();
     expect(result.conflicts).toEqual(expect.arrayContaining(["consumo total", "peso do modelo", "comprimento do filamento"]));
+  });
+
+  it("detects conflicting cost, duration, and filament-change readings within one OCR image", () => {
+    const result = parseSlicerOcrTexts(["Estimated cost: R$ 10,00\nEstimated cost: R$ 12,00\nPrint time: 2h\nPrint time: 3h\nFilament changes: 1\nFilament changes: 2"]);
+    expect(result.estimatedCost).toBeNull();
+    expect(result.printHours).toBeNull();
+    expect(result.filamentChanges).toBeNull();
+    expect(result.conflicts).toEqual(expect.arrayContaining(["custo informado", "tempo de impressão", "trocas de filamento"]));
   });
 
   it("derives only model plus support mass when both were explicitly detected", () => {

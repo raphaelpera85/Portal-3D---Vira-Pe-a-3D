@@ -53,6 +53,15 @@ function splitGcodeValues(value: string) {
   return value.includes(".") ? value.split(/,\s*/) : value.split(/,\s+/);
 }
 
+function uniqueScalarValue(values: number[], label: string, conflicts: string[]) {
+  const distinct = values.filter((value, index) => values.findIndex((candidate) => Math.abs(candidate - value) <= 0.001) === index);
+  if (distinct.length > 1) {
+    conflicts.push(label);
+    return null;
+  }
+  return distinct[0] ?? null;
+}
+
 function findMeasurement(lines: string[], labels: string, units: string, normalize: (value: number, unit: string) => number, exclude?: RegExp, conflictLabel?: string, conflicts: string[] = []) {
   const expression = new RegExp(`${numberPattern}\\s*(${units})\\b`, "i");
   const bracketedUnit = new RegExp(`\\[\\s*(${units})\\s*\\]\\s*[:=]\\s*${numberPattern}`, "i");
@@ -71,12 +80,7 @@ function findMeasurement(lines: string[], labels: string, units: string, normali
     const unit = match?.[2] ?? bracketedMatch?.[1];
     if (unit && Number.isFinite(value) && value >= 0) values.push(normalize(value, unit.toLowerCase()));
   }
-  const distinct = values.filter((value, index) => values.findIndex((candidate) => Math.abs(candidate - value) <= 0.001) === index);
-  if (distinct.length > 1) {
-    if (conflictLabel) conflicts.push(conflictLabel);
-    return null;
-  }
-  return distinct[0] ?? null;
+  return conflictLabel ? uniqueScalarValue(values, conflictLabel, conflicts) : uniqueScalarValue(values, "", []);
 }
 
 function findGcodeFilamentTotal(lines: string[], units: string, normalize: (value: number, unit: string) => number) {
@@ -138,10 +142,11 @@ function findFilamentLength(lines: string[], conflicts: string[]) {
   return findMeasurement(lines, String.raw`(?:(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?|filament\s+used)`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value, undefined, "comprimento do filamento", conflicts);
 }
 
-function findCost(lines: string[]) {
+function findCost(lines: string[], conflicts: string[]) {
   const labels = String.raw`(?:estimated\s+cost|material\s+cost|filament\s+cost|custo\s+(?:estimado|do\s+material)|\bcost\b)`;
   const expression = /(?:(?:R\$|US\$|BRL|USD|\$)\s*)?(\d[\d.,]*)(?:\s*(?:BRL|R\$|USD|\$))?/i;
   const standalone = new RegExp(`^\\s*[:=\\-–]?\\s*(?:(?:R\\$|US\\$|BRL|USD|\\$)\\s*)?${numberPattern}(?:\\s*(?:BRL|R\\$|USD|\\$))?\\s*$`, "i");
+  const values: number[] = [];
   for (let index = 0; index < lines.length; index++) {
     const label = new RegExp(labels, "i").exec(lines[index]);
     if (!label) continue;
@@ -149,13 +154,14 @@ function findCost(lines: string[]) {
     const match = expression.exec(sameLine) ?? expression.exec(lines[index].slice(0, label.index)) ?? standalone.exec(lines[index + 1] ?? "");
     if (!match) continue;
     const value = parseNumber(match[1]);
-    if (Number.isFinite(value) && value >= 0) return value;
+    if (Number.isFinite(value) && value >= 0) values.push(value);
   }
-  return null;
+  return uniqueScalarValue(values, "custo informado", conflicts);
 }
 
-function findCount(lines: string[], labels: string) {
+function findCount(lines: string[], labels: string, conflicts: string[]) {
   const standalone = new RegExp(`^\\s*[:=\\-–]?\\s*${numberPattern}\\s*$`, "i");
+  const values: number[] = [];
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
     const label = new RegExp(labels, "i").exec(line);
@@ -163,20 +169,21 @@ function findCount(lines: string[], labels: string) {
     const match = new RegExp(`${numberPattern}`, "i").exec(line.slice(label.index + label[0].length)) ?? standalone.exec(lines[index + 1] ?? "");
     if (match) {
       const value = parseNumber(match[1]);
-      if (Number.isInteger(value) && value >= 0) return value;
+      if (Number.isInteger(value) && value >= 0) values.push(value);
     }
   }
-  return null;
+  return uniqueScalarValue(values, "trocas de filamento", conflicts);
 }
 
-function findPrintHours(lines: string[]) {
-  const curaTime = lines.find((line) => /^;\s*time\s*:\s*\d[\d.,]*\s*$/i.test(line));
-  if (curaTime) return parseNumber(curaTime.replace(/^;\s*time\s*:\s*/i, "")) / 3600;
+function findPrintHours(lines: string[], conflicts: string[]) {
+  const curaTimes = lines.filter((line) => /^;\s*time\s*:\s*\d[\d.,]*\s*$/i.test(line));
+  if (curaTimes.length) return uniqueScalarValue(curaTimes.map((line) => parseNumber(line.replace(/^;\s*time\s*:\s*/i, "")) / 3600), "tempo de impressão", conflicts);
   const totalEstimated = lines.flatMap((line) => {
     const label = /total\s+estimated\s+time\s*[:=]\s*/i.exec(line);
     return label ? [`estimated time: ${line.slice(label.index + label[0].length)}`] : [];
   });
   const labels = /(?:estimated\s+(?:printing\s+)?time|build\s+time|print(?:ing)?\s*time|tempo\s+(?:total\s+de\s+)?impress[aã]o|tempo\s+estimado|dura[cç][aã]o|^time)\s*[:=\-]?/i;
+  const values: number[] = [];
   for (const [lineIndex, line] of [...totalEstimated, ...lines].entries()) {
     const nextLine = lineIndex >= totalEstimated.length ? lines[lineIndex - totalEstimated.length + 1] ?? "" : "";
     if (lineIndex >= totalEstimated.length && /model\s+printing\s+time/i.test(line)) continue;
@@ -184,33 +191,36 @@ function findPrintHours(lines: string[]) {
     if (!label) continue;
     const tail = line.slice(label.index + label[0].length).trim() ? line.slice(label.index + label[0].length) : nextLine;
     const clock = /\b(\d{1,3}):(\d{1,2})\b/.exec(tail);
-    if (clock) return Number(clock[1]) + Number(clock[2]) / 60;
+    if (clock) { values.push(Number(clock[1]) + Number(clock[2]) / 60); continue; }
     const compound = /(?:(\d+(?:[.,]\d+)?)\s*d(?:ays?)?\s*)?(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?(?:\s*(\d+(?:[.,]\d+)?)\s*m?(?:in(?:utes?)?)?)?|(?:(\d+(?:[.,]\d+)?)\s*m(?:in(?:utes?)?)?))/i.exec(tail);
     const seconds = /(?<![\d.,])(\d+(?:[.,]\d+)?)\s*s(?:ec(?:ond)?s?)?\b/i.exec(tail);
     if (!compound) {
-      if (seconds) return parseNumber(seconds[1]) / 3600;
+      if (seconds) values.push(parseNumber(seconds[1]) / 3600);
       continue;
     }
     const days = compound[1] ? parseNumber(compound[1]) : 0;
     const hours = compound[2] ? parseNumber(compound[2]) : 0;
     const minutes = compound[3] ? parseNumber(compound[3]) : compound[4] ? parseNumber(compound[4]) : 0;
-    return days * 24 + hours + minutes / 60 + (seconds ? parseNumber(seconds[1]) / 3600 : 0);
+    values.push(days * 24 + hours + minutes / 60 + (seconds ? parseNumber(seconds[1]) / 3600 : 0));
   }
-  return null;
+  return uniqueScalarValue(values, "tempo de impressão", conflicts);
 }
 
-function findCostCurrency(lines: string[]): "BRL" | "USD" | null {
+function findCostCurrency(lines: string[], conflicts: string[]): "BRL" | "USD" | null {
   const labels = /(?:estimated\s+cost|material\s+cost|filament\s+cost|custo\s+(?:estimado|do\s+material)|\bcost\b)/i;
+  const currencies: Array<"BRL" | "USD"> = [];
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
     const label = labels.exec(line);
     if (!label) continue;
     const sameLine = line.slice(label.index + label[0].length).replace(/^\s*[:=\-]?\s*/, "");
     const value = sameLine || lines[index + 1] || "";
-    if (/(?:R\$|BRL)\s*\d[\d.,]*|\d[\d.,]*\s*BRL\b|\d[\d.,]*\s*R\$/i.test(value)) return "BRL";
-    if (/(?:USD\s*|US\$\s*)\d[\d.,]*|\d[\d.,]*\s*USD\b/i.test(value)) return "USD";
+    if (/(?:R\$|BRL)\s*\d[\d.,]*|\d[\d.,]*\s*BRL\b|\d[\d.,]*\s*R\$/i.test(value)) currencies.push("BRL");
+    if (/(?:USD\s*|US\$\s*)\d[\d.,]*|\d[\d.,]*\s*USD\b/i.test(value)) currencies.push("USD");
   }
-  return null;
+  const distinct = [...new Set(currencies)];
+  if (distinct.length > 1) conflicts.push("moeda do custo");
+  return distinct.length === 1 ? distinct[0] : null;
 }
 
 function findStackedFilamentReadings(lines: string[]) {
@@ -263,7 +273,7 @@ function parseOne(text: string) {
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
   const length = findFilamentLength(lines, conflicts);
   const gcodeTotalGrams = findGcodeFilamentTotal(lines, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams);
-  const cost = findCost(lines);
+  const cost = findCost(lines, conflicts);
   const materials = [...new Set(lines.flatMap((line) => {
     const match = new RegExp(`(?<![a-z0-9])${materialPattern}(?![a-z0-9])`, "i").exec(line);
     return match ? [match[0].toUpperCase()] : [];
@@ -294,10 +304,10 @@ function parseOne(text: string) {
     purgeGrams: findMeasurement(lines, String.raw`(?:purge|flush|purga|filamento\s+descartado)`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, /(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza)/i, "purga", conflicts),
     wipeTowerGrams: findMeasurement(lines, String.raw`(?:(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza))`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "torre de limpeza", conflicts),
     lengthMeters: length,
-    printHours: findPrintHours(lines),
-    filamentChanges: findCount(lines, String.raw`(?:filament\s+changes?|color\s+changes?|trocas?(?:\s+de\s+(?:filamento|cor))?|mudan[cç]as\s+de\s+(?:filamento|cor)|swaps?)\s*[:=\-]?`),
+    printHours: findPrintHours(lines, conflicts),
+    filamentChanges: findCount(lines, String.raw`(?:filament\s+changes?|color\s+changes?|trocas?(?:\s+de\s+(?:filamento|cor))?|mudan[cç]as\s+de\s+(?:filamento|cor)|swaps?)\s*[:=\-]?`, conflicts),
     estimatedCost: cost,
-    estimatedCostCurrency: findCostCurrency(lines),
+    estimatedCostCurrency: findCostCurrency(lines, conflicts),
     materials,
     filamentReadings: [...filamentReadings, ...findStackedFilamentReadings(lines), ...findGcodeFilamentReadings(lines)],
     conflicts,
