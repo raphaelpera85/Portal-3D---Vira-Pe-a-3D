@@ -69,7 +69,7 @@ export const products: Product[] = [
   {
     id: "demo-chaveiro-monograma", slug: "chaveiro-monograma", description: "Chaveiro personalizado de demonstração para a vitrine ViraPeça 3D.",
     name: "Chaveiro Monograma",
-    category: "Personalizados",
+    category: "Chaveiros",
     tags: ["presente", "chaveiro", "nome", "personalizado"],
     maker: "Projeto de vitrine",
     color: "pink",

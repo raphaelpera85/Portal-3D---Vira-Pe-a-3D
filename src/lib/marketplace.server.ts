@@ -19,7 +19,7 @@ export async function loadMarketplaceCatalog({ query = "", category = "", page =
   if (!supabase) {
     const categories = [...new Set(demoProducts.map((item) => item.category))].map((name) => ({ id: slugify(name), name, slug: slugify(name), parent_id: null, active: true }));
     const categoryName = categories.find((item) => item.slug === category)?.name;
-    const visible = filterProducts(demoProducts, term, categoryName ?? "Todos");
+    const visible = category && !categoryName ? [] : filterProducts(demoProducts, term, categoryName ?? "Todos");
     return { products: visible, categories, source: "local" as const, error: null, query: term, category, page: 1, pages: 1, sort };
   }
 
