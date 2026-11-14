@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { CatalogOptionSelect } from "@/components/catalog-option-select";
 import { getUserWithRole } from "@/lib/auth-role.server";
-import { getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
+import { fetchAllPages, getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
 import { saveMaterialCompatibilityAction, saveNozzleAction, saveNozzleCompatibilityAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -68,9 +68,9 @@ export default async function NozzleCatalogAdminPage({ searchParams }: { searchP
   const pages: PageState = { bicoPagina: parsePageNumber(bicoPagina) ?? 1, materialPagina: parsePageNumber(materialPagina) ?? 1, relacaoBicoPagina: parsePageNumber(relacaoBicoPagina) ?? 1 };
   const [nozzles, printerRows, materialRows, nozzleRows, materialLinks, nozzleLinks] = await Promise.all([
     actor.supabase.from("nozzle_catalog").select("*", { count: "exact" }).order("manufacturer").order("model").order("diameter_mm").order("id").range((pages.bicoPagina - 1) * pageSize, pages.bicoPagina * pageSize - 1),
-    actor.supabase.from("printer_models").select("id, manufacturer, model, variant, catalog_status").order("manufacturer").order("model").order("id").limit(50),
-    actor.supabase.from("material_catalog").select("id, manufacturer, product, catalog_status").order("manufacturer").order("product").order("id").limit(50),
-    actor.supabase.from("nozzle_catalog").select("id, manufacturer, model, diameter_mm, catalog_status").order("manufacturer").order("model").order("diameter_mm").order("id").limit(50),
+    fetchAllPages((from, to) => actor.supabase.from("printer_models").select("id, manufacturer, model, variant, catalog_status").order("manufacturer").order("model").order("id").range(from, to)),
+    fetchAllPages((from, to) => actor.supabase.from("material_catalog").select("id, manufacturer, product, catalog_status").order("manufacturer").order("product").order("id").range(from, to)),
+    fetchAllPages((from, to) => actor.supabase.from("nozzle_catalog").select("id, manufacturer, model, diameter_mm, catalog_status").order("manufacturer").order("model").order("diameter_mm").order("id").range(from, to)),
     actor.supabase.from("printer_material_compatibility").select("*", { count: "exact" }).order("printer_id").order("material_id").range((pages.materialPagina - 1) * pageSize, pages.materialPagina * pageSize - 1),
     actor.supabase.from("printer_nozzle_compatibility").select("*", { count: "exact" }).order("printer_id").order("nozzle_id").range((pages.relacaoBicoPagina - 1) * pageSize, pages.relacaoBicoPagina * pageSize - 1),
   ]);
