@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
+import { CatalogOptionSelect } from "@/components/catalog-option-select";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
 import { saveMaterialCompatibilityAction, saveNozzleAction, saveNozzleCompatibilityAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +18,12 @@ const notices: Record<string, string> = {
   "bico-salvo": "Bico salvo.", "compatibilidade-salva": "Compatibilidade salva.",
   erro: "Não foi possível salvar. Confira as fontes, as medidas, os vínculos e a migração 002.",
 };
+const pageSize = 24;
+type PageState = { bicoPagina: number; materialPagina: number; relacaoBicoPagina: number };
 
-function NozzleForm({ row }: { row?: RecordRow }) {
+function NozzleForm({ row, pages }: { row?: RecordRow; pages: PageState }) {
   return <form action={saveNozzleAction} className="printer-model-form">
+    <input type="hidden" name="bicoPagina" value={pages.bicoPagina} /><input type="hidden" name="materialPagina" value={pages.materialPagina} /><input type="hidden" name="relacaoBicoPagina" value={pages.relacaoBicoPagina} />
     {row?.id && <input type="hidden" name="nozzleId" value={row.id} />}
     <label>Fabricante<input name="manufacturer" maxLength={100} defaultValue={field(row, "manufacturer")} required /></label>
     <label>Modelo ou variante<input name="model" maxLength={120} defaultValue={field(row, "model")} required /></label>
@@ -38,15 +43,16 @@ function NozzleForm({ row }: { row?: RecordRow }) {
 }
 
 function RelationForm({
-  row, printers, entities, type,
-}: { row?: RecordRow; printers: Option[]; entities: Option[]; type: "material" | "nozzle" }) {
+  row, printers, entities, type, pages,
+}: { row?: RecordRow; printers: Option[]; entities: Option[]; type: "material" | "nozzle"; pages: PageState }) {
   const action = type === "material" ? saveMaterialCompatibilityAction : saveNozzleCompatibilityAction;
   const entityId = row?.[type === "material" ? "material_id" : "nozzle_id"];
   const relationStatus = field(row, type === "material" ? "compatibility" : "fit");
   return <form action={action} className="printer-model-form relationship-form">
+    <input type="hidden" name="bicoPagina" value={pages.bicoPagina} /><input type="hidden" name="materialPagina" value={pages.materialPagina} /><input type="hidden" name="relacaoBicoPagina" value={pages.relacaoBicoPagina} />
     {row && <><input type="hidden" name="oldPrinterId" value={field(row, "printer_id")} /><input type="hidden" name="oldEntityId" value={String(entityId ?? "")} /></>}
-    <label>Impressora<select name="printerId" defaultValue={field(row, "printer_id")} required>{printers.map((printer) => <option key={printer.id} value={printer.id}>{printer.label}</option>)}</select></label>
-    <label>{type === "material" ? "Material" : "Bico"}<select name="entityId" defaultValue={String(entityId ?? "")} required>{entities.map((entity) => <option key={entity.id} value={entity.id}>{entity.label}</option>)}</select></label>
+    <CatalogOptionSelect key={`printer:${field(row, "printer_id")}`} kind="printer" name="printerId" label="Impressora" selectedValue={field(row, "printer_id")} options={printers} />
+    <CatalogOptionSelect key={`${type}:${String(entityId ?? "")}`} kind={type} name="entityId" label={type === "material" ? "Material" : "Bico"} selectedValue={String(entityId ?? "")} options={entities} />
     <label>Resultado<select name={type === "material" ? "compatibility" : "fit"} defaultValue={relationStatus || "unverified"}><option value="compatible">Compatível</option><option value="conditional">Condicional</option><option value="incompatible">Incompatível</option><option value="unverified">Não verificado</option></select></label>
     <label>Condições ou observações<input name="conditions" maxLength={1000} defaultValue={field(row, "conditions")} /></label>
     <label>Status<select name="catalogStatus" defaultValue={field(row, "catalog_status") || "draft"}><option value="draft">Rascunho</option><option value="published">Publicado</option><option value="archived">Arquivado</option></select></label>
@@ -56,24 +62,60 @@ function RelationForm({
   </form>;
 }
 
-export default async function NozzleCatalogAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
-  const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
+export default async function NozzleCatalogAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string; bicoPagina?: string; materialPagina?: string; relacaoBicoPagina?: string }> }) {
+  const [{ resultado, bicoPagina, materialPagina, relacaoBicoPagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
-  // shortcut: nozzle and relation lists cap at 250; add pagination when either count exceeds this limit.
-  const [nozzles, printerRows, materialRows, materialLinks, nozzleLinks] = await Promise.all([
-    actor.supabase.from("nozzle_catalog").select("*", { count: "exact" }).order("manufacturer").order("diameter_mm").limit(250),
-    actor.supabase.from("printer_models").select("id, manufacturer, model, variant, catalog_status").order("manufacturer").order("model").limit(1000),
-    actor.supabase.from("material_catalog").select("id, manufacturer, product, catalog_status").order("manufacturer").order("product").limit(1000),
-    actor.supabase.from("printer_material_compatibility").select("*", { count: "exact" }).order("printer_id").limit(250),
-    actor.supabase.from("printer_nozzle_compatibility").select("*", { count: "exact" }).order("printer_id").limit(250),
+  const pages: PageState = { bicoPagina: parsePageNumber(bicoPagina) ?? 1, materialPagina: parsePageNumber(materialPagina) ?? 1, relacaoBicoPagina: parsePageNumber(relacaoBicoPagina) ?? 1 };
+  const [nozzles, printerRows, materialRows, nozzleRows, materialLinks, nozzleLinks] = await Promise.all([
+    actor.supabase.from("nozzle_catalog").select("*", { count: "exact" }).order("manufacturer").order("model").order("diameter_mm").order("id").range((pages.bicoPagina - 1) * pageSize, pages.bicoPagina * pageSize - 1),
+    actor.supabase.from("printer_models").select("id, manufacturer, model, variant, catalog_status").order("manufacturer").order("model").order("id").limit(50),
+    actor.supabase.from("material_catalog").select("id, manufacturer, product, catalog_status").order("manufacturer").order("product").order("id").limit(50),
+    actor.supabase.from("nozzle_catalog").select("id, manufacturer, model, diameter_mm, catalog_status").order("manufacturer").order("model").order("diameter_mm").order("id").limit(50),
+    actor.supabase.from("printer_material_compatibility").select("*", { count: "exact" }).order("printer_id").order("material_id").range((pages.materialPagina - 1) * pageSize, pages.materialPagina * pageSize - 1),
+    actor.supabase.from("printer_nozzle_compatibility").select("*", { count: "exact" }).order("printer_id").order("nozzle_id").range((pages.relacaoBicoPagina - 1) * pageSize, pages.relacaoBicoPagina * pageSize - 1),
   ]);
-  const printerOptions: Option[] = (printerRows.data ?? []).map((row) => ({ id: row.id, label: `${row.manufacturer} ${row.model} · ${row.variant} (${row.catalog_status})` }));
-  const materialOptions: Option[] = (materialRows.data ?? []).map((row) => ({ id: row.id, label: `${row.manufacturer} · ${row.product} (${row.catalog_status})` }));
-  const nozzleOptions: Option[] = (nozzles.data ?? []).map((value) => { const row = value as unknown as RecordRow; return { id: String(row.id), label: `${field(row, "manufacturer")} · ${field(row, "model")} · ${field(row, "diameter_mm")} mm (${field(row, "catalog_status")})` }; });
+  const referencedPrinterIds = [...new Set([...(materialLinks.data ?? []).map((row) => row.printer_id), ...(nozzleLinks.data ?? []).map((row) => row.printer_id)])];
+  const referencedMaterialIds = [...new Set((materialLinks.data ?? []).map((row) => row.material_id))];
+  const referencedNozzleIds = [...new Set((nozzleLinks.data ?? []).map((row) => row.nozzle_id))];
+  const optionIds = (rows: readonly { id: string }[] | null | undefined) => new Set((rows ?? []).map((row) => row.id));
+  const missingPrinterIds = referencedPrinterIds.filter((id) => !optionIds(printerRows.data).has(id));
+  const missingMaterialIds = referencedMaterialIds.filter((id) => !optionIds(materialRows.data).has(id));
+  const missingNozzleIds = referencedNozzleIds.filter((id) => !optionIds(nozzleRows.data).has(id));
+  const [missingPrinters, missingMaterials, missingNozzles] = await Promise.all([
+    missingPrinterIds.length ? actor.supabase.from("printer_models").select("id, manufacturer, model, variant, catalog_status").in("id", missingPrinterIds) : Promise.resolve(null),
+    missingMaterialIds.length ? actor.supabase.from("material_catalog").select("id, manufacturer, product, catalog_status").in("id", missingMaterialIds) : Promise.resolve(null),
+    missingNozzleIds.length ? actor.supabase.from("nozzle_catalog").select("id, manufacturer, model, diameter_mm, catalog_status").in("id", missingNozzleIds) : Promise.resolve(null),
+  ]);
+  const printerOptions: Option[] = [...(printerRows.data ?? []), ...(missingPrinters?.data ?? [])].map((row) => ({ id: row.id, label: `${row.manufacturer} ${row.model} · ${row.variant} (${row.catalog_status})` }));
+  const materialOptions: Option[] = [...(materialRows.data ?? []), ...(missingMaterials?.data ?? [])].map((row) => ({ id: row.id, label: `${row.manufacturer} · ${row.product} (${row.catalog_status})` }));
+  const nozzleOptions: Option[] = [...(nozzleRows.data ?? []), ...(missingNozzles?.data ?? [])].map((value) => { const row = value as unknown as RecordRow; return { id: String(row.id), label: `${field(row, "manufacturer")} · ${field(row, "model")} · ${field(row, "diameter_mm")} mm (${field(row, "catalog_status")})` }; });
+  const addUnavailableReferences = (options: Option[], ids: string[]) => {
+    const known = new Set(options.map((option) => option.id));
+    for (const id of ids) if (!known.has(id)) options.push({ id, label: `${id} (indisponível)` });
+  };
+  addUnavailableReferences(printerOptions, referencedPrinterIds);
+  addUnavailableReferences(materialOptions, referencedMaterialIds);
+  addUnavailableReferences(nozzleOptions, referencedNozzleIds);
   const printerLabels = new Map(printerOptions.map((item) => [item.id, item.label]));
   const materialLabels = new Map(materialOptions.map((item) => [item.id, item.label]));
   const nozzleLabels = new Map(nozzleOptions.map((item) => [item.id, item.label]));
-  const hasErrors = [nozzles, printerRows, materialRows, materialLinks, nozzleLinks].some((result) => result.error);
+  const hasErrors = [nozzles, printerRows, materialRows, nozzleRows, materialLinks, nozzleLinks, missingPrinters, missingMaterials, missingNozzles].some((result) => result?.error);
+  const nozzlePages = Math.max(1, Math.ceil((nozzles.count ?? 0) / pageSize));
+  const materialPages = Math.max(1, Math.ceil((materialLinks.count ?? 0) / pageSize));
+  const relationPages = Math.max(1, Math.ceil((nozzleLinks.count ?? 0) / pageSize));
+  const pageHref = (next: Partial<PageState>) => {
+    const params = new URLSearchParams();
+    const values = { ...pages, ...next };
+    for (const [name, value] of Object.entries(values)) if (value > 1) params.set(name, String(value));
+    if (resultado) params.set("resultado", resultado);
+    return `/admin/catalogos/bicos${params.size ? `?${params.toString()}` : ""}`;
+  };
+  const nozzleRedirect = getPaginationRedirectPage(pages.bicoPagina, nozzlePages);
+  if (!nozzles.error && nozzleRedirect !== null) redirect(pageHref({ bicoPagina: nozzleRedirect }));
+  const materialRedirect = getPaginationRedirectPage(pages.materialPagina, materialPages);
+  if (!materialLinks.error && materialRedirect !== null) redirect(pageHref({ materialPagina: materialRedirect }));
+  const relationRedirect = getPaginationRedirectPage(pages.relacaoBicoPagina, relationPages);
+  if (!nozzleLinks.error && relationRedirect !== null) redirect(pageHref({ relacaoBicoPagina: relationRedirect }));
 
   return <>
     <SiteHeader />
@@ -83,21 +125,21 @@ export default async function NozzleCatalogAdminPage({ searchParams }: { searchP
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Bicos e compatibilidade</h1><p>Diâmetro, interface e compatibilidade são relações distintas. Cada vínculo publicado exige fonte própria.</p></div>
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
       {hasErrors && <p className="auth-notice is-error" role="alert">Parte do catálogo não pôde ser carregada. Confira a migração 002.</p>}
-      <section className="account-card admin-banner-create"><div className="admin-section-title"><span className="account-kicker">NOVO REGISTRO</span><h2>Adicionar bico</h2></div><NozzleForm /></section>
+      <section className="account-card admin-banner-create"><div className="admin-section-title"><span className="account-kicker">NOVO REGISTRO</span><h2>Adicionar bico</h2></div><NozzleForm pages={pages} /></section>
       <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">CATÁLOGO MESTRE</span><h2>Bicos cadastrados</h2></div>
-        {nozzles.error ? <p className="admin-empty">Bicos indisponíveis até corrigir a consulta.</p> : !nozzles.data?.length ? <p className="admin-empty">Nenhum bico cadastrado no banco.</p> : nozzles.data.map((value) => { const row = value as unknown as RecordRow; return <article className="account-card admin-banner-record" key={row.id}><div className="admin-banner-record-heading"><div><span className="account-kicker">{field(row, "catalog_status").toUpperCase()}</span><h3>{field(row, "manufacturer")} · {field(row, "model")} · {field(row, "diameter_mm")} mm</h3><p>Encaixe: {field(row, "interface") || "não informado"} · Fonte: {field(row, "source_url") || "não informada"}</p></div></div><details className="equipment-edit-form"><summary>Editar especificações</summary><NozzleForm row={row} /></details></article>; })}
-        {(nozzles.count ?? 0) > 250 && <p className="admin-empty">Esta tela mostra os 250 primeiros bicos.</p>}
+        {nozzles.error ? <p className="admin-empty">Bicos indisponíveis até corrigir a consulta.</p> : !nozzles.data?.length ? <p className="admin-empty">Nenhum bico cadastrado no banco.</p> : nozzles.data.map((value) => { const row = value as unknown as RecordRow; return <article className="account-card admin-banner-record" key={row.id}><div className="admin-banner-record-heading"><div><span className="account-kicker">{field(row, "catalog_status").toUpperCase()}</span><h3>{field(row, "manufacturer")} · {field(row, "model")} · {field(row, "diameter_mm")} mm</h3><p>Encaixe: {field(row, "interface") || "não informado"} · Fonte: {field(row, "source_url") || "não informada"}</p></div></div><details className="equipment-edit-form"><summary>Editar especificações</summary><NozzleForm row={row} pages={pages} /></details></article>; })}
+        {!nozzles.error && (nozzles.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação dos bicos"><span>Página {pages.bicoPagina} de {nozzlePages} · {nozzles.count} bicos</span><div>{pages.bicoPagina > 1 && <Link className="button button-secondary" href={pageHref({ bicoPagina: pages.bicoPagina - 1 })}>Anterior</Link>}{pages.bicoPagina < nozzlePages && pages.bicoPagina < maxPageNumber && <Link className="button button-secondary" href={pageHref({ bicoPagina: pages.bicoPagina + 1 })}>Próxima</Link>}</div></nav>}
       </section>
       <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">VÍNCULOS DO CATÁLOGO</span><h2>Compatibilidade com materiais</h2></div>
-        {!printerOptions.length || !materialOptions.length ? <p className="admin-empty">Cadastre impressoras e materiais antes de criar relações.</p> : <article className="account-card admin-banner-create"><h3>Nova relação impressora e material</h3><RelationForm type="material" printers={printerOptions} entities={materialOptions} />
-          {(materialLinks.data ?? []).map((value) => { const row = value as unknown as RecordRow; return <details className="equipment-edit-form" key={`${row.printer_id}:${row.material_id}`}><summary>{printerLabels.get(String(row.printer_id)) ?? "Impressora"} · {materialLabels.get(String(row.material_id)) ?? "Material"} · {field(row, "catalog_status")}</summary><RelationForm row={row} type="material" printers={printerOptions} entities={materialOptions} /></details>; })}
-          {(materialLinks.count ?? 0) > 250 && <p className="admin-empty">Mostrando 250 relações; as demais não podem ser editadas nesta página.</p>}
+        {!printerOptions.length || !materialOptions.length ? <p className="admin-empty">Cadastre impressoras e materiais antes de criar relações.</p> : <article className="account-card admin-banner-create"><h3>Nova relação impressora e material</h3><RelationForm type="material" printers={printerOptions} entities={materialOptions} pages={pages} />
+          {(materialLinks.data ?? []).map((value) => { const row = value as unknown as RecordRow; return <details className="equipment-edit-form" key={`${row.printer_id}:${row.material_id}`}><summary>{printerLabels.get(String(row.printer_id)) ?? "Impressora"} · {materialLabels.get(String(row.material_id)) ?? "Material"} · {field(row, "catalog_status")}</summary><RelationForm row={row} type="material" printers={printerOptions} entities={materialOptions} pages={pages} /></details>; })}
+          {!materialLinks.error && (materialLinks.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação das relações com materiais"><span>Página {pages.materialPagina} de {materialPages} · {materialLinks.count} relações</span><div>{pages.materialPagina > 1 && <Link className="button button-secondary" href={pageHref({ materialPagina: pages.materialPagina - 1 })}>Anterior</Link>}{pages.materialPagina < materialPages && pages.materialPagina < maxPageNumber && <Link className="button button-secondary" href={pageHref({ materialPagina: pages.materialPagina + 1 })}>Próxima</Link>}</div></nav>}
         </article>}
       </section>
       <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">VÍNCULOS DO CATÁLOGO</span><h2>Compatibilidade com bicos</h2></div>
-        {!printerOptions.length || !nozzleOptions.length ? <p className="admin-empty">Cadastre impressoras e bicos antes de criar relações.</p> : <article className="account-card admin-banner-create"><h3>Nova relação impressora e bico</h3><RelationForm type="nozzle" printers={printerOptions} entities={nozzleOptions} />
-          {(nozzleLinks.data ?? []).map((value) => { const row = value as unknown as RecordRow; return <details className="equipment-edit-form" key={`${row.printer_id}:${row.nozzle_id}`}><summary>{printerLabels.get(String(row.printer_id)) ?? "Impressora"} · {nozzleLabels.get(String(row.nozzle_id)) ?? "Bico"} · {field(row, "catalog_status")}</summary><RelationForm row={row} type="nozzle" printers={printerOptions} entities={nozzleOptions} /></details>; })}
-          {(nozzleLinks.count ?? 0) > 250 && <p className="admin-empty">Mostrando 250 relações; as demais não podem ser editadas nesta página.</p>}
+        {!printerOptions.length || !nozzleOptions.length ? <p className="admin-empty">Cadastre impressoras e bicos antes de criar relações.</p> : <article className="account-card admin-banner-create"><h3>Nova relação impressora e bico</h3><RelationForm type="nozzle" printers={printerOptions} entities={nozzleOptions} pages={pages} />
+          {(nozzleLinks.data ?? []).map((value) => { const row = value as unknown as RecordRow; return <details className="equipment-edit-form" key={`${row.printer_id}:${row.nozzle_id}`}><summary>{printerLabels.get(String(row.printer_id)) ?? "Impressora"} · {nozzleLabels.get(String(row.nozzle_id)) ?? "Bico"} · {field(row, "catalog_status")}</summary><RelationForm row={row} type="nozzle" printers={printerOptions} entities={nozzleOptions} pages={pages} /></details>; })}
+          {!nozzleLinks.error && (nozzleLinks.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação das relações com bicos"><span>Página {pages.relacaoBicoPagina} de {relationPages} · {nozzleLinks.count} relações</span><div>{pages.relacaoBicoPagina > 1 && <Link className="button button-secondary" href={pageHref({ relacaoBicoPagina: pages.relacaoBicoPagina - 1 })}>Anterior</Link>}{pages.relacaoBicoPagina < relationPages && pages.relacaoBicoPagina < maxPageNumber && <Link className="button button-secondary" href={pageHref({ relacaoBicoPagina: pages.relacaoBicoPagina + 1 })}>Próxima</Link>}</div></nav>}
         </article>}
       </section>
     </main>

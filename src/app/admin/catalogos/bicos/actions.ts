@@ -3,10 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { parsePageNumber } from "@/lib/pagination";
 import { validateNozzleCatalogInput, validateNozzleCompatibilityInput, validateMaterialCompatibilityInput } from "@/lib/technical-catalog-admin";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const finish = (result: string): never => redirect(`/admin/catalogos/bicos?resultado=${result}`);
+const finish = (result: string, formData: FormData): never => {
+  const params = new URLSearchParams({ resultado: result });
+  for (const name of ["bicoPagina", "materialPagina", "relacaoBicoPagina"] as const) {
+    const page = parsePageNumber(formData.get(name));
+    if (page !== null) params.set(name, String(page));
+  }
+  return redirect(`/admin/catalogos/bicos?${params.toString()}`);
+};
 async function adminClient() {
   const actor = await getUserWithRole("admin");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
@@ -23,59 +31,59 @@ export async function saveNozzleAction(formData: FormData): Promise<void> {
   const rawId = formData.get("nozzleId");
   const id = typeof rawId === "string" && rawId ? rawId : null;
   const nozzle = validateNozzleCatalogInput(Object.fromEntries(formData.entries()));
-  if (nozzle === null) redirect("/admin/catalogos/bicos?resultado=erro");
-  if (id && !uuidPattern.test(id)) finish("erro");
+  if (nozzle === null) return finish("erro", formData);
+  if (id && !uuidPattern.test(id)) finish("erro", formData);
   const actor = await adminClient();
   const result = id
     ? await actor.supabase.from("nozzle_catalog").update(nozzle).eq("id", id).select("id").maybeSingle()
     : await actor.supabase.from("nozzle_catalog").insert({ ...nozzle, created_by: actor.user.id }).select("id").single();
-  if (result.error || !result.data) finish("erro");
+  if (result.error || !result.data) finish("erro", formData);
   revalidateCatalogs();
-  finish("bico-salvo");
+  finish("bico-salvo", formData);
 }
 
 export async function saveMaterialCompatibilityAction(formData: FormData): Promise<void> {
   const oldPrinterId = formData.get("oldPrinterId");
   const oldEntityId = formData.get("oldEntityId");
   const hasOldKey = typeof oldPrinterId === "string" && oldPrinterId !== "" || typeof oldEntityId === "string" && oldEntityId !== "";
-  if (hasOldKey && (typeof oldPrinterId !== "string" || !uuidPattern.test(oldPrinterId) || typeof oldEntityId !== "string" || !uuidPattern.test(oldEntityId))) finish("erro");
+  if (hasOldKey && (typeof oldPrinterId !== "string" || !uuidPattern.test(oldPrinterId) || typeof oldEntityId !== "string" || !uuidPattern.test(oldEntityId))) finish("erro", formData);
   const relationship = validateMaterialCompatibilityInput(Object.fromEntries(formData.entries()));
-  if (relationship === null) redirect("/admin/catalogos/bicos?resultado=erro");
+  if (relationship === null) return finish("erro", formData);
   const actor = await adminClient();
   if (relationship.catalog_status === "published") {
     const [printer, material] = await Promise.all([
       actor.supabase.from("printer_models").select("id").eq("id", relationship.printer_id).eq("catalog_status", "published").maybeSingle(),
       actor.supabase.from("material_catalog").select("id").eq("id", relationship.material_id).eq("catalog_status", "published").maybeSingle(),
     ]);
-    if (!printer.data || !material.data) finish("erro");
+    if (!printer.data || !material.data) finish("erro", formData);
   }
   const result = hasOldKey
     ? await actor.supabase.from("printer_material_compatibility").update(relationship).eq("printer_id", oldPrinterId as string).eq("material_id", oldEntityId as string).select("printer_id").maybeSingle()
     : await actor.supabase.from("printer_material_compatibility").insert(relationship).select("printer_id").single();
-  if (result.error || !result.data) finish("erro");
+  if (result.error || !result.data) finish("erro", formData);
   revalidateCatalogs();
-  finish("compatibilidade-salva");
+  finish("compatibilidade-salva", formData);
 }
 
 export async function saveNozzleCompatibilityAction(formData: FormData): Promise<void> {
   const oldPrinterId = formData.get("oldPrinterId");
   const oldEntityId = formData.get("oldEntityId");
   const hasOldKey = typeof oldPrinterId === "string" && oldPrinterId !== "" || typeof oldEntityId === "string" && oldEntityId !== "";
-  if (hasOldKey && (typeof oldPrinterId !== "string" || !uuidPattern.test(oldPrinterId) || typeof oldEntityId !== "string" || !uuidPattern.test(oldEntityId))) finish("erro");
+  if (hasOldKey && (typeof oldPrinterId !== "string" || !uuidPattern.test(oldPrinterId) || typeof oldEntityId !== "string" || !uuidPattern.test(oldEntityId))) finish("erro", formData);
   const relationship = validateNozzleCompatibilityInput(Object.fromEntries(formData.entries()));
-  if (relationship === null) redirect("/admin/catalogos/bicos?resultado=erro");
+  if (relationship === null) return finish("erro", formData);
   const actor = await adminClient();
   if (relationship.catalog_status === "published") {
     const [printer, nozzle] = await Promise.all([
       actor.supabase.from("printer_models").select("id").eq("id", relationship.printer_id).eq("catalog_status", "published").maybeSingle(),
       actor.supabase.from("nozzle_catalog").select("id").eq("id", relationship.nozzle_id).eq("catalog_status", "published").maybeSingle(),
     ]);
-    if (!printer.data || !nozzle.data) finish("erro");
+    if (!printer.data || !nozzle.data) finish("erro", formData);
   }
   const result = hasOldKey
     ? await actor.supabase.from("printer_nozzle_compatibility").update(relationship).eq("printer_id", oldPrinterId as string).eq("nozzle_id", oldEntityId as string).select("printer_id").maybeSingle()
     : await actor.supabase.from("printer_nozzle_compatibility").insert(relationship).select("printer_id").single();
-  if (result.error || !result.data) finish("erro");
+  if (result.error || !result.data) finish("erro", formData);
   revalidateCatalogs();
-  finish("compatibilidade-salva");
+  finish("compatibilidade-salva", formData);
 }
