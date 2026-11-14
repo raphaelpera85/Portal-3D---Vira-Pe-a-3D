@@ -399,6 +399,10 @@ const plaSource = {
   url: "https://bambulab-us.myshopify.com/products/pla-basic-filament",
   checkedAt: "2026-11-12",
 };
+const crealityHyperPlaSources = [
+  { label: "Creality — Hyper PLA", url: "https://store.creality.com/eu/products/hyper-1-75mm-pla-3d-printing-filament-1kg", checkedAt: "2026-11-14" },
+  { label: "Creality — recommended Hyper PLA settings", url: "https://store.creality.com/eu/blogs/basics/3d-printing-retraction", checkedAt: "2026-11-14" },
+];
 const ppaSource = {
   label: "Bambu Lab — PPA-CF",
   url: "https://bambulab-us.myshopify.com/products/ppa-cf",
@@ -1434,18 +1438,24 @@ export const materials: MaterialEntry[] = [
     sources: [bambuAbsSource],
   },
   ...[
-    { id: "creality-hyper-pla", name: "Hyper PLA", family: "PLA", enclosureRequired: null, multicolorCompatible: null, url: "https://store.creality.com/eu/products/hyper-1-75mm-pla-3d-printing-filament-1kg" },
+    {
+      id: "creality-hyper-pla", name: "Hyper PLA", family: "PLA", enclosureRequired: null, multicolorCompatible: null,
+      nozzleTemperatureC: { min: 190, max: 230 },
+      technicalProperties: { bedTemperatureMaxC: 60, bedCanBeUnheated: true, recommendedPrintSpeedMmPerSecond: { min: 40, max: 100 }, retractionDistanceMm: 0.5, retractionSpeedMmPerSecond: 40 },
+      colors: ["Gray", "Black", "White", "Blue", "Red", "Brown", "Orange", "Green", "Flesh", "Yellow", "Very Peri", "Viva Magenta", "Peach Fuzz", "Purple", "Gold"].map((name) => ({ name, hex: null })),
+      url: "https://store.creality.com/eu/products/hyper-1-75mm-pla-3d-printing-filament-1kg",
+    },
     { id: "creality-hyper-abs", name: "Hyper ABS", family: "ABS", enclosureRequired: true, multicolorCompatible: null, url: "https://store.creality.com/eu/products/hyper-abs-3d-printing-filament" },
     { id: "creality-hyper-petg", name: "Hyper PETG", family: "PETG", enclosureRequired: null, multicolorCompatible: null, url: "https://store.creality.com/eu/products/hyper-petg-filament-1-75mm-1kg" },
     { id: "creality-hp-asa", name: "HP ASA", family: "ASA", enclosureRequired: true, multicolorCompatible: null, url: "https://store.creality.com/eu/products/creality-hp-asa" },
     { id: "creality-hp-tpu", name: "HP-TPU", family: "TPU", enclosureRequired: null, multicolorCompatible: false, url: "https://store.creality.com/de/products/hp-tpu-fdm-3d-drucker-filament-1-75mm-1kg" },
-  ].map(({ id, name, family, enclosureRequired, multicolorCompatible, url }) => ({
+  ].map(({ id, name, family, enclosureRequired, multicolorCompatible, url, nozzleTemperatureC = null, technicalProperties, colors = [] }) => ({
     id, name, brand: "Creality", family, process: "filament" as const,
-    filamentDiameterMm: 1.75, densityGPerCm3: null, nozzleTemperatureC: null,
+    filamentDiameterMm: 1.75, densityGPerCm3: null, nozzleTemperatureC,
     bedTemperatureC: null, nozzleDiametersMm: null, enclosureRequired, abrasive: null,
     multicolorCompatible, printSpeedMaximumMmPerSecond: null, drying: null,
-    resinWavelengthNm: null, resinExposureSeconds: null, colors: [],
-    sources: [{ label: `Creality — ${name}`, url, checkedAt: "2026-11-13" }],
+    resinWavelengthNm: null, resinExposureSeconds: null, technicalProperties, colors,
+    sources: id === "creality-hyper-pla" ? crealityHyperPlaSources : [{ label: `Creality — ${name}`, url, checkedAt: "2026-11-13" }],
   })),
   ...([
     {

@@ -35,8 +35,30 @@ const crealitySparkXI7Migration = readFileSync(new URL("../../supabase/migration
 const crealityK2SeMigration = readFileSync(new URL("../../supabase/migrations/20261115120000_seed_creality_k2_se.sql", import.meta.url), "utf8");
 const crealityK1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261112232005_seed_creality_k1_max.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
+const crealityHyperPlaMigration = readFileSync(new URL("../../supabase/migrations/20261116000000_enrich_creality_hyper_pla.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
+  it("includes official Hyper PLA temperatures, settings, and named colors without guessed hex values", () => {
+    const hyperPla = materials.find((material) => material.id === "creality-hyper-pla");
+
+    expect(hyperPla).toMatchObject({
+      nozzleTemperatureC: { min: 190, max: 230 },
+      bedTemperatureC: null,
+      printSpeedMaximumMmPerSecond: null,
+      technicalProperties: {
+        bedTemperatureMaxC: 60, bedCanBeUnheated: true,
+        recommendedPrintSpeedMmPerSecond: { min: 40, max: 100 },
+        retractionDistanceMm: 0.5, retractionSpeedMmPerSecond: 40,
+      },
+    });
+    expect(hyperPla?.colors.slice(0, 2)).toEqual([{ name: "Gray", hex: null }, { name: "Black", hex: null }]);
+    expect(hyperPla?.colors).toHaveLength(15);
+    expect(hyperPla?.sources.map(({ url }) => url)).toContain("https://store.creality.com/eu/blogs/basics/3d-printing-retraction");
+    expect(crealityHyperPlaMigration).toContain("nozzle_temperature_min_c = 190");
+    expect(crealityHyperPlaMigration).toContain("bedCanBeUnheated");
+    expect(crealityHyperPlaMigration).toContain("jsonb_array_elements(coalesce(material.colors");
+  });
+
   it("keeps the first official catalog seed variants in the local fallback", () => {
     const seededVariants = [
       ["Bambu Lab", "A1", "standard"],
