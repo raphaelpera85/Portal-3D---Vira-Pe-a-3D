@@ -59,12 +59,15 @@ describe("Mercado Pago payment helpers", () => {
   it("matches a fetched Mercado Pago order against the persisted seller, payment and exact BRL totals", () => {
     const expected = { id: "ord-1", paymentId: "payment-1", sellerId: "seller-1", totalCents: 10_000, marketplaceFeeCents: 1_000 };
     const order = { id: "ord-1", external_reference: "payment-1", user_id: "seller-1", currency: "BRL", total_amount: "100.00", marketplace_fee: "10.00", total_paid_amount: "100.00", status: "processed" };
+    const { marketplace_fee: _marketplaceFee, ...orderWithoutMarketplaceFee } = order;
     expect(isMercadoPagoOrderForPayment(order, expected)).toBe(true);
+    expect(isMercadoPagoOrderForPayment(orderWithoutMarketplaceFee, expected)).toBe(false);
     expect(isMercadoPagoOrderForPayment({ ...order, total_paid_amount: "80.00", status_detail: "partially_refunded" }, expected)).toBe(true);
     expect(isMercadoPagoOrderForPayment({ ...order, total_paid_amount: "0.00", status_detail: "refunded" }, expected)).toBe(true);
     expect(isMercadoPagoOrderForPayment({ ...order, user_id: "other-seller" }, expected)).toBe(false);
     expect(isMercadoPagoOrderForPayment({ ...order, total_amount: "100.01" }, expected)).toBe(false);
     expect(isMercadoPagoOrderForPayment({ ...order, total_paid_amount: "99.99" }, expected)).toBe(false);
+    expect(isMercadoPagoOrderForPayment(orderWithoutMarketplaceFee, { ...expected, marketplaceFeeCents: 0 })).toBe(true);
     expect(mercadoPagoAmountToCents("100.001")).toBeNull();
   });
 

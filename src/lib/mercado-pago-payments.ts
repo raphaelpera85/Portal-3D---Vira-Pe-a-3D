@@ -78,7 +78,7 @@ export function isMercadoPagoOrderForPayment(value: unknown, expected: {
   const feeCents = mercadoPagoAmountToCents(order.marketplace_fee);
   if (order.id !== expected.id || order.external_reference !== expected.paymentId || String(order.user_id) !== expected.sellerId
     || order.currency !== "BRL" || mercadoPagoAmountToCents(order.total_amount) !== expected.totalCents
-    || (order.marketplace_fee !== undefined && feeCents !== expected.marketplaceFeeCents)) return false;
+    || (order.marketplace_fee === undefined ? expected.marketplaceFeeCents !== 0 : feeCents !== expected.marketplaceFeeCents)) return false;
   if (order.status === "processed" && !["refunded", "partially_refunded"].includes(String(order.status_detail))
     && (mercadoPagoAmountToCents(order.total_paid_amount) ?? 0) < expected.totalCents) return false;
   return true;
