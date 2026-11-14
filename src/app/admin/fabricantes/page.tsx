@@ -9,7 +9,7 @@ import { ProductImageGallery } from "@/components/product-image-gallery";
 import { publishProductAction, publishStoreAction, reviewMakerApplicationAction, reviewModelPrintProfileAction, reviewPrintProfileAction } from "./actions";
 import { getShowcaseModel } from "@/lib/model-showcase";
 import type { SavedSlicerMetrics } from "@/lib/saved-calculation";
-import { getPaginationRedirectPage } from "@/lib/pagination";
+import { getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Revisão do marketplace | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -27,24 +27,49 @@ const resultMessages: Record<string, string> = {
   erro: "Não foi possível concluir a ação. Atualize a página e confira as permissões.",
 };
 
-const modelProfilePageSize = 24;
+const reviewPageSize = 24;
+type ReviewPages = { fabricantePagina: number; lojaPagina: number; anuncioPagina: number; perfilPagina: number; modeloPagina: number };
 
-export default async function MarketplaceAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string; modeloPagina?: string }> }) {
-  const [{ resultado, modeloPagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
+export default async function MarketplaceAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string; fabricantePagina?: string; lojaPagina?: string; anuncioPagina?: string; perfilPagina?: string; modeloPagina?: string }> }) {
+  const [{ resultado, fabricantePagina, lojaPagina, anuncioPagina, perfilPagina, modeloPagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.authorized) redirect("/conta");
-  const requestedModelPage = typeof modeloPagina === "string" && /^\d+$/.test(modeloPagina) ? Number(modeloPagina) : 1;
-  const modelPage = Number.isSafeInteger(requestedModelPage) && requestedModelPage > 0 ? Math.min(requestedModelPage, 10000) : 1;
+  const pages: ReviewPages = {
+    fabricantePagina: parsePageNumber(fabricantePagina) ?? 1,
+    lojaPagina: parsePageNumber(lojaPagina) ?? 1,
+    anuncioPagina: parsePageNumber(anuncioPagina) ?? 1,
+    perfilPagina: parsePageNumber(perfilPagina) ?? 1,
+    modeloPagina: parsePageNumber(modeloPagina) ?? 1,
+  };
   const [applications, stores, products, printProfiles, modelPrintProfiles] = await Promise.all([
-    actor.supabase.from("maker_applications").select("id, business_name, contact_email, description, portfolio_url, city, state_code, created_at").eq("status", "pending").order("created_at"),
-    actor.supabase.from("stores").select("id, name, slug, description, city, state_code, created_at").eq("status", "pending").order("created_at"),
-    actor.supabase.from("marketplace_products").select("id, name, slug, description, listing_type, price_mode, price_brl, media, video_url, created_at, digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl), store:stores!inner(name, status)").eq("catalog_status", "draft").eq("store.status", "published").order("created_at"),
-    actor.supabase.from("maker_print_profiles").select("id, profile_name, profile_type, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, print_hours, material_grams, material_by_color, product:marketplace_products!inner(name), store:stores!inner(name)").eq("sharing_scope", "community").eq("review_status", "pending").order("created_at"),
-    actor.supabase.from("visible_model_print_profiles").select("id, model_slug, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at", { count: "exact" }).eq("sharing_scope", "community").eq("review_status", "pending").order("created_at").order("id").range((modelPage - 1) * modelProfilePageSize, modelPage * modelProfilePageSize - 1),
+    actor.supabase.from("maker_applications").select("id, business_name, contact_email, description, portfolio_url, city, state_code, created_at", { count: "exact" }).eq("status", "pending").order("created_at").order("id").range((pages.fabricantePagina - 1) * reviewPageSize, pages.fabricantePagina * reviewPageSize - 1),
+    actor.supabase.from("stores").select("id, name, slug, description, city, state_code, created_at", { count: "exact" }).eq("status", "pending").order("created_at").order("id").range((pages.lojaPagina - 1) * reviewPageSize, pages.lojaPagina * reviewPageSize - 1),
+    actor.supabase.from("marketplace_products").select("id, name, slug, description, listing_type, price_mode, price_brl, media, video_url, created_at, digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl), store:stores!inner(name, status)", { count: "exact" }).eq("catalog_status", "draft").eq("store.status", "published").order("created_at").order("id").range((pages.anuncioPagina - 1) * reviewPageSize, pages.anuncioPagina * reviewPageSize - 1),
+    actor.supabase.from("maker_print_profiles").select("id, profile_name, profile_type, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, print_hours, material_grams, material_by_color, created_at, product:marketplace_products!inner(name), store:stores!inner(name)", { count: "exact" }).eq("sharing_scope", "community").eq("review_status", "pending").order("created_at").order("id").range((pages.perfilPagina - 1) * reviewPageSize, pages.perfilPagina * reviewPageSize - 1),
+    actor.supabase.from("visible_model_print_profiles").select("id, model_slug, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at", { count: "exact" }).eq("sharing_scope", "community").eq("review_status", "pending").order("created_at").order("id").range((pages.modeloPagina - 1) * reviewPageSize, pages.modeloPagina * reviewPageSize - 1),
   ]);
-  const modelProfilePages = Math.max(1, Math.ceil((modelPrintProfiles.count ?? 0) / modelProfilePageSize));
-  const modelProfileRedirectPage = getPaginationRedirectPage(modelPage, modelProfilePages);
-  const modelProfilePageHref = (page: number) => `/admin/fabricantes?modeloPagina=${page}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}`;
-  if (!modelPrintProfiles.error && modelProfileRedirectPage !== null) redirect(modelProfilePageHref(modelProfileRedirectPage));
+  const pageCount = (count: number | null) => Math.max(1, Math.min(maxPageNumber, Math.ceil((count ?? 0) / reviewPageSize)));
+  const applicationsPages = pageCount(applications.count);
+  const storesPages = pageCount(stores.count);
+  const productsPages = pageCount(products.count);
+  const printProfilesPages = pageCount(printProfiles.count);
+  const modelProfilePages = pageCount(modelPrintProfiles.count);
+  const pageHref = (next: Partial<ReviewPages>) => {
+    const params = new URLSearchParams();
+    const values = { ...pages, ...next };
+    for (const [name, page] of Object.entries(values)) if (page > 1) params.set(name, String(page));
+    if (resultado) params.set("resultado", resultado);
+    return `/admin/fabricantes${params.size ? `?${params.toString()}` : ""}`;
+  };
+  const applicationRedirect = getPaginationRedirectPage(pages.fabricantePagina, applicationsPages);
+  if (!applications.error && applicationRedirect !== null) redirect(pageHref({ fabricantePagina: applicationRedirect }));
+  const storeRedirect = getPaginationRedirectPage(pages.lojaPagina, storesPages);
+  if (!stores.error && storeRedirect !== null) redirect(pageHref({ lojaPagina: storeRedirect }));
+  const productRedirect = getPaginationRedirectPage(pages.anuncioPagina, productsPages);
+  if (!products.error && productRedirect !== null) redirect(pageHref({ anuncioPagina: productRedirect }));
+  const printProfileRedirect = getPaginationRedirectPage(pages.perfilPagina, printProfilesPages);
+  if (!printProfiles.error && printProfileRedirect !== null) redirect(pageHref({ perfilPagina: printProfileRedirect }));
+  const modelProfileRedirect = getPaginationRedirectPage(pages.modeloPagina, modelProfilePages);
+  if (!modelPrintProfiles.error && modelProfileRedirect !== null) redirect(pageHref({ modeloPagina: modelProfileRedirect }));
 
   return (
     <>
@@ -65,9 +90,11 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
               <form action={reviewMakerApplicationAction}><input type="hidden" name="applicationId" value={application.id} /><label>Nota para o histórico<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="approved" type="submit">Aprovar fabricante</button><button className="button button-secondary" name="decision" value="rejected" type="submit">Recusar</button></div></form>
             </article>
           ))}
+          {!applications.error && (applications.count ?? 0) > reviewPageSize && <nav className="catalog-pagination" aria-label="Paginação das solicitações de fabricantes">{pages.fabricantePagina > 1 ? <Link className="button button-secondary" href={pageHref({ fabricantePagina: pages.fabricantePagina - 1 })}>← Página anterior</Link> : <span />}<span>Página {pages.fabricantePagina} de {applicationsPages} · {applications.count} solicitações</span>{pages.fabricantePagina < applicationsPages && pages.fabricantePagina < maxPageNumber ? <Link className="button button-secondary" href={pageHref({ fabricantePagina: pages.fabricantePagina + 1 })}>Próxima página →</Link> : <span />}</nav>}
         </section>
         <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">ETAPA 2</span><h2>Lojas aguardando publicação</h2></div>
           {stores.error ? <p className="auth-notice is-error">Não foi possível carregar as lojas.</p> : (stores.data?.length ?? 0) === 0 ? <p className="admin-empty">Nenhuma loja aguardando aprovação.</p> : stores.data?.map((store) => <article className="admin-review-card admin-review-card-compact" key={store.id}><div><h3>{store.name}</h3><p>{store.city ? `${store.city}${store.state_code ? `/${store.state_code}` : ""} · ` : ""}{store.description}</p></div><form action={publishStoreAction}><input type="hidden" name="storeId" value={store.id} /><button className="button button-primary" type="submit">Publicar loja</button></form></article>)}
+          {!stores.error && (stores.count ?? 0) > reviewPageSize && <nav className="catalog-pagination" aria-label="Paginação das lojas pendentes">{pages.lojaPagina > 1 ? <Link className="button button-secondary" href={pageHref({ lojaPagina: pages.lojaPagina - 1 })}>← Página anterior</Link> : <span />}<span>Página {pages.lojaPagina} de {storesPages} · {stores.count} lojas</span>{pages.lojaPagina < storesPages && pages.lojaPagina < maxPageNumber ? <Link className="button button-secondary" href={pageHref({ lojaPagina: pages.lojaPagina + 1 })}>Próxima página →</Link> : <span />}</nav>}
         </section>
         <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">ETAPA 3</span><h2>Anúncios para revisar</h2></div>
           {products.error ? <p className="auth-notice is-error">Não foi possível carregar os anúncios.</p> : (products.data?.length ?? 0) === 0 ? <p className="admin-empty">Nenhum anúncio de loja publicada para revisar.</p> : products.data?.map((product) => {
@@ -78,6 +105,7 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
             const videoUrl = normalizeProductVideoUrl(product.video_url);
             return <article className="admin-review-card admin-review-card-compact" key={product.id}><div><h3>{product.name}</h3><p>{store?.name} · {product.listing_type === "digital" ? "Arquivo digital 3D" : product.price_mode === "quote" ? "Sob orçamento" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(product.price_brl))}</p><p>{product.description}</p>{images.length > 0 && <ProductImageGallery images={images} name={product.name} color="blue" />}{videoUrl && <video className="admin-review-video" controls preload="none" playsInline aria-label={`Vídeo de demonstração de ${product.name}`}><source src={videoUrl} /></video>}{asset && <p>Arquivo privado: {asset.file_name} · prévia GLB {asset.has_preview ? "cadastrada" : "pendente"} · licença pessoal {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(asset.personal_price_brl))}{asset.commercial_price_brl ? ` · comercial ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(asset.commercial_price_brl))}` : ""}</p>}{!digitalReady && <p>O anúncio digital precisa do arquivo original, da prévia GLB e da licença pessoal.</p>}</div><form action={publishProductAction}><input type="hidden" name="productId" value={product.id} /><button className="button button-primary" type="submit" disabled={!digitalReady}>Publicar anúncio</button></form></article>;
           })}
+          {!products.error && (products.count ?? 0) > reviewPageSize && <nav className="catalog-pagination" aria-label="Paginação dos anúncios para revisar">{pages.anuncioPagina > 1 ? <Link className="button button-secondary" href={pageHref({ anuncioPagina: pages.anuncioPagina - 1 })}>← Página anterior</Link> : <span />}<span>Página {pages.anuncioPagina} de {productsPages} · {products.count} anúncios</span>{pages.anuncioPagina < productsPages && pages.anuncioPagina < maxPageNumber ? <Link className="button button-secondary" href={pageHref({ anuncioPagina: pages.anuncioPagina + 1 })}>Próxima página →</Link> : <span />}</nav>}
         </section>
         <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">ETAPA 4</span><h2>Perfis de impressão para revisar</h2></div>
           {printProfiles.error ? <p className="auth-notice is-error">Não foi possível carregar os perfis de impressão.</p> : (printProfiles.data?.length ?? 0) === 0 ? <p className="admin-empty">Nenhum perfil aguarda revisão.</p> : printProfiles.data?.map((profile) => {
@@ -94,6 +122,7 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
               <form action={reviewPrintProfileAction}><input type="hidden" name="profileId" value={profile.id} /><label>Retorno ao fabricante (opcional)<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="community" type="submit">Aprovar comunitário</button><button className="button button-primary" name="decision" value="official" type="submit">Marcar como oficial</button><button className="button button-secondary" name="decision" value="rejected" type="submit">Recusar</button></div></form>
             </article>;
           })}
+          {!printProfiles.error && (printProfiles.count ?? 0) > reviewPageSize && <nav className="catalog-pagination" aria-label="Paginação dos perfis de impressão">{pages.perfilPagina > 1 ? <Link className="button button-secondary" href={pageHref({ perfilPagina: pages.perfilPagina - 1 })}>← Página anterior</Link> : <span />}<span>Página {pages.perfilPagina} de {printProfilesPages} · {printProfiles.count} perfis</span>{pages.perfilPagina < printProfilesPages && pages.perfilPagina < maxPageNumber ? <Link className="button button-secondary" href={pageHref({ perfilPagina: pages.perfilPagina + 1 })}>Próxima página →</Link> : <span />}</nav>}
         </section>
         <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">ETAPA 5</span><h2>Perfis comunitários dos modelos</h2></div>
           {modelPrintProfiles.error ? <p className="auth-notice is-error">Não foi possível carregar os perfis comunitários dos modelos.</p> : (modelPrintProfiles.data?.length ?? 0) === 0 ? <p className="admin-empty">Nenhum perfil de modelo aguarda revisão.</p> : <>
@@ -110,7 +139,7 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
               <form action={reviewModelPrintProfileAction}><input type="hidden" name="profileId" value={profile.id} /><input type="hidden" name="modelSlug" value={profile.model_slug} /><label>Retorno ao autor (opcional)<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="community" type="submit" disabled={!model}>Aprovar comunitário</button><button className="button button-primary" name="decision" value="official" type="submit" disabled={!model}>Marcar como oficial</button><button className="button button-secondary" name="decision" value="rejected" type="submit">Recusar</button></div></form>
             </article>;
             })}
-            {modelProfilePages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos perfis de modelo">{modelPage > 1 ? <Link className="button button-secondary" href={modelProfilePageHref(modelPage - 1)}>← Página anterior</Link> : <span />}<span>Página {modelPage} de {modelProfilePages} · {modelPrintProfiles.count} perfis</span>{modelPage < modelProfilePages ? <Link className="button button-secondary" href={modelProfilePageHref(modelPage + 1)}>Próxima página →</Link> : <span />}</nav>}
+            {modelProfilePages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos perfis de modelo">{pages.modeloPagina > 1 ? <Link className="button button-secondary" href={pageHref({ modeloPagina: pages.modeloPagina - 1 })}>← Página anterior</Link> : <span />}<span>Página {pages.modeloPagina} de {modelProfilePages} · {modelPrintProfiles.count} perfis</span>{pages.modeloPagina < modelProfilePages && pages.modeloPagina < maxPageNumber ? <Link className="button button-secondary" href={pageHref({ modeloPagina: pages.modeloPagina + 1 })}>Próxima página →</Link> : <span />}</nav>}
           </>}
         </section>
       </main>
