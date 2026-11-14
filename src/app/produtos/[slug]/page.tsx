@@ -14,7 +14,7 @@ import { readPrintProfileColors } from "@/lib/print-profile-colors";
 import { DigitalAssetPurchaseForm } from "@/components/digital-asset-purchase-form";
 import { DigitalAssetReportForm } from "@/components/digital-asset-report-form";
 import { ModelViewer } from "@/components/model-viewer";
-import { ProductVariantChooser } from "@/components/product-variant-chooser";
+import { ProductVariantChooser, ProductVariantSummary } from "@/components/product-variant-chooser";
 import { ProductImageGallery } from "@/components/product-image-gallery";
 
 export const dynamic = "force-dynamic";
@@ -53,10 +53,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   const favoriteResult = buyer?.supabase && buyer.user && buyer.authorized
     ? await buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id).eq("product_id", product.id).maybeSingle()
     : null;
-  const selectedVariant = product.variants?.find((variant) => variant.id === query.variant) ?? null;
-  const availabilityLabel = selectedVariant
-    ? selectedVariant.stockQuantity == null ? "Produzido sob encomenda" : selectedVariant.stockQuantity === 0 ? "Sem unidades disponíveis" : `${selectedVariant.stockQuantity} unidade${selectedVariant.stockQuantity === 1 ? "" : "s"} em estoque`
-    : product.listingType === "digital" ? "Arquivo digital STL/3MF · download privado após pagamento" : product.stockQuantity != null ? product.stockQuantity === 0 ? "Sem unidades disponíveis" : `${product.stockQuantity} unidade${product.stockQuantity === 1 ? "" : "s"} em estoque` : product.fulfillmentMode === "made_to_order" ? `Produzido sob encomenda${product.preparationDays == null ? "" : ` · preparação em até ${product.preparationDays} dias`}` : product.fulfillmentMode === "ready_to_ship" ? "Disponibilidade a confirmar com o fabricante" : "Disponibilidade confirmada após consulta";
+  const availabilityLabel = product.listingType === "digital" ? "Arquivo digital STL/3MF · download privado após pagamento" : product.stockQuantity != null ? product.stockQuantity === 0 ? "Sem unidades disponíveis" : `${product.stockQuantity} unidade${product.stockQuantity === 1 ? "" : "s"} em estoque` : product.fulfillmentMode === "made_to_order" ? `Produzido sob encomenda${product.preparationDays == null ? "" : ` · preparação em até ${product.preparationDays} dias`}` : product.fulfillmentMode === "ready_to_ship" ? "Disponibilidade a confirmar com o fabricante" : "Disponibilidade confirmada após consulta";
   const siteUrl = getSiteUrl();
   const productUrl = siteUrl ? new URL(`/produtos/${encodeURIComponent(product.slug)}`, siteUrl).toString() : null;
   const availability = (stockQuantity: number | null) => stockQuantity === 0
@@ -140,8 +137,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
             <p className="eyebrow">{product.category}</p>
             <h1>{product.name}</h1>
             <p className="product-detail-maker">Por <strong>{product.storeSlug ? <Link href={`/lojas/${product.storeSlug}`}>{product.maker}</Link> : product.maker}</strong></p>
-            <p className="product-detail-price">{selectedVariant ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(selectedVariant.priceBrl) : product.priceLabel}</p>
-            {!product.demo && <p className="product-availability">{availabilityLabel}</p>}
+            <ProductVariantSummary variants={product.variants ?? []} priceLabel={product.priceLabel} availabilityLabel={availabilityLabel} showAvailability={!product.demo} />
             {!product.demo && buyer?.user && buyer.authorized && <FavoriteButton productId={product.id} slug={product.slug} initialFavorite={Boolean(favoriteResult?.data)} />}
             <p className="product-detail-description">{product.description || "O fabricante ainda não adicionou uma descrição para este produto."}</p>
             {product.physicalSpecifications && <div className="product-detail-note"><strong>Especificações da peça</strong>

@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { addProductToCart } from "@/app/carrinho/actions";
 import type { ProductVariant } from "@/lib/products";
+import { getSelectedProductVariant } from "@/components/product-variant-chooser";
 
 export function ProductCartForm({ slug, authorized, result, purchaseResult, stockQuantity = null, variantOptions = {}, variants = [] }: { slug: string; authorized: boolean; result?: string; purchaseResult?: string; stockQuantity?: number | null; variantOptions?: Record<string, string[]>; variants?: ProductVariant[] }) {
-  const selectedVariantId = useSearchParams().get("variant");
-  const variant = variants.find((item) => item.id === selectedVariantId) ?? variants[0] ?? null;
+  const variant = getSelectedProductVariant(variants, useSearchParams().get("variant"));
   const selected = variant?.options ?? Object.fromEntries(Object.entries(variantOptions).map(([name, values]) => [name, values[0] ?? ""]));
   const available = variants.length ? variant?.stockQuantity ?? (variant ? null : 0) : stockQuantity;
   const soldOut = available === 0;
