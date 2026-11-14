@@ -264,7 +264,7 @@ const seededPrinterFallbacks: PrinterEntry[] = [
         { mode: "mirror", dimensionsMm: { x: 138, y: 300, z: 350 }, simultaneousParts: 2 },
       ],
       manufacturerSupportedMaterials: variant === "Advanced" ? ["PLA", "PETG", "TPU", "PVA", "ABS", "ASA", "PA", "PC"] : ["PLA", "PETG", "TPU", "PVA"],
-      buildVolumeDescription: "Varia conforme o modo de impressão; o visualizador não verifica o encaixe sem seleção de modo.",
+      buildVolumeDescription: "Varia conforme o modo; selecione uma configuração para verificar o encaixe.",
       manufacturerSpecificationNotes: ["Volumes por modo: ferramenta fixa ou troca lateral 300 × 300 × 350 mm; sete ferramentas 240 × 300 × 350 mm; cópia 178 × 300 × 350 mm por peça; espelho 138 × 300 × 350 mm por peça. Confira o modo antes de validar o encaixe.", "O aquecimento ativo da câmara até 60 °C está incluído apenas na versão Advanced.", "A potência publicada refere-se ao aquecimento adaptativo AC; consumo médio não informado."],
       ...(variant === "Advanced" ? { activeChamberMaximumTemperatureC: 60, activeChamberHeatingIncluded: true } : { activeChamberHeatingIncluded: false }),
     }, sourceUrl: sovolM1dSource.url, sourceLabel: sovolM1dSource.label, checkedAt: sovolM1dSource.checkedAt,

@@ -4,6 +4,7 @@ import { ModelViewer } from "@/components/model-viewer";
 import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { loadTechnicalCatalog } from "@/lib/technical-catalog.server";
+import { getBuildVolumeModes } from "@/lib/technical-catalog-data";
 import { modelShowcase } from "@/lib/model-showcase";
 import type { SavedModelUpload } from "@/components/model-upload-manager";
 import type { CatalogMaterial, CatalogNozzle, CatalogPrinter } from "@/lib/compatibility";
@@ -36,17 +37,7 @@ export default async function ViewerPage({ searchParams }: { searchParams: Promi
   }));
   const printers = catalog.printers.map((printer) => {
     const properties = printer.technicalProperties ?? {};
-    const volumeModes = [
-      ["singleNozzleBuildVolumeMm", "Um bico"], ["dualNozzleBuildVolumeMm", "Dois bicos"],
-      ["combinedNozzleBuildVolumeMm", "Volume combinado"], ["singleExtrusionVolumeMm", "Extrusão simples"],
-      ["dualExtrusionVolumeMm", "Extrusão dupla"],
-    ].flatMap(([key, label]) => {
-      const value = properties[key];
-      if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-      const dimensions = value as Record<string, unknown>;
-      if (![dimensions.x, dimensions.y, dimensions.z].every((axis) => typeof axis === "number" && Number.isFinite(axis) && axis > 0)) return [];
-      return [{ id: key, label, dimensionsMm: { x: dimensions.x as number, y: dimensions.y as number, z: dimensions.z as number } }];
-    });
+    const volumeModes = getBuildVolumeModes(properties);
     const cylindrical = properties.buildVolumeShape === "cylindrical";
     return {
       id: printer.id, name: printer.name, technology: printer.technology,

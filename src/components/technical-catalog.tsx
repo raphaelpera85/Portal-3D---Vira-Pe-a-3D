@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ArrowUpRight, CircleHelp, Cpu, FlaskConical, Printer, ShieldCheck } from "lucide-react";
 import { evaluateCompatibility } from "@/lib/compatibility";
+import { getBuildVolumeModes } from "@/lib/technical-catalog-data";
 import type { MaterialEntry, NozzleEntry, PrinterEntry } from "@/lib/technical-catalog";
 
 const statusText = {
@@ -55,8 +56,12 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   const [nozzleId, setNozzleId] = useState(nozzles.find((item) => item.original)?.id ?? nozzles[0]?.id ?? "");
   const [dimensions, setDimensions] = useState({ x: "", y: "", z: "" });
   const [useMulticolor, setUseMulticolor] = useState(false);
+  const [volumeModeId, setVolumeModeId] = useState("");
   const printer = printers.find((item) => item.id === printerId) ?? printers[0];
   const printerProperties = printer.technicalProperties ?? {};
+  const volumeModes = getBuildVolumeModes(printerProperties);
+  const selectedVolumeMode = volumeModes.find((mode) => mode.id === volumeModeId) ?? volumeModes[0];
+  const compatibilityPrinter = selectedVolumeMode ? { ...printer, buildVolumeMm: selectedVolumeMode.dimensionsMm } : printer;
   const chamberTemperature = [printerProperties.activeChamberMaximumTemperatureC, printerProperties.maximumChamberTemperatureC, printerProperties.chamberMaximumTemperatureC]
     .find((value): value is number => typeof value === "number" && Number.isFinite(value)) ?? null;
   const activeChamberHeating = typeof printerProperties.activeChamberHeating === "boolean" ? printerProperties.activeChamberHeating : null;
@@ -101,7 +106,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   });
   const nozzle = printerNozzles.find((item) => item.id === nozzleId) ?? printerNozzles[0];
   const checkDimensions = Object.values(dimensions).some((value) => value !== "");
-  const compatibility = useMemo(() => evaluateCompatibility(printer, material, nozzle, {
+  const compatibility = useMemo(() => evaluateCompatibility(compatibilityPrinter, material, nozzle, {
     ...(checkDimensions && {
       partDimensionsMm: {
         x: dimensions.x === "" ? Number.NaN : Number(dimensions.x),
@@ -110,7 +115,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
       },
     }),
     useMulticolor,
-  }), [printer, material, nozzle, dimensions, checkDimensions, useMulticolor]);
+  }), [compatibilityPrinter, material, nozzle, dimensions, checkDimensions, useMulticolor]);
 
   return (
     <section className="technical-catalog shell" aria-label="Catálogos técnicos e verificação de compatibilidade">
@@ -133,6 +138,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <select value={printerId} onChange={(event) => {
                 const nextPrinter = printers.find((item) => item.id === event.target.value);
                 setPrinterId(event.target.value);
+                setVolumeModeId("");
                 if (nextPrinter && materials.find((item) => item.id === materialId)?.process !== processForPrinter(nextPrinter)) {
                   setMaterialId(materials.find((item) => item.process === processForPrinter(nextPrinter))?.id ?? materialId);
                 }
@@ -229,6 +235,11 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
           <h2>Compatibilidade</h2>
           <p className={`compatibility-status status-${compatibility.status}`}>{statusText[compatibility.status]}</p>
           <p className="compatibility-model">{printer.name}<br />{material.brand} {material.name}{material.process === "filament" && nozzle ? ` · ${nozzle.name}` : ""}</p>
+          {volumeModes.length > 1 && <label className="technical-select">Configuração do volume de impressão
+            <select aria-label="Configuração do volume de impressão" value={selectedVolumeMode?.id ?? ""} onChange={(event) => setVolumeModeId(event.target.value)}>
+              {volumeModes.map((mode) => <option key={mode.id} value={mode.id}>{mode.label} · {volumeText(mode.dimensionsMm)}</option>)}
+            </select>
+          </label>}
           {material.process === "filament" && <label className="multicolor-toggle"><input type="checkbox" checked={useMulticolor} onChange={(event) => setUseMulticolor(event.target.checked)} /><span>Quero usar o sistema multicolorido</span></label>}
           <div className="part-dimensions">
             <span>Dimensões da peça <small>(opcional, mm)</small></span>

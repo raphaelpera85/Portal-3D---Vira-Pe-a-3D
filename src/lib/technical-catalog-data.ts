@@ -1,6 +1,40 @@
 import type { CompatibilityStatus, MaterialSupportEntry } from "./compatibility";
 import type { MaterialEntry, NozzleEntry, PrinterEntry } from "./technical-catalog";
 
+export type BuildVolumeMode = { id: string; label: string; dimensionsMm: { x: number; y: number; z: number } };
+
+export function getBuildVolumeModes(properties: Record<string, unknown>): BuildVolumeMode[] {
+  const namedModes: Record<string, string> = {
+    "fixed toolhead or right-side toolhead switching": "Ferramenta fixa ou troca lateral",
+    "seven-toolhead printing": "Sete ferramentas",
+    copy: "Cópia (2 peças)",
+    mirror: "Espelho (2 peças)",
+  };
+  const propertyModes = [
+    ["singleNozzleBuildVolumeMm", "Um bico"], ["dualNozzleBuildVolumeMm", "Dois bicos"],
+    ["combinedNozzleBuildVolumeMm", "Volume combinado"], ["singleExtrusionVolumeMm", "Extrusão simples"],
+    ["dualExtrusionVolumeMm", "Extrusão dupla"],
+  ].flatMap(([id, label]) => {
+    const value = properties[id];
+    if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+    const dimensions = value as Record<string, unknown>;
+    return [dimensions.x, dimensions.y, dimensions.z].every((axis) => typeof axis === "number" && Number.isFinite(axis) && axis > 0)
+      ? [{ id, label, dimensionsMm: { x: dimensions.x as number, y: dimensions.y as number, z: dimensions.z as number } }]
+      : [];
+  });
+  const toolheadModes = Array.isArray(properties.toolheadModes) ? properties.toolheadModes.flatMap((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const mode = entry as Record<string, unknown>;
+    const dimensions = mode.dimensionsMm;
+    if (typeof mode.mode !== "string" || !dimensions || typeof dimensions !== "object" || Array.isArray(dimensions)) return [];
+    const value = dimensions as Record<string, unknown>;
+    return [value.x, value.y, value.z].every((axis) => typeof axis === "number" && Number.isFinite(axis) && axis > 0)
+      ? [{ id: mode.mode, label: namedModes[mode.mode] ?? mode.mode, dimensionsMm: { x: value.x as number, y: value.y as number, z: value.z as number } }]
+      : [];
+  }) : [];
+  return [...propertyModes, ...toolheadModes];
+}
+
 type Row = Record<string, unknown>;
 const text = (value: unknown, fallback = "") => typeof value === "string" ? value : fallback;
 const number = (value: unknown): number | null => value == null || value === "" ? null : Number.isFinite(Number(value)) ? Number(value) : null;

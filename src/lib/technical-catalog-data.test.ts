@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { evaluateBuildVolume, evaluateCompatibility } from "./compatibility";
-import { mapTechnicalCatalog, mergeTechnicalCatalogWithFallback } from "./technical-catalog-data";
+import { getBuildVolumeModes, mapTechnicalCatalog, mergeTechnicalCatalogWithFallback } from "./technical-catalog-data";
 import { materials, nozzles, printers } from "./technical-catalog";
 
 describe("mapTechnicalCatalog", () => {
@@ -12,6 +12,15 @@ describe("mapTechnicalCatalog", () => {
     ]);
     expect(m1d[0].buildVolumeMm).toBeNull();
     expect(evaluateBuildVolume(m1d[0].buildVolumeMm, { x: 250, y: 250, z: 250 }).status).toBe("unverified");
+    const modes = getBuildVolumeModes(m1d[0].technicalProperties ?? {});
+    expect(modes).toEqual([
+      { id: "fixed toolhead or right-side toolhead switching", label: "Ferramenta fixa ou troca lateral", dimensionsMm: { x: 300, y: 300, z: 350 } },
+      { id: "seven-toolhead printing", label: "Sete ferramentas", dimensionsMm: { x: 240, y: 300, z: 350 } },
+      { id: "copy", label: "Cópia (2 peças)", dimensionsMm: { x: 178, y: 300, z: 350 } },
+      { id: "mirror", label: "Espelho (2 peças)", dimensionsMm: { x: 138, y: 300, z: 350 } },
+    ]);
+    expect(getBuildVolumeModes({ toolheadModes: [{ mode: "bad", dimensionsMm: { x: 240, y: 0, z: 350 } }] })).toEqual([]);
+    expect(evaluateBuildVolume(modes[2].dimensionsMm, { x: 400, y: 150, z: 100 }).status).toBe("incompatible");
     expect(m1d[0].technicalProperties).toMatchObject({
       toolheadCount: 7,
       activeChamberHeatingIncluded: false,
