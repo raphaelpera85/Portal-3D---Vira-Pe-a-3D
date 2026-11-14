@@ -50,6 +50,10 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
     const url = getModelAssetUrl(filePath);
     return url ? [{ label, filePath, url }] : [];
   });
+  const previewVersions = [
+    ...(downloadUrl ? [{ label: "Arquivo principal", url: downloadUrl }] : []),
+    ...downloadVariants.map(({ label, url }) => ({ label, url })),
+  ];
   const siteUrl = getSiteUrl();
   const modelUrl = siteUrl ? new URL(`/modelos/${encodeURIComponent(model.id)}`, siteUrl).toString() : null;
   const structuredData = modelUrl ? {
@@ -85,7 +89,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
         <h1>{model.name}</h1>
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={`/modelos?q=${encodeURIComponent(tag)}#modelos`}>{tag}</Link></li>)}</ul>
       </div>
-      <ModelDetailContent modelId={model.id} modelName={model.name} previewUrl={previewUrl} today={new Date().toISOString().slice(0, 10)} profiles={profiles} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />
+      <ModelDetailContent key={model.id} modelId={model.id} modelName={model.name} previewUrl={previewUrl} previewVersions={previewVersions} today={new Date().toISOString().slice(0, 10)} profiles={profiles} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />
       <ModelRecommendations models={recommendations} />
       <section className="shell model-detail-download" aria-label="Download do modelo">
         <div><p className="eyebrow">ARQUIVOS ORIGINAIS</p><h2>{model.name}</h2><p>Escolha a versão 3MF para abrir no seu fatiador ou programa de modelagem.</p></div>
