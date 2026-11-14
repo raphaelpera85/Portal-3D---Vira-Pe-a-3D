@@ -13,5 +13,7 @@ describe("seller notification status and email destination migration", () => {
     expect(migration).toContain("revoke all on function public.authorize_store_notification_email_delivery(uuid) from public, anon, authenticated");
     expect(migration).toContain("grant execute on function public.authorize_store_notification_email_delivery(uuid) to service_role");
     expect(migration).toMatch(/drop policy "Makers can read delivery status for their requests and orders"[\s\S]*?\(request_id is not null[\s\S]*?\) or \(order_id is not null[\s\S]*?\)\s*\) and exists \([\s\S]*?r\.role = 'maker'::public\.app_role/);
+    expect(migration).toMatch(/drop policy "Designers can read delivery status for their service requests"[\s\S]*?designer_service_request_id is not null[\s\S]*?r\.role = 'designer'::public\.app_role/);
+    expect(migration).toMatch(/drop policy "Makers read custom print notification delivery status"[\s\S]*?custom_print_target_id is not null[\s\S]*?r\.role = 'maker'::public\.app_role/);
   });
 });

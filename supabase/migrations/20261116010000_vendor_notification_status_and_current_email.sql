@@ -58,6 +58,37 @@ create policy "Makers can read delivery status for their requests and orders"
     )
   );
 
+drop policy "Designers can read delivery status for their service requests" on public.store_notification_deliveries;
+create policy "Designers can read delivery status for their service requests"
+  on public.store_notification_deliveries for select to authenticated
+  using (
+    designer_service_request_id is not null
+    and exists (
+      select 1 from public.designer_service_requests q
+      join public.designer_profiles d on d.id = q.designer_profile_id
+      where q.id = designer_service_request_id and d.user_id = (select auth.uid())
+    )
+    and exists (
+      select 1 from public.user_roles r where r.user_id = (select auth.uid()) and r.role = 'designer'::public.app_role
+    )
+  );
+
+drop policy "Makers read custom print notification delivery status" on public.store_notification_deliveries;
+create policy "Makers read custom print notification delivery status"
+  on public.store_notification_deliveries for select to authenticated
+  using (
+    custom_print_target_id is not null
+    and public.can_view_custom_print_target(custom_print_target_id)
+    and exists (
+      select 1 from public.stores s
+      join public.custom_print_request_targets t on t.store_id = s.id
+      where t.id = custom_print_target_id and s.owner_user_id = (select auth.uid())
+    )
+    and exists (
+      select 1 from public.user_roles r where r.user_id = (select auth.uid()) and r.role = 'maker'::public.app_role
+    )
+  );
+
 do $$ begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
     and not exists (
