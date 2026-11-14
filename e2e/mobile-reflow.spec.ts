@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("public pages reflow at a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
 
-  for (const path of ["/", "/modelos", "/calculadora", "/catalogos", "/visualizador", "/carrinho"]) {
+  for (const path of ["/", "/modelos", "/modelos/882ecc1d8c46", "/calculadora", "/catalogos", "/visualizador", "/carrinho", "/lojas", "/designers", "/conta", "/conta/recuperar-senha"]) {
     await page.goto(path);
     await expect(page.locator("#main-content")).toBeVisible();
     const bounds = await page.locator("#main-content").evaluate((main) => {
