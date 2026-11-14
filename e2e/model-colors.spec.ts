@@ -48,3 +48,19 @@ test("color selection visibly marks only matching painted faces in a public mode
   await expect(color).toHaveAttribute("aria-pressed", "true");
   await expect.poll(async () => !(await canvas.screenshot()).equals(before)).toBe(true);
 });
+
+for (const model of [
+  { name: "cat", id: "ed02512a7e12", file: "models/cat.3mf", minColors: 4 },
+  { name: "owl", id: "2a2e5f6c6d90", file: "models/coruja-descanso-oculos.3mf", minColors: 4 },
+  { name: "improved cat holder", id: "803903c6b264", file: "models/improved-cat-glasses-holder.3mf", minColors: 3 },
+]) {
+  test(`public ${model.name} glasses holder shows the real color palette`, async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.route("https://raw.githubusercontent.com/**", (route) => route.fulfill({ path: resolve(model.file) }));
+    await page.goto(`/modelos/${model.id}`);
+
+    const palette = page.getByRole("region", { name: "Cores do modelo" });
+    await expect.poll(async () => palette.getByRole("button").count(), { timeout: 90_000 }).toBeGreaterThanOrEqual(model.minColors);
+  });
+}
