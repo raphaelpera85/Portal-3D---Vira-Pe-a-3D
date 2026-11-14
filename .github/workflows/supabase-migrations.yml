@@ -1,0 +1,43 @@
+name: Supabase migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Validate pending migrations or apply them to production
+        type: choice
+        required: true
+        default: dry-run
+        options:
+          - dry-run
+          - apply
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-production-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrations:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v3
+      - name: Review and apply migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "Configure the SUPABASE_DB_URL GitHub Actions secret first."
+            exit 1
+          fi
+          supabase migration list --db-url "$SUPABASE_DB_URL"
+          if [ "$OPERATION" = "apply" ]; then
+            supabase db push --yes --db-url "$SUPABASE_DB_URL"
+          else
+            supabase db push --dry-run --db-url "$SUPABASE_DB_URL"
+          fi
