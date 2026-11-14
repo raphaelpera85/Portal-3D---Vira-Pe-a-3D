@@ -1,9 +1,53 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { evaluateBuildVolume, evaluateCompatibility } from "./compatibility";
 import { getBuildVolumeModes, mapTechnicalCatalog, mergeTechnicalCatalogWithFallback } from "./technical-catalog-data";
 import { materials, nozzles, printers } from "./technical-catalog";
 
+const profileHash = (profiles: unknown) => {
+  const canonical = (value: unknown): unknown => Array.isArray(value) ? value.map(canonical)
+    : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonical(item)]))
+    : value;
+  return createHash("sha256").update(JSON.stringify(canonical(profiles) ?? null)).digest("hex");
+};
+
 describe("mapTechnicalCatalog", () => {
+  it("keeps published resin entries and exact exposure data in the local fallback", () => {
+    const standard = materials.find((material) => material.id === "anycubic-standard-resin-v2");
+    const waterWash = materials.find((material) => material.id === "anycubic-water-wash-resin-2-0");
+    const elegoo = materials.find((material) => material.id === "elegoo-abs-like-resin-v3-0");
+
+    expect(materials.filter((material) => material.process === "resin")).toHaveLength(3);
+    expect(standard).toMatchObject({ process: "resin", resinWavelengthNm: 405 });
+    expect(standard?.technicalProperties?.exposureByPrinter).toContainEqual({
+      printer: "Photon Mono M7", layerHeightMm: 0.05, normalExposureSeconds: 2.2, lightOffSeconds: 0.5,
+      bottomExposureSeconds: 25, bottomLayers: 4, antiAliasingLevel: 1, zLiftDistanceMm: 8, zLiftSpeedMmPerSecond: 6, zRetractSpeedMmPerSecond: 6,
+    });
+    expect(waterWash).toMatchObject({ process: "resin", resinWavelengthNm: 405 });
+    expect(waterWash?.technicalProperties?.exposureByPrinter).toContainEqual({
+      printer: "Photon Mono M7", layerHeightMm: 0.05, normalExposureSeconds: 2.5, lightOffSeconds: 1,
+      bottomExposureSeconds: 35, bottomLayers: 4, antiAliasingLevel: 1, zLiftDistanceMm: 8, zLiftSpeedMmPerSecond: 6, zRetractSpeedMmPerSecond: 6,
+    });
+    expect(standard?.technicalProperties?.exposureByPrinter).toHaveLength(16);
+    expect(waterWash?.technicalProperties?.exposureByPrinter).toHaveLength(16);
+    expect(profileHash(standard?.technicalProperties?.exposureByPrinter)).toBe("14b424d6cb7ff3fd2b277d7d3542ec8128efa6727ed134a017db938de13aa6ad");
+    expect(profileHash(waterWash?.technicalProperties?.exposureByPrinter)).toBe("4fbec81d72ddbe21318e3676487947d2006f9a277ca18b42a13dc956400513b3");
+    expect(elegoo).toMatchObject({ process: "resin", resinWavelengthNm: 405, resinExposureSeconds: null });
+    expect(elegoo?.technicalProperties).not.toHaveProperty("exposureByPrinter");
+
+    const monoM7 = printers.find((printer) => printer.id === "anycubic-photon-mono-m7")!;
+    const anycubicCheck = evaluateCompatibility(monoM7, standard!);
+    expect(anycubicCheck.checks.find((check) => check.key === "material")?.status).toBe("compatible");
+    expect(anycubicCheck.checks.find((check) => check.key === "resin-exposure")?.status).toBe("compatible");
+    expect(anycubicCheck.checks.find((check) => check.key === "resin-wavelength")?.status).toBe("unverified");
+
+    const saturn = printers.find((printer) => printer.id === "elegoo-saturn-4-ultra-12k")!;
+    const elegooCheck = evaluateCompatibility(saturn, elegoo!);
+    expect(elegooCheck.checks.find((check) => check.key === "material")?.status).toBe("compatible");
+    expect(elegooCheck.checks.find((check) => check.key === "resin-wavelength")?.status).toBe("compatible");
+    expect(elegooCheck.checks.find((check) => check.key === "resin-exposure")?.status).toBe("unverified");
+  });
+
   it("keeps Sovol M1D variants, pre-order status and mode-specific volumes explicit", () => {
     const m1d = printers.filter((printer) => printer.model === "M1D");
     expect(m1d.map(({ variant, commercialStatus, enclosure }) => ({ variant, commercialStatus, enclosure }))).toEqual([
