@@ -96,12 +96,18 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     actor.supabase.from("seller_purchase_orders").select("id, store_name, created_at", { count: "exact" }).eq("store_id", store.id).is("maker_read_at", null).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(50),
     fetchAllPages((from, to) => actor.supabase.from("maker_printers").select("id, catalog_model_id, manufacturer_snapshot, model_snapshot, variant_snapshot, custom_manufacturer, custom_model, nickname, purchased_at, purchase_price_brl, residual_value_brl, useful_life_hours, accumulated_hours, installed_nozzle, modifications, measured_average_power_w, power_measurement_conditions, energy_tariff_per_kwh, operational_status, maintenance:printer_maintenance_events(id, performed_at, created_at, maintenance_type, component, cost_brl, hours_at_event, notes, next_due_at, next_due_hours)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).order("performed_at", { ascending: false, referencedTable: "printer_maintenance_events" }).order("created_at", { ascending: false, referencedTable: "printer_maintenance_events" }).range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("printer_models").select("id, manufacturer, model, variant").eq("catalog_status", "published").order("manufacturer").order("model").order("id").range(from, to)),
-    fetchAllPages((from, to) => actor.supabase.from("maker_consignment_items").select("id, establishment, product_name, unit_cost_brl, sale_price_brl, commission_percent, commission_fixed_fee_brl, created_at, movements:maker_consignment_movements(id, movement_type, quantity, notes, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).order("created_at", { ascending: false, referencedTable: "maker_consignment_movements" }).range(from, to)),
+    fetchAllPages((from, to) => actor.supabase.from("maker_consignment_items").select("id, establishment, product_name, unit_cost_brl, sale_price_brl, commission_percent, commission_fixed_fee_brl, created_at").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("maker_print_profiles").select("id, product_id, profile_name, profile_type, sharing_scope, review_status, review_note, maker_printer_id, printer_snapshot, material_id, material_snapshot, nozzle_id, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, print_hours, material_grams, material_by_color").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("material_catalog").select("id, manufacturer, product, family").eq("catalog_status", "published").order("manufacturer").order("product").order("id").range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("nozzle_catalog").select("id, manufacturer, model, diameter_mm, interface").eq("catalog_status", "published").order("manufacturer").order("model").order("id").range(from, to)),
     actor.supabase.from("printer_model_suggestions").select("id, manufacturer, model, variant, technology, source_url, notes, status, review_note, printer_model_id, created_at").eq("suggested_by", actor.user.id).order("created_at", { ascending: false }).limit(50),
   ]) : [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: null, error: null }, { data: [], count: 0, error: null }, { data: [], count: 0, error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }];
+  const consignmentMovementsResult = await fetchInChunks((consignmentResult.data ?? []).map((item) => item.id), (itemIds) => fetchAllPages((from, to) => actor.supabase.from("maker_consignment_movements")
+    .select("id, item_id, movement_type, quantity, notes, created_at").in("item_id", itemIds)
+    .order("item_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)));
+  const consignmentMovementsByItem = new Map<string, NonNullable<typeof consignmentMovementsResult.data>>();
+  for (const movement of consignmentMovementsResult.data ?? []) consignmentMovementsByItem.set(movement.item_id,
+    [...(consignmentMovementsByItem.get(movement.item_id) ?? []), movement]);
   const products = productResult.data ?? [];
   const unreadQuotes = quoteResult.data?.filter((request) => !request.maker_read_at) ?? [];
   const customPrintTargets = (customPrintResult.data ?? []) as unknown as CustomPrintTargetRow[];
@@ -204,9 +210,9 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
             {resultado === "variacao-salva" && <p className="auth-notice is-success" role="status">Preços e estoques das variações atualizados.</p>}
             {resultado === "variacao-erro" && <p className="auth-notice is-error" role="alert">Não foi possível atualizar as variações. Um checkout ativo pode estar reservando unidades; atualize a página e tente novamente.</p>}
             <MakerConsignmentManager
-              items={(consignmentResult.data ?? []).map((item) => ({ ...item, movements: item.movements ?? [] }))}
+              items={(consignmentResult.data ?? []).map((item) => ({ ...item, movements: consignmentMovementsByItem.get(item.id) ?? [] }))}
               products={products.filter((product) => product.catalog_status === "published").map(({ id, name }) => ({ id, name }))}
-              error={Boolean(consignmentResult.error)}
+              error={Boolean(consignmentResult.error || consignmentMovementsResult.error)}
             />
             {productResult.error && <p className="auth-notice is-error" role="alert">Não foi possível carregar os anúncios.</p>}
             <section className="account-card maker-products-card" id="produtos"><span className="account-kicker">SEUS ANÚNCIOS</span><h2>Produtos cadastrados</h2>
