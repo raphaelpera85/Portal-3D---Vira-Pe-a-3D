@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ImageUp, LoaderCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ImageUp, LoaderCircle, X } from "lucide-react";
 import { differenceHash, rankVisualCandidates, type RankedVisualCandidate, type VisualImageCandidate } from "@/lib/visual-image-search";
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export function CatalogImageSearch({ configured, category, redirectPath = "/modelos", visualIndex = [] }: { configured: boolean; category: string; redirectPath?: string; visualIndex?: VisualImageCandidate[] }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -91,9 +92,17 @@ export function CatalogImageSearch({ configured, category, redirectPath = "/mode
     setError(Boolean(file && !valid));
   }
 
+  function clearImage() {
+    setImage(null);
+    setLocalMatches(null);
+    setMessage("");
+    setError(false);
+    fileInputRef.current?.focus();
+  }
+
   return <div className="catalog-image-search">
-    <label className="catalog-image-file"><ImageUp size={16} aria-hidden="true" /> Buscar por imagem<input type="file" accept="image/png,image/jpeg,image/webp" disabled={!canUpload || loading || localLoading} onChange={(event) => selectImage(event.target.files?.[0] ?? null)} /></label>
-    {image && imagePreviewUrl && <span className="catalog-image-selected"><img src={imagePreviewUrl} alt={`Imagem selecionada: ${image.name}`} width="44" height="44" /><span className="catalog-image-name">{image.name}</span></span>}
+    <label className="catalog-image-file"><ImageUp size={16} aria-hidden="true" /> Buscar por imagem<input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" disabled={!canUpload || loading || localLoading} onChange={(event) => { const file = event.currentTarget.files?.[0] ?? null; selectImage(file); event.currentTarget.value = ""; }} /></label>
+    {image && imagePreviewUrl && <span className="catalog-image-selected"><img src={imagePreviewUrl} alt={`Imagem selecionada: ${image.name}`} width="44" height="44" /><span className="catalog-image-name">{image.name}</span><button className="catalog-image-clear" type="button" aria-label={`Remover imagem ${image.name}`} onClick={clearImage} disabled={loading || localLoading}><X size={15} aria-hidden="true" /></button></span>}
     {localSearchAvailable && <button className="catalog-image-submit" type="button" onClick={searchLocally} disabled={!image || localLoading || loading}>{localLoading ? <><LoaderCircle size={14} className="spin" /> Comparando…</> : "Comparar com prévias"}</button>}
     {configured ? <>
       <label className="catalog-image-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> Enviar a imagem ao Google Cloud Vision para reconhecer objetos e encontrar modelos relacionados.</label>
