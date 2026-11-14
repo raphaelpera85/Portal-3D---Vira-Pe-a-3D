@@ -7,6 +7,7 @@ import { getUserWithRole } from "@/lib/auth-role.server";
 import { formatBrl } from "@/lib/money";
 import { groupCartItemsByStore, type CartRow } from "@/lib/cart";
 import { allocateCouponDiscountCents, couponNeedsReview, normalizeCouponCode } from "@/lib/coupon";
+import { fetchAllPages } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -29,7 +30,7 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
   const cart = cartResult.data;
   const [itemsResult, addressesResult] = await Promise.all([
     cart ? actor.supabase.from("buyer_cart_items").select("id, product_id, store_id, store_name, product_name, price_brl, quantity").eq("cart_id", cart.id).order("created_at") : Promise.resolve({ data: [], error: null }),
-    actor.supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default").eq("buyer_id", actor.user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
+    fetchAllPages((from, to) => actor.supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default").eq("buyer_id", actor.user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
   ]);
   const { data: cartItems, error: itemsError } = itemsResult;
   const addresses = addressesResult.data ?? [];

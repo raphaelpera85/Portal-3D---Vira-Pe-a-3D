@@ -9,6 +9,7 @@ import { BuyerAddressManager } from "@/components/buyer-address-manager";
 import { signOutAction } from "./actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getUnreadNotificationLabel } from "@/lib/notification-count-label";
+import { fetchAllPages } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -34,8 +35,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const isAdmin = roles.some((item) => item.role === "admin");
   const application = applicationResult?.data ?? null;
   const buyerData = isBuyer && supabase && user ? await Promise.all([
-    supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default")
-      .order("is_default", { ascending: false }).order("created_at", { ascending: false }),
+    fetchAllPages((from, to) => supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default")
+      .eq("buyer_id", user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     supabase.from("user_notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null),
   ]) : null;
   const addressesResult = buyerData?.[0] ?? null;

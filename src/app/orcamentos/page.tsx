@@ -68,7 +68,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
   const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("buyer")]);
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const [addressResult, requestResult, orderResult, customResult] = await Promise.all([
-    actor.supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default").eq("buyer_id", actor.user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
+    fetchAllPages((from, to) => actor.supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default").eq("buyer_id", actor.user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("product_quote_requests")
       .select("id, request_type, license_type, product_id, unit_price_brl, product_name, store_name, quantity, customization, due_date, status, created_at, product:marketplace_products(slug), offer:product_quote_offers(id, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), downloads:digital_asset_downloads(id, created_at)")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
