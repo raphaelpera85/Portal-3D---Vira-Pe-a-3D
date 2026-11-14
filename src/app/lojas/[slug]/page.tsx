@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
@@ -12,18 +13,18 @@ export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ pagina?: string }> };
 const pageSize = 24;
 
-async function getPublishedStore(slug: string) {
+const getPublishedStore = cache(async (slug: string) => {
   const supabase = await createSupabaseServerClient();
-  if (!supabase) return null;
+  if (!supabase) return { supabase, store: null };
   const { data, error } = await supabase.from("stores")
     .select("id, slug, name, description, logo_url, banner_url, city, state_code, updated_at")
     .eq("slug", slug).eq("status", "published").maybeSingle();
-  return error ? null : data;
-}
+  return { supabase, store: error ? null : data };
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const store = await getPublishedStore(slug);
+  const { store } = await getPublishedStore(slug);
   if (!store) return { title: "Loja não encontrada | ViraPeça 3D", robots: { index: false } };
   const title = store.name;
   const description = store.description.slice(0, 160) || `Conheça os produtos e serviços da loja ${store.name} no ViraPeça 3D.`;
@@ -38,12 +39,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function StoreProfilePage({ params, searchParams }: Props) {
-  const [{ slug }, { pagina }, supabase] = await Promise.all([params, searchParams, createSupabaseServerClient()]);
-  if (!supabase) notFound();
-  const { data: store, error: storeError } = await supabase.from("stores")
-    .select("id, slug, name, description, logo_url, banner_url, city, state_code, updated_at")
-    .eq("slug", slug).eq("status", "published").maybeSingle();
-  if (storeError || !store) notFound();
+  const [{ slug }, { pagina }] = await Promise.all([params, searchParams]);
+  const { supabase, store } = await getPublishedStore(slug);
+  if (!supabase || !store) notFound();
   const requestedPage = typeof pagina === "string" && /^\d+$/.test(pagina) ? Number(pagina) : 1;
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 10000) : 1;
   const [policyResult, productResult, reviewResult] = await Promise.all([
