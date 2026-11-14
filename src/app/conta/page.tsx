@@ -82,7 +82,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           </>
         )}
       </main>
-      <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Seus dados ficam protegidos pelo serviço de autenticação da plataforma.</p><span>© 2026 ViraPeça 3D</span></div></footer>
+      <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Seus dados ficam protegidos pelo serviço de autenticação da plataforma.</p><nav className="footer-policy-links" aria-label="Informações do portal"><Link href="/privacidade">Privacidade</Link><Link href="/termos">Termos de uso</Link></nav><span>© 2026 ViraPeça 3D</span></div></footer>
     </>
   );
 }

@@ -28,6 +28,7 @@ export async function POST(request: Request) {
   const bodyBuffer = body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer;
   let form: FormData;
   try { form = await new Request(request.url, { method: "POST", headers, body: bodyBuffer }).formData(); } catch { return Response.json({ error: "invalid_multipart_request" }, { status: 400 }); }
+  if (form.get("consent") !== "yes") return Response.json({ error: "ocr_consent_required" }, { status: 400 });
   const entries = form.getAll("images");
   if (entries.length < 1 || entries.length > 3 || entries.some((entry) => !(entry instanceof File))) {
     return Response.json({ error: "invalid_image_count" }, { status: 400 });

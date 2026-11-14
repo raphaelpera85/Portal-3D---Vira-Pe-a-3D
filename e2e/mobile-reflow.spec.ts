@@ -3,9 +3,13 @@ import { expect, test } from "@playwright/test";
 test("public pages reflow at a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
 
-  for (const path of ["/", "/modelos", "/modelos/882ecc1d8c46", "/calculadora", "/catalogos", "/visualizador", "/carrinho", "/lojas", "/designers", "/conta", "/conta/recuperar-senha"]) {
+  for (const path of ["/", "/modelos", "/modelos/882ecc1d8c46", "/calculadora", "/catalogos", "/visualizador", "/carrinho", "/lojas", "/designers", "/conta", "/conta/recuperar-senha", "/privacidade", "/termos"]) {
     await page.goto(path);
     await expect(page.locator("#main-content")).toBeVisible();
+    if (["/privacidade", "/termos"].includes(path)) {
+      await expect(page.getByRole("heading", { level: 1, name: path === "/privacidade" ? "Política de Privacidade" : "Termos de Uso" })).toBeVisible();
+      await expect(page.getByRole("navigation", { name: "Nesta página" })).toBeVisible();
+    }
     const bounds = await page.locator("#main-content").evaluate((main) => {
       const viewport = window.innerWidth;
       const elements = [main, ...main.querySelectorAll("a, button, input, select, textarea, h1, h2, h3, p, label")];

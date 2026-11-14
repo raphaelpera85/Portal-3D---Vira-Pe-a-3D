@@ -11,12 +11,30 @@ vi.mock("@/lib/google-vision-ocr", () => ({ recognizeSlicerImages: mocks.recogni
 
 import { POST } from "./route";
 
+const pngSignature = Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10);
+
+function request(consent?: string) {
+  const form = new FormData();
+  form.set("images", new File([pngSignature], "slicer.png", { type: "image/png" }));
+  if (consent) form.set("consent", consent);
+  return new Request("https://virapeca3d.example/api/ocr/slicer", { method: "POST", body: form });
+}
+
 describe("slicer OCR upload limit", () => {
   beforeEach(() => {
     vi.stubEnv("GOOGLE_CLOUD_VISION_API_KEY", "test-key");
     mocks.getUserWithRole.mockReset().mockResolvedValue({ user: { id: "maker" }, authorized: true, supabase: { rpc: mocks.consumeQuota } });
     mocks.consumeQuota.mockReset().mockResolvedValue({ data: true, error: null });
     mocks.recognizeSlicerImages.mockReset();
+  });
+
+  it("rejects image processing without explicit consent before quota or provider calls", async () => {
+    const response = await POST(request());
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "ocr_consent_required" });
+    expect(mocks.consumeQuota).not.toHaveBeenCalled();
+    expect(mocks.recognizeSlicerImages).not.toHaveBeenCalled();
   });
 
   it("rejects an oversized streamed body before parsing or charging quota", async () => {

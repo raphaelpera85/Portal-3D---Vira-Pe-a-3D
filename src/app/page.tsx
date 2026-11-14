@@ -179,7 +179,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
         </section>
       </main>
       <footer className="site-footer">
-        <div className="shell footer-inner"><a className="brand footer-brand" href="#top"><span className="brand-symbol"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></a><p>Sua ideia vira realidade.</p><span>© 2026 ViraPeça 3D</span></div>
+        <div className="shell footer-inner"><a className="brand footer-brand" href="#top"><span className="brand-symbol"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></a><p>Sua ideia vira realidade.</p><nav className="footer-policy-links" aria-label="Informações do portal"><Link href="/privacidade">Privacidade</Link><Link href="/termos">Termos de uso</Link></nav><span>© 2026 ViraPeça 3D</span></div>
       </footer>
     </>
   );

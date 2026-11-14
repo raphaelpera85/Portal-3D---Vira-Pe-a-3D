@@ -17,6 +17,7 @@ function validateFiles(files: File[]) {
 
 function errorMessage(code: string) {
   if (code === "ocr_not_configured") return "O OCR ainda não foi conectado ao Google Cloud Vision.";
+  if (code === "ocr_consent_required") return "Autorize o envio das imagens para iniciar a leitura.";
   if (code === "authentication_required" || code === "maker_account_required") return "Entre em uma conta de fabricante aprovada para usar o OCR.";
   if (code === "ocr_quota_unavailable") return "O limite diário do OCR ainda não está disponível. Confira as migrações do Supabase.";
   if (code === "ocr_daily_limit_reached") return "Você atingiu o limite de 30 imagens de OCR por dia. Tente novamente amanhã.";
@@ -60,6 +61,7 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
     try {
       const form = new FormData();
       files.forEach((file) => form.append("images", file));
+      form.set("consent", "yes");
       const response = await fetch("/api/ocr/slicer", { method: "POST", body: form });
       const data = await response.json().catch(() => null) as { extraction?: Extraction; error?: string } | null;
       if (!response.ok || !data?.extraction) throw new Error(errorMessage(data?.error ?? "ocr_provider_failed"));

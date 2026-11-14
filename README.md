@@ -51,6 +51,10 @@ O OCR da calculadora está disponível para fabricantes autenticados quando Clou
 
 Compradores, fabricantes e designers podem abrir e acompanhar conversas privadas em `/suporte`. A equipe responde e atualiza o status pela caixa de entrada `/admin/atendimento`; uma resposta gera um aviso por e-mail com link para o portal, quando o Resend está configurado. O conteúdo da conversa permanece no portal. Anexos privados estão disponíveis. A fila administrativa mostra o tempo desde a última atualização e a média da primeira resposta em janelas de 7 e 30 dias; metas de SLA ainda não estão configuradas.
 
+## Informações legais
+
+As páginas `/privacidade` e `/termos` resumem os fluxos atuais do portal e ficam ligadas ao cadastro. Preencha `SITE_LEGAL_NAME`, `SITE_LEGAL_ID`, `SITE_LEGAL_ADDRESS` e `SITE_PRIVACY_EMAIL` no ambiente da Vercel e revise o conteúdo com o responsável legal. Enquanto os dados estiverem incompletos ou `SITE_LEGAL_PAGES_APPROVED` não for `true`, as páginas exibem o aviso de revisão e enviam `noindex` aos mecanismos de busca.
+
 ## Supabase
 
 Crie um projeto Supabase e preencha `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `SUPABASE_SECRET_KEY` em `.env.local`. A chave secreta é exclusiva do servidor e nunca deve ser compartilhada, versionada ou exposta no browser. Projetos que ainda usam a chave legada podem preencher `SUPABASE_SERVICE_ROLE_KEY`. Para aplicar migrações pela Supabase CLI, informe `SUPABASE_DB_URL` com a conexão direta e senha do banco; essa URL fica somente no `.env.local`, ignorado pelo Git. Na Vercel, cadastre as variáveis de runtime em **Project Settings → Environment Variables**; a plataforma usa as variáveis do projeto, não o arquivo local. O `.env.example` versionado contém nomes sem valores secretos.
