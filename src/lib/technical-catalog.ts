@@ -168,6 +168,16 @@ const anycubicPhotonP1MaxSource = {
   url: "https://store.anycubic.com/products/photon-p1-max-best-large-resin-3d-printer",
   checkedAt: "2026-11-14",
 };
+const crealityK1MaxSource = {
+  label: "Creality — K1 Max (2024) official specifications",
+  url: "https://store.creality.com/blogs/all/creality-k1-vs-k1-max",
+  checkedAt: "2026-11-12",
+};
+const crealityK1MaxNozzleSource = {
+  label: "Creality — K1 Max high-flow nozzle compatibility",
+  url: "https://store.creality.com/products/genuine-e3d-obxidian%E2%84%A2-high-flow-nozzle-assembly",
+  checkedAt: "2026-11-12",
+};
 type SeededPrinterFields = Partial<Pick<PrinterEntry,
   "buildVolumeDescription" | "buildVolumeMm" | "extruders" | "filamentDiameterMm" | "maxNozzleTemperatureC"
   | "maxBedTemperatureC" | "heatedBed" | "enclosure" | "maximumSpeedMmPerSecond" | "maximumSpeedDescription"
@@ -207,6 +217,7 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "anycubic-kobra-4", brand: "Anycubic", model: "Kobra 4", variant: "standard", technology: "FDM", buildVolumeMm: { x: 260, y: 260, z: 260 }, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 600, supportedMaterials: { PLA: "compatible", PETG: "compatible", TPU: "compatible" }, technicalProperties: { recommendedPrintSpeedMmPerSecond: 300, maxAccelerationMmPerSecondSquared: 20000, recommendedAccelerationMmPerSecondSquared: 10000, manufacturerSupportedMaterials: ["PLA", "PETG", "TPU 95A"], multicolorUpgradeDescription: "ACE 2 Pro vendido separadamente; a Kobra 4 standard imprime em uma cor." }, sourceUrl: anycubicKobra4Source.url, sourceLabel: anycubicKobra4Source.label, checkedAt: anycubicKobra4Source.checkedAt }),
   seededPrinter({ id: "anycubic-kobra-4-ace-2-pro", brand: "Anycubic", model: "Kobra 4", variant: "ACE 2 Pro Combo", technology: "FDM", buildVolumeMm: { x: 260, y: 260, z: 260 }, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 600, multicolorSlots: 4, multicolorSystem: "ACE 2 Pro", supportedMaterials: { PLA: "compatible", PETG: "compatible", TPU: { status: "conditional", conditions: "TPU 95A não pode ser alimentado pelo ACE 2 Pro; use alimentação direta." } }, technicalProperties: { recommendedPrintSpeedMmPerSecond: 300, maxAccelerationMmPerSecondSquared: 20000, recommendedAccelerationMmPerSecondSquared: 10000, manufacturerSupportedMaterials: ["PLA", "PETG", "TPU 95A"], maximumMulticolorFilaments: 8, eightColorExpansionRequiresAdditionalHardware: true, ace2ProDryingMaxTemperatureC: 65, tpu95aNotCompatibleWithAce2Pro: true }, sourceUrl: anycubicKobra4ComboSource.url, sourceLabel: anycubicKobra4ComboSource.label, checkedAt: anycubicKobra4ComboSource.checkedAt }),
   seededPrinter({ id: "creality-k1c", brand: "Creality", model: "K1C", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 250 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 350, sourceUrl: "https://store.creality.com/uk/products/k1c-3d-printer" }),
+  seededPrinter({ id: "creality-k1-max-2024", brand: "Creality", model: "K1 Max", variant: "2024", technology: "FDM", buildVolumeMm: { x: 300, y: 300, z: 300 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: null, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 1000, technicalProperties: { typicalPrintSpeedMmPerSecond: 300, travelSpeedMmPerSecond: 800, maxAccelerationMmPerSecondSquared: 20000, motionSystem: "CoreXY", maxFlowMm3PerSecond: 32, optionalNozzleDiametersMm: [0.6, 0.8] }, sourceUrl: crealityK1MaxSource.url, documentationUrl: "https://www.creality.com/eu/products/creality-k1-max-3d-printer", checkedAt: crealityK1MaxSource.checkedAt }),
   seededPrinter({ id: "elegoo-neptune-4-pro-type-c", brand: "ELEGOO", model: "Neptune 4 Pro", variant: "Type-C edition", technology: "FDM", buildVolumeMm: { x: 225, y: 225, z: 265 }, maxNozzleTemperatureC: 300, maximumSpeedMmPerSecond: 500, sourceUrl: "https://us.elegoo.com/products/elegoo-neptune-4-pro-fdm-3d-printer?variant=52396213862581" }),
   seededPrinter({ id: "elegoo-neptune-4-type-c", brand: "ELEGOO", model: "Neptune 4", variant: "Type-C version", technology: "FDM", buildVolumeMm: { x: 225, y: 225, z: 265 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true, maximumSpeedDescription: "500 mm/s de deslocamento do cabeçote; velocidade de impressão recomendada não informada", technicalProperties: { maxToolheadSpeedMmPerSecond: 500, maxAccelerationMmPerSecondSquared: 20000, ratedPowerWatts: 310, manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "Nylon"] }, sourceUrl: "https://www.elegoo.com/products/elegoo-neptune-4-fdm-3d-printer", documentationUrl: "https://eu.elegoo.com/en-be/collections/edm-exclude/products/elegoo-neptune-4-fdm-3d-printer", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "flashforge-adventurer-5m", brand: "Flashforge", model: "Adventurer 5M", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 220 }, maximumSpeedMmPerSecond: 600, sourceUrl: "https://www.flashforge.com/products/adventurer-5m-3d-printer" }),
@@ -1675,6 +1686,18 @@ export const nozzles: NozzleEntry[] = [
     printerCompatibility: { "bambu-p2s": "compatible" as const, "bambu-p2s-ams-2-pro-combo": "compatible" as const },
     original: diameter === 0.4,
     sources: [bambuP2sSource],
+  })),
+  ...[0.4, 0.6, 0.8].map((diameter) => ({
+    id: `creality-k1-max-2024-${diameter}`,
+    name: "K1 Max",
+    brand: "Creality",
+    diameterMm: diameter,
+    material: null,
+    maxTemperatureC: null,
+    abrasionResistant: null,
+    printerCompatibility: { "creality-k1-max-2024": "compatible" as const },
+    original: diameter === 0.4,
+    sources: [diameter === 0.4 ? crealityK1MaxSource : crealityK1MaxNozzleSource],
   })),
   ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `creality-k2-plus-${diameter}`,
