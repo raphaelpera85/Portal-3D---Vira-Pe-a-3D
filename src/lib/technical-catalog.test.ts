@@ -83,6 +83,8 @@ describe("verified technical catalog records", () => {
       ["ELEGOO", "Saturn 4 Ultra", "12K"],
       ["Anycubic", "Kobra S1", "standard"],
       ["Anycubic", "Kobra S1", "Combo"],
+      ["Anycubic", "Kobra 3 Max V2", "standard"],
+      ["Anycubic", "Kobra 3 Max V2", "ACE 2 Pro Combo"],
       ["Anycubic", "Photon Mono M7", "standard"],
       ["Anycubic", "Photon Mono M7 Pro", "standard"],
       ["Anycubic", "Photon Mono M7 Max", "standard"],
@@ -102,9 +104,27 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(71);
+    expect(printers).toHaveLength(73);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("keeps Kobra 3 Max V2 variants and limits its nozzle fit to the V2 hotend", () => {
+    const standard = printers.find((printer) => printer.id === "anycubic-kobra-3-max-v2");
+    const combo = printers.find((printer) => printer.id === "anycubic-kobra-3-max-v2-ace-2-pro");
+    const v2Nozzles = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["anycubic-kobra-3-max-v2"] === "compatible");
+
+    expect(standard).toMatchObject({
+      buildVolumeMm: { x: 420, y: 420, z: 500 }, maxNozzleTemperatureC: 300, maxBedTemperatureC: 90,
+      maximumSpeedMmPerSecond: 600,
+      technicalProperties: { recommendedPrintSpeedMmPerSecond: 300, multicolorUpgradeDescription: expect.stringContaining("ACE 2 Pro") },
+    });
+    expect(combo).toMatchObject({
+      multicolorSystem: "ACE 2 Pro", multicolorSlots: 4,
+      technicalProperties: { maximumMulticolorFilaments: 8, ace2ProDryingMaxTemperatureC: 65, tpu95aNotCompatibleWithAce2Pro: true },
+    });
+    expect(v2Nozzles.map((nozzle) => nozzle.diameterMm)).toEqual([0.25, 0.4, 0.6, 0.8]);
+    expect(nozzles.some((nozzle) => nozzle.printerCompatibility?.["anycubic-kobra-3-max-v2-ace-2-pro"] === "compatible")).toBe(true);
   });
 
   it("keeps Neptune 4 Type-C specifications and its version-specific nozzle compatibility", () => {
