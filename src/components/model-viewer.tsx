@@ -8,16 +8,14 @@ import type * as THREE from "three";
 import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { ModelUploadManager, type SavedModelUpload } from "@/components/model-upload-manager";
 import { createMeterExportCopy } from "@/lib/model-export";
-import { evaluateBuildVolume, type CompatibilityStatus } from "@/lib/compatibility";
+import { evaluateBuildVolume, evaluateCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter, type CompatibilityCheck } from "@/lib/compatibility";
 import {
   formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
   type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds,
   formatThreeMfFilamentLabel, getModelColorMatchedTriangleIndexes, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
 
-type ViewerPrinter = {
-  id: string;
-  name: string;
+type ViewerPrinter = CatalogPrinter & {
   buildVolumeMm: ModelDimensions | null;
   volumeModes: { id: string; label: string; dimensionsMm: ModelDimensions }[];
   cylindrical: boolean;
@@ -34,7 +32,7 @@ const views: { name: ViewName; label: string; direction: [number, number, number
 ];
 type ViewerComponent = { id: string; name: string; visible: boolean; colors: string[] };
 
-export function ModelViewer({ buyerId, savedModels = [], materials = [], printers = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: { id: string; label: string }[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
+export function ModelViewer({ buyerId, savedModels = [], materials = [], nozzles = [], printers = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: (CatalogMaterial & { label: string })[]; nozzles?: (CatalogNozzle & { brand: string })[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -67,6 +65,9 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], printer
   const [scale, setScale] = useState(100);
   const [printerId, setPrinterId] = useState(() => printers.find((printer) => printer.volumeModes.length || printer.buildVolumeMm)?.id ?? printers[0]?.id ?? "");
   const [volumeModeId, setVolumeModeId] = useState("");
+  const [materialId, setMaterialId] = useState("");
+  const [nozzleId, setNozzleId] = useState("");
+  const [useMulticolor, setUseMulticolor] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const [showAxes, setShowAxes] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -268,6 +269,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], printer
     setBusy(true);
     setMessage("Preparando a visualização…");
     setModelColors([]);
+    setUseMulticolor(false);
     setSlicePlates([]);
     onSlicePlatesChange?.([]);
     resourceUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -554,10 +556,30 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], printer
   const selectedPrinter = printers.find((printer) => printer.id === printerId);
   const selectedVolumeMode = selectedPrinter?.volumeModes.find((mode) => mode.id === volumeModeId) ?? selectedPrinter?.volumeModes[0];
   const fitVolume = selectedVolumeMode?.dimensionsMm ?? selectedPrinter?.buildVolumeMm ?? null;
-  const fitCheck = scaledDimensionsMm && selectedPrinter && !selectedPrinter.cylindrical
-    ? evaluateBuildVolume(fitVolume, scaledDimensionsMm)
-    : null;
-  const fitStatus: CompatibilityStatus = fitCheck?.status ?? "unverified";
+  const selectedMaterial = materials.find((material) => material.id === materialId && material.process === (selectedPrinter?.technology === "FDM" ? "filament" : "resin"));
+  const compatibleNozzles = selectedPrinter?.technology === "FDM" ? nozzles.filter((nozzle) => ["compatible", "conditional"].includes(nozzle.printerCompatibility?.[selectedPrinter.id] ?? "")) : [];
+  const selectedNozzle = compatibleNozzles.find((nozzle) => nozzle.id === nozzleId);
+  const partDimensions = selectedPrinter?.cylindrical ? undefined : scaledDimensionsMm ?? undefined;
+  const compatibilityChecks: CompatibilityCheck[] = selectedPrinter && selectedMaterial
+    ? evaluateCompatibility({ ...selectedPrinter, buildVolumeMm: fitVolume }, selectedMaterial, selectedNozzle, { useMulticolor }).checks
+    : [];
+  if (selectedPrinter && !selectedMaterial) compatibilityChecks.push({ key: "material", label: "Material", status: "unverified", detail: "Selecione um material para analisar a compatibilidade." });
+  if (selectedPrinter?.technology === "FDM" && !selectedNozzle) compatibilityChecks.push({ key: "nozzle-fit", label: "Bico instalado", status: "unverified", detail: "Selecione um bico confirmado para esta impressora." });
+  if (selectedPrinter?.technology === "FDM" && !selectedMaterial) {
+    compatibilityChecks.push({ key: "hotend-temperature", label: "Temperatura do hotend", status: "unverified", detail: "Selecione o material para comparar a faixa recomendada com o limite da impressora." });
+    compatibilityChecks.push({ key: "heated-bed", label: "Temperatura da mesa", status: "unverified", detail: "Selecione o material para comparar a faixa recomendada com o limite da impressora." });
+  }
+  if (selectedMaterial?.process === "filament" && !selectedMaterial.nozzleTemperatureC) compatibilityChecks.push({ key: "hotend-temperature", label: "Temperatura do hotend", status: "unverified", detail: "A faixa recomendada pelo material não está cadastrada." });
+  if (selectedMaterial?.process === "filament" && !selectedMaterial.bedTemperatureC) compatibilityChecks.push({ key: "heated-bed", label: "Temperatura da mesa", status: "unverified", detail: "A faixa recomendada pelo material não está cadastrada." });
+  if (selectedMaterial?.process === "filament" && selectedNozzle && selectedNozzle.maxTemperatureC == null) compatibilityChecks.push({ key: "nozzle-temperature", label: "Limite térmico do bico", status: "unverified", detail: "O limite de temperatura deste bico não está cadastrado." });
+  if (selectedMaterial?.process === "resin") {
+    compatibilityChecks.push({ key: "resin-wavelength", label: "Comprimento de onda da resina", status: "unverified", detail: selectedMaterial.resinWavelengthNm == null ? "O comprimento de onda recomendado pela resina não está cadastrado." : "O comprimento de onda da impressora não está cadastrado para comparação." });
+    compatibilityChecks.push({ key: "resin-exposure", label: "Exposição da resina", status: "unverified", detail: selectedMaterial.resinExposureSeconds == null ? "O tempo de exposição recomendado não está cadastrado." : "O perfil e o tempo de exposição dependem da impressora e do fatiador." });
+  }
+  if (selectedPrinter && partDimensions) compatibilityChecks.push(evaluateBuildVolume(fitVolume, partDimensions));
+  else if (selectedPrinter && !selectedPrinter.cylindrical) compatibilityChecks.push({ key: "volume", label: "Volume de impressão", status: "unverified", detail: !rawDimensions ? "Abra um arquivo 3D para calcular as dimensões." : !unit ? "Confirme a unidade do modelo para comparar as medidas." : "Não foi possível calcular as dimensões." });
+  if (selectedPrinter?.cylindrical) compatibilityChecks.push({ key: "volume", label: "Volume de impressão", status: "unverified", detail: "O volume cilíndrico desta impressora exige uma comparação própria; a estimativa retangular não se aplica." });
+  if (selectedPrinter && useMulticolor && modelColors.length < 2) compatibilityChecks.push({ key: "multicolor-model", label: "Multicolorido do modelo", status: "unverified", detail: "O arquivo não confirma duas ou mais cores; a aparência visual não atribui filamentos." });
 
   return (
     <section className="viewer-shell shell" aria-label="Visualizador de modelos 3D">
@@ -632,23 +654,33 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], printer
           <div className="scale-limits"><span>10%</span><span>300%</span></div>
           <p className="scale-note">A escala altera a prévia. Baixe uma nova cópia GLB para aplicar a escala; o original permanece intacto.{!unit && rawDimensions ? " Confirme a unidade para exportar corretamente." : ""}</p>
           <div className="inspector-divider" />
-          <div className="inspector-section-head"><h2>Compatibilidade dimensional</h2></div>
+          <div className="inspector-section-head"><h2>Compatibilidade de impressão</h2></div>
           {printers.length > 0 ? <>
-            <label className="technical-select">Impressora<select aria-label="Impressora para verificar as dimensões" value={printerId} onChange={(event) => { setPrinterId(event.target.value); setVolumeModeId(""); }}>
+            <label className="technical-select">Impressora<select aria-label="Impressora para verificar compatibilidade" value={printerId} onChange={(event) => { setPrinterId(event.target.value); setVolumeModeId(""); setMaterialId(""); setNozzleId(""); }}>
               {printers.map((printer) => <option key={printer.id} value={printer.id}>{printer.name}</option>)}
             </select></label>
             {selectedPrinter && selectedPrinter.volumeModes.length > 1 && <label className="technical-select">Configuração de volume<select aria-label="Configuração do volume de impressão" value={selectedVolumeMode?.id ?? ""} onChange={(event) => setVolumeModeId(event.target.value)}>
               {selectedPrinter.volumeModes.map((mode) => <option key={mode.id} value={mode.id}>{mode.label}</option>)}
             </select></label>}
+            <label className="technical-select">Material<select aria-label="Material para verificar compatibilidade" value={materialId} onChange={(event) => setMaterialId(event.target.value)}>
+              <option value="">Selecione um material</option>
+              {materials.filter((material) => material.process === (selectedPrinter?.technology === "FDM" ? "filament" : "resin")).map((material) => <option key={material.id} value={material.id}>{material.label}</option>)}
+            </select></label>
+            {selectedPrinter?.technology === "FDM" && <label className="technical-select">Bico instalado<select aria-label="Bico instalado na impressora" value={nozzleId} onChange={(event) => setNozzleId(event.target.value)}>
+              <option value="">Selecione um bico confirmado</option>
+              {compatibleNozzles.map((nozzle) => <option key={nozzle.id} value={nozzle.id}>{nozzle.brand} {nozzle.name} · {nozzle.diameterMm} mm</option>)}
+            </select></label>}
+            {selectedPrinter?.technology === "FDM" && modelColors.length > 1 && <label className="multicolor-check"><input type="checkbox" checked={useMulticolor} onChange={(event) => setUseMulticolor(event.target.checked)} /> Verificar impressão multicolorida</label>}
             <ul className="compatibility-checks viewer-volume-check">
-              <li className={`status-${fitStatus}`}>
-                <span className={`compatibility-check-mark check-${fitStatus}`} aria-hidden="true">{fitStatus === "compatible" ? "✓" : fitStatus === "incompatible" ? "!" : "?"}</span>
-                <div><strong>{fitCheck?.label ?? "Volume de impressão"}</strong><p>{selectedPrinter?.cylindrical ? "O volume cilíndrico desta impressora exige uma comparação própria; a estimativa retangular não se aplica." : !rawDimensions ? "Abra um arquivo 3D para calcular as dimensões." : !unit ? "Confirme a unidade do modelo para comparar as medidas." : fitCheck?.detail}</p></div>
-              </li>
+              {compatibilityChecks.map((check) => <li className={`status-${check.status}`} key={check.key}>
+                <span className={`compatibility-check-mark check-${check.status}`} aria-hidden="true">{check.status === "compatible" ? "✓" : check.status === "incompatible" ? "!" : "?"}</span>
+                <div><strong>{check.label}</strong><p>{check.detail}</p></div>
+              </li>)}
             </ul>
             {selectedPrinter && !selectedPrinter.volumeModes.length && selectedPrinter.buildVolumeMm && <p className="viewer-volume-value">Volume cadastrado: {selectedPrinter.buildVolumeMm.x} × {selectedPrinter.buildVolumeMm.y} × {selectedPrinter.buildVolumeMm.z} mm</p>}
             {selectedVolumeMode && <p className="viewer-volume-value">Volume · {selectedVolumeMode.label}: {selectedVolumeMode.dimensionsMm.x} × {selectedVolumeMode.dimensionsMm.y} × {selectedVolumeMode.dimensionsMm.z} mm</p>}
-            <p className="compatibility-disclaimer">Estimativa pelas dimensões alinhadas aos eixos, na escala atual. Não considera o formato da mesa, inclinações, suportes ou garante o sucesso da impressão.</p>
+            {modelColors.length > 1 && <p className="compatibility-disclaimer">As cores mostram apenas a aparência do arquivo. Atribuições de filamento e o fatiamento multicolorido precisam ser confirmados no slicer.</p>}
+            <p className="compatibility-disclaimer">Dados ausentes aparecem como não verificados. A análise não considera todas as condições de fatiamento, folgas ou suportes e não garante o sucesso da impressão.</p>
           </> : <p className="scale-note">O catálogo de impressoras não está disponível para verificar o volume.</p>}
           {modelColors.length > 0 && <>
             <div className="inspector-divider" />

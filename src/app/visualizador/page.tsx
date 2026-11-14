@@ -5,6 +5,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { loadTechnicalCatalog } from "@/lib/technical-catalog.server";
 import type { SavedModelUpload } from "@/components/model-upload-manager";
+import type { CatalogMaterial, CatalogNozzle, CatalogPrinter } from "@/lib/compatibility";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,12 @@ export default async function ViewerPage({ searchParams }: { searchParams: Promi
     loadTechnicalCatalog(),
   ]);
   const savedModels = (uploads?.data ?? []) as SavedModelUpload[];
-  const materials = catalog.materials.map((item) => ({ id: item.id, label: `${item.brand} ${item.name} · ${item.family}` }));
+  const materials = catalog.materials.map((item): CatalogMaterial & { label: string } => ({
+    id: item.id, label: `${item.brand} ${item.name} · ${item.family}`, name: item.name, family: item.family, process: item.process,
+    filamentDiameterMm: item.filamentDiameterMm, nozzleTemperatureC: item.nozzleTemperatureC, bedTemperatureC: item.bedTemperatureC,
+    nozzleDiametersMm: item.nozzleDiametersMm, enclosureRequired: item.enclosureRequired, abrasive: item.abrasive,
+    multicolorCompatible: item.multicolorCompatible, resinWavelengthNm: item.resinWavelengthNm, resinExposureSeconds: item.resinExposureSeconds,
+  }));
   const printers = catalog.printers.map((printer) => {
     const properties = printer.technicalProperties ?? {};
     const volumeModes = [
@@ -39,8 +45,18 @@ export default async function ViewerPage({ searchParams }: { searchParams: Promi
       return [{ id: key, label, dimensionsMm: { x: dimensions.x as number, y: dimensions.y as number, z: dimensions.z as number } }];
     });
     const cylindrical = properties.buildVolumeShape === "cylindrical";
-    return { id: printer.id, name: printer.name, buildVolumeMm: volumeModes.length || cylindrical ? null : printer.buildVolumeMm, volumeModes, cylindrical };
+    return {
+      id: printer.id, name: printer.name, technology: printer.technology,
+      buildVolumeMm: volumeModes.length || cylindrical ? null : printer.buildVolumeMm,
+      filamentDiameterMm: printer.filamentDiameterMm, maxNozzleTemperatureC: printer.maxNozzleTemperatureC,
+      maxBedTemperatureC: printer.maxBedTemperatureC, heatedBed: printer.heatedBed, enclosure: printer.enclosure,
+      multicolorSlots: printer.multicolorSlots, supportedMaterials: printer.supportedMaterials, volumeModes, cylindrical,
+    };
   });
+  const nozzles = catalog.nozzles.map((nozzle): CatalogNozzle & { brand: string } => ({
+    id: nozzle.id, name: nozzle.name, brand: nozzle.brand, diameterMm: nozzle.diameterMm, material: nozzle.material,
+    maxTemperatureC: nozzle.maxTemperatureC, abrasionResistant: nozzle.abrasionResistant, printerCompatibility: nozzle.printerCompatibility,
+  }));
   return (
     <>
       <SiteHeader />
@@ -51,7 +67,7 @@ export default async function ViewerPage({ searchParams }: { searchParams: Promi
         </div>
         {orcamento === "sem-fabricantes" && <p className="auth-notice shell" role="status">Nenhuma loja publicada foi confirmada como compatível com esse material e volume. Confira os dados técnicos ou escolha outro material.</p>}
         {orcamento === "erro" && <p className="auth-notice is-error shell" role="alert">Não foi possível enviar a solicitação. Confira os campos, o catálogo e se a migração de orçamentos personalizados está aplicada.</p>}
-        <ModelViewer buyerId={buyer.user && buyer.authorized ? buyer.user.id : null} savedModels={savedModels} materials={materials} printers={printers} today={new Date().toISOString().slice(0, 10)} libraryError={Boolean(uploads?.error)} />
+        <ModelViewer buyerId={buyer.user && buyer.authorized ? buyer.user.id : null} savedModels={savedModels} materials={materials} nozzles={nozzles} printers={printers} today={new Date().toISOString().slice(0, 10)} libraryError={Boolean(uploads?.error)} />
         <div className="viewer-page-foot shell"><strong>Compatibilidade nesta etapa</strong><span>STL e OBJ para malhas · 3MF, GLB e GLTF para cenas com materiais quando presentes. STL/OBJ pedem confirmação de unidade. Os arquivos ficam no dispositivo até você salvar o conjunto na biblioteca privada.</span></div>
       </main>
     </>
