@@ -29,6 +29,7 @@ import { melhorEnvioLabelScopes } from "@/lib/melhor-envio";
 import { getModelAssetUrl, modelShowcase } from "@/lib/model-showcase";
 import { fetchAllPages, getPaginationRedirectPage, parsePageNumber } from "@/lib/pagination";
 import { fetchInChunks } from "@/lib/fetch-in-chunks";
+import { groupRowsByKey } from "@/lib/group-rows-by-key";
 import { disconnectMercadoPago, startMercadoPagoConnect } from "./payment-actions";
 
 const mercadoPagoOAuthManagementUrl = "https://www.mercadopago.com.br/developers/pt/docs/subscriptions/additional-content/security/oauth/management?scope=prod";
@@ -64,7 +65,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
   ]);
   if (storeResult.error) return <main id="main-content" tabIndex={-1} className="account-page shell"><p className="auth-notice is-error">Não foi possível carregar a loja. Confira as migrações do marketplace.</p></main>;
   const store = storeResult.data;
-  const orderQuery = store ? actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, maker_read_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipping_quote_packages, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, deliveries:store_notification_deliveries(id, channel, status, last_error), payments:seller_order_payments(status, total_cents, marketplace_fee_cents), events:seller_purchase_order_events(id, event_type, description, created_at)", { count: "exact" }).eq("store_id", store.id) : null;
+  const orderQuery = store ? actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, maker_read_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipping_quote_packages, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, deliveries:store_notification_deliveries(id, channel, status, last_error)", { count: "exact" }).eq("store_id", store.id) : null;
   if (requestedOrderId) orderQuery?.eq("id", requestedOrderId);
   const paymentAdmin = store ? createSupabaseAdminClient() : null;
   const [paymentConnection, shippingOriginResult, shippingConnection, shippingLabelsResult] = await Promise.all([
@@ -89,8 +90,8 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     : { data: [], error: null };
   const [productResult, quoteResult, customPrintResult, contactResult, orderResult, unreadOrderResult, equipmentResult, printerModelsResult, consignmentResult, printProfileResult, materialsResult, nozzlesResult, printerSuggestionsResult] = store ? await Promise.all([
     fetchAllPages((from, to) => actor.supabase.from("marketplace_products").select("id, name, slug, listing_type, catalog_status, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, package_weight_g, package_length_cm, package_width_cm, package_height_cm, product_properties, updated_at, variants:marketplace_product_variants(variant_options, price_brl, stock_quantity), digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
-    fetchAllPages((from, to) => actor.supabase.from("product_quote_requests").select("id, request_type, unit_price_brl, product_name, quantity, customization, due_date, status, created_at, maker_read_at, offer:product_quote_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error), payments:seller_order_payments(status, total_cents, marketplace_fee_cents, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
-    fetchAllPages((from, to) => actor.supabase.from("custom_print_request_targets").select("id, status, compatibility, maker_read_at, request:custom_print_requests!inner(id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, production_started_at, production_completed_at, delivery:custom_print_deliveries(*), payments:seller_order_payments(status, total_cents, marketplace_fee_cents, created_at)), offer:custom_print_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
+    fetchAllPages((from, to) => actor.supabase.from("product_quote_requests").select("id, request_type, unit_price_brl, product_name, quantity, customization, due_date, status, created_at, maker_read_at, offer:product_quote_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
+    fetchAllPages((from, to) => actor.supabase.from("custom_print_request_targets").select("id, status, compatibility, maker_read_at, request:custom_print_requests!inner(id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, production_started_at, production_completed_at, delivery:custom_print_deliveries(*)), offer:custom_print_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     actor.supabase.from("store_notification_contacts").select("email, whatsapp, whatsapp_opt_in").eq("store_id", store.id).maybeSingle(),
     orderQuery ? orderQuery.order("created_at", { ascending: false }).order("id", { ascending: false }).range((requestedOrdersPage - 1) * purchaseOrdersPageSize, requestedOrdersPage * purchaseOrdersPageSize - 1) : Promise.resolve({ data: [], count: 0, error: null }),
     actor.supabase.from("seller_purchase_orders").select("id, store_name, created_at", { count: "exact" }).eq("store_id", store.id).is("maker_read_at", null).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(50),
@@ -102,7 +103,24 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     fetchAllPages((from, to) => actor.supabase.from("nozzle_catalog").select("id, manufacturer, model, diameter_mm, interface").eq("catalog_status", "published").order("manufacturer").order("model").order("id").range(from, to)),
     actor.supabase.from("printer_model_suggestions").select("id, manufacturer, model, variant, technology, source_url, notes, status, review_note, printer_model_id, created_at").eq("suggested_by", actor.user.id).order("created_at", { ascending: false }).limit(50),
   ]) : [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: null, error: null }, { data: [], count: 0, error: null }, { data: [], count: 0, error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }];
-  const [orderItemsResult, printerMaintenanceResult] = await Promise.all([
+  const customPrintTargetsForPayments = (customPrintResult.data ?? []) as unknown as CustomPrintTargetRow[];
+  const makerCustomRequestIds = [...new Set(customPrintTargetsForPayments.flatMap((target) => {
+    const request = Array.isArray(target.request) ? target.request[0] : target.request;
+    return request ? [request.id] : [];
+  }))];
+  const [orderPaymentsResult, orderEventsResult, quotePaymentsResult, customPaymentsResult, orderItemsResult, printerMaintenanceResult] = await Promise.all([
+    fetchInChunks((orderResult.data ?? []).map((order) => order.id), (ids) => fetchAllPages((from, to) => actor.supabase.from("seller_order_payments")
+      .select("id, order_id, status, total_cents, marketplace_fee_cents, created_at").in("order_id", ids)
+      .order("order_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to))),
+    fetchInChunks((orderResult.data ?? []).map((order) => order.id), (ids) => fetchAllPages((from, to) => actor.supabase.from("seller_purchase_order_events")
+      .select("id, order_id, event_type, description, created_at").in("order_id", ids)
+      .order("order_id").order("created_at").order("id").range(from, to))),
+    fetchInChunks((quoteResult.data ?? []).map((request) => request.id), (ids) => fetchAllPages((from, to) => actor.supabase.from("seller_order_payments")
+      .select("id, purchase_request_id, status, total_cents, marketplace_fee_cents, created_at").in("purchase_request_id", ids)
+      .order("purchase_request_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to))),
+    fetchInChunks(makerCustomRequestIds, (ids) => fetchAllPages((from, to) => actor.supabase.from("seller_order_payments")
+      .select("id, custom_print_request_id, status, total_cents, marketplace_fee_cents, created_at").in("custom_print_request_id", ids)
+      .order("custom_print_request_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to))),
     fetchInChunks((orderResult.data ?? []).map((order) => order.id), (orderIds) => fetchAllPages((from, to) => actor.supabase.from("seller_purchase_order_items")
       .select("id, order_id, product_name, unit_price_brl, quantity, created_at").in("order_id", orderIds)
       .order("order_id").order("created_at").order("id").range(from, to))),
@@ -116,7 +134,18 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     orderItems.push(item);
     orderItemsByOrder.set(item.order_id, orderItems);
   }
-  const makerOrders = (orderResult.data ?? []).map((order) => ({ ...order, items: orderItemsByOrder.get(order.id) ?? [] }));
+  const orderPaymentsById = groupRowsByKey(orderPaymentsResult.data ?? [], (payment) => payment.order_id);
+  const orderEventsById = groupRowsByKey(orderEventsResult.data ?? [], (event) => event.order_id);
+  const makerOrders = (orderResult.data ?? []).map((order) => ({ ...order, payments: orderPaymentsById.get(order.id) ?? [], events: orderEventsById.get(order.id) ?? [], items: orderItemsByOrder.get(order.id) ?? [] }));
+  const quotePaymentsById = groupRowsByKey(quotePaymentsResult.data ?? [], (payment) => payment.purchase_request_id);
+  const quoteRequests = (quoteResult.data ?? []).map((request) => ({ ...request, payments: quotePaymentsById.get(request.id) ?? [] }));
+  const customPaymentsById = groupRowsByKey(customPaymentsResult.data ?? [], (payment) => payment.custom_print_request_id);
+  const customPrintTargets = customPrintTargetsForPayments.map((target) => {
+    const request = Array.isArray(target.request) ? target.request[0] : target.request;
+    if (!request) return target;
+    const payments = customPaymentsById.get(request.id) ?? [];
+    return { ...target, request: { ...request, payments } };
+  });
   const maintenanceByPrinter = new Map<string, NonNullable<typeof printerMaintenanceResult.data>>();
   for (const event of printerMaintenanceResult.data ?? []) {
     const printerEvents = maintenanceByPrinter.get(event.printer_id) ?? [];
@@ -128,7 +157,9 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     maintenance: maintenanceByPrinter.get(printer.id) ?? [],
   }));
   const equipmentHistoryError = Boolean(equipmentResult.error || printerMaintenanceResult.error);
-  const orderLoadError = Boolean(orderResult.error || orderItemsResult.error);
+  const orderLoadError = Boolean(orderResult.error || orderItemsResult.error || orderPaymentsResult.error || orderEventsResult.error);
+  const quotePaymentLoadError = Boolean(quotePaymentsResult.error);
+  const customPaymentLoadError = Boolean(customPaymentsResult.error);
   const consignmentMovementsResult = await fetchInChunks((consignmentResult.data ?? []).map((item) => item.id), (itemIds) => fetchAllPages((from, to) => actor.supabase.from("maker_consignment_movements")
     .select("id, item_id, movement_type, quantity, notes, created_at").in("item_id", itemIds)
     .order("item_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)));
@@ -137,7 +168,6 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     [...(consignmentMovementsByItem.get(movement.item_id) ?? []), movement]);
   const products = productResult.data ?? [];
   const unreadQuotes = quoteResult.data?.filter((request) => !request.maker_read_at) ?? [];
-  const customPrintTargets = (customPrintResult.data ?? []) as unknown as CustomPrintTargetRow[];
   const unreadCustomPrints = customPrintTargets.filter((target) => !target.maker_read_at);
   const unreadOrders = unreadOrderResult.data ?? [];
   const unreadOrderCount = unreadOrderResult.count ?? unreadOrders.length;
@@ -172,7 +202,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
             <section className="store-status-card"><span className={`store-status-dot status-${store.status}`} /> <div><strong>Status da loja: {store.status === "published" ? "Publicada" : store.status === "pending" ? "Aguardando aprovação" : "Suspensa"}</strong><p>{store.city ? `${store.city}${store.state_code ? ` · ${store.state_code}` : ""} · ` : ""}{store.description}</p></div></section>
             <section id="notificacoes" className="account-card maker-products-card" aria-labelledby="maker-notifications-title" aria-live="polite" aria-relevant="additions text"><span className="account-kicker">CENTRAL DE AVISOS {unreadQuotes.length + unreadCustomPrints.length + unreadOrderCount > 0 ? `· ${unreadQuotes.length + unreadCustomPrints.length + unreadOrderCount} NOVO(S)` : ""}</span><h2 id="maker-notifications-title">Notificações</h2>
                 {resultado === "notificacao-lida-erro" && <p className="auth-notice is-error" role="alert">Não foi possível marcar o aviso como lido. Atualize a página e tente novamente.</p>}
-                {quoteResult.error || customPrintResult.error || orderResult.error || unreadOrderResult.error ? <p>As notificações ficarão disponíveis após aplicar as migrações do marketplace.</p> : unreadQuotes.length === 0 && unreadCustomPrints.length === 0 && unreadOrderCount === 0 ? <p>Você não tem novas solicitações.</p> : <>
+                {quoteResult.error || quotePaymentLoadError || customPrintResult.error || customPaymentLoadError || orderResult.error || orderPaymentsResult.error || orderEventsResult.error || unreadOrderResult.error ? <p>As notificações ficarão disponíveis após aplicar as migrações do marketplace.</p> : unreadQuotes.length === 0 && unreadCustomPrints.length === 0 && unreadOrderCount === 0 ? <p>Você não tem novas solicitações.</p> : <>
                   {unreadQuotes.length > 0 && <ul className="maker-notification-list">{unreadQuotes.map((request) => <li key={request.id}><div><strong>{request.product_name}</strong><span>{request.request_type === "purchase" ? "Solicitação de compra" : "Pedido de orçamento"} · quantidade {request.quantity}</span></div><div className="maker-notification-actions"><Link className="viewer-back-link" href={`#request-${request.id}`}>Ver pedido</Link><form action={markQuoteRequestNotificationRead}><input type="hidden" name="requestId" value={request.id} /><button className="button button-secondary" type="submit">Marcar como lida</button></form></div></li>)}</ul>}
                   {unreadCustomPrints.map((target) => <div className="maker-notification-actions" key={target.id}><span>Impressão personalizada · {Array.isArray(target.request) ? target.request[0]?.model_name : target.request?.model_name}</span><Link className="viewer-back-link" href={`#custom-${target.id}`}>Ver pedido</Link><form action={markCustomPrintTargetRead}><input type="hidden" name="targetId" value={target.id} /><button className="button button-secondary" type="submit">Marcar como lida</button></form></div>)}
                   {unreadOrders.map((order) => <div className="maker-notification-actions" key={order.id}><span>Solicitação de compra · carrinho · {order.store_name} · {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(order.created_at))}</span><Link className="viewer-back-link" href={`/painel/maker?pedido=${encodeURIComponent(order.id)}#pedidos`}>Ver pedido</Link><form action={markSellerOrderNotificationRead}><input type="hidden" name="orderId" value={order.id} /><button className="button button-secondary" type="submit">Marcar como lida</button></form></div>)}
@@ -276,8 +306,8 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
             {resultado === "pedido-recusado" && <p className="auth-notice" role="status">Pedido recusado.</p>}
             {resultado === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível concluir a ação.</p>}
             <section className="account-card maker-products-card"><span className="account-kicker">SOLICITAÇÕES DE CLIENTES</span><h2>Pedidos e orçamentos</h2>
-              {quoteResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar os pedidos. Confira a migração de orçamentos.</p> : !quoteResult.data?.length ? <p>As solicitações de compra e de orçamento aparecerão aqui.</p> : <div className="quote-list">
-                {quoteResult.data.map((request) => {
+              {quoteResult.error || quotePaymentLoadError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar os pedidos. Confira a migração de orçamentos.</p> : !quoteRequests.length ? <p>As solicitações de compra e de orçamento aparecerão aqui.</p> : <div className="quote-list">
+                {quoteRequests.map((request) => {
                   const offer = Array.isArray(request.offer) ? request.offer[0] : request.offer;
                   const payment = [...(request.payments ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
                   return <article className="quote-maker-card" key={request.id}>
@@ -303,7 +333,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
             </section>
             <section className="account-card maker-products-card"><span className="account-kicker">PEDIDOS DE IMPRESSÃO 3D</span><h2>Solicitações personalizadas</h2>
               {resultado === "frete-pacote-personalizado-erro" && <p className="auth-notice is-error" role="alert">Informe as medidas e o peso total corretos da embalagem final para consultar o frete.</p>}
-              {customPrintResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar pedidos personalizados. Confira a migração 021.</p> : !customPrintResult.data?.length ? <p>Solicitações compatíveis aparecerão aqui quando um comprador enviar um modelo.</p> : <div className="quote-list">
+              {customPrintResult.error || customPaymentLoadError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar pedidos personalizados. Confira a migração 021.</p> : !customPrintTargets.length ? <p>Solicitações compatíveis aparecerão aqui quando um comprador enviar um modelo.</p> : <div className="quote-list">
                 {customPrintTargets.map((target) => {
                   const request = Array.isArray(target.request) ? target.request[0] : target.request;
                   const offer = Array.isArray(target.offer) ? target.offer[0] : target.offer;
