@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ getUserWithRole: vi.fn(), rpc: vi.fn(), revalidatePath: vi.fn(), redirect: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getUserWithRole: vi.fn(), from: vi.fn(), rpc: vi.fn(), revalidatePath: vi.fn(), redirect: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("next/server", () => ({ after: vi.fn() }));
 vi.mock("@/lib/auth-role.server", () => ({ getUserWithRole: mocks.getUserWithRole }));
 
-import { removeCartItem, setCartItemQuantity } from "./actions";
+import { checkoutCart, removeCartItem, setCartItemQuantity } from "./actions";
 
 const itemId = "dc4e58d6-c782-4dc5-83c1-68d08072224d";
 
@@ -23,9 +23,14 @@ function form(couponCode?: string) {
 describe("cart item actions with coupons", () => {
   beforeEach(() => {
     mocks.rpc.mockReset().mockResolvedValue({ error: null });
+    mocks.from.mockReset().mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: itemId } }),
+    });
     mocks.revalidatePath.mockReset();
     mocks.redirect.mockReset().mockImplementation((url: string) => { throw new Error(`redirect:${url}`); });
-    mocks.getUserWithRole.mockReset().mockResolvedValue({ supabase: { rpc: mocks.rpc }, user: { id: "buyer-user" }, authorized: true });
+    mocks.getUserWithRole.mockReset().mockResolvedValue({ supabase: { from: mocks.from, rpc: mocks.rpc }, user: { id: "buyer-user" }, authorized: true });
   });
 
   it("preserves and revalidates the coupon after a quantity change", async () => {
@@ -61,5 +66,23 @@ describe("cart item actions with coupons", () => {
     await expect(setCartItemQuantity(form())).rejects.toThrow("redirect:/carrinho?resultado=atualizado");
 
     expect(mocks.rpc).toHaveBeenCalledOnce();
+  });
+
+  it("preserves the coupon when checkout rejects it", async () => {
+    mocks.rpc.mockResolvedValue({ error: { message: "Coupon is no longer available" } });
+    const data = new FormData();
+    data.set("addressId", itemId);
+    data.set("couponCode", "SAVE_10");
+
+    await expect(checkoutCart(data)).rejects.toThrow("redirect:/carrinho?resultado=cupom-invalido&cupom=SAVE_10");
+  });
+
+  it("preserves the coupon when another checkout validation fails", async () => {
+    mocks.rpc.mockResolvedValue({ error: { message: "Cart contains an unavailable product" } });
+    const data = new FormData();
+    data.set("addressId", itemId);
+    data.set("couponCode", "SAVE_10");
+
+    await expect(checkoutCart(data)).rejects.toThrow("redirect:/carrinho?resultado=indisponivel&cupom=SAVE_10");
   });
 });

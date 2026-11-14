@@ -10,6 +10,10 @@ export function normalizeCouponCode(value: unknown): string | null {
   return /^[A-Z0-9][A-Z0-9_-]{2,39}$/.test(code) ? code : null;
 }
 
+export function couponNeedsReview(code: string | null, hasItems: boolean, hasQuote: boolean) {
+  return Boolean(code && hasItems && !hasQuote);
+}
+
 export function validateCouponDefinition(input: { code: unknown; type: unknown; value: unknown }) {
   const code = normalizeCouponCode(input.code);
   if (!code || (input.type !== "percent" && input.type !== "fixed") || typeof input.value !== "string") return null;

@@ -105,8 +105,8 @@ export async function checkoutCart(formData: FormData): Promise<void> {
   revalidatePath("/carrinho");
   revalidatePath("/orcamentos");
   revalidatePath("/painel/maker");
-  if (error?.message.includes("Coupon")) redirect("/carrinho?resultado=cupom-invalido");
-  if (error) redirect("/carrinho?resultado=indisponivel");
+  if (error?.message.includes("Coupon")) redirect(cartResultUrl("cupom-invalido", couponCode));
+  if (error) redirect(cartResultUrl("indisponivel", couponCode));
   after(dispatchNotificationQueue);
   redirect("/orcamentos?resultado=pedido-enviado");
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allocateCouponDiscountCents, calculateCouponDiscountCents, normalizeCouponCode, validateCouponDefinition } from "./coupon";
+import { allocateCouponDiscountCents, calculateCouponDiscountCents, couponNeedsReview, normalizeCouponCode, validateCouponDefinition } from "./coupon";
 
 describe("marketplace coupon rules", () => {
   it("normalizes codes and validates fixed or percent values without floating point money", () => {
@@ -8,6 +8,13 @@ describe("marketplace coupon rules", () => {
     expect(validateCouponDefinition({ code: "feira", type: "percent", value: "12,5" })).toMatchObject({ discount_percent_bps: 1250 });
     expect(validateCouponDefinition({ code: "feira", type: "fixed", value: "20,01" })).toMatchObject({ discount_fixed_cents: 2001 });
     expect(validateCouponDefinition({ code: "feira", type: "percent", value: "100" })).toBeNull();
+  });
+
+  it("requires review before checkout when a cart coupon has no valid quote", () => {
+    expect(couponNeedsReview("FEIRA-10", true, false)).toBe(true);
+    expect(couponNeedsReview("FEIRA-10", true, true)).toBe(false);
+    expect(couponNeedsReview(null, true, false)).toBe(false);
+    expect(couponNeedsReview("FEIRA-10", false, false)).toBe(false);
   });
 
   it("caps discounts so every seller order retains at least one cent", () => {

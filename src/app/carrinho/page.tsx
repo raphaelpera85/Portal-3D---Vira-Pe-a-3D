@@ -6,7 +6,7 @@ import { applyCartCoupon, checkoutCart, removeCartCoupon, removeCartItem, setCar
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { formatBrl } from "@/lib/money";
 import { groupCartItemsByStore, type CartRow } from "@/lib/cart";
-import { allocateCouponDiscountCents, normalizeCouponCode } from "@/lib/coupon";
+import { allocateCouponDiscountCents, couponNeedsReview, normalizeCouponCode } from "@/lib/coupon";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Carrinho | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -36,6 +36,7 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
     ? await actor.supabase.rpc("preview_marketplace_coupon", { p_code: couponCode })
     : null;
   const couponQuote = !couponResult?.error && Array.isArray(couponResult?.data) ? couponResult.data[0] : null;
+  const needsCouponReview = couponNeedsReview(couponCode, Boolean(cartItems?.length), Boolean(couponQuote));
   const error = cartResult.error ?? itemsError;
   const rows: CartRow[] = (cartItems ?? []).map((item) => ({
     store_id: item.store_id, store_name: item.store_name, product_id: item.product_id,
@@ -55,8 +56,9 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
     <main className="account-page shell quote-page">
       <Link className="viewer-back-link" href="/#produtos">← Continuar explorando</Link>
       <div className="account-heading"><p className="eyebrow">ÁREA DO COMPRADOR</p><h1>Seu carrinho</h1><p>Itens de cada loja serão enviados em pedidos separados.</p></div>
-      {resultado && notices[resultado] && <p className={`auth-notice ${["erro", "indisponivel", "cupom-invalido"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
-      {error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar o carrinho. Confira as migrações do marketplace.</p> : grouped.length === 0 ? <section className="account-card"><h2>Seu carrinho está vazio</h2><p>Encontre produtos publicados com preço fixo para começar.</p><Link className="button button-primary" href="/#produtos">Explorar produtos</Link></section> : <>
+      {resultado && notices[resultado] && !(resultado === "cupom-invalido" && needsCouponReview) && <p className={`auth-notice ${["erro", "indisponivel", "cupom-invalido"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
+      {needsCouponReview && <p className="auth-notice is-error" role="alert">O cupom {couponCode} não foi validado e não será aplicado. Reaplique o cupom ou remova-o antes de enviar os pedidos.</p>}
+      {error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar o carrinho. Confira as migrações do marketplace.</p> : grouped.length === 0 ? <section className="account-card"><h2>Seu carrinho está vazio</h2><p>Encontre produtos publicados com preço fixo para começar.</p>{couponCode && <form action={removeCartCoupon}><button className="button button-secondary" type="submit">Remover cupom {couponCode}</button></form>}<Link className="button button-primary" href="/#produtos">Explorar produtos</Link></section> : <>
         <div className="quote-list" aria-label="Produtos do carrinho">
           {grouped.map((group) => <section className="account-card" key={group.storeId}>
             <span className="account-kicker">PEDIDO DA LOJA</span><h2>{group.storeName}</h2>
@@ -77,12 +79,12 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
         </div>
         <section className="account-card cart-checkout"><div><span className="account-kicker">TOTAL ESTIMADO</span><strong>{formatBrl(netTotalCents / 100)}</strong>{couponQuote && <p>Subtotal: {formatBrl(totalCents / 100)} · cupom {couponQuote.coupon_code}: −{formatBrl(discountCents / 100)}</p>}<p>O endereço selecionado será compartilhado com cada loja, inclusive em pedidos com retirada local. Se a loja aceitar o pedido, enviará uma proposta disponível de entrega ou retirada local por vez; você pagará pelo portal após aceitá-la.</p>
           <form action={applyCartCoupon} className="cart-coupon-form"><label htmlFor="cart-coupon-code">Cupom de desconto</label><div><input id="cart-coupon-code" name="code" maxLength={40} defaultValue={couponCode ?? ""} autoCapitalize="characters" aria-describedby="cart-coupon-note" /><button className="button button-secondary" type="submit">Aplicar</button></div><small id="cart-coupon-note">O desconto é pago pelos vendedores, rateado por valor dos produtos e não reduz o frete.</small></form>
-          {couponQuote && <form action={removeCartCoupon}><button className="button button-secondary" type="submit">Remover cupom</button></form>}
+          {couponCode && <form action={removeCartCoupon}><button className="button button-secondary" type="submit">Remover cupom</button></form>}
         </div>
           {addressesResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar endereços. Confira a migração 017.</p> : addresses.length === 0 ? <div><p>Cadastre um endereço para enviar os pedidos.</p><Link className="button button-secondary" href="/conta#enderecos">Cadastrar endereço</Link></div> : <form action={checkoutCart} className="cart-checkout-form">
             <fieldset className="cart-address-options"><legend>Endereço de entrega</legend>{addresses.map((address, index) => <label className="cart-address-option" key={address.id}><input type="radio" name="addressId" value={address.id} defaultChecked={address.is_default || index === 0} required /><span><strong>{address.label}{address.is_default ? " · Principal" : ""}</strong><span>{address.recipient_name} · {address.street}, {address.number}{address.complement ? `, ${address.complement}` : ""}</span><span>{address.district} · {address.city}/{address.state_code} · CEP {address.postal_code.replace(/(\d{5})(\d{3})/, "$1-$2")}</span></span></label>)}</fieldset>
-            {couponQuote && <input type="hidden" name="couponCode" value={couponCode ?? ""} />}
-            <button className="button button-primary" type="submit">Enviar pedidos às lojas</button>
+            {couponCode && <input type="hidden" name="couponCode" value={couponCode} />}
+            <button className="button button-primary" type="submit" disabled={needsCouponReview}>Enviar pedidos às lojas</button>
           </form>}
         </section>
       </>}
