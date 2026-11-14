@@ -27,8 +27,8 @@ function errorMessage(code: string) {
   return code;
 }
 
-export function SlicerImageImporter({ enabled, configured, onApply }: {
-  enabled: boolean; configured: boolean; onApply: (extraction: Extraction) => boolean | null;
+export function SlicerImageImporter({ enabled, configured, onApply, onFilesChange }: {
+  enabled: boolean; configured: boolean; onApply: (extraction: Extraction) => boolean | null; onFilesChange?: (files: File[]) => void;
 }) {
   const [files, setFiles] = useState<File[]>([]);
   const [agreed, setAgreed] = useState(false);
@@ -41,6 +41,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
   function selectFiles(nextFiles: File[]) {
     const validation = validateFiles(nextFiles);
     setFiles(validation ? [] : nextFiles);
+    onFilesChange?.([]);
     setExtraction(null);
     setCostCurrencyChoice("");
     setAgreed(false);
@@ -51,7 +52,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
   async function readImages() {
     if (!enabled || !configured || !agreed) return;
     const validation = validateFiles(files);
-    if (validation) { setError(validation); return; }
+    if (validation) { onFilesChange?.([]); setError(validation); return; }
     setLoading(true);
     setError("");
     setStatus("");
@@ -79,6 +80,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
       return;
     }
     const applied = onApply(reviewed);
+    if (applied === true) onFilesChange?.(files);
     if (applied !== null) setStatus(applied ? "Dados reconhecidos adicionados à revisão. Confira tudo antes de calcular." : "Nenhum valor seguro para preencher; confira os dados reconhecidos ou informe manualmente.");
   }
 
@@ -89,7 +91,7 @@ export function SlicerImageImporter({ enabled, configured, onApply }: {
     {!enabled ? <p className="price-ocr-note">Entre em uma conta de fabricante aprovada para usar a leitura de imagens.</p> : !configured ? <p className="price-ocr-note">O serviço de OCR ainda não está configurado. O preenchimento manual continua disponível.</p> : <>
       <label className="price-ocr-file">Adicionar capturas de tela<input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(event) => selectFiles(Array.from(event.target.files ?? []))} aria-describedby="ocr-privacy-note" /><small>PNG, JPEG ou WebP · até 3 imagens, 2 MiB por imagem e 4 MiB no total.</small></label>
       {files.length > 0 && <ul className="price-ocr-files">{files.map((file, index) => <li key={`${file.name}-${index}`}><span>{file.name} · {file.type.replace("image/", "").toUpperCase()}</span><small>{new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(file.size / 1024)} KB</small></li>)}</ul>}
-      <label className="price-ocr-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> <span id="ocr-privacy-note">Autorizo o envio dessas imagens ao Google Cloud Vision para leitura. O ViraPeça não as armazena.</span></label>
+      <label className="price-ocr-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> <span id="ocr-privacy-note">Autorizo o envio dessas imagens ao Google Cloud Vision para leitura. Elas só serão guardadas no histórico se eu marcar a opção separada ao salvar o cálculo.</span></label>
       <button className="button button-secondary" type="button" onClick={readImages} disabled={loading || !files.length || !agreed}>{loading ? <><LoaderCircle size={15} className="spin" /> Lendo…</> : "Ler dados das imagens"}</button>
       {error && <p className="auth-notice is-error" role="alert">{error}</p>}
       {status && <p className="auth-notice is-success" role="status">{status}</p>}

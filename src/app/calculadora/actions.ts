@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { validateCalculationToSave } from "@/lib/saved-calculation";
 
-export type SaveCalculationState = { message: string; success: boolean };
+export type SaveCalculationState = { message: string; success: boolean; calculationId?: string; keepSourceFiles?: boolean };
 export type ApplyCalculatedPriceState = { message: string; success: boolean };
 
 export async function applyCalculatedProductPrice(_previous: ApplyCalculatedPriceState, formData: FormData): Promise<ApplyCalculatedPriceState> {
@@ -109,7 +109,7 @@ export async function saveMakerCalculation(_previous: SaveCalculationState, form
     if (!profile) return { message: "Vincule apenas um perfil de impressão da sua própria loja.", success: false };
   }
 
-  const { error } = await actor.supabase.from("maker_cost_calculations").insert({
+  const { data: savedCalculation, error } = await actor.supabase.from("maker_cost_calculations").insert({
     store_id: store.id,
     product_id: validated.calculation.productId,
     printer_id: validated.calculation.printerId,
@@ -117,11 +117,11 @@ export async function saveMakerCalculation(_previous: SaveCalculationState, form
     title: validated.calculation.title,
     input_snapshot: { input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin, priceTargetId: validated.calculation.priceTargetId, compatibilityNozzles: validated.calculation.compatibilityNozzles },
     result_snapshot: validated.calculation.result,
-  });
-  if (error) return { message: "Não foi possível salvar. Confira se as migrações do histórico, produtos, equipamentos e perfis estão aplicadas.", success: false };
+  }).select("id").single();
+  if (error || !savedCalculation) return { message: "Não foi possível salvar. Confira se as migrações do histórico, produtos, equipamentos e perfis estão aplicadas.", success: false };
 
   revalidatePath("/calculadora");
-  return { message: "Cálculo salvo no histórico da loja.", success: true };
+  return { message: "Cálculo salvo no histórico da loja.", success: true, calculationId: savedCalculation.id, keepSourceFiles: formData.get("keepSourceFiles") === "on" };
 }
 
 export async function deleteMakerCalculation(formData: FormData): Promise<void> {
@@ -131,6 +131,15 @@ export async function deleteMakerCalculation(formData: FormData): Promise<void> 
   if (!actor.supabase || !actor.user || !actor.authorized) return;
   const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
   if (!store) return;
+  const { data: attachments, error: attachmentError } = await actor.supabase.from("maker_cost_calculation_attachments")
+    .select("storage_path").eq("calculation_id", id).eq("store_id", store.id);
+  // shortcut: pre-migration databases have no source rows; keep legacy calculation deletion available until migration is applied.
+  if (attachmentError && !["42P01", "PGRST205"].includes(attachmentError.code)) return;
+  if (!attachmentError && attachments?.length) {
+    const { error: storageError } = await actor.supabase.storage.from("maker-calculation-sources")
+      .remove(attachments.map((attachment) => attachment.storage_path));
+    if (storageError) return;
+  }
   const { error } = await actor.supabase.from("maker_cost_calculations").delete().eq("id", id).eq("store_id", store.id);
   if (!error) revalidatePath("/calculadora");
 }

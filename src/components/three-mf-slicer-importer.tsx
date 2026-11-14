@@ -4,10 +4,11 @@ import { useState } from "react";
 import { FileArchive, LoaderCircle } from "lucide-react";
 import { formatThreeMfFilamentLabel, MAX_PUBLIC_MODEL_FILE_BYTES, readThreeMfPackage, type ThreeMfSlicePlate } from "@/lib/model-file";
 
-export function ThreeMfSlicerImporter({ onApply }: {
-  onApply: (plate: ThreeMfSlicePlate, plateNumber: number) => boolean | null;
+export function ThreeMfSlicerImporter({ onApply, onSourceFileChange }: {
+  onApply: (plate: ThreeMfSlicePlate, plateNumber: number) => boolean | null; onSourceFileChange?: (file: File | null) => void;
 }) {
   const [plates, setPlates] = useState<ThreeMfSlicePlate[]>([]);
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [plateIndex, setPlateIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -15,6 +16,8 @@ export function ThreeMfSlicerImporter({ onApply }: {
   const plate = plates[plateIndex];
 
   async function importFile(file?: File) {
+    onSourceFileChange?.(null);
+    setSourceFile(null);
     setPlates([]);
     setPlateIndex(0);
     setError("");
@@ -29,6 +32,7 @@ export function ThreeMfSlicerImporter({ onApply }: {
       const result = await readThreeMfPackage(new Uint8Array(await file.arrayBuffer()));
       if (!result.slicePlates.length) throw new Error("Este arquivo 3MF não tem consumo ou tempo do fatiador. Fatie o modelo e exporte novamente incluindo os dados de impressão.");
       setPlates(result.slicePlates);
+      setSourceFile(file);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível ler os dados do arquivo 3MF.");
     } finally {
@@ -39,6 +43,7 @@ export function ThreeMfSlicerImporter({ onApply }: {
   function apply() {
     if (!plate) return;
     const applied = onApply(plate, plate.index ?? plateIndex + 1);
+    if (applied === true && sourceFile) onSourceFileChange?.(sourceFile);
     if (applied !== null) setStatus(applied ? "Dados da placa preenchidos. Revise os valores antes de calcular." : "Esta placa não informa peso nem tempo; preencha esses valores manualmente.");
   }
 

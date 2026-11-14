@@ -28,11 +28,14 @@ export default async function CalculatorPage() {
   let productNotice: string | null = null;
   let profileNotice: string | null = null;
   let canSaveCalculations = false;
-  let savedCalculations: Array<{ id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string }> = [];
+  let calculationStoreId: string | null = null;
+  let sourceAttachmentsError = false;
+  let savedCalculations: Array<{ id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string; attachments: { name: string; url: string; sizeBytes: number }[] }> = [];
   let savedCalculationsError = false;
   if (actor.supabase && actor.user && actor.authorized) {
     const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
     if (store) {
+      calculationStoreId = store.id;
       canSaveCalculations = true;
       const [{ data, error }, history, productResult, profileResult, modelProfileResult] = await Promise.all([
         actor.supabase.from("maker_printers")
@@ -50,6 +53,27 @@ export default async function CalculatorPage() {
       if (error) equipmentNotice = "Não foi possível carregar seus equipamentos. A calculadora manual continua disponível.";
       if (productResult.error) productNotice = "Não foi possível carregar os produtos desta loja para vinculá-los ao cálculo.";
       if (profileResult.error || modelProfileResult.error) profileNotice = "Não foi possível carregar todos os perfis de impressão para vinculá-los ao cálculo.";
+      const attachmentsByCalculation = new Map<string, { name: string; url: string; sizeBytes: number }[]>();
+      if (history.data?.length) {
+        const attachments = await actor.supabase.from("maker_cost_calculation_attachments")
+          .select("calculation_id, storage_path, file_name, size_bytes").eq("store_id", store.id)
+          .in("calculation_id", history.data.map((row) => row.id));
+        if (attachments.error) sourceAttachmentsError = true;
+        else {
+          const signed = await Promise.all((attachments.data ?? []).map(async (attachment) => {
+            const sizeBytes = Number(attachment.size_bytes);
+            if (typeof attachment.file_name !== "string" || !Number.isSafeInteger(sizeBytes) || sizeBytes < 1) return null;
+            const result = await actor.supabase!.storage.from("maker-calculation-sources").createSignedUrl(attachment.storage_path, 3600, { download: attachment.file_name });
+            if (result.error || !result.data?.signedUrl) { sourceAttachmentsError = true; return null; }
+            return { calculationId: attachment.calculation_id, name: attachment.file_name, url: result.data.signedUrl, sizeBytes };
+          }));
+          for (const attachment of signed) if (attachment) {
+            attachmentsByCalculation.set(attachment.calculationId, [...(attachmentsByCalculation.get(attachment.calculationId) ?? []), {
+              name: attachment.name, url: attachment.url, sizeBytes: attachment.sizeBytes,
+            }]);
+          }
+        }
+      }
       const maintenanceCosts = new Map<string, number>();
       const printerIds = (data ?? []).map((printer) => printer.id);
       for (let offset = 0; printerIds.length > 0; offset += 1000) {
@@ -142,6 +166,7 @@ export default async function CalculatorPage() {
           profileName: linkedProfile?.name ?? null,
           slicer: validated.calculation.slicer,
           origin: validated.calculation.origin,
+          attachments: attachmentsByCalculation.get(row.id) ?? [],
           snapshot: JSON.stringify({ input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin, priceTargetId: validated.calculation.priceTargetId, compatibilityNozzles: validated.calculation.compatibilityNozzles }),
         }];
       });
@@ -152,7 +177,7 @@ export default async function CalculatorPage() {
       <SiteHeader />
       <main className="calculator-page">
         <div className="calculator-page-back shell"><Link className="viewer-back-link" href="/">← Voltar para o início</Link><span>FERRAMENTA PARA MAKERS</span></div>
-        <PriceCalculator equipment={equipment.map((item) => ({ ...item, catalogPrinter: catalog.printers.find((printer) => printer.id === item.catalogPrinterId) ?? null }))} products={products} profiles={profiles} materials={catalog.materials} nozzles={catalog.nozzles} materialNotice={catalog.error} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} />
+        <PriceCalculator equipment={equipment.map((item) => ({ ...item, catalogPrinter: catalog.printers.find((printer) => printer.id === item.catalogPrinterId) ?? null }))} products={products} profiles={profiles} materials={catalog.materials} nozzles={catalog.nozzles} materialNotice={catalog.error} equipmentNotice={equipmentNotice} productNotice={productNotice} profileNotice={profileNotice} canSaveCalculations={canSaveCalculations} canUseOcr={canUseOcr} ocrConfigured={ocrConfigured} savedCalculations={savedCalculations} savedCalculationsError={savedCalculationsError} storeId={calculationStoreId} sourceAttachmentsError={sourceAttachmentsError} />
       </main>
       <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Custos claros para produzir com confiança.</p><span>© 2026 ViraPeça 3D</span></div></footer>
     </>

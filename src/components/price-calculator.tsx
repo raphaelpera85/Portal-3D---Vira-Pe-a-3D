@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CirclePlus, Calculator, Trash2 } from "lucide-react";
 import { calculatePrintPrice, laborActivityFields, laborActivityLabels, MAX_BATCH_QUANTITY, MAX_PRODUCTION_COMPONENTS, type PrintCostInput, type ProductionComponent, type SalesChannel } from "@/lib/pricing";
 import { exportPrintCalculationCsv } from "@/lib/pricing-export";
@@ -13,6 +14,7 @@ import { createMakerConsignmentItem } from "@/app/painel/maker/actions";
 import { MAX_CONSIGNMENT_QUANTITY } from "@/lib/consignment";
 import { SlicerImageImporter } from "@/components/slicer-image-importer";
 import { ThreeMfSlicerImporter } from "@/components/three-mf-slicer-importer";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { hasReviewableSlicerOcrData, slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 import { mapThreeMfPlateToSlicerMetrics, type CalculationOrigin, type SavedSlicerMetrics } from "@/lib/saved-calculation";
 import { mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "@/lib/calculator-profile";
@@ -28,7 +30,8 @@ type CalculatorEquipment = EquipmentRateInput & { id: string; label: string; cat
 export type CalculatorProduct = { id: string; name: string; slug: string; published: boolean; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; variants: Array<{ id: string; options: Record<string, string>; priceBrl: number }>; canApplyPrice: boolean };
 type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number | null; lengthMeters: number | null }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics };
 type CalculatorMaterial = MaterialEntry;
-type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string };
+type SavedCalculationAttachment = { name: string; url: string; sizeBytes: number };
+type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string; attachments: SavedCalculationAttachment[] };
 const initialFields: FormFields = {
   batchQuantity: "1", batchFixedCost: "", material: "", filamentGrams: "", filamentPricePerKg: "", printHours: "", averagePowerWatts: "",
   energyPricePerKwh: "", machineCostPerHour: "", depreciationPerHour: "",
@@ -105,11 +108,11 @@ function CostField({ label, suffix, hint, value, onChange, step = "any", min = 0
   );
 }
 
-export function PriceCalculator({ equipment = [], products = [], profiles = [], materials = [], nozzles = [], materialNotice = null, equipmentNotice = null, productNotice = null, profileNotice = null, canSaveCalculations = false, canUseOcr = false, ocrConfigured = false, savedCalculations = [], savedCalculationsError = false }: {
+export function PriceCalculator({ equipment = [], products = [], profiles = [], materials = [], nozzles = [], materialNotice = null, equipmentNotice = null, productNotice = null, profileNotice = null, canSaveCalculations = false, canUseOcr = false, ocrConfigured = false, savedCalculations = [], savedCalculationsError = false, storeId = null, sourceAttachmentsError = false }: {
   equipment?: CalculatorEquipment[]; equipmentNotice?: string | null; canSaveCalculations?: boolean; canUseOcr?: boolean; ocrConfigured?: boolean;
   products?: CalculatorProduct[]; productNotice?: string | null; profiles?: CalculatorProfile[]; profileNotice?: string | null;
   materials?: CalculatorMaterial[]; nozzles?: NozzleEntry[]; materialNotice?: string | null;
-  savedCalculations?: SavedCalculation[]; savedCalculationsError?: boolean;
+  savedCalculations?: SavedCalculation[]; savedCalculationsError?: boolean; storeId?: string | null; sourceAttachmentsError?: boolean;
 }) {
   const [fields, setFields] = useState(initialFields);
   const [extras, setExtras] = useState<ExtraField[]>([]);
@@ -126,8 +129,105 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const [profileApplyNotice, setProfileApplyNotice] = useState("");
   const [slicerMetrics, setSlicerMetrics] = useState<SavedSlicerMetrics | null>(null);
   const [calculationOrigin, setCalculationOrigin] = useState<CalculationOrigin>("manual");
+  const [ocrSourceFiles, setOcrSourceFiles] = useState<File[]>([]);
+  const [threeMfSourceFile, setThreeMfSourceFile] = useState<File | null>(null);
+  const [keepSourceFiles, setKeepSourceFiles] = useState(false);
+  const [sourceUploadMessage, setSourceUploadMessage] = useState("");
+  const [sourceUploadPending, setSourceUploadPending] = useState(false);
+  const [sourceUploadRetry, setSourceUploadRetry] = useState(false);
+  const [sourceUploadRetryCount, setSourceUploadRetryCount] = useState(0);
+  const [sourceFilesToRetry, setSourceFilesToRetry] = useState<File[]>([]);
+  const uploadedForCalculations = useRef(new Set<string>());
+  const router = useRouter();
   const [saveState, saveAction, saving] = useActionState(saveMakerCalculation, { message: "", success: false });
   const [priceApplyState, applyPriceAction, applyingPrice] = useActionState(applyCalculatedProductPrice, { message: "", success: false });
+  useEffect(() => {
+    if (!ocrSourceFiles.length && !threeMfSourceFile) setKeepSourceFiles(false);
+    setSourceFilesToRetry([]);
+    setSourceUploadRetry(false);
+  }, [ocrSourceFiles, threeMfSourceFile]);
+  useEffect(() => {
+    const calculationId = saveState.calculationId;
+    if (!saveState.success || !saveState.keepSourceFiles || !calculationId || uploadedForCalculations.current.has(calculationId)) return;
+    uploadedForCalculations.current.add(calculationId);
+    const files = sourceFilesToRetry.length ? sourceFilesToRetry : [...ocrSourceFiles, ...(threeMfSourceFile ? [threeMfSourceFile] : [])];
+    if (!files.length || !storeId) { setSourceUploadMessage("Cálculo salvo, mas não há arquivos fonte disponíveis para guardar."); return; }
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) {
+      setSourceFilesToRetry(files);
+      setSourceUploadRetry(true);
+      setSourceUploadMessage("Cálculo salvo, mas o armazenamento privado não está configurado.");
+      return;
+    }
+    void (async () => {
+      setSourceUploadPending(true);
+      setSourceUploadRetry(false);
+      setSourceUploadMessage("Guardando arquivos fonte privados…");
+      let uploadedCount = 0;
+      let registeredCount = 0;
+      const failures: string[] = [];
+      const retryableFiles: File[] = [];
+      try {
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (authError || !auth.user) {
+          setSourceFilesToRetry(files);
+          setSourceUploadRetry(true);
+          setSourceUploadMessage("Cálculo salvo, mas entre novamente para guardar os arquivos fonte.");
+          return;
+        }
+        for (const file of files) {
+          const extension = file.name.toLowerCase().endsWith(".3mf") ? "3mf"
+            : file.type === "image/png" ? "png" : file.type === "image/jpeg" ? "jpg" : file.type === "image/webp" ? "webp" : "";
+          const contentType = extension === "3mf" ? "model/3mf"
+            : extension === "png" ? "image/png" : extension === "jpg" ? "image/jpeg" : extension === "webp" ? "image/webp" : "";
+          if (!extension || file.size < 1 || file.size > 50 * 1024 * 1024) {
+            failures.push(`${file.name}: formato inválido ou acima de 50 MiB`);
+            continue;
+          }
+          const attachmentId = crypto.randomUUID();
+          const storagePath = `${storeId}/${calculationId}/${attachmentId}.${extension}`;
+          const fileName = file.name.split(/[\\/]/).pop()?.replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 255) || `arquivo.${extension}`;
+          let metadataCreated = false;
+          try {
+            const { error: metadataError } = await supabase.from("maker_cost_calculation_attachments").insert({
+              id: attachmentId, store_id: storeId, calculation_id: calculationId, owner_user_id: auth.user.id,
+              storage_path: storagePath, file_name: fileName, content_type: contentType, size_bytes: file.size,
+            });
+            if (metadataError) throw metadataError;
+            metadataCreated = true;
+            registeredCount++;
+            const { error: uploadError } = await supabase.storage.from("maker-calculation-sources").upload(storagePath, file, { contentType, upsert: false });
+            if (uploadError) throw uploadError;
+            uploadedCount++;
+          } catch {
+            if (metadataCreated) {
+              await supabase.storage.from("maker-calculation-sources").remove([storagePath]);
+              const { error: metadataCleanupError } = await supabase.from("maker_cost_calculation_attachments").delete().eq("id", attachmentId).eq("calculation_id", calculationId).eq("store_id", storeId);
+              if (!metadataCleanupError) retryableFiles.push(file);
+              failures.push(`${fileName}: upload falhou${metadataCleanupError ? "; limpeza pendente" : ""}`);
+            } else {
+              retryableFiles.push(file);
+              failures.push(`${fileName}: não foi possível registrar os metadados`);
+            }
+          }
+        }
+        setSourceFilesToRetry(retryableFiles);
+        setSourceUploadRetry(retryableFiles.length > 0);
+        if (failures.length) setSourceUploadMessage(`${uploadedCount} arquivo(s) salvo(s); ${failures.join("; ")}.`);
+        else setSourceUploadMessage("Arquivos fonte guardados no histórico privado.");
+        if (uploadedCount || registeredCount) router.refresh();
+      } catch {
+        setSourceFilesToRetry(files);
+        setSourceUploadRetry(true);
+        setSourceUploadMessage("Cálculo salvo, mas não foi possível guardar os arquivos fonte.");
+      } finally {
+        setSourceUploadPending(false);
+      }
+    })().catch(() => {
+      setSourceUploadPending(false);
+      setSourceUploadMessage("Cálculo salvo, mas não foi possível guardar os arquivos fonte.");
+    });
+  }, [saveState, ocrSourceFiles, threeMfSourceFile, sourceFilesToRetry, sourceUploadRetryCount, storeId, router]);
   const parsedChannels: SalesChannel[] = channels.map((channel) => ({
     ...channel,
     feePercent: numberValue(channel.feePercent),
@@ -404,8 +504,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
         <div className="price-note"><span className="price-note-mark">01</span><p>O cálculo funciona sem OCR. Nenhuma taxa de plataforma é presumida.</p></div>
       </div>
       {equipmentNotice && <p className="auth-notice is-error" role="status">{equipmentNotice}</p>}
-      <SlicerImageImporter enabled={canUseOcr} configured={ocrConfigured} onApply={applyOcr} />
-      <ThreeMfSlicerImporter onApply={applyThreeMfPlate} />
+      <SlicerImageImporter enabled={canUseOcr} configured={ocrConfigured} onApply={applyOcr} onFilesChange={(files) => { setOcrSourceFiles(files); if (files.length) setThreeMfSourceFile(null); }} />
+      <ThreeMfSlicerImporter onApply={applyThreeMfPlate} onSourceFileChange={(file) => { setThreeMfSourceFile(file); if (file) setOcrSourceFiles([]); }} />
 
       <div className="price-layout">
         <div className="price-forms">
@@ -625,11 +725,15 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             <input type="hidden" name="printerId" value={selectedEquipmentId} />
             <input type="hidden" name="profileId" value={selectedProfileId.startsWith("model:") ? "" : selectedProfileId} />
             <input type="hidden" name="snapshot" value={JSON.stringify({ input, channels: parsedChannels, slicer: slicerMetrics, origin: calculationOrigin, priceTargetId: selectedPriceTargetId || null, compatibilityNozzles: { main: { equipmentId: selectedEquipmentId || null, nozzleId: selectedNozzleId || null }, components: productionComponents.map((component) => ({ equipmentId: component.equipmentId || null, nozzleId: componentNozzleIds[component.id] || null })) } })} />
-            <button className="button button-primary" type="submit" disabled={saving || !hasProductionCost || result.errors.length > 0}>{saving ? "Salvando…" : "Salvar cálculo"}</button>
+            <label className="price-ocr-consent"><input type="checkbox" name="keepSourceFiles" checked={keepSourceFiles} onChange={(event) => setKeepSourceFiles(event.target.checked)} disabled={sourceUploadPending || (!ocrSourceFiles.length && !threeMfSourceFile)} /><span>Guardar imagens do OCR ou arquivo 3MF junto ao histórico privado deste cálculo. O armazenamento é privado e limitado a 50 MiB por arquivo.</span></label>
+            <button className="button button-primary" type="submit" disabled={saving || sourceUploadPending || !hasProductionCost || result.errors.length > 0}>{sourceUploadPending ? "Guardando arquivos…" : saving ? "Salvando…" : "Salvar cálculo"}</button>
             {saveState.message && <p className={saveState.success ? "auth-notice is-success" : "auth-notice is-error"} role="status">{saveState.message}</p>}
+            {sourceUploadMessage && <p className={`auth-notice ${sourceUploadMessage.startsWith("Arquivos fonte guardados") ? "is-success" : "is-error"}`} role="status">{sourceUploadMessage}</p>}
+            {sourceUploadRetry && saveState.calculationId && <button className="button button-secondary" type="button" disabled={sourceUploadPending} onClick={() => { uploadedForCalculations.current.delete(saveState.calculationId!); setSourceUploadRetryCount((count) => count + 1); }}>Tentar guardar novamente</button>}
           </form>
+          {sourceAttachmentsError && <p className="auth-notice is-error" role="alert">Os arquivos fonte não puderam ser carregados. Confira a migração de armazenamento privado; o histórico de cálculos continua disponível.</p>}
           {savedCalculationsError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar o histórico. Confira as migrações da calculadora e dos vínculos com produtos, equipamentos e perfis.</p> : savedCalculations.length === 0 ? <p className="price-history-empty">Os cálculos salvos aparecerão aqui.</p> : <div className="price-history-list">{savedCalculations.map((saved) => <article className="price-history-item" key={saved.id}>
-            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span><span>Origem dos dados: {{ manual: "Entrada manual", ocr: "OCR de imagem", "3mf": "Arquivo 3MF", profile: "Perfil de impressão", unknown: "Não registrada (histórico antigo)" }[saved.origin]}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}{saved.priceTargetId && <span>Preço destinado a: {saved.priceTargetName ?? "anúncio não disponível nesta loja"}</span>}{saved.compatibilityNozzleLabels.length > 0 && <span>Bicos verificados: {saved.compatibilityNozzleLabels.join("; ")}</span>}{saved.printerName && <span>Equipamento: {saved.printerName}</span>}{saved.profileName && <span>Perfil: {saved.profileName}</span>}{saved.slicer && <><span>{saved.slicer.slicer} · modelo {metric(saved.slicer.modelGrams, "g")} · suportes {metric(saved.slicer.supportGrams, "g")} · total {metric(saved.slicer.totalGrams, "g")} · filamentos {metric(saved.slicer.filamentGrams, "g")} · purga {metric(saved.slicer.purgeGrams, "g")} · torre {metric(saved.slicer.wipeTowerGrams, "g")} · comprimento {metric(saved.slicer.lengthMeters, "m")} · trocas {saved.slicer.filamentChanges == null ? "—" : saved.slicer.filamentChanges.toLocaleString("pt-BR")} · tempo {metric(saved.slicer.printHours, "h")}</span>{saved.slicer.filaments.length > 0 && <details><summary>Consumo por filamento ({saved.slicer.filaments.length})</summary><ul>{saved.slicer.filaments.map((filament) => <li key={filament.index}>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""} · {metric(filament.grams, "g")} · {metric(filament.lengthMeters, "m")} · preço/kg {money(filament.pricePerKg == null ? null : Math.round(filament.pricePerKg * 100))}</li>)}</ul></details>}{saved.slicer.conflicts.length > 0 && <span>Campos com conflito ignorados: {saved.slicer.conflicts.join(", ")}</span>}</>}</div>
+            <div><strong>{saved.title}</strong><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(saved.createdAt))} · {saved.batchQuantity} peças · lote {money(saved.totalCostCents)} · unidade {money(saved.unitCostCents)}</span><span>Origem dos dados: {{ manual: "Entrada manual", ocr: "OCR de imagem", "3mf": "Arquivo 3MF", profile: "Perfil de impressão", unknown: "Não registrada (histórico antigo)" }[saved.origin]}</span>{saved.productName && <span>Produto: {saved.productUrl ? <Link href={saved.productUrl}>{saved.productName}</Link> : saved.productName}</span>}{saved.priceTargetId && <span>Preço destinado a: {saved.priceTargetName ?? "anúncio não disponível nesta loja"}</span>}{saved.compatibilityNozzleLabels.length > 0 && <span>Bicos verificados: {saved.compatibilityNozzleLabels.join("; ")}</span>}{saved.printerName && <span>Equipamento: {saved.printerName}</span>}{saved.profileName && <span>Perfil: {saved.profileName}</span>}{saved.slicer && <><span>{saved.slicer.slicer} · modelo {metric(saved.slicer.modelGrams, "g")} · suportes {metric(saved.slicer.supportGrams, "g")} · total {metric(saved.slicer.totalGrams, "g")} · filamentos {metric(saved.slicer.filamentGrams, "g")} · purga {metric(saved.slicer.purgeGrams, "g")} · torre {metric(saved.slicer.wipeTowerGrams, "g")} · comprimento {metric(saved.slicer.lengthMeters, "m")} · trocas {saved.slicer.filamentChanges == null ? "—" : saved.slicer.filamentChanges.toLocaleString("pt-BR")} · tempo {metric(saved.slicer.printHours, "h")}</span>{saved.slicer.filaments.length > 0 && <details><summary>Consumo por filamento ({saved.slicer.filaments.length})</summary><ul>{saved.slicer.filaments.map((filament) => <li key={filament.index}>Filamento {filament.index}{filament.material ? ` · ${filament.material}` : ""}{filament.color ? ` · ${filament.color}` : ""} · {metric(filament.grams, "g")} · {metric(filament.lengthMeters, "m")} · preço/kg {money(filament.pricePerKg == null ? null : Math.round(filament.pricePerKg * 100))}</li>)}</ul></details>}{saved.slicer.conflicts.length > 0 && <span>Campos com conflito ignorados: {saved.slicer.conflicts.join(", ")}</span>}</>}{saved.attachments.length > 0 && <span>Arquivos fonte: {saved.attachments.map((attachment, index) => <span key={`${saved.id}-${attachment.name}`}>{index > 0 ? " · " : ""}<a href={attachment.url} target="_blank" rel="noreferrer">{attachment.name}</a> ({(attachment.sizeBytes / (1024 * 1024)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MiB)</span>)}</span>}</div>
             <div className="price-history-actions"><button className="button button-secondary" type="button" onClick={() => duplicateCalculation(saved.snapshot, saved.title, saved.productId, saved.printerId, saved.profileId)}>Abrir como cópia</button><form action={deleteMakerCalculation} onSubmit={(event) => { if (!window.confirm(`Excluir “${saved.title}” do histórico?`)) event.preventDefault(); }}><input type="hidden" name="calculationId" value={saved.id} /><button className="price-history-delete" type="submit">Excluir</button></form></div>
           </article>)}</div>}
         </> : <div className="price-history-locked"><p>Entre com uma conta de fabricante e loja aprovada para manter um histórico privado dos seus custos.</p><Link className="button button-secondary" href="/conta">Acessar conta</Link></div>}
