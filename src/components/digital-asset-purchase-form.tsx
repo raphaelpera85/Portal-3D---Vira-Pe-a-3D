@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requestDigitalAssetPurchase } from "@/app/produtos/actions";
+import { DigitalAssetPurchaseSubmitButton } from "@/components/digital-asset-purchase-submit-button";
 
 export function DigitalAssetPurchaseForm({ productId, slug, authorized, personalPriceBrl, commercialPriceBrl }: {
   productId: string; slug: string; authorized: boolean; personalPriceBrl: number; commercialPriceBrl: number | null;
@@ -15,7 +16,7 @@ export function DigitalAssetPurchaseForm({ productId, slug, authorized, personal
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="slug" value={slug} />
       {licenses.map((license, index) => <label key={license.value}><input type="radio" name="licenseType" value={license.value} defaultChecked={index === 0} /> <span><strong>{license.name}</strong><small>{license.description}</small></span><b>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(license.price)}</b></label>)}
-      <button className="button button-primary" type="submit">Continuar para o pagamento</button>
+      <DigitalAssetPurchaseSubmitButton />
     </form> : <>
       <div className="digital-license-options" aria-label="Preços das licenças">
         {licenses.map((license) => <div className="digital-license-option" key={license.value}><span><strong>{license.name}</strong><small>{license.description}</small></span><b>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(license.price)}</b></div>)}
