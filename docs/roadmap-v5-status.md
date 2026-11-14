@@ -94,6 +94,6 @@ Revisão em 14 de novembro de 2026. Esta página compara os requisitos de produt
 1. Configurar Google Vision, Resend e WhatsApp na Vercel e validar reconhecimento semântico de imagem, OCR e notificações externas sem expor segredos no Git.
 2. Configurar e testar o OAuth, compra de etiquetas e webhook Melhor Envio em sandbox; depois validar o fluxo de produção com vendedores reconectados.
 3. Validar com imagens e fatiamentos reais o consumo editável por cor e a extração de campos OCR dos slicers; a cobertura sintética existe, mas ainda não há um corpus versionado de capturas reais.
-4. Expandir a curadoria oficial dos catálogos e estados de produção, depois testar compra e pós-venda ponta a ponta com contas sandbox. A migration de fingerprints e as migrations de segurança de notificações/gatilhos constam no histórico remoto do Supabase.
+4. Aplicar a migration de descoberta de modelos e conectar feeds oficiais adicionais; o primeiro conector Anycubic cria rascunhos para revisão, sem publicar especificações. Depois, testar compra e pós-venda ponta a ponta com contas sandbox. A migration de fingerprints e as migrations de segurança de notificações/gatilhos constam no histórico remoto do Supabase.
 
 Os detalhes de instalação, banco, segurança, operação e integrações continuam nos documentos vinculados pelo [README](../README.md).

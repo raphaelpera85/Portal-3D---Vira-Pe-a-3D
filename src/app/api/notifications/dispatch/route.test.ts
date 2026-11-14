@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   cleanupStaleChargebackEvidenceUploads: vi.fn(),
   cleanupStaleDesignerServiceDeliveryUploads: vi.fn(),
   runCatalogSourceCheck: vi.fn(),
+  runCatalogModelDiscovery: vi.fn(),
 }));
 
 vi.mock("@/lib/notification-dispatch.server", () => ({ dispatchNotificationQueue: mocks.dispatchNotificationQueue }));
@@ -13,6 +14,7 @@ vi.mock("@/lib/seller-payment-reconciliation.server", () => ({ reconcilePendingS
 vi.mock("@/lib/chargeback-evidence-cleanup.server", () => ({ cleanupStaleChargebackEvidenceUploads: mocks.cleanupStaleChargebackEvidenceUploads }));
 vi.mock("@/lib/designer-service-delivery-cleanup.server", () => ({ cleanupStaleDesignerServiceDeliveryUploads: mocks.cleanupStaleDesignerServiceDeliveryUploads }));
 vi.mock("@/lib/catalog-source-check.server", () => ({ runCatalogSourceCheck: mocks.runCatalogSourceCheck }));
+vi.mock("@/lib/catalog-discovery.server", () => ({ runCatalogModelDiscovery: mocks.runCatalogModelDiscovery }));
 
 import { GET } from "./route";
 
@@ -24,6 +26,7 @@ describe("scheduled privileged work", () => {
     mocks.cleanupStaleChargebackEvidenceUploads.mockReset().mockResolvedValue({ deleted: 0 });
     mocks.cleanupStaleDesignerServiceDeliveryUploads.mockReset().mockResolvedValue({ scanned: 0, removed: 0 });
     mocks.runCatalogSourceCheck.mockReset().mockResolvedValue({ ok: true, checked: 0 });
+    mocks.runCatalogModelDiscovery.mockReset().mockResolvedValue({ ok: true, checked: 0, candidates: 0 });
   });
 
   it("rejects missing or incorrect bearer credentials before running privileged tasks", async () => {
@@ -45,9 +48,10 @@ describe("scheduled privileged work", () => {
     expect(mocks.cleanupStaleChargebackEvidenceUploads).not.toHaveBeenCalled();
     expect(mocks.cleanupStaleDesignerServiceDeliveryUploads).not.toHaveBeenCalled();
     expect(mocks.runCatalogSourceCheck).not.toHaveBeenCalled();
+    expect(mocks.runCatalogModelDiscovery).not.toHaveBeenCalled();
   });
 
-  it("runs the scheduled queue, reconciliation, cleanup, and source check only with the bearer secret", async () => {
+  it("runs scheduled cleanup, source monitoring, and discovery only with the bearer secret", async () => {
     const response = await GET(new Request("https://portal.example/api/notifications/dispatch", {
       headers: { authorization: "Bearer scheduled-work-test-secret" },
     }));
@@ -58,5 +62,14 @@ describe("scheduled privileged work", () => {
     expect(mocks.cleanupStaleChargebackEvidenceUploads).toHaveBeenCalledOnce();
     expect(mocks.cleanupStaleDesignerServiceDeliveryUploads).toHaveBeenCalledOnce();
     expect(mocks.runCatalogSourceCheck).toHaveBeenCalledOnce();
+    expect(mocks.runCatalogModelDiscovery).toHaveBeenCalledOnce();
+  });
+
+  it("reports a failed discovery run to the scheduled-job monitor", async () => {
+    mocks.runCatalogModelDiscovery.mockResolvedValueOnce({ ok: false, sourceFailures: 1 });
+    const response = await GET(new Request("https://portal.example/api/notifications/dispatch", {
+      headers: { authorization: "Bearer scheduled-work-test-secret" },
+    }));
+    expect(response.status).toBe(500);
   });
 });

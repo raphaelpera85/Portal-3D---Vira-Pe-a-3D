@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { getUserWithRole } from "@/lib/auth-role.server";
-import { reviewCatalogSourceUpdateAction } from "./actions";
+import { reviewCatalogDiscoveryCandidateAction, reviewCatalogSourceUpdateAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Atualizações dos catálogos | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -19,18 +19,25 @@ const stateLabels: Record<string, string> = {
 };
 const notices: Record<string, string> = {
   salvo: "Revisão registrada.", analisada: "Esse alerta já foi analisado.", erro: "Não foi possível registrar a revisão.",
+  "candidato-importado": "Candidato vinculado ao catálogo. Registros novos ficam como rascunho; revise tudo antes de publicar.",
+  "candidato-dispensado": "Candidato dispensado.", "candidato-erro": "Não foi possível revisar o candidato.",
 };
 const formatDate = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(value));
 
-export default async function CatalogUpdatesPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
-  const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
+export default async function CatalogUpdatesPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string }> }) {
+  const [{ resultado, pagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
-  const [updates, watchState, versions] = await Promise.all([
+  const requestedPage = typeof pagina === "string" && /^[1-9]\d{0,3}$/.test(pagina) ? Number(pagina) : 1;
+  const pageSize = 24;
+  const [updates, watchState, versions, candidates] = await Promise.all([
     actor.supabase.from("catalog_update_history").select("*").eq("status", "pending").order("checked_at", { ascending: false }).limit(100),
     actor.supabase.from("catalog_source_watch_state").select("*").order("last_checked_at", { ascending: false }).limit(100),
     actor.supabase.from("catalog_versions").select("*").order("changed_at", { ascending: false }).limit(30),
+    actor.supabase.from("catalog_discovery_candidates").select("id, manufacturer, product_title, product_type, source_url, first_seen_at", { count: "exact" }).eq("status", "pending").order("first_seen_at", { ascending: false }).order("id", { ascending: false }).range((requestedPage - 1) * pageSize, requestedPage * pageSize - 1),
   ]);
-  const queriesFailed = updates.error || watchState.error || versions.error;
+  const queriesFailed = updates.error || watchState.error || versions.error || candidates.error;
+  const candidatePages = Math.max(1, Math.ceil((candidates.count ?? 0) / pageSize));
+  if (!candidates.error && requestedPage > candidatePages) redirect(`/admin/catalogos/atualizacoes?pagina=${candidatePages}`);
 
   return <>
     <SiteHeader />
@@ -38,8 +45,29 @@ export default async function CatalogUpdatesPage({ searchParams }: { searchParam
       <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
       <nav className="admin-catalog-links" aria-label="Catálogos técnicos"><Link href="/admin/catalogos/impressoras">Impressoras</Link><Link href="/admin/catalogos/materiais">Materiais e resinas</Link><Link href="/admin/catalogos/bicos">Bicos e compatibilidade</Link><Link aria-current="page" href="/admin/catalogos/atualizacoes">Atualizações</Link></nav>
       <div className="account-heading maker-dashboard-heading"><p className="eyebrow">CURADORIA TÉCNICA</p><h1>Atualizações dos catálogos</h1><p>Uma vez por semana, o sistema consulta cabeçalhos HTTP e, quando faltam validadores, compara o conteúdo de fontes pequenas por SHA-256. Nenhuma especificação é atualizada sem conferência administrativa.</p></div>
-      {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
-      {queriesFailed && <p className="auth-notice is-error" role="alert">Não foi possível carregar o histórico. Confira se a migração de monitoramento foi aplicada.</p>}
+      {resultado && notices[resultado] && <p className={`auth-notice ${["erro", "candidato-erro"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
+      {queriesFailed && <p className="auth-notice is-error" role="alert">Não foi possível carregar o histórico. Confira se as migrações de monitoramento e descoberta foram aplicadas.</p>}
+
+      <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">DESCOBERTA AUTOMÁTICA · REVISÃO HUMANA</span><h2>Novos modelos encontrados</h2></div>
+        <p>Importar cria um rascunho vazio no catálogo. Confira fonte e especificações antes de publicar.</p>
+        {!queriesFailed && !candidates.data?.length && <p className="admin-empty">Nenhum candidato novo.</p>}
+        {candidates.data?.map((candidate) => <article className="admin-review-card" key={candidate.id}>
+          <div><span className="account-kicker">{candidate.manufacturer} · {candidate.product_type} · {formatDate(candidate.first_seen_at)} UTC</span><h3>{candidate.product_title}</h3>
+            <p><a href={candidate.source_url} target="_blank" rel="noreferrer">Ver produto na fonte oficial</a></p>
+          </div>
+          <div className="auth-form">
+            <form action={reviewCatalogDiscoveryCandidateAction}>
+              <input type="hidden" name="candidateId" value={candidate.id} />
+              <label>Modelo<input name="model" defaultValue={candidate.product_title} maxLength={120} required /></label>
+              <label>Variante<input name="variant" defaultValue="standard" maxLength={80} required /></label>
+              <label>Tecnologia<select name="technology" defaultValue="" required><option value="" disabled>Selecione</option><option value="FDM">FDM</option><option value="SLA">SLA</option><option value="MSLA">MSLA</option><option value="DLP">DLP</option></select></label>
+              <button className="button button-primary" name="decision" value="import" type="submit">Criar rascunho</button>
+            </form>
+            <form action={reviewCatalogDiscoveryCandidateAction}><input type="hidden" name="candidateId" value={candidate.id} /><button className="button button-secondary" name="decision" value="dismiss" type="submit">Dispensar</button></form>
+          </div>
+        </article>)}
+        {!queriesFailed && (candidates.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação dos candidatos descobertos"><span>Página {requestedPage} de {candidatePages} · {candidates.count} candidatos</span><div>{requestedPage > 1 && <Link className="button button-secondary" href={`/admin/catalogos/atualizacoes?pagina=${requestedPage - 1}`}>Anterior</Link>}{requestedPage < candidatePages && <Link className="button button-secondary" href={`/admin/catalogos/atualizacoes?pagina=${requestedPage + 1}`}>Próxima</Link>}</div></nav>}
+      </section>
 
       <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">VALIDAÇÃO HUMANA</span><h2>Alertas pendentes</h2></div>
         {!queriesFailed && !updates.data?.length && <p className="admin-empty">Nenhuma fonte requer revisão.</p>}

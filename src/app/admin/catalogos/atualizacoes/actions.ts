@@ -24,3 +24,28 @@ export async function reviewCatalogSourceUpdateAction(formData: FormData): Promi
   revalidatePath("/admin/catalogos/atualizacoes");
   finish("salvo");
 }
+
+export async function reviewCatalogDiscoveryCandidateAction(formData: FormData): Promise<void> {
+  const candidateId = formData.get("candidateId");
+  const decision = formData.get("decision");
+  const model = formData.get("model");
+  const variant = formData.get("variant");
+  const technology = formData.get("technology");
+  if (typeof candidateId !== "string" || !uuidPattern.test(candidateId)
+    || (decision !== "import" && decision !== "dismiss")
+    || (decision === "import" && (typeof model !== "string" || !model.trim() || model.length > 120
+      || typeof variant !== "string" || !variant.trim() || variant.length > 80
+      || (technology !== "FDM" && technology !== "SLA" && technology !== "MSLA" && technology !== "DLP")))) finish("candidato-erro");
+  const actor = await getUserWithRole("admin");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { data, error } = await actor.supabase.rpc("review_catalog_discovery_candidate", {
+    p_candidate_id: candidateId, p_decision: decision,
+    p_model: typeof model === "string" ? model.trim() : "",
+    p_variant: typeof variant === "string" ? variant.trim() : "standard",
+    p_technology: typeof technology === "string" ? technology : "",
+  });
+  if (error || (decision === "import" && typeof data !== "string")) finish("candidato-erro");
+  revalidatePath("/admin/catalogos/atualizacoes");
+  revalidatePath("/admin/catalogos/impressoras");
+  finish(decision === "import" ? "candidato-importado" : "candidato-dispensado");
+}
