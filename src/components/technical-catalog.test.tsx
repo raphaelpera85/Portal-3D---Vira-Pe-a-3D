@@ -20,6 +20,17 @@ describe("TechnicalCatalog manufacturer conditions", () => {
     expect(markup).toContain("Não oferece impressão multicolor nesta configuração");
   });
 
+  it("announces material swatch names to screen readers", () => {
+    const catalog = mapTechnicalCatalog(
+      [{ id: "printer", manufacturer: "Marca", model: "Modelo", variant: "standard", technology: "FDM" }],
+      [{ id: "pla", manufacturer: "Marca", product: "PLA", family: "PLA", process: "filament", colors: [{ name: "Azul oceano", hex: "#2563eb" }] }],
+      [], [], [],
+    );
+
+    const markup = renderToStaticMarkup(<TechnicalCatalog {...catalog} notice={null} />);
+    expect(markup).toContain('class="material-swatch" title="Azul oceano" style="--swatch:#2563eb" aria-label="Azul oceano" role="img"');
+  });
+
   it("shows supported filaments, material/nozzle conditions and model-specific nozzle restrictions", () => {
     const catalog = mapTechnicalCatalog(
       [{

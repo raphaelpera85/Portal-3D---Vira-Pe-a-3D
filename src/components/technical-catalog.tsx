@@ -207,7 +207,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               {typeof resinProperties.wasteDisposal === "string" && <p>Descarte: {resinProperties.wasteDisposal}</p>}
             </div>}
             {resinExposureByPrinter.length > 0 && <div className="resin-exposure-table-wrap"><p>Configuração do fabricante por impressora</p><table className="resin-exposure-table"><thead><tr><th>Impressora</th><th>Camada</th><th>Normal</th><th>Base</th></tr></thead><tbody>{resinExposureByPrinter.map((item) => <tr key={item.printer}><th scope="row">{item.printer}</th><td>{item.layerHeightMm} mm</td><td>{item.normalExposureSeconds} s</td><td>{item.bottomExposureSeconds} s</td></tr>)}</tbody></table></div>}
-            {material.colors.length > 0 && <div className="material-swatches"><span>Cores de referência</span>{material.colors.map((color) => <span className={`material-swatch${color.hex ? "" : " is-clear"}`} key={color.name} title={color.name} style={color.hex ? { "--swatch": color.hex } as React.CSSProperties : undefined} aria-label={color.name} />)}</div>}
+            {material.colors.length > 0 && <div className="material-swatches"><span>Cores de referência</span>{material.colors.map((color) => <span className={`material-swatch${color.hex ? "" : " is-clear"}`} key={color.name} title={color.name} style={color.hex ? { "--swatch": color.hex } as React.CSSProperties : undefined} aria-label={color.name} role="img" />)}</div>}
             <SourceLinks sources={material.sources} />
           </section>
 
