@@ -6,6 +6,7 @@ import { getUserWithRole } from "@/lib/auth-role.server";
 import { getMercadoPagoSellerAccessToken } from "@/lib/mercado-pago-access-token.server";
 import { formatBrl } from "@/lib/money";
 import { hasReleaseReportReconciliationColumns, listReleaseReportPaymentReferences, reconcileReleaseReportCsv } from "@/lib/mercado-pago-release-reconciliation";
+import { fetchInChunks } from "@/lib/fetch-in-chunks";
 import { configureMercadoPagoReleaseReconciliation, requestMercadoPagoReleaseReport } from "../reconciliation-actions";
 
 export const dynamic = "force-dynamic";
@@ -120,8 +121,8 @@ export default async function MakerPaymentReconciliationPage({ searchParams }: {
             const references = listReleaseReportPaymentReferences(csv);
             if (!references) detailError = "O CSV não contém a coluna EXTERNAL_REFERENCE necessária para associar movimentos.";
             else {
-              const { data: payments, error } = references.length ? await actor.supabase.from("seller_order_payments")
-                .select("id, order_id, total_cents, marketplace_fee_cents, status").eq("store_id", store.id).in("id", references.slice(0, 5000)) : { data: [], error: null };
+              const { data: payments, error } = await fetchInChunks(references.slice(0, 5000), (ids) => actor.supabase!.from("seller_order_payments")
+                .select("id, order_id, total_cents, marketplace_fee_cents, status").eq("store_id", store.id).in("id", ids));
               if (error) detailError = "Não foi possível consultar os pagamentos internos da loja.";
               else {
                 reconciliation = reconcileReleaseReportCsv(csv, payments ?? []);

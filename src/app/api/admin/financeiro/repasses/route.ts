@@ -1,6 +1,7 @@
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listReleaseReportPaymentReferences, reconcileReleaseReportCsv } from "@/lib/mercado-pago-release-reconciliation";
+import { fetchInChunks } from "@/lib/fetch-in-chunks";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -33,8 +34,8 @@ export async function POST(request: Request) {
 
   const admin = createSupabaseAdminClient();
   if (!admin) return Response.json({ error: "report_unavailable" }, { status: 503, headers: privateHeaders });
-  const payments = references.length ? await admin.from("seller_order_payments")
-    .select("id, order_id, total_cents, marketplace_fee_cents, status").in("id", references) : { data: [], error: null };
+  const payments = await fetchInChunks(references, (ids) => admin.from("seller_order_payments")
+    .select("id, order_id, total_cents, marketplace_fee_cents, status").in("id", ids));
   if (payments.error) return Response.json({ error: "report_unavailable" }, { status: 503, headers: privateHeaders });
 
   const result = reconcileReleaseReportCsv(csv, payments.data ?? []);
