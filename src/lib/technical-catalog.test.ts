@@ -30,6 +30,7 @@ const anycubicKobraXMigration = readFileSync(new URL("../../supabase/migrations/
 const anycubicS1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261115070000_seed_anycubic_kobra_s1_max_and_photon_p1_max.sql", import.meta.url), "utf8");
 const crealityK2Migration = readFileSync(new URL("../../supabase/migrations/20261115080000_seed_creality_k2.sql", import.meta.url), "utf8");
 const bambuH2dVariantsMigration = readFileSync(new URL("../../supabase/migrations/20261115090000_expand_bambu_h2d_variants.sql", import.meta.url), "utf8");
+const crealityEnderV3NeoMegaMigration = readFileSync(new URL("../../supabase/migrations/20261115100000_seed_creality_ender_v3_neo_mega.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -105,6 +106,10 @@ describe("verified technical catalog records", () => {
       ["Bambu Lab", "P1S", "standard"],
       ["Bambu Lab", "P1S", "Combo"],
       ["Creality", "Ender-3 V3", "standard"],
+      ["Creality", "Ender-3 V3 Neo", "standard"],
+      ["Creality", "Ender-3 V3 Neo", "CFS nano Combo"],
+      ["Creality", "Ender-3 V3 Mega", "standard"],
+      ["Creality", "Ender-3 V3 Mega", "CFS nano Combo"],
       ["Creality", "Ender-3 V3 Plus", "standard"],
       ["Creality", "Ender-3 V3 SE", "standard"],
       ["ELEGOO", "Centauri Carbon 2", "standard"],
@@ -116,9 +121,32 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(84);
+    expect(printers).toHaveLength(88);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("keeps Ender-3 V3 Neo and Mega specs and CFS nano bundles distinct", () => {
+    const neo = printers.find((printer) => printer.id === "creality-ender-3-v3-neo");
+    const neoCombo = printers.find((printer) => printer.id === "creality-ender-3-v3-neo-cfs-nano");
+    const mega = printers.find((printer) => printer.id === "creality-ender-3-v3-mega");
+    const megaCombo = printers.find((printer) => printer.id === "creality-ender-3-v3-mega-cfs-nano");
+
+    expect(neo).toMatchObject({
+      buildVolumeMm: { x: 220, y: 220, z: 220 }, maximumSpeedMmPerSecond: 500,
+      multicolorSystem: "CFS nano (vendido separadamente)",
+      technicalProperties: { extruder: "Sprite 2 direct drive", builtInCamera: true, supportedTpuHardnessRangeA: [90, 95] },
+    });
+    expect(neo?.multicolorSlots).toBeNull();
+    expect(neoCombo).toMatchObject({ multicolorSystem: "CFS nano", multicolorSlots: 4, technicalProperties: { cfsNanoIncluded: true } });
+    expect(mega).toMatchObject({
+      buildVolumeMm: { x: 420, y: 420, z: 420 }, maximumSpeedMmPerSecond: 300,
+      multicolorSystem: "CFS nano (vendido separadamente)",
+      technicalProperties: { maxToolheadSpeedMmPerSecond: 500, autoBedLevelingPoints: 81, supportedTpuHardnessRangeA: [85, 95] },
+    });
+    expect(megaCombo).toMatchObject({ multicolorSystem: "CFS nano", multicolorSlots: 4, technicalProperties: { cfsNanoIncluded: true } });
+    expect(crealityEnderV3NeoMegaMigration).toContain("'Ender-3 V3 Neo', 'CFS nano Combo'");
+    expect(crealityEnderV3NeoMegaMigration).toContain("'Ender-3 V3 Mega', 'CFS nano Combo'");
   });
 
   it("keeps H2D base, AMS combo, and Pro configurations distinct", () => {
