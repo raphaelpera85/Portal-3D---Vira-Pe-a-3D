@@ -146,6 +146,7 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "anycubic-kobra-3", brand: "Anycubic", model: "Kobra 3", variant: "standard", technology: "FDM", buildVolumeMm: { x: 250, y: 250, z: 260 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true, maximumSpeedMmPerSecond: 600, technicalProperties: { speedRecommendedMmPerSecond: 300, multicolorBaseSoldSeparately: true }, sourceUrl: "https://store.anycubic.com/products/anycubic-kobra-3?variant=44597525938338" }),
   seededPrinter({ id: "creality-k1c", brand: "Creality", model: "K1C", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 250 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 350, sourceUrl: "https://store.creality.com/uk/products/k1c-3d-printer" }),
   seededPrinter({ id: "elegoo-neptune-4-pro-type-c", brand: "ELEGOO", model: "Neptune 4 Pro", variant: "Type-C edition", technology: "FDM", buildVolumeMm: { x: 225, y: 225, z: 265 }, maxNozzleTemperatureC: 300, maximumSpeedMmPerSecond: 500, sourceUrl: "https://us.elegoo.com/products/elegoo-neptune-4-pro-fdm-3d-printer?variant=52396213862581" }),
+  seededPrinter({ id: "elegoo-neptune-4-type-c", brand: "ELEGOO", model: "Neptune 4", variant: "Type-C version", technology: "FDM", buildVolumeMm: { x: 225, y: 225, z: 265 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true, maximumSpeedDescription: "500 mm/s de deslocamento do cabeçote; velocidade de impressão recomendada não informada", technicalProperties: { maxToolheadSpeedMmPerSecond: 500, maxAccelerationMmPerSecondSquared: 20000, ratedPowerWatts: 310, manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "Nylon"] }, sourceUrl: "https://www.elegoo.com/products/elegoo-neptune-4-fdm-3d-printer", documentationUrl: "https://eu.elegoo.com/en-be/collections/edm-exclude/products/elegoo-neptune-4-fdm-3d-printer", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "flashforge-adventurer-5m", brand: "Flashforge", model: "Adventurer 5M", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 220 }, maximumSpeedMmPerSecond: 600, sourceUrl: "https://www.flashforge.com/products/adventurer-5m-3d-printer" }),
   seededPrinter({ id: "sovol-sv08", brand: "Sovol", model: "SV08", variant: "standard", technology: "FDM", buildVolumeMm: { x: 350, y: 350, z: 345 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 700, sourceUrl: "https://www.sovol3d.com/products/sovol-sv08-3d-printer" }),
   seededPrinter({ id: "qidi-plus4", brand: "QIDI Tech", model: "Plus4", variant: "standard", technology: "FDM", buildVolumeMm: { x: 305, y: 305, z: 280 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 850, technicalProperties: { activeChamberMaximumTemperatureC: 65, ratedPowerComponentsW: [450, 400] }, sourceUrl: "https://us.qidi3d.com/pages/qidi-plus-4-techspecs" }),
@@ -1307,6 +1308,19 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[0.4, 0.6, 0.8, 1.0].map((diameter) => ({
+    id: `elegoo-neptune-4-type-c-${diameter}`,
+    name: `Bico de latão ${diameter.toLocaleString("pt-BR")} mm · Neptune 4/4 Pro Type-C`,
+    brand: "ELEGOO",
+    diameterMm: diameter,
+    material: "Latão",
+    maxTemperatureC: 300,
+    abrasionResistant: false,
+    printerCompatibility: { "elegoo-neptune-4-type-c": "compatible" as const, "elegoo-neptune-4-pro-type-c": "compatible" as const },
+    printerCompatibilityConditions: { "elegoo-neptune-4-type-c": "Somente versão Type-C; a versão Ribbon-Cable usa outros diâmetros.", "elegoo-neptune-4-pro-type-c": "Somente versão Type-C; a versão Ribbon-Cable usa outros diâmetros." },
+    original: diameter === 0.4,
+    sources: [{ label: "ELEGOO — Neptune 4/4 Pro nozzle kit", url: "https://us.elegoo.com/collections/subscriber-exclusive-offer/products/multi-size-brass-nozzle-kit-for-neptune-4-4-pro", checkedAt: "2026-11-14" }],
+  })),
   ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `bambu-h2c-${diameter}`,
     name: `Bico ${diameter.toLocaleString("pt-BR")} mm · H2C Vortek hotend`,

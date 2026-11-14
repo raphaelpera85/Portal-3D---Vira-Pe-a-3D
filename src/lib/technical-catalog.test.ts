@@ -25,6 +25,7 @@ const flsunT1Migration = readFileSync(new URL("../../supabase/migrations/2026111
 const flsunT1ProMigration = readFileSync(new URL("../../supabase/migrations/20261115000000_seed_flsun_t1_pro.sql", import.meta.url), "utf8");
 const flsunT1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261115010000_seed_flsun_t1_max.sql", import.meta.url), "utf8");
 const flsunV400Migration = readFileSync(new URL("../../supabase/migrations/20261115020000_seed_flsun_v400.sql", import.meta.url), "utf8");
+const elegooNeptune4Migration = readFileSync(new URL("../../supabase/migrations/20261115030000_seed_elegoo_neptune_4_type_c.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -58,6 +59,7 @@ describe("verified technical catalog records", () => {
       ["Anycubic", "Kobra 3", "standard"],
       ["Creality", "K1C", "standard"],
       ["ELEGOO", "Neptune 4 Pro", "Type-C edition"],
+      ["ELEGOO", "Neptune 4", "Type-C version"],
       ["Flashforge", "Adventurer 5M", "standard"],
       ["Sovol", "SV08", "standard"],
       ["QIDI Tech", "Plus4", "standard"],
@@ -100,9 +102,25 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(70);
+    expect(printers).toHaveLength(71);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("keeps Neptune 4 Type-C specifications and its version-specific nozzle compatibility", () => {
+    const neptune4 = printers.find((printer) => printer.id === "elegoo-neptune-4-type-c");
+    const compatibleNozzles = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["elegoo-neptune-4-type-c"] === "compatible");
+
+    expect(neptune4).toMatchObject({
+      buildVolumeMm: { x: 225, y: 225, z: 265 }, filamentDiameterMm: 1.75,
+      maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true,
+      maximumSpeedMmPerSecond: null,
+      maximumSpeedDescription: expect.stringContaining("deslocamento do cabeçote"),
+    });
+    expect(compatibleNozzles.map((nozzle) => nozzle.diameterMm)).toEqual([0.4, 0.6, 0.8, 1]);
+    expect(compatibleNozzles.every((nozzle) => nozzle.printerCompatibilityConditions?.["elegoo-neptune-4-type-c"]?.includes("Type-C"))).toBe(true);
+    expect(elegooNeptune4Migration).toContain("Neptune 4/4 Pro Type-C");
+    expect(elegooNeptune4Migration).toContain("0.4, 0.6, 0.8, 1.0");
   });
 
   it("keeps the H2C's nozzle-specific volumes and optional Vortek-to-AMS filament expansion", () => {
