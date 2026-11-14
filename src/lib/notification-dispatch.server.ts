@@ -1,5 +1,6 @@
 import "server-only";
 
+import { after } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isNotificationChannelConfigured, sendNotificationDelivery, type NotificationDelivery } from "@/lib/notification-delivery";
 import { getSiteUrl } from "@/lib/site-url";
@@ -15,7 +16,7 @@ export async function dispatchNotificationQueue() {
   let failed = 0;
   let deferred = 0;
   let reachedBatchLimit = false;
-  // shortcut: 100 deliveries per invocation; raise after adding a queue continuation worker.
+  // shortcut: 100 deliveries per invocation; continue remaining work in a new function invocation.
   for (let batch = 0; batch < 4; batch += 1) {
     const { data, error } = await supabase.rpc("claim_store_notification_deliveries", { batch_size: 25 });
     if (error) return { status: 503, body: { error: "notification_queue_unavailable", processed, sent, failed, deferred } };
@@ -63,6 +64,16 @@ export async function dispatchNotificationQueue() {
         .lt("attempts", 5).eq("status", "sending").lt("updated_at", staleBefore),
     ]);
     hasMore = Boolean(pending.error || stale.error || pending.count || stale.count);
+    if (!pending.error && !stale.error && (pending.count || stale.count) && process.env.CRON_SECRET) {
+      after(async () => {
+        const response = await fetch(new URL("/api/notifications/dispatch", siteUrl), {
+          method: "POST",
+          headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error(`notification_queue_continuation_failed:${response.status}`);
+      });
+    }
   }
   return { status: hasMore ? 202 : 200, body: { processed, sent, failed, deferred, hasMore } };
 }

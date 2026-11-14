@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  after: vi.fn(),
   createSupabaseAdminClient: vi.fn(),
   getSiteUrl: vi.fn(),
   getNotificationPanelPath: vi.fn(),
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/server", () => ({ after: mocks.after }));
 vi.mock("@/lib/supabase/admin", () => ({ createSupabaseAdminClient: mocks.createSupabaseAdminClient }));
 vi.mock("@/lib/site-url", () => ({ getSiteUrl: mocks.getSiteUrl }));
 vi.mock("@/lib/notification-messages", () => ({ getNotificationPanelPath: mocks.getNotificationPanelPath }));
@@ -38,6 +40,7 @@ const adminClient = (rpc: ReturnType<typeof vi.fn>, pendingCount: number, staleC
 describe("notification dispatch consent checks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv("CRON_SECRET", "");
     mocks.getSiteUrl.mockReturnValue("https://virapeca.example");
     mocks.getNotificationPanelPath.mockReturnValue("/painel/maker");
     mocks.isNotificationChannelConfigured.mockReturnValue(true);
@@ -107,6 +110,35 @@ describe("notification dispatch consent checks", () => {
     expect(client.staleQuery.eq).toHaveBeenCalledWith("status", "sending");
     expect(offset).toBe(100);
     expect(mocks.sendNotificationDelivery).toHaveBeenCalledTimes(100);
+  });
+
+  it("schedules an authenticated continuation when queue overflow is confirmed", async () => {
+    vi.stubEnv("CRON_SECRET", "queue-worker-test-secret");
+    const deliveries = Array.from({ length: 100 }, (_, index) => ({
+      id: `delivery-${index + 1}`, channel: "email", destination: `maker${index + 1}@example.com`,
+      payload: { notification_type: "purchase", product_name: "Peça" }, attempts: 1,
+    }));
+    let offset = 0;
+    const rpc = vi.fn(async (name: string) => {
+      if (name !== "claim_store_notification_deliveries") return { data: null, error: null };
+      const batch = deliveries.slice(offset, offset + 25);
+      offset += 25;
+      return { data: batch, error: null };
+    });
+    mocks.createSupabaseAdminClient.mockReturnValue(adminClient(rpc, 1));
+
+    await dispatchNotificationQueue();
+
+    expect(mocks.after).toHaveBeenCalledOnce();
+    const continuation = mocks.after.mock.calls[0][0] as () => Promise<void>;
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", fetchMock);
+    await continuation();
+    expect(fetchMock).toHaveBeenCalledWith(new URL("/api/notifications/dispatch", "https://virapeca.example"), {
+      method: "POST",
+      headers: { authorization: "Bearer queue-worker-test-secret" },
+      cache: "no-store",
+    });
   });
 
   it("returns completed batch counts when a later queue claim fails", async () => {

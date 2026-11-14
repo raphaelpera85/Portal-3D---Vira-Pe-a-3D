@@ -16,7 +16,7 @@ vi.mock("@/lib/designer-service-delivery-cleanup.server", () => ({ cleanupStaleD
 vi.mock("@/lib/catalog-source-check.server", () => ({ runCatalogSourceCheck: mocks.runCatalogSourceCheck }));
 vi.mock("@/lib/catalog-discovery.server", () => ({ runCatalogModelDiscovery: mocks.runCatalogModelDiscovery }));
 
-import { GET } from "./route";
+import { GET, POST } from "./route";
 
 describe("scheduled privileged work", () => {
   beforeEach(() => {
@@ -71,5 +71,22 @@ describe("scheduled privileged work", () => {
       headers: { authorization: "Bearer scheduled-work-test-secret" },
     }));
     expect(response.status).toBe(500);
+  });
+
+  it("allows only the bearer secret to run a queue continuation", async () => {
+    const denied = await POST(new Request("https://portal.example/api/notifications/dispatch", { method: "POST" }));
+    expect(denied.status).toBe(401);
+    expect(mocks.dispatchNotificationQueue).not.toHaveBeenCalled();
+
+    mocks.dispatchNotificationQueue.mockResolvedValueOnce({ status: 202, body: { processed: 100, hasMore: true } });
+    const response = await POST(new Request("https://portal.example/api/notifications/dispatch", {
+      method: "POST",
+      headers: { authorization: "Bearer scheduled-work-test-secret" },
+    }));
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({ processed: 100, hasMore: true });
+    expect(mocks.dispatchNotificationQueue).toHaveBeenCalledOnce();
+    expect(mocks.reconcilePendingSellerRefunds).not.toHaveBeenCalled();
+    expect(mocks.runCatalogSourceCheck).not.toHaveBeenCalled();
   });
 });

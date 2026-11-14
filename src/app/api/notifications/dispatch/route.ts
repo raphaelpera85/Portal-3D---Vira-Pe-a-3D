@@ -14,10 +14,20 @@ const safeEqual = (left: string, right: string) => {
   const b = Buffer.from(right);
   return a.length === b.length && timingSafeEqual(a, b);
 };
-export async function GET(request: Request) {
+const isAuthorized = (request: Request) => {
   const secret = process.env.CRON_SECRET;
   const authorization = request.headers.get("authorization") ?? "";
-  if (!secret || !safeEqual(authorization, `Bearer ${secret}`)) return Response.json({ error: "unauthorized" }, { status: 401 });
+  return Boolean(secret && safeEqual(authorization, `Bearer ${secret}`));
+};
+
+export async function POST(request: Request) {
+  if (!isAuthorized(request)) return Response.json({ error: "unauthorized" }, { status: 401 });
+  const result = await dispatchNotificationQueue();
+  return Response.json(result.body, { status: result.status });
+}
+
+export async function GET(request: Request) {
+  if (!isAuthorized(request)) return Response.json({ error: "unauthorized" }, { status: 401 });
   const result = await dispatchNotificationQueue();
   const refunds = await reconcilePendingSellerRefunds();
   const evidenceCleanup = await cleanupStaleChargebackEvidenceUploads();
