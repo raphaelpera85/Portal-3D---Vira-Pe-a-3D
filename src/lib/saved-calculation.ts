@@ -63,7 +63,7 @@ export function mapThreeMfPlateToSlicerMetrics(plate: ThreeMfSlicePlate, plateNu
   };
 }
 
-function parseSlicerMetrics(value: unknown): SavedSlicerMetrics | null | undefined {
+export function parseSavedSlicerMetrics(value: unknown): SavedSlicerMetrics | null | undefined {
   if (value == null) return null;
   if (!isRecord(value)) return undefined;
   const metricFields = ["modelGrams", "supportGrams", "totalGrams", "purgeGrams", "wipeTowerGrams", "filamentGrams", "lengthMeters", "printHours", "filamentChanges", "estimatedCost"] as const;
@@ -119,7 +119,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   if (modelProfile === undefined) return { calculation: null, error: "A origem do perfil de modelo é inválida." };
   const compatibilityNozzles = parseCompatibilityNozzles(parsed.compatibilityNozzles);
   if (!compatibilityNozzles) return { calculation: null, error: "A seleção de bicos para a checagem de compatibilidade é inválida." };
-  const slicer = parseSlicerMetrics(parsed.slicer);
+  const slicer = parseSavedSlicerMetrics(parsed.slicer);
   if (slicer === undefined) return { calculation: null, error: "Os dados reconhecidos pelo OCR são inválidos." };
   const origin = parsed.origin === undefined ? "unknown" : parsed.origin;
   if (!calculationOrigins.includes(origin as CalculationOrigin)) return { calculation: null, error: "A origem dos dados do cálculo é inválida." };

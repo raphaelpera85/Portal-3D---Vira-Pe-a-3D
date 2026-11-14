@@ -4,9 +4,34 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getShowcaseModel } from "@/lib/model-showcase";
 import { validateModelPrintProfile } from "@/lib/model-print-profiles";
+import { parseSavedSlicerMetrics } from "@/lib/saved-calculation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export async function loadVisibleModelPrintProfiles(modelSlug: string) {
+  if (!getShowcaseModel(modelSlug)) return { profiles: [], error: true };
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { profiles: [], error: true };
+  const { data, error } = await supabase.from("visible_model_print_profiles")
+    .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, sharing_scope, review_status")
+    .eq("model_slug", modelSlug).order("created_at", { ascending: false }).limit(100);
+  if (error) return { profiles: [], error: true };
+  const profiles = (data ?? []).flatMap((profile) => {
+    const metrics = parseSavedSlicerMetrics(profile.slicer_metrics);
+    return uuidPattern.test(profile.id) && metrics && profile.profile_name.length >= 2 && profile.profile_name.length <= 80
+      ? [{
+        id: profile.id, profile_name: profile.profile_name, profile_type: profile.profile_type,
+        slicer: profile.slicer, printer_snapshot: profile.printer_snapshot, material_snapshot: profile.material_snapshot,
+        nozzle_snapshot: profile.nozzle_snapshot, layer_height_mm: profile.layer_height_mm,
+        infill_percent: profile.infill_percent, wall_count: profile.wall_count, supports: profile.supports,
+        orientation: profile.orientation, scale_percent: profile.scale_percent, quantity: profile.quantity,
+        sharing_scope: profile.sharing_scope, review_status: profile.review_status, metrics,
+      }]
+      : [];
+  });
+  return { profiles, error: false };
+}
 
 export async function saveModelPrintProfile(formData: FormData) {
   const input = validateModelPrintProfile(Object.fromEntries(formData));

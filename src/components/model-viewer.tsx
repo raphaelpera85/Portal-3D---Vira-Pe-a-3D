@@ -7,8 +7,10 @@ import {
 import type * as THREE from "three";
 import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { ModelUploadManager, type SavedModelUpload } from "@/components/model-upload-manager";
+import { loadVisibleModelPrintProfiles } from "@/app/modelos/actions";
 import { createMeterExportCopy } from "@/lib/model-export";
 import { evaluateBuildVolume, evaluateCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter, type CompatibilityCheck } from "@/lib/compatibility";
+import type { SavedSlicerMetrics } from "@/lib/saved-calculation";
 import {
   formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
   type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds,
@@ -31,8 +33,16 @@ const views: { name: ViewName; label: string; direction: [number, number, number
   { name: "direita", label: "Direita", direction: [1, 0, 0.35] },
 ];
 type ViewerComponent = { id: string; name: string; visible: boolean; colors: string[] };
+type ViewerCatalogModel = { id: string; name: string };
+type ViewerCatalogProfile = {
+  id: string; profile_name: string; profile_type: string; slicer: string; printer_snapshot: string;
+  material_snapshot: string; nozzle_snapshot: string; layer_height_mm: number | string | null;
+  infill_percent: number | string | null; wall_count: number | null; supports: boolean; orientation: string;
+  scale_percent: number | string; quantity: number; sharing_scope: "private" | "community" | "official";
+  review_status: "draft" | "pending" | "published" | "rejected"; metrics: SavedSlicerMetrics;
+};
 
-export function ModelViewer({ buyerId, savedModels = [], materials = [], nozzles = [], printers = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: (CatalogMaterial & { label: string })[]; nozzles?: (CatalogNozzle & { brand: string })[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
+export function ModelViewer({ buyerId, savedModels = [], catalogModels = [], materials = [], nozzles = [], printers = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; catalogModels?: ViewerCatalogModel[]; materials?: (CatalogMaterial & { label: string })[]; nozzles?: (CatalogNozzle & { brand: string })[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -60,6 +70,12 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], nozzles
   const [components, setComponents] = useState<ViewerComponent[]>([]);
   const [modelColors, setModelColors] = useState<string[]>([]);
   const [slicePlates, setSlicePlates] = useState<ThreeMfSlicePlate[]>([]);
+  const [catalogModelId, setCatalogModelId] = useState("");
+  const [catalogProfiles, setCatalogProfiles] = useState<ViewerCatalogProfile[]>([]);
+  const [catalogProfileId, setCatalogProfileId] = useState("");
+  const [catalogProfilesLoading, setCatalogProfilesLoading] = useState(false);
+  const [catalogProfilesError, setCatalogProfilesError] = useState(false);
+  const catalogProfileRequestRef = useRef(0);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [unit, setUnit] = useState<ModelUnit | "">("");
   const [scale, setScale] = useState(100);
@@ -74,6 +90,35 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], nozzles
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState("");
   const [webglError, setWebglError] = useState(false);
+
+  function clearCatalogProfileAssociation() {
+    catalogProfileRequestRef.current += 1;
+    setCatalogModelId("");
+    setCatalogProfiles([]);
+    setCatalogProfileId("");
+    setCatalogProfilesLoading(false);
+    setCatalogProfilesError(false);
+  }
+
+  async function associateCatalogModel(id: string) {
+    const requestId = ++catalogProfileRequestRef.current;
+    setCatalogModelId(id);
+    setCatalogProfiles([]);
+    setCatalogProfileId("");
+    setCatalogProfilesError(false);
+    if (!id) { setCatalogProfilesLoading(false); return; }
+    setCatalogProfilesLoading(true);
+    try {
+      const result = await loadVisibleModelPrintProfiles(id);
+      if (requestId !== catalogProfileRequestRef.current) return;
+      setCatalogProfiles(result.profiles as ViewerCatalogProfile[]);
+      setCatalogProfilesError(result.error);
+    } catch {
+      if (requestId === catalogProfileRequestRef.current) setCatalogProfilesError(true);
+    } finally {
+      if (requestId === catalogProfileRequestRef.current) setCatalogProfilesLoading(false);
+    }
+  }
 
   function restoreColorHighlight() {
     originalEmissivesRef.current.forEach((entries) => entries.forEach(({ material, color, intensity }) => {
@@ -411,6 +456,7 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], nozzles
       setSourceUnit(modelUnit);
       setUnit(modelUnit ? "mm" : "");
       setScale(100);
+      clearCatalogProfileAssociation();
       fitView();
       setMessage(modelUnit
         ? `${kind.toUpperCase()} carregado. Unidade identificada: ${modelUnit}.`
@@ -653,6 +699,34 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], nozzles
           <input className="scale-slider" aria-label="Escala proporcional do modelo" type="range" min="10" max="300" step="5" value={scale} onChange={(event) => updateScale(Number(event.target.value))} disabled={!rawDimensions} />
           <div className="scale-limits"><span>10%</span><span>300%</span></div>
           <p className="scale-note">A escala altera a prévia. Baixe uma nova cópia GLB para aplicar a escala; o original permanece intacto.{!unit && rawDimensions ? " Confirme a unidade para exportar corretamente." : ""}</p>
+          <div className="inspector-divider" />
+          <div className="inspector-section-head"><h2>Perfil de impressão</h2></div>
+          <label className="technical-select">Associar modelo do catálogo<select aria-label="Associar arquivo ao modelo do catálogo" value={catalogModelId} onChange={(event) => { void associateCatalogModel(event.target.value); }} disabled={!rawDimensions || catalogModels.length === 0}>
+            <option value="">Selecione manualmente</option>
+            {catalogModels.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
+          </select></label>
+          <p className="scale-note">O vínculo é manual. O nome do arquivo não seleciona um modelo automaticamente.</p>
+          {catalogProfilesLoading && <p className="viewer-profile-status" role="status">Carregando perfis do modelo…</p>}
+          {catalogProfilesError && <p className="viewer-profile-status is-error" role="alert">Perfis indisponíveis. Confira se as migrações de perfis estão aplicadas.</p>}
+          {catalogModelId && !catalogProfilesLoading && !catalogProfilesError && catalogProfiles.length === 0 && <p className="viewer-profile-status" role="status">Este modelo ainda não tem perfis visíveis.</p>}
+          {catalogProfiles.length > 0 && <label className="technical-select">Perfil disponível<select aria-label="Perfil de impressão do modelo associado" value={catalogProfileId} onChange={(event) => setCatalogProfileId(event.target.value)}>
+            <option value="">Selecione um perfil</option>
+            {catalogProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.profile_name} · {profile.sharing_scope === "official" ? "Oficial" : profile.sharing_scope === "community" ? "Comunidade" : "Particular"}</option>)}
+          </select></label>}
+          {catalogProfiles.find((profile) => profile.id === catalogProfileId) && (() => {
+            const profile = catalogProfiles.find((item) => item.id === catalogProfileId)!;
+            return <section className="viewer-profile-details" aria-label="Dados do perfil de impressão selecionado">
+              <strong>{profile.profile_name}</strong>
+              <p>{profile.slicer} · {profile.quantity} peça(s) · {profile.scale_percent}%</p>
+              <p>{profile.printer_snapshot || "Impressora não informada"} · {profile.material_snapshot || "Material não informado"} · {profile.nozzle_snapshot || "Bico não informado"}</p>
+              <div className="slice-info-summary">
+                {profile.metrics.filamentGrams !== null && <span>Consumo declarado: {formatSliceNumber(profile.metrics.filamentGrams)} g</span>}
+                {profile.metrics.printHours !== null && <span>Tempo declarado: {formatSliceTime(profile.metrics.printHours * 3600)}</span>}
+                {profile.metrics.lengthMeters !== null && <span>Filamento: {formatSliceNumber(profile.metrics.lengthMeters)} m</span>}
+              </div>
+              <p>Referência do perfil; não altera geometria, dimensões ou dados do arquivo.</p>
+            </section>;
+          })()}
           <div className="inspector-divider" />
           <div className="inspector-section-head"><h2>Compatibilidade de impressão</h2></div>
           {printers.length > 0 ? <>
