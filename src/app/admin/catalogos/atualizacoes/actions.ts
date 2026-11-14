@@ -12,6 +12,7 @@ const finishReview = (result: string, formData: FormData): never => {
     ["pagina", parsePageNumber(formData.get("pagina"))],
     ["alertaPagina", parsePageNumber(formData.get("alertaPagina"))],
     ["fontePagina", parsePageNumber(formData.get("fontePagina"))],
+    ["versaoPagina", parsePageNumber(formData.get("versaoPagina"))],
   ] as const;
   for (const [name, page] of pages) if (page !== null) params.set(name, String(page));
   return redirect(`/admin/catalogos/atualizacoes?${params.toString()}`);

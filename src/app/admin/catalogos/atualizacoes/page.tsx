@@ -26,27 +26,29 @@ const notices: Record<string, string> = {
 const formatDate = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(value));
 const pageSize = 24;
 
-export default async function CatalogUpdatesPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string; alertaPagina?: string; fontePagina?: string }> }) {
-  const [{ resultado, pagina, alertaPagina, fontePagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
+export default async function CatalogUpdatesPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string; alertaPagina?: string; fontePagina?: string; versaoPagina?: string }> }) {
+  const [{ resultado, pagina, alertaPagina, fontePagina, versaoPagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const requestedPage = parsePageNumber(pagina) ?? 1;
   const requestedAlertPage = parsePageNumber(alertaPagina) ?? 1;
   const requestedSourcePage = parsePageNumber(fontePagina) ?? 1;
+  const requestedVersionPage = parsePageNumber(versaoPagina) ?? 1;
   const [updates, watchState, versions, candidates] = await Promise.all([
     actor.supabase.from("catalog_update_history").select("*", { count: "exact" }).eq("status", "pending").order("checked_at", { ascending: false }).order("id", { ascending: false }).range((requestedAlertPage - 1) * pageSize, requestedAlertPage * pageSize - 1),
     actor.supabase.from("catalog_source_watch_state").select("*", { count: "exact" }).order("last_checked_at", { ascending: false }).order("catalog_type").order("record_id").range((requestedSourcePage - 1) * pageSize, requestedSourcePage * pageSize - 1),
-    actor.supabase.from("catalog_versions").select("*").order("changed_at", { ascending: false }).limit(30),
+    actor.supabase.from("catalog_versions").select("*", { count: "exact" }).order("changed_at", { ascending: false }).order("id", { ascending: false }).range((requestedVersionPage - 1) * pageSize, requestedVersionPage * pageSize - 1),
     actor.supabase.from("catalog_discovery_candidates").select("id, manufacturer, product_title, product_type, source_url, first_seen_at", { count: "exact" }).eq("status", "pending").order("first_seen_at", { ascending: false }).order("id", { ascending: false }).range((requestedPage - 1) * pageSize, requestedPage * pageSize - 1),
   ]);
   const queriesFailed = updates.error || watchState.error || versions.error || candidates.error;
   const candidatePages = Math.max(1, Math.ceil((candidates.count ?? 0) / pageSize));
   const alertPages = Math.max(1, Math.ceil((updates.count ?? 0) / pageSize));
   const sourcePages = Math.max(1, Math.ceil((watchState.count ?? 0) / pageSize));
-  const pageHref = (candidatePage: number, alertPage: number, sourcePage: number) => {
+  const pageHref = (candidatePage: number, alertPage: number, sourcePage: number, versionPage = requestedVersionPage) => {
     const params = new URLSearchParams();
     if (candidatePage > 1) params.set("pagina", String(candidatePage));
     if (alertPage > 1) params.set("alertaPagina", String(alertPage));
     if (sourcePage > 1) params.set("fontePagina", String(sourcePage));
+    if (versionPage > 1) params.set("versaoPagina", String(versionPage));
     if (resultado) params.set("resultado", resultado);
     return `/admin/catalogos/atualizacoes${params.size ? `?${params.toString()}` : ""}`;
   };
@@ -56,6 +58,9 @@ export default async function CatalogUpdatesPage({ searchParams }: { searchParam
   if (!updates.error && alertRedirectPage !== null) redirect(pageHref(requestedPage, alertRedirectPage, requestedSourcePage));
   const sourceRedirectPage = getPaginationRedirectPage(requestedSourcePage, sourcePages);
   if (!watchState.error && sourceRedirectPage !== null) redirect(pageHref(requestedPage, requestedAlertPage, sourceRedirectPage));
+  const versionPages = Math.max(1, Math.ceil((versions.count ?? 0) / pageSize));
+  const versionRedirectPage = getPaginationRedirectPage(requestedVersionPage, versionPages);
+  if (!versions.error && versionRedirectPage !== null) redirect(pageHref(requestedPage, requestedAlertPage, requestedSourcePage, versionRedirectPage));
 
   return <>
     <SiteHeader />
@@ -76,13 +81,13 @@ export default async function CatalogUpdatesPage({ searchParams }: { searchParam
           <div className="auth-form">
             <form action={reviewCatalogDiscoveryCandidateAction}>
               <input type="hidden" name="candidateId" value={candidate.id} />
-              <input type="hidden" name="pagina" value={requestedPage} /><input type="hidden" name="alertaPagina" value={requestedAlertPage} /><input type="hidden" name="fontePagina" value={requestedSourcePage} />
+              <input type="hidden" name="pagina" value={requestedPage} /><input type="hidden" name="alertaPagina" value={requestedAlertPage} /><input type="hidden" name="fontePagina" value={requestedSourcePage} /><input type="hidden" name="versaoPagina" value={requestedVersionPage} />
               <label>Modelo<input name="model" defaultValue={candidate.product_title} maxLength={120} required /></label>
               <label>Variante<input name="variant" defaultValue="standard" maxLength={80} required /></label>
               <label>Tecnologia<select name="technology" defaultValue="" required><option value="" disabled>Selecione</option><option value="FDM">FDM</option><option value="SLA">SLA</option><option value="MSLA">MSLA</option><option value="DLP">DLP</option></select></label>
               <button className="button button-primary" name="decision" value="import" type="submit">Criar rascunho</button>
             </form>
-            <form action={reviewCatalogDiscoveryCandidateAction}><input type="hidden" name="candidateId" value={candidate.id} /><input type="hidden" name="pagina" value={requestedPage} /><input type="hidden" name="alertaPagina" value={requestedAlertPage} /><input type="hidden" name="fontePagina" value={requestedSourcePage} /><button className="button button-secondary" name="decision" value="dismiss" type="submit">Dispensar</button></form>
+            <form action={reviewCatalogDiscoveryCandidateAction}><input type="hidden" name="candidateId" value={candidate.id} /><input type="hidden" name="pagina" value={requestedPage} /><input type="hidden" name="alertaPagina" value={requestedAlertPage} /><input type="hidden" name="fontePagina" value={requestedSourcePage} /><input type="hidden" name="versaoPagina" value={requestedVersionPage} /><button className="button button-secondary" name="decision" value="dismiss" type="submit">Dispensar</button></form>
           </div>
         </article>)}
         {!candidates.error && (candidates.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação dos candidatos descobertos"><span>Página {requestedPage} de {candidatePages} · {candidates.count} candidatos</span><div>{requestedPage > 1 && <Link className="button button-secondary" href={pageHref(requestedPage - 1, requestedAlertPage, requestedSourcePage)}>Anterior</Link>}{requestedPage < candidatePages && requestedPage < maxPageNumber && <Link className="button button-secondary" href={pageHref(requestedPage + 1, requestedAlertPage, requestedSourcePage)}>Próxima</Link>}</div></nav>}
@@ -96,7 +101,7 @@ export default async function CatalogUpdatesPage({ searchParams }: { searchParam
             <p><a href={item.source_url} target="_blank" rel="noreferrer">Abrir fonte oficial</a></p>
             {item.observed_http_status && <p>Resposta HTTP: {item.observed_http_status}</p>}
           </div>
-          <form action={reviewCatalogSourceUpdateAction}><input type="hidden" name="updateId" value={item.id} /><input type="hidden" name="pagina" value={requestedPage} /><input type="hidden" name="alertaPagina" value={requestedAlertPage} /><input type="hidden" name="fontePagina" value={requestedSourcePage} /><label>Nota de revisão (opcional)<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="confirmed" type="submit">Conferi a fonte</button><button className="button button-secondary" name="decision" value="dismissed" type="submit">Dispensar alerta</button></div></form>
+          <form action={reviewCatalogSourceUpdateAction}><input type="hidden" name="updateId" value={item.id} /><input type="hidden" name="pagina" value={requestedPage} /><input type="hidden" name="alertaPagina" value={requestedAlertPage} /><input type="hidden" name="fontePagina" value={requestedSourcePage} /><input type="hidden" name="versaoPagina" value={requestedVersionPage} /><label>Nota de revisão (opcional)<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="confirmed" type="submit">Conferi a fonte</button><button className="button button-secondary" name="decision" value="dismissed" type="submit">Dispensar alerta</button></div></form>
         </article>)}
         {!updates.error && (updates.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação dos alertas pendentes"><span>Página {requestedAlertPage} de {alertPages} · {updates.count} alertas</span><div>{requestedAlertPage > 1 && <Link className="button button-secondary" href={pageHref(requestedPage, requestedAlertPage - 1, requestedSourcePage)}>Anterior</Link>}{requestedAlertPage < alertPages && requestedAlertPage < maxPageNumber && <Link className="button button-secondary" href={pageHref(requestedPage, requestedAlertPage + 1, requestedSourcePage)}>Próxima</Link>}</div></nav>}
       </section>
@@ -116,6 +121,7 @@ export default async function CatalogUpdatesPage({ searchParams }: { searchParam
           const label = [snapshot.manufacturer, snapshot.model ?? snapshot.product, snapshot.variant ?? snapshot.interface].filter((part): part is string => typeof part === "string" && Boolean(part)).join(" ");
           return <article className="account-card admin-banner-record" key={version.id}><div className="admin-banner-record-heading"><div><span className="account-kicker">{typeLabels[version.catalog_type] ?? "Catálogo"} · VERSÃO {version.version_number} · {formatDate(version.changed_at)} UTC</span><h3>{label || "Registro técnico"}</h3><details><summary>Ver dados anteriores</summary><pre className="catalog-version-snapshot">{JSON.stringify(snapshot, null, 2)}</pre></details></div></div></article>;
         })}
+        {!versions.error && (versions.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação do histórico de especificações"><span>Página {requestedVersionPage} de {versionPages} · {versions.count} versões</span><div>{requestedVersionPage > 1 && <Link className="button button-secondary" href={pageHref(requestedPage, requestedAlertPage, requestedSourcePage, requestedVersionPage - 1)}>Anterior</Link>}{requestedVersionPage < versionPages && requestedVersionPage < maxPageNumber && <Link className="button button-secondary" href={pageHref(requestedPage, requestedAlertPage, requestedSourcePage, requestedVersionPage + 1)}>Próxima</Link>}</div></nav>}
       </section>
     </main>
     <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Catálogo mestre ViraPeça 3D.</p><span>© 2026 ViraPeça 3D</span></div></footer>
