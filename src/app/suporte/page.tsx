@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SupportReplyForm } from "@/components/support-reply-form";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { getPaginationRedirectPage } from "@/lib/pagination";
 import { createSupportTicketAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -16,16 +17,22 @@ const categories = [
 ];
 const statuses: Record<string, string> = { open: "Aberto", in_progress: "Em análise", waiting_user: "Aguardando você", resolved: "Resolvido", closed: "Encerrado" };
 const notices: Record<string, string> = { criado: "Solicitação enviada à equipe de atendimento.", "resposta-enviada": "Sua mensagem foi enviada.", erro: "Não foi possível enviar. Confira os campos e tente novamente." };
+const pageSize = 24;
 
-export default async function SupportPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
-  const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("buyer")]);
+export default async function SupportPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string }> }) {
+  const [{ resultado, pagina }, actor] = await Promise.all([searchParams, getUserWithRole("buyer")]);
   if (!actor.supabase || !actor.user) redirect("/conta");
   const rolesResult = await actor.supabase.from("user_roles").select("role").eq("user_id", actor.user.id);
   const hasPortalRole = rolesResult.data?.some(({ role }) => ["buyer", "maker", "designer", "admin"].includes(role)) ?? false;
   if (!hasPortalRole) redirect("/conta");
 
-  const ticketsResult = await actor.supabase.from("support_tickets").select("id, requester_role, category, subject, status, created_at, updated_at", { count: "exact" }).eq("user_id", actor.user.id).order("updated_at", { ascending: false }).limit(50);
+  const requestedPage = typeof pagina === "string" && /^\d+$/.test(pagina) ? Number(pagina) : 1;
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 10000) : 1;
+  const ticketsResult = await actor.supabase.from("support_tickets").select("id, requester_role, category, subject, status, created_at, updated_at", { count: "exact" }).eq("user_id", actor.user.id).order("updated_at", { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
   const tickets = ticketsResult.data ?? [];
+  const pages = Math.max(1, Math.ceil((ticketsResult.count ?? 0) / pageSize));
+  const redirectPage = getPaginationRedirectPage(page, pages);
+  if (!ticketsResult.error && redirectPage !== null) redirect(`/suporte?pagina=${redirectPage}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}`);
   const messagesResult = tickets.length
     ? await actor.supabase.from("support_messages").select("id, ticket_id, sender_id, sender_role, body, created_at").in("ticket_id", tickets.map(({ id }) => id)).order("created_at").limit(1000)
     : { data: [], error: null };
@@ -58,7 +65,7 @@ export default async function SupportPage({ searchParams }: { searchParams: Prom
         <div className="support-ticket-heading"><div><span className="account-kicker">{statuses[ticket.status] ?? ticket.status} · {categories.find(([value]) => value === ticket.category)?.[1] ?? "Outro assunto"}</span><h2>{ticket.subject}</h2><p>Atualizado em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(ticket.updated_at))}</p></div></div>
         {messagesResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar as mensagens.</p> : <ol className="support-message-list">{(messagesByTicket.get(ticket.id) ?? []).map((message) => <li className={`support-message${message.sender_role === "admin" ? " is-admin" : ""}`} key={message.id}><div><strong>{message.sender_role === "admin" ? "Atendimento ViraPeça" : "Você"}</strong><time dateTime={message.created_at}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(message.created_at))}</time></div><p>{message.body}</p>{(attachmentsByMessage.get(message.id) ?? []).map((attachment) => attachment.url && <a className="support-attachment-link" href={attachment.url} key={attachment.id}>{attachment.file_name} · {new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(attachment.size_bytes / 1024)} KB · baixar</a>)}</li>)}</ol>}
         {ticket.status === "closed" ? <p className="model-library-note">Solicitação encerrada. Se precisar de ajuda novamente, abra uma nova solicitação.</p> : <SupportReplyForm ticketId={ticket.id} />}
-      </article>)}{(ticketsResult.count ?? 0) > 50 && <p className="model-library-note">Mostrando as 50 solicitações mais recentes.</p>}</>}
+      </article>)}{pages > 1 && <nav className="catalog-pagination" aria-label="Paginação das solicitações de atendimento">{page > 1 ? <Link className="button button-secondary" href={`/suporte?pagina=${page - 1}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}`}>← Página anterior</Link> : <span />}<span>Página {page} de {pages} · {ticketsResult.count} solicitações</span>{page < pages ? <Link className="button button-secondary" href={`/suporte?pagina=${page + 1}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}`}>Próxima página →</Link> : <span />}</nav>}</>}
     </section>
   </main></>;
 }
