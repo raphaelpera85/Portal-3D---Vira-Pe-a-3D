@@ -17,6 +17,7 @@ export type CatalogPrinter = {
   multicolorSupported?: boolean | null;
   multicolorSlots: number | null;
   supportedMaterials: Record<string, MaterialSupportEntry>;
+  commercialStatus?: "in_production" | "discontinued" | "announced" | "unknown";
 };
 
 export type CatalogMaterial = {

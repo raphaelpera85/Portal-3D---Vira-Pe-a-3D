@@ -68,6 +68,8 @@ export function mapTechnicalCatalog(
       multicolorSlots: number(row.multicolor_filament_count), multicolorSystem: text(row.multicolor_system) || null,
       multicolorSupported: typeof properties.multicolorSupported === "boolean" ? properties.multicolorSupported
         : number(row.multicolor_filament_count) != null || Boolean(text(row.multicolor_system)) ? true : null,
+      commercialStatus: row.commercial_status === "in_production" || row.commercial_status === "discontinued" || row.commercial_status === "announced"
+        ? row.commercial_status : "unknown",
       technicalProperties: properties,
       supportedMaterials, sources: source(row),
     };

@@ -194,7 +194,7 @@ const sovolSv06AceNozzleSource = {
   checkedAt: "2026-11-14",
 };
 type SeededPrinterFields = Partial<Pick<PrinterEntry,
-  "buildVolumeDescription" | "buildVolumeMm" | "extruders" | "filamentDiameterMm" | "maxNozzleTemperatureC"
+  "commercialStatus" | "buildVolumeDescription" | "buildVolumeMm" | "extruders" | "filamentDiameterMm" | "maxNozzleTemperatureC"
   | "maxBedTemperatureC" | "heatedBed" | "enclosure" | "maximumSpeedMmPerSecond" | "maximumSpeedDescription"
   | "maximumPowerWatts" | "measuredAveragePowerWatts" | "multicolorSlots" | "multicolorSystem" | "supportedMaterials" | "technicalProperties"
 >>;
@@ -206,6 +206,7 @@ function seededPrinter(
   const variantName = fields.variant === "standard" ? "" : ` ${fields.variant}`;
   return {
     name: `${fields.brand} ${fields.model}${variantName}`,
+    commercialStatus: fields.commercialStatus ?? "unknown",
     buildVolumeDescription: null, buildVolumeMm: null, extruders: null, filamentDiameterMm: null,
     maxNozzleTemperatureC: null, maxBedTemperatureC: null, heatedBed: null, enclosure: null,
     maximumSpeedMmPerSecond: null, maximumPowerWatts: null, measuredAveragePowerWatts: null,

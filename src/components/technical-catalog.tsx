@@ -11,6 +11,12 @@ const statusText = {
   incompatible: "Incompatível",
   unverified: "Não verificado",
 };
+const commercialStatusText = {
+  in_production: "Em produção",
+  discontinued: "Descontinuada",
+  announced: "Anunciada",
+  unknown: "Não verificado",
+};
 const processForPrinter = (printer: PrinterEntry) => printer.technology === "FDM" ? "filament" : "resin";
 
 const powerText = (watts: number | null) => watts == null ? "Não medida" : `${watts} W`;
@@ -133,6 +139,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               </select>
             </label>
             <dl className="technical-facts">
+              <div><dt>Status comercial</dt><dd>{commercialStatusText[printer.commercialStatus ?? "unknown"]}</dd></div>
               <div><dt>Tecnologia</dt><dd>{printer.technology}</dd></div>
               {!hasNozzleSpecificVolumes && <div><dt>Volume útil</dt><dd>{printer.buildVolumeDescription ?? (printer.buildVolumeMm ? volumeText(printer.buildVolumeMm) : "Não informado")}</dd></div>}
               {singleNozzleVolume && <div><dt>Volume útil · 1 bico</dt><dd>{volumeText(singleNozzleVolume)}</dd></div>}
