@@ -128,6 +128,16 @@ const anycubicAce2ProSource = {
   url: "https://store.anycubic.com/products/ace-2-pro",
   checkedAt: "2026-11-14",
 };
+const anycubicKobra4Source = {
+  label: "Anycubic — Kobra 4 official specifications",
+  url: "https://store.anycubic.com/products/anycubic-kobra-4",
+  checkedAt: "2026-11-14",
+};
+const anycubicKobra4ComboSource = {
+  label: "Anycubic — Kobra 4 Combo official specifications",
+  url: "https://store.anycubic.com/products/anycubic-kobra-4-combo",
+  checkedAt: "2026-11-14",
+};
 type SeededPrinterFields = Partial<Pick<PrinterEntry,
   "buildVolumeDescription" | "buildVolumeMm" | "extruders" | "filamentDiameterMm" | "maxNozzleTemperatureC"
   | "maxBedTemperatureC" | "heatedBed" | "enclosure" | "maximumSpeedMmPerSecond" | "maximumSpeedDescription"
@@ -156,6 +166,8 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "anycubic-kobra-3", brand: "Anycubic", model: "Kobra 3", variant: "standard", technology: "FDM", buildVolumeMm: { x: 250, y: 250, z: 260 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true, maximumSpeedMmPerSecond: 600, technicalProperties: { speedRecommendedMmPerSecond: 300, multicolorBaseSoldSeparately: true }, sourceUrl: "https://store.anycubic.com/products/anycubic-kobra-3?variant=44597525938338" }),
   seededPrinter({ id: "anycubic-kobra-3-max-v2", brand: "Anycubic", model: "Kobra 3 Max V2", variant: "standard", technology: "FDM", buildVolumeMm: { x: 420, y: 420, z: 500 }, maxNozzleTemperatureC: 300, maxBedTemperatureC: 90, heatedBed: true, maximumSpeedMmPerSecond: 600, supportedMaterials: { PLA: "compatible", PETG: "compatible", TPU: "compatible" }, technicalProperties: { recommendedPrintSpeedMmPerSecond: 300, maxAccelerationMmPerSecondSquared: 10000, manufacturerSupportedMaterials: ["PLA", "PETG", "TPU"], multicolorUpgradeDescription: "ACE 2 Pro vendido separadamente; impressão multicolorida exige o sistema", manufacturerSpecificationNotes: ["A tabela de especificações informa bico até 300 °C; a FAQ da mesma página menciona 350 °C. O catálogo usa o valor da tabela até confirmação do fabricante."] }, sourceUrl: anycubicKobra3MaxV2Source.url, sourceLabel: anycubicKobra3MaxV2Source.label, checkedAt: anycubicKobra3MaxV2Source.checkedAt }),
   seededPrinter({ id: "anycubic-kobra-3-max-v2-ace-2-pro", brand: "Anycubic", model: "Kobra 3 Max V2", variant: "ACE 2 Pro Combo", technology: "FDM", buildVolumeMm: { x: 420, y: 420, z: 500 }, maxNozzleTemperatureC: 300, maxBedTemperatureC: 90, heatedBed: true, maximumSpeedMmPerSecond: 600, multicolorSlots: 4, multicolorSystem: "ACE 2 Pro", supportedMaterials: { PLA: "compatible", PETG: "compatible", TPU: { status: "conditional", conditions: "TPU 95A não é compatível com a alimentação pelo ACE 2 Pro; exige alimentação direta." } }, technicalProperties: { recommendedPrintSpeedMmPerSecond: 300, maxAccelerationMmPerSecondSquared: 10000, manufacturerSupportedMaterials: ["PLA", "PETG", "TPU"], maximumMulticolorFilaments: 8, eightColorExpansionRequiresAdditionalHardware: true, ace2ProDryingMaxTemperatureC: 65, tpu95aNotCompatibleWithAce2Pro: true, manufacturerSpecificationNotes: ["A tabela de especificações informa bico até 300 °C; a FAQ da mesma página menciona 350 °C. O catálogo usa o valor da tabela até confirmação do fabricante."] }, sourceUrl: anycubicKobra3MaxV2Source.url, sourceLabel: "Anycubic — Kobra 3 Max V2 Combo official specifications", documentationUrl: anycubicAce2ProSource.url, checkedAt: anycubicKobra3MaxV2Source.checkedAt }),
+  seededPrinter({ id: "anycubic-kobra-4", brand: "Anycubic", model: "Kobra 4", variant: "standard", technology: "FDM", buildVolumeMm: { x: 260, y: 260, z: 260 }, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 600, supportedMaterials: { PLA: "compatible", PETG: "compatible", TPU: "compatible" }, technicalProperties: { recommendedPrintSpeedMmPerSecond: 300, maxAccelerationMmPerSecondSquared: 20000, recommendedAccelerationMmPerSecondSquared: 10000, manufacturerSupportedMaterials: ["PLA", "PETG", "TPU 95A"], multicolorUpgradeDescription: "ACE 2 Pro vendido separadamente; a Kobra 4 standard imprime em uma cor." }, sourceUrl: anycubicKobra4Source.url, sourceLabel: anycubicKobra4Source.label, checkedAt: anycubicKobra4Source.checkedAt }),
+  seededPrinter({ id: "anycubic-kobra-4-ace-2-pro", brand: "Anycubic", model: "Kobra 4", variant: "ACE 2 Pro Combo", technology: "FDM", buildVolumeMm: { x: 260, y: 260, z: 260 }, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 600, multicolorSlots: 4, multicolorSystem: "ACE 2 Pro", supportedMaterials: { PLA: "compatible", PETG: "compatible", TPU: { status: "conditional", conditions: "TPU 95A não pode ser alimentado pelo ACE 2 Pro; use alimentação direta." } }, technicalProperties: { recommendedPrintSpeedMmPerSecond: 300, maxAccelerationMmPerSecondSquared: 20000, recommendedAccelerationMmPerSecondSquared: 10000, manufacturerSupportedMaterials: ["PLA", "PETG", "TPU 95A"], maximumMulticolorFilaments: 8, eightColorExpansionRequiresAdditionalHardware: true, ace2ProDryingMaxTemperatureC: 65, tpu95aNotCompatibleWithAce2Pro: true }, sourceUrl: anycubicKobra4ComboSource.url, sourceLabel: anycubicKobra4ComboSource.label, checkedAt: anycubicKobra4ComboSource.checkedAt }),
   seededPrinter({ id: "creality-k1c", brand: "Creality", model: "K1C", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 250 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 350, sourceUrl: "https://store.creality.com/uk/products/k1c-3d-printer" }),
   seededPrinter({ id: "elegoo-neptune-4-pro-type-c", brand: "ELEGOO", model: "Neptune 4 Pro", variant: "Type-C edition", technology: "FDM", buildVolumeMm: { x: 225, y: 225, z: 265 }, maxNozzleTemperatureC: 300, maximumSpeedMmPerSecond: 500, sourceUrl: "https://us.elegoo.com/products/elegoo-neptune-4-pro-fdm-3d-printer?variant=52396213862581" }),
   seededPrinter({ id: "elegoo-neptune-4-type-c", brand: "ELEGOO", model: "Neptune 4", variant: "Type-C version", technology: "FDM", buildVolumeMm: { x: 225, y: 225, z: 265 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true, maximumSpeedDescription: "500 mm/s de deslocamento do cabeçote; velocidade de impressão recomendada não informada", technicalProperties: { maxToolheadSpeedMmPerSecond: 500, maxAccelerationMmPerSecondSquared: 20000, ratedPowerWatts: 310, manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "Nylon"] }, sourceUrl: "https://www.elegoo.com/products/elegoo-neptune-4-fdm-3d-printer", documentationUrl: "https://eu.elegoo.com/en-be/collections/edm-exclude/products/elegoo-neptune-4-fdm-3d-printer", checkedAt: "2026-11-14" }),
@@ -1320,6 +1332,19 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[0.25, 0.4, 0.6, 0.8].map((diameter) => ({
+    id: `anycubic-kobra-4-${diameter}`,
+    name: `Bico de aço endurecido ${diameter.toLocaleString("pt-BR")} mm · Kobra 4`,
+    brand: "Anycubic",
+    diameterMm: diameter,
+    material: "Aço endurecido",
+    maxTemperatureC: 300,
+    abrasionResistant: true,
+    printerCompatibility: { "anycubic-kobra-4": "compatible" as const, "anycubic-kobra-4-ace-2-pro": "compatible" as const },
+    printerCompatibilityConditions: { "anycubic-kobra-4": "Opção oficial para Kobra 4; não inferida para outros modelos.", "anycubic-kobra-4-ace-2-pro": "Opção oficial para Kobra 4 Combo; não inferida para outros modelos." },
+    original: diameter === 0.4,
+    sources: [anycubicKobra4ComboSource],
+  })),
   ...[0.25, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `anycubic-kobra-3-max-v2-${diameter}`,
     name: `Bico de aço endurecido ${diameter.toLocaleString("pt-BR")} mm · Kobra 3 Max V2`,
