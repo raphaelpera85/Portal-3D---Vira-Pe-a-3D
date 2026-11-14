@@ -76,6 +76,30 @@ test("viewer exposes printer, material, nozzle, and volume compatibility checks"
   await expect(page.locator(".viewer-volume-check > li").filter({ hasText: "Volume de impressão" })).toHaveClass(/status-unverified/);
 });
 
+test("viewer shows exact resin profiles and keeps unknown exposure unverified", async ({ page }) => {
+  await page.goto("/visualizador");
+  const printer = page.getByLabel("Impressora para verificar compatibilidade");
+  const material = page.getByLabel("Material para verificar compatibilidade");
+  const checks = page.locator(".viewer-volume-check > li");
+  const check = (label: string) => checks.filter({ has: page.getByText(label, { exact: true }) });
+
+  await printer.selectOption({ label: "Anycubic Photon Mono M7 standard" });
+  await material.selectOption({ label: "Anycubic Standard Resin V2 · standard resin" });
+  await expect(check("Material")).toHaveClass(/status-compatible/);
+  await expect(check("Perfil de exposição")).toContainText("2,2 s");
+  await expect(check("Perfil de exposição")).toHaveClass(/status-compatible/);
+
+  await material.selectOption({ label: "Anycubic Water-Wash Resin 2.0 · water-washable resin" });
+  await expect(check("Perfil de exposição")).toContainText("2,5 s");
+  await expect(check("Perfil de exposição")).toContainText("35 s por 4 camadas");
+
+  await printer.selectOption({ label: "ELEGOO Saturn 4 Ultra 12K" });
+  await material.selectOption({ label: "ELEGOO ABS-Like Resin V3.0 · ABS-like resin" });
+  await expect(check("Material")).toHaveClass(/status-compatible/);
+  await expect(check("Comprimento de onda UV")).toHaveClass(/status-compatible/);
+  await expect(check("Perfil de exposição")).toHaveClass(/status-unverified/);
+});
+
 test("technical catalog shows Flashforge AD5X conditions after selecting it", async ({ page }) => {
   await page.goto("/catalogos");
 
