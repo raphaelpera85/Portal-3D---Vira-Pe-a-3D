@@ -1,5 +1,5 @@
 begin;
-select plan(10);
+select plan(11);
 
 insert into auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -12,6 +12,9 @@ insert into public.product_categories (id, name, slug)
 values ('22000000-0000-4000-8000-000000000001', 'Arquivos digitais de teste', 'arquivos-digitais-teste');
 insert into public.stores (id, owner_user_id, name, slug, status)
 values ('22000000-0000-4000-8000-000000000002', '12000000-0000-4000-8000-000000000002', 'Loja digital de teste', 'loja-digital-teste', 'published');
+update public.store_notification_contacts set email = 'digital-maker-test@example.com',
+  whatsapp = '+5511999999999', whatsapp_opt_in = true, whatsapp_opt_in_at = now()
+where store_id = '22000000-0000-4000-8000-000000000002';
 insert into public.marketplace_products (
   id, store_id, category_id, name, slug, listing_type, fulfillment_mode, price_mode, price_brl,
   catalog_status, published_at, created_by
@@ -42,6 +45,13 @@ select is(
       and request_type = 'purchase' and license_type = 'personal'),
   1,
   'creates only one accepted request for duplicate submissions'
+);
+select is(
+  (select count(*)::integer from public.store_notification_deliveries where request_id =
+    (select id from public.product_quote_requests where buyer_id = '12000000-0000-4000-8000-000000000001'
+      and product_id = '22000000-0000-4000-8000-000000000003' and request_type = 'purchase' and license_type = 'personal')),
+  2,
+  'queues one email and one opted-in WhatsApp notification for the single request'
 );
 
 reset role;
