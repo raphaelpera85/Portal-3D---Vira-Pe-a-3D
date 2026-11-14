@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { filterModelShowcase, getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase, modelShowcaseCategories, type ShowcaseModel } from "./model-showcase";
+import { filterHomepageModelShowcase, filterModelShowcase, getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase, modelShowcaseCategories, type ShowcaseModel } from "./model-showcase";
 import visualIndex from "./model-showcase-visual-index.json";
 
 const models: ShowcaseModel[] = [
@@ -19,6 +19,11 @@ function listThreeMfFiles(directory: string): string[] {
 }
 
 describe("filterModelShowcase", () => {
+  it("does not apply unrelated marketplace categories to homepage model previews", () => {
+    expect(filterHomepageModelShowcase(models, "", "pets")).toEqual(models);
+    expect(filterHomepageModelShowcase(models, "", "chaveiros")).toEqual([models[1]]);
+  });
+
   it("keeps all included previews backed by image files in the three requested categories", () => {
     expect(modelShowcase).toHaveLength(89);
     expect(Object.fromEntries(modelShowcaseCategories.map(({ slug }) => [slug, modelShowcase.filter((model) => model.categorySlug === slug).length])))

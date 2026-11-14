@@ -5,7 +5,7 @@ import { ProductCatalog } from "@/components/product-catalog";
 import { loadMarketplaceCatalog, loadRecommendedStores } from "@/lib/marketplace.server";
 import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
-import { filterModelShowcase, modelShowcase } from "@/lib/model-showcase";
+import { filterHomepageModelShowcase, modelShowcase } from "@/lib/model-showcase";
 import { FeaturedModelShowcase } from "@/components/model-showcase";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +60,7 @@ function PrinterIllustration() {
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; categoria?: string; pagina?: string; ordem?: string }> }) {
   const params = await searchParams;
-  const modelPreviews = filterModelShowcase(modelShowcase, typeof params.q === "string" ? params.q : "", typeof params.categoria === "string" ? params.categoria : "").slice(0, 6);
+  const modelPreviews = filterHomepageModelShowcase(modelShowcase, typeof params.q === "string" ? params.q : "", typeof params.categoria === "string" ? params.categoria : "").slice(0, 6);
   const sort = params.ordem === "popular" ? "popular" : "newest";
   const [catalog, buyer, featuredStores] = await Promise.all([loadMarketplaceCatalog({
     query: typeof params.q === "string" ? params.q : "",

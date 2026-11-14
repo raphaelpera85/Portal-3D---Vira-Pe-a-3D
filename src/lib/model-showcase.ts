@@ -62,3 +62,8 @@ export function filterModelShowcase(items: ShowcaseModel[], query = "", category
     return groups.some((group) => group.every((term) => searchable.includes(term)));
   });
 }
+
+export function filterHomepageModelShowcase(items: ShowcaseModel[], query = "", marketplaceCategory = "") {
+  const category = modelShowcaseCategories.some(({ slug }) => slug === marketplaceCategory) ? marketplaceCategory : "";
+  return filterModelShowcase(items, query, category);
+}
