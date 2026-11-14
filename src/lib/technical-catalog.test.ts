@@ -28,6 +28,7 @@ const flsunV400Migration = readFileSync(new URL("../../supabase/migrations/20261
 const elegooNeptune4Migration = readFileSync(new URL("../../supabase/migrations/20261115030000_seed_elegoo_neptune_4_type_c.sql", import.meta.url), "utf8");
 const anycubicKobraXMigration = readFileSync(new URL("../../supabase/migrations/20261115060000_seed_anycubic_kobra_x.sql", import.meta.url), "utf8");
 const anycubicS1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261115070000_seed_anycubic_kobra_s1_max_and_photon_p1_max.sql", import.meta.url), "utf8");
+const crealityK2Migration = readFileSync(new URL("../../supabase/migrations/20261115080000_seed_creality_k2.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -46,6 +47,8 @@ describe("verified technical catalog records", () => {
       ["Bambu Lab", "X1-Carbon", "standard"],
       ["Bambu Lab", "X1-Carbon", "AMS Combo"],
       ["Creality", "K2 Plus", "standard"],
+      ["Creality", "K2", "standard"],
+      ["Creality", "K2", "CFS Combo"],
       ["Creality", "K2 Pro", "standard"],
       ["Creality", "K2 Pro", "CFS Combo"],
       ["Prusa Research", "CORE One+", "Gen 2"],
@@ -110,7 +113,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(80);
+    expect(printers).toHaveLength(82);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -405,6 +408,31 @@ describe("verified technical catalog records", () => {
     expect(k2Nozzles.map((nozzle) => nozzle.diameterMm).sort()).toEqual([0.2, 0.4, 0.6, 0.8]);
     expect(k2Nozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
     expect(printer?.sources[0].url).toBe("https://www.creality.com/eu/products/k2-series-3d-printer");
+  });
+
+  it("distinguishes Creality K2 without CFS from the included CFS Combo", () => {
+    const k2 = printers.find((printer) => printer.id === "creality-k2");
+    const combo = printers.find((printer) => printer.id === "creality-k2-cfs-combo");
+    const k2Nozzles = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["creality-k2"] === "compatible");
+
+    expect(k2).toMatchObject({
+      buildVolumeMm: { x: 260, y: 260, z: 260 }, filamentDiameterMm: 1.75,
+      maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, enclosure: true,
+      maximumSpeedMmPerSecond: 600, multicolorSlots: null,
+      technicalProperties: { maxAccelerationMmPerSecondSquared: 20000, maximumCfsUnits: 4 },
+    });
+    expect(combo).toMatchObject({
+      multicolorSystem: "Creality CFS", multicolorSlots: 4,
+      technicalProperties: { includedCfsUnits: 1, maximumCfsUnits: 4, maximumMulticolorFilaments: 16, extraCfsUnitsForMaximumColors: 3 },
+    });
+    expect(k2Nozzles.map(({ diameterMm, material, original }) => ({ diameterMm, material, original })).sort((left, right) => left.diameterMm - right.diameterMm)).toEqual([
+      { diameterMm: 0.2, material: "Aço endurecido", original: false },
+      { diameterMm: 0.4, material: "Aço endurecido", original: true },
+      { diameterMm: 0.6, material: "Aço endurecido", original: false },
+      { diameterMm: 0.8, material: "Aço endurecido", original: false },
+    ]);
+    expect(k2Nozzles.find((nozzle) => nozzle.original)?.diameterMm).toBe(0.4);
+    expect(crealityK2Migration).toContain("'K2', 'CFS Combo'");
   });
 
   it("distinguishes the K2 Pro from its CFS Combo and records the supported nozzle sizes", () => {
