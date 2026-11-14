@@ -218,6 +218,15 @@ Material Cost: $0.72`]);
     expect(result.conflicts).toContain("consumo total");
   });
 
+  it("detects conflicting duplicate measurements within one OCR image", () => {
+    const result = parseSlicerOcrTexts(["Total filament: 20 g\nTotal filament: 22 g\nModel: 10 g\nModel: 12 g\nFilament length: 4 m\nFilament length: 5 m", "Total filament: 20 g\nModel: 10 g\nFilament length: 4 m"]);
+    expect(result.totalGrams).toBeNull();
+    expect(result.modelGrams).toBeNull();
+    expect(result.filamentGrams).toBeNull();
+    expect(result.lengthMeters).toBeNull();
+    expect(result.conflicts).toEqual(expect.arrayContaining(["consumo total", "peso do modelo", "comprimento do filamento"]));
+  });
+
   it("derives only model plus support mass when both were explicitly detected", () => {
     const result = parseSlicerOcrTexts(["Modelo: 10 g\nSuportes: 2 g"]);
     expect(result.filamentGrams).toBe(12);

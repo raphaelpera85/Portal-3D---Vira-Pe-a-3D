@@ -53,11 +53,12 @@ function splitGcodeValues(value: string) {
   return value.includes(".") ? value.split(/,\s*/) : value.split(/,\s+/);
 }
 
-function findMeasurement(lines: string[], labels: string, units: string, normalize: (value: number, unit: string) => number, exclude?: RegExp) {
+function findMeasurement(lines: string[], labels: string, units: string, normalize: (value: number, unit: string) => number, exclude?: RegExp, conflictLabel?: string, conflicts: string[] = []) {
   const expression = new RegExp(`${numberPattern}\\s*(${units})\\b`, "i");
   const bracketedUnit = new RegExp(`\\[\\s*(${units})\\s*\\]\\s*[:=]\\s*${numberPattern}`, "i");
   const currencyPrefix = units.includes("r\\$") ? String.raw`(?:R\$|US\$|BRL|USD|\$)\s*` : "";
   const standalone = new RegExp(`^\\s*[:=\\-–]?\\s*${currencyPrefix}${numberPattern}\\s*(${units})\\b\\s*$`, "i");
+  const values: number[] = [];
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
     if (exclude?.test(line)) continue;
@@ -68,9 +69,14 @@ function findMeasurement(lines: string[], labels: string, units: string, normali
     const bracketedMatch = match ? null : bracketedUnit.exec(after);
     const value = match ? parseNumber(match[1]) : bracketedMatch ? parseNumber(bracketedMatch[2]) : NaN;
     const unit = match?.[2] ?? bracketedMatch?.[1];
-    if (unit && Number.isFinite(value) && value >= 0) return normalize(value, unit.toLowerCase());
+    if (unit && Number.isFinite(value) && value >= 0) values.push(normalize(value, unit.toLowerCase()));
   }
-  return null;
+  const distinct = values.filter((value, index) => values.findIndex((candidate) => Math.abs(candidate - value) <= 0.001) === index);
+  if (distinct.length > 1) {
+    if (conflictLabel) conflicts.push(conflictLabel);
+    return null;
+  }
+  return distinct[0] ?? null;
 }
 
 function findGcodeFilamentTotal(lines: string[], units: string, normalize: (value: number, unit: string) => number) {
@@ -118,7 +124,7 @@ function findGcodeFilamentReadings(lines: string[]) {
   }));
 }
 
-function findFilamentLength(lines: string[]) {
+function findFilamentLength(lines: string[], conflicts: string[]) {
   const curaLine = lines.find((line) => /^;?\s*filament\s+used\s*:/i.test(line));
   if (curaLine) {
     const measurements = [...curaLine.matchAll(/(\d[\d.,]*)\s*(mm|m)\b/gi)];
@@ -129,7 +135,7 @@ function findFilamentLength(lines: string[]) {
   }
   const gcodeTotal = findGcodeFilamentTotal(lines, String.raw`(?:mm|m)`, (value, unit) => unit === "mm" ? value / 1000 : value);
   if (gcodeTotal !== undefined) return gcodeTotal;
-  return findMeasurement(lines, String.raw`(?:(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?|filament\s+used)`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value);
+  return findMeasurement(lines, String.raw`(?:(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?|filament\s+used)`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value, undefined, "comprimento do filamento", conflicts);
 }
 
 function findCost(lines: string[]) {
@@ -252,9 +258,10 @@ function findStackedFilamentReadings(lines: string[]) {
 
 function parseOne(text: string) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const conflicts: string[] = [];
   const slicer = slicerPatterns.find(([pattern]) => pattern.test(text))?.[1] ?? null;
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
-  const length = findFilamentLength(lines);
+  const length = findFilamentLength(lines, conflicts);
   const gcodeTotalGrams = findGcodeFilamentTotal(lines, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams);
   const cost = findCost(lines);
   const materials = [...new Set(lines.flatMap((line) => {
@@ -280,12 +287,12 @@ function parseOne(text: string) {
   });
   return {
     slicer,
-    modelGrams: findMeasurement(lines, slicer === "Simplify3D" ? `${massLabels.model}|weight` : massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
-    supportGrams: findMeasurement(lines, massLabels.support, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
+    modelGrams: findMeasurement(lines, slicer === "Simplify3D" ? `${massLabels.model}|weight` : massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "peso do modelo", conflicts),
+    supportGrams: findMeasurement(lines, massLabels.support, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "peso dos suportes", conflicts),
     totalGrams: gcodeTotalGrams !== undefined ? gcodeTotalGrams
-      : findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
-    purgeGrams: findMeasurement(lines, String.raw`(?:purge|flush|purga|filamento\s+descartado)`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, /(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza)/i),
-    wipeTowerGrams: findMeasurement(lines, String.raw`(?:(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza))`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams),
+      : findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "consumo total", conflicts),
+    purgeGrams: findMeasurement(lines, String.raw`(?:purge|flush|purga|filamento\s+descartado)`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, /(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza)/i, "purga", conflicts),
+    wipeTowerGrams: findMeasurement(lines, String.raw`(?:(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza))`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "torre de limpeza", conflicts),
     lengthMeters: length,
     printHours: findPrintHours(lines),
     filamentChanges: findCount(lines, String.raw`(?:filament\s+changes?|color\s+changes?|trocas?(?:\s+de\s+(?:filamento|cor))?|mudan[cç]as\s+de\s+(?:filamento|cor)|swaps?)\s*[:=\-]?`),
@@ -293,13 +300,15 @@ function parseOne(text: string) {
     estimatedCostCurrency: findCostCurrency(lines),
     materials,
     filamentReadings: [...filamentReadings, ...findStackedFilamentReadings(lines), ...findGcodeFilamentReadings(lines)],
+    conflicts,
   };
 }
 
 export function parseSlicerOcrTexts(texts: string[]) {
   const parsed = texts.slice(0, 3).map(parseOne);
-  const conflicts: string[] = [];
+  const conflicts: string[] = [...new Set(parsed.flatMap((item) => item.conflicts))];
   const unique = <T extends number>(key: keyof ReturnType<typeof parseOne>, label: string) => {
+    if (conflicts.includes(label)) return null;
     const values = parsed.map((item) => item[key]).filter((value): value is T => typeof value === "number");
     if (values.some((value) => Math.abs(value - values[0]) > 0.001)) {
       conflicts.push(label);
