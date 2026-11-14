@@ -23,6 +23,7 @@ const prusaCoreOneLPlusMigration = readFileSync(new URL("../../supabase/migratio
 const flsunS1SeriesMigration = readFileSync(new URL("../../supabase/migrations/20261114220000_seed_flsun_s1_series.sql", import.meta.url), "utf8");
 const flsunT1Migration = readFileSync(new URL("../../supabase/migrations/20261114230000_seed_flsun_t1.sql", import.meta.url), "utf8");
 const flsunT1ProMigration = readFileSync(new URL("../../supabase/migrations/20261115000000_seed_flsun_t1_pro.sql", import.meta.url), "utf8");
+const flsunT1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261115010000_seed_flsun_t1_max.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -98,7 +99,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(68);
+    expect(printers).toHaveLength(69);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -683,6 +684,7 @@ describe("verified technical catalog records", () => {
       maximumSpeedMmPerSecond: 1000, maximumPowerWatts: 400,
       technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 260, buildHeightMm: 330, originalNozzleMaterial: "latão", originalNozzleDiameterMm: 0.4 },
     });
+    expect(nozzles.find((nozzle) => nozzle.id === "flsun-t1-0.4")).toMatchObject({ diameterMm: 0.4, material: "Latão", abrasionResistant: false });
     expect(flsunT1Migration).toContain("'FLSUN', 'T1', 'standard', 'FDM'");
     expect(flsunT1Migration).toContain("T1 brass nozzle");
   });
@@ -696,6 +698,20 @@ describe("verified technical catalog records", () => {
       technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 260, buildHeightMm: 330 },
     });
     expect(flsunT1ProMigration).toContain("'FLSUN', 'T1 Pro', 'standard', 'FDM'");
+  });
+
+  it("keeps the T1 Max center-to-edge cylinder limit and peak specifications explicit", () => {
+    const printer = printers.find((entry) => entry.id === "flsun-t1-max");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: null, buildVolumeDescription: "Cilíndrico · Ø300 × 297 mm (altura máxima de 285 mm nas bordas)",
+      filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100,
+      maximumSpeedMmPerSecond: 1000,
+      technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 300, buildHeightMm: 297, maximumHeightAtOuterEdgeMm: 285, heightLimitAppliesAtCenter: true, accelerationIsPeak: true },
+    });
+    expect(nozzles.find((nozzle) => nozzle.id === "flsun-t1-max-0.4")).toMatchObject({ diameterMm: 0.4, abrasionResistant: true });
+    expect(flsunT1MaxMigration).toContain("'FLSUN', 'T1 Max', 'standard', 'FDM'");
+    expect(flsunT1MaxMigration).toContain("T1 Max hardened steel nozzle");
   });
 
   it("keeps Raise3D single- and dual-extrusion volumes distinct", () => {

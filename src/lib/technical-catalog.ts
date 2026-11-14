@@ -160,6 +160,7 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "flsun-v400-max", brand: "FLSUN", model: "V400 Max", variant: "standard", technology: "FDM", buildVolumeDescription: "Cilíndrico · Ø500 × 550 mm (altura cilíndrica máx. 480 mm)", filamentDiameterMm: 1.75, maxNozzleTemperatureC: 350, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 1400, technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 500, buildHeightMm: 550, buildHeightConditions: { singleColorMm: 480, multicolorMm: 480 } }, sourceUrl: "https://wiki.flsun3d.com/en/V400MaxProductIntroduction" }),
   seededPrinter({ id: "flsun-t1", brand: "FLSUN", model: "T1", variant: "standard", technology: "FDM", buildVolumeDescription: "Cilíndrico · Ø260 × 330 mm", extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 1000, maximumPowerWatts: 400, technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 260, buildHeightMm: 330, originalNozzleMaterial: "latão", originalNozzleDiameterMm: 0.4, maxAccelerationMmPerSecondSquared: 30000, maxVolumetricFlowRateMm3PerSecond: 90, maxVolumetricFlowTestConditions: "FLSUN PLA-HS, 230 °C; método gravimétrico informado: 65 mm³/s", manufacturerSupportedMaterials: ["PLA", "PETG", "TPU", "PVA", "PET", "ABS", "ASA", "PA", "PC"] }, sourceUrl: "https://flsun3d.com/pages/t1-parameter", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "flsun-t1-pro", brand: "FLSUN", model: "T1 Pro", variant: "standard", technology: "FDM", buildVolumeDescription: "Cilíndrico · Ø260 × 330 mm", maximumSpeedMmPerSecond: 1000, technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 260, buildHeightMm: 330 }, sourceUrl: "https://eu.store.flsun3d.com/products/flsun-t1-pro-3d-printer-free-silk-filament-included", checkedAt: "2026-11-14" }),
+  seededPrinter({ id: "flsun-t1-max", brand: "FLSUN", model: "T1 Max", variant: "standard", technology: "FDM", buildVolumeDescription: "Cilíndrico · Ø300 × 297 mm (altura máxima de 285 mm nas bordas)", filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 1000, technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 300, buildHeightMm: 297, maximumHeightAtOuterEdgeMm: 285, heightLimitAppliesAtCenter: true, originalNozzleMaterial: "aço endurecido", originalNozzleDiameterMm: 0.4, maxAccelerationMmPerSecondSquared: 30000, accelerationIsPeak: true, maxVolumetricFlowRateMm3PerSecond: 90, maxVolumetricFlowTestConditions: "FLSUN PLA; vazão instantânea de pico", maximumSpeedDescription: "Até 1.000 mm/s de pico; velocidade ajustada conforme perfil e condições de impressão", manufacturerSupportedMaterials: ["PLA", "PLA-HS", "PLA+", "PLA Silk", "PETG", "TPU", "PVA"] }, sourceUrl: "https://us.store.flsun3d.com/products/flsun-t1-max-3d-printer", documentationUrl: "https://flsun3d.sin.jp/t1-max", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "flsun-s1", brand: "FLSUN", model: "S1", variant: "standard", technology: "FDM", buildVolumeDescription: "320 × 320 × 430 mm (geometria do volume não detalhada pela fonte)", extruders: 1, maxNozzleTemperatureC: 350, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 1200, technicalProperties: { activeChamberHeating: false, maximumChamberTemperatureC: 50, maxAccelerationMmPerSecondSquared: 40000, includedNozzle: "Aço endurecido, 0,4 mm", manufacturerSupportedMaterials: ["PLA", "PETG", "TPU", "PVA", "HIPS", "ABS", "ASA", "PC", "PA", "PA-CF/GF", "PET-CF/GF", "PPA-CF/GF"], manufacturerSpecificationNotes: ["A câmara não tem aquecimento ativo; até 50 °C é informado com hotend, mesa e gabinete fechado.", "A velocidade máxima de 1.200 mm/s é um pico anunciado e varia conforme o perfil."] }, sourceUrl: "https://flsun3d.com/pages/s1-faq", documentationUrl: "https://wiki.flsun3d.com/en/S1Introduction", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "flsun-s1-pro", brand: "FLSUN", model: "S1 Pro", variant: "standard", technology: "FDM", buildVolumeDescription: "Cilíndrico · Ø320 × 430 mm (altura máxima de 383 mm na borda externa)", extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 350, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 1200, technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 320, buildHeightMm: 430, maximumHeightAtOuterEdgeMm: 383, heightLimitAppliesAtCenter: true, maxAccelerationMmPerSecondSquared: 40000, includedNozzle: "Aço endurecido, 0,4 mm", airFilter: "HEPA + carvão ativado", manufacturerSupportedMaterials: ["PLA", "PETG", "TPU", "ABS", "ASA", "PA", "PC", "PET", "PLA-CF/GF"], manufacturerSpecificationNotes: ["A velocidade de 1.200 mm/s e a aceleração de 40.000 mm/s² são picos instantâneos; valores reais se adaptam ao perfil."] }, sourceUrl: "https://flsun3d.com/pages/s1-pro", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "raise3d-pro3-hs", brand: "Raise3D", model: "Pro3 HS", variant: "standard", technology: "FDM", buildVolumeDescription: "300 × 300 × 300 mm (extrusão simples) · 255 × 300 × 300 mm (dupla)", extruders: 2, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 320, maxBedTemperatureC: 120, heatedBed: true, maximumSpeedMmPerSecond: 500, technicalProperties: { singleExtrusionVolumeMm: { x: 300, y: 300, z: 300 }, dualExtrusionVolumeMm: { x: 255, y: 300, z: 300 } }, sourceUrl: "https://www.raise3d.com/raise3d-pro3-hs-series/", documentationUrl: "https://www.raise3d.com/pro3-series/" }),
@@ -240,6 +241,16 @@ const prusaNextruderNozzleSource = {
 const flsunS1Source = {
   label: "FLSUN — S1 official FAQ and specifications",
   url: "https://flsun3d.com/pages/s1-faq",
+  checkedAt: "2026-11-14",
+};
+const flsunT1Source = {
+  label: "FLSUN — T1 product parameters",
+  url: "https://flsun3d.com/pages/t1-parameter",
+  checkedAt: "2026-11-14",
+};
+const flsunT1MaxSource = {
+  label: "FLSUN — T1 Max official technical parameters",
+  url: "https://flsun3d.sin.jp/t1-max",
   checkedAt: "2026-11-14",
 };
 const flsunS1ProSource = {
@@ -1522,5 +1533,29 @@ export const nozzles: NozzleEntry[] = [
     printerCompatibility: { "flsun-s1-pro": "compatible" },
     original: true,
     sources: [flsunS1ProSource],
+  },
+  {
+    id: "flsun-t1-0.4",
+    name: "Bico original de latão 0,4 mm · FLSUN T1",
+    brand: "FLSUN",
+    diameterMm: 0.4,
+    material: "Latão",
+    maxTemperatureC: 300,
+    abrasionResistant: false,
+    printerCompatibility: { "flsun-t1": "compatible" },
+    original: true,
+    sources: [flsunT1Source],
+  },
+  {
+    id: "flsun-t1-max-0.4",
+    name: "Bico original aço endurecido 0,4 mm · FLSUN T1 Max",
+    brand: "FLSUN",
+    diameterMm: 0.4,
+    material: "Aço endurecido",
+    maxTemperatureC: 300,
+    abrasionResistant: true,
+    printerCompatibility: { "flsun-t1-max": "compatible" },
+    original: true,
+    sources: [flsunT1MaxSource],
   },
 ];
