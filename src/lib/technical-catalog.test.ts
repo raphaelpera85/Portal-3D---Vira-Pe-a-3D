@@ -38,6 +38,7 @@ const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261
 const crealityHyperPlaMigration = readFileSync(new URL("../../supabase/migrations/20261116000000_enrich_creality_hyper_pla.sql", import.meta.url), "utf8");
 const elegooMars5UltraMigration = readFileSync(new URL("../../supabase/migrations/20261116030000_seed_elegoo_mars_5_ultra.sql", import.meta.url), "utf8");
 const elegooMars5Migration = readFileSync(new URL("../../supabase/migrations/20261116040000_seed_elegoo_mars_5.sql", import.meta.url), "utf8");
+const elegooCentauriCarbon2ComboMigration = readFileSync(new URL("../../supabase/migrations/20261116050000_seed_elegoo_centauri_carbon_2_combo.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("includes official Hyper PLA temperatures, settings, and named colors without guessed hex values", () => {
@@ -149,6 +150,7 @@ describe("verified technical catalog records", () => {
       ["Creality", "Ender-3 V3 Plus", "standard"],
       ["Creality", "Ender-3 V3 SE", "standard"],
       ["ELEGOO", "Centauri Carbon 2", "standard"],
+      ["ELEGOO", "Centauri Carbon 2", "CANVAS Combo"],
       ["ELEGOO", "Neptune 4 Plus", "Type-C version"],
       ["ELEGOO", "Neptune 4 Max", "Type-C version"],
       ["ELEGOO", "Saturn 4 Ultra", "16K"],
@@ -160,7 +162,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(103);
+    expect(printers).toHaveLength(104);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -193,6 +195,20 @@ describe("verified technical catalog records", () => {
     });
     expect(elegooMars5Migration).toContain("'ELEGOO', 'Mars 5', 'standard', 'MSLA', 'published'");
     expect(elegooMars5Migration).toContain('"resolutionPixels":"4098x2560"');
+  });
+
+  it("keeps Centauri Carbon 2 CANVAS Combo distinct from the standard printer", () => {
+    const standard = printers.find((printer) => printer.id === "elegoo-centauri-carbon-2");
+    const combo = printers.find((printer) => printer.id === "elegoo-centauri-carbon-2-canvas-combo");
+
+    expect(standard).toMatchObject({ multicolorSlots: null, multicolorSupported: true });
+    expect(combo).toMatchObject({
+      buildVolumeMm: { x: 256, y: 256, z: 256 }, multicolorSystem: "ELEGOO CANVAS",
+      multicolorSlots: 4, multicolorSupported: true,
+      technicalProperties: { includedCanvas: true, manufacturerSpecificationNotes: [expect.stringContaining("TPU")] },
+    });
+    expect(elegooCentauriCarbon2ComboMigration).toContain("'ELEGOO', 'Centauri Carbon 2', 'CANVAS Combo'");
+    expect(elegooCentauriCarbon2ComboMigration).toContain("multicolor_filament_count");
   });
 
   it("distinguishes SPARKX i7 filament system configurations", () => {
