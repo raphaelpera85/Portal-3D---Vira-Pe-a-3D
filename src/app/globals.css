@@ -136,6 +136,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .shell { width: min(calc(100% - 48px), var(--max-width)); margin-inline: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 
+.app-loading { display: grid; min-height: min(55vh, 520px); place-items: center; padding: 24px; }
+.app-loading-card { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted-strong); box-shadow: 0 12px 36px var(--shadow-wash); }
+.app-loading-card p { margin: 0; font-size: 14px; }
+.app-loading-spinner { width: 20px; height: 20px; flex: 0 0 auto; border: 2px solid var(--line-strong); border-top-color: var(--brand); border-radius: 50%; animation: app-loading-spin .8s linear infinite; }
+@keyframes app-loading-spin { to { transform: rotate(360deg); } }
+@media (max-width: 480px) { .app-loading { min-height: 42vh; padding: 16px; } .app-loading-card { width: 100%; max-width: 320px; justify-content: center; padding: 14px; } }
+@media (prefers-reduced-motion: reduce) { .app-loading-spinner { animation: none; } }
+
 .site-header { position: sticky; z-index: 10; top: 0; background: color-mix(in srgb, var(--paper) 94%, transparent); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px); }
 .header-inner { display: flex; align-items: center; justify-content: space-between; min-height: 78px; gap: 28px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); font-size: 20px; font-weight: 500; letter-spacing: -.8px; white-space: nowrap; }
