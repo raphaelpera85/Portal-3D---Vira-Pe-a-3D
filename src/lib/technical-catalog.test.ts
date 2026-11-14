@@ -18,6 +18,7 @@ const bambuH2cMigration = readFileSync(new URL("../../supabase/migrations/202611
 const bambuX1CarbonMigration = readFileSync(new URL("../../supabase/migrations/20261114170000_seed_bambu_x1_carbon.sql", import.meta.url), "utf8");
 const bambuX1CarbonMaterialMigration = readFileSync(new URL("../../supabase/migrations/20261114180000_link_bambu_x1_carbon_materials.sql", import.meta.url), "utf8");
 const bambuX1CarbonAdditionalMaterialMigration = readFileSync(new URL("../../supabase/migrations/20261114190000_link_bambu_x1_carbon_additional_materials.sql", import.meta.url), "utf8");
+const prusaXlPlusMigration = readFileSync(new URL("../../supabase/migrations/20261114200000_seed_prusa_xl_plus.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -39,6 +40,8 @@ describe("verified technical catalog records", () => {
       ["Creality", "K2 Pro", "standard"],
       ["Creality", "K2 Pro", "CFS Combo"],
       ["Prusa Research", "CORE One+", "Gen 2"],
+      ["Prusa Research", "XL+", "Single-Tool"],
+      ["Prusa Research", "XL+", "Five-Head"],
       ["Prusa Research", "MK4S", "standard"],
       ["Creality", "Ender-3 V4", "Combo"],
       ["Creality", "Ender-5 Max", "standard"],
@@ -87,7 +90,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(60);
+    expect(printers).toHaveLength(62);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -305,6 +308,31 @@ describe("verified technical catalog records", () => {
     expect(k2ProMigration).toContain("'K2 Pro', 'standard'");
     expect(k2ProMigration).toContain("'K2 Pro', 'CFS Combo'");
     expect(k2ProMigration).toContain('"includedCfsUnits":1');
+  });
+
+  it("keeps XL+ single-tool and five-head variants with optional chamber upgrades explicit", () => {
+    const singleTool = printers.find((item) => item.id === "prusa-xl-plus-single-tool");
+    const fiveHead = printers.find((item) => item.id === "prusa-xl-plus-five-head");
+    const expectedProperties = {
+      activeChamberHeating: false,
+      optionalEnclosureMaximumTemperatureC: 50,
+      optionalExternalHeaterMaximumTemperatureC: 60,
+    };
+
+    expect(singleTool).toMatchObject({
+      model: "XL+", variant: "Single-Tool", buildVolumeMm: { x: 360, y: 360, z: 360 },
+      extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 290, maxBedTemperatureC: 115,
+      enclosure: false, maximumSpeedMmPerSecond: null, multicolorSlots: null, technicalProperties: expectedProperties,
+    });
+    expect(fiveHead).toMatchObject({
+      model: "XL+", variant: "Five-Head", extruders: 5, multicolorSlots: 5,
+      multicolorSystem: "Toolchanger com 5 cabeçotes independentes", technicalProperties: expectedProperties,
+    });
+    expect(singleTool?.sources[0].url).toBe("https://www.prusa3d.com/product/original-prusa-xl-semi-assembled-single-toolhead-3d-printer/");
+    expect(fiveHead?.sources[0].url).toBe("https://www.prusa3d.com/en/product/original-prusa-xl-5-toolhead-3d-printer/");
+    expect(prusaXlPlusMigration).toContain("'XL+', 'Single-Tool'");
+    expect(prusaXlPlusMigration).toContain("'XL+', 'Five-Head'");
+    expect(prusaXlPlusMigration).toContain('"optionalExternalHeaterMaximumTemperatureC":60');
   });
 
   it("keeps CORE One+ Gen 2 and its official nozzle range available in the local fallback", () => {
