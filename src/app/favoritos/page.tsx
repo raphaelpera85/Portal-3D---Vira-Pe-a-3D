@@ -8,16 +8,26 @@ import { SiteHeader } from "@/components/site-header";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { mapMarketplaceProduct } from "@/lib/marketplace-data";
 import { loadFavoriteProductRecommendations } from "@/lib/marketplace.server";
+import { getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Favoritos | ViraPeça 3D", robots: { index: false, follow: false } };
 
-export default async function FavoritesPage() {
+const pageSize = 24;
+
+export default async function FavoritesPage({ searchParams }: { searchParams: Promise<{ pagina?: string }> }) {
+  const { pagina } = await searchParams;
+  const requestedPage = parsePageNumber(pagina) ?? 1;
   const actor = await getUserWithRole("buyer");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
 
-  const favoritesResult = await actor.supabase.from("buyer_product_favorites").select("product_id, created_at")
-    .eq("buyer_id", actor.user.id).order("created_at", { ascending: false });
+  const favoritesResult = await actor.supabase.from("buyer_product_favorites").select("product_id, created_at", { count: "exact" })
+    .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }).order("product_id", { ascending: false })
+    .range((requestedPage - 1) * pageSize, requestedPage * pageSize - 1);
+  const totalPages = Math.max(1, Math.ceil((favoritesResult.count ?? 0) / pageSize));
+  const pageHref = (page: number) => page > 1 ? `/favoritos?pagina=${page}` : "/favoritos";
+  const redirectPage = getPaginationRedirectPage(requestedPage, totalPages);
+  if (!favoritesResult.error && redirectPage !== null) redirect(pageHref(redirectPage));
   const favoriteIds = favoritesResult.data?.map((item) => item.product_id) ?? [];
   const productsResult = favoriteIds.length ? await actor.supabase.from("marketplace_products")
     .select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, product_properties, media, video_url, tags, color_theme, visual, variants:marketplace_product_variants(id, variant_options, price_brl, stock_quantity), digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)")
@@ -45,6 +55,7 @@ export default async function FavoritesPage() {
         </article>)}
         {unavailableIds.map((id) => <article className="favorite-card favorite-unavailable" key={id}><div><span className="account-kicker">INDISPONÍVEL</span><h2>Produto não publicado</h2><p>Este item não está disponível na vitrine. Você pode removê-lo dos favoritos.</p></div><FavoriteButton productId={id} slug="produto-indisponivel" initialFavorite /></article>)}
       </div>}
+      {!favoritesResult.error && (favoritesResult.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação dos favoritos"><span>Página {requestedPage} de {totalPages} · {favoritesResult.count} favoritos</span><div>{requestedPage > 1 && <Link className="button button-secondary" href={pageHref(requestedPage - 1)}>Anterior</Link>}{requestedPage < totalPages && requestedPage < maxPageNumber && <Link className="button button-secondary" href={pageHref(requestedPage + 1)}>Próxima</Link>}</div></nav>}
       {recommendations.length > 0 && <section className="favorite-recommendations" aria-labelledby="favorite-recommendations-title"><div className="section-heading"><div><p className="eyebrow">A PARTIR DOS SEUS FAVORITOS</p><h2 id="favorite-recommendations-title">Peças que combinam com você</h2><p>Selecionadas pelas categorias e tags dos produtos que você salvou.</p></div></div><div className="favorite-grid">
         {recommendations.map((product) => <article className="favorite-card" key={product.id}>
           <Link className={`product-art art-${product.color}`} href={`/produtos/${product.slug}`} aria-label={`Ver ${product.name}`}>

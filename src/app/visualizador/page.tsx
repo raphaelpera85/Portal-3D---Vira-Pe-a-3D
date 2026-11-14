@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { ModelViewer } from "@/components/model-viewer";
 import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { loadTechnicalCatalog } from "@/lib/technical-catalog.server";
 import { getBuildVolumeModes } from "@/lib/technical-catalog-data";
+import { getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
 import { modelShowcase } from "@/lib/model-showcase";
 import type { SavedModelUpload } from "@/components/model-upload-manager";
 import type { CatalogMaterial, CatalogNozzle, CatalogPrinter } from "@/lib/compatibility";
@@ -17,15 +19,28 @@ export const metadata: Metadata = {
   ...(getSiteUrl() ? { alternates: { canonical: "/visualizador" } } : {}),
 };
 
-export default async function ViewerPage({ searchParams }: { searchParams: Promise<{ orcamento?: string }> }) {
+const libraryPageSize = 24;
+
+export default async function ViewerPage({ searchParams }: { searchParams: Promise<{ orcamento?: string; pagina?: string }> }) {
   const buyer = await getUserWithRole("buyer");
-  const [{ orcamento }, uploads, catalog] = await Promise.all([
-    searchParams,
+  const { orcamento, pagina } = await searchParams;
+  const libraryPage = parsePageNumber(pagina) ?? 1;
+  const [uploads, catalog] = await Promise.all([
     buyer.supabase && buyer.user && buyer.authorized
-      ? buyer.supabase.from("buyer_model_uploads").select("id, bundle_id, model_name, total_bytes, files, dimensions_mm, created_at").eq("buyer_id", buyer.user.id).order("created_at", { ascending: false })
+      ? buyer.supabase.from("buyer_model_uploads").select("id, bundle_id, model_name, total_bytes, files, dimensions_mm, created_at", { count: "exact" })
+        .eq("buyer_id", buyer.user.id).order("created_at", { ascending: false }).order("id", { ascending: false })
+        .range((libraryPage - 1) * libraryPageSize, libraryPage * libraryPageSize - 1)
       : Promise.resolve(null),
     loadTechnicalCatalog(),
   ]);
+  const libraryPages = Math.max(1, Math.min(maxPageNumber, Math.ceil((uploads?.count ?? 0) / libraryPageSize)));
+  const redirectLibraryPage = getPaginationRedirectPage(libraryPage, libraryPages);
+  if (uploads && !uploads.error && redirectLibraryPage !== null) {
+    const params = new URLSearchParams();
+    if (orcamento) params.set("orcamento", orcamento);
+    if (redirectLibraryPage > 1) params.set("pagina", String(Math.min(redirectLibraryPage, maxPageNumber)));
+    redirect(`/visualizador${params.size ? `?${params.toString()}` : ""}`);
+  }
   const savedModels = (uploads?.data ?? []) as SavedModelUpload[];
   const catalogModels = modelShowcase.map(({ id, name }) => ({ id, name }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
@@ -62,7 +77,7 @@ export default async function ViewerPage({ searchParams }: { searchParams: Promi
         </div>
         {orcamento === "sem-fabricantes" && <p className="auth-notice shell" role="status">Nenhuma loja publicada foi confirmada como compatível com esse material e volume. Confira os dados técnicos ou escolha outro material.</p>}
         {orcamento === "erro" && <p className="auth-notice is-error shell" role="alert">Não foi possível enviar a solicitação. Confira os campos, o catálogo e se a migração de orçamentos personalizados está aplicada.</p>}
-        <ModelViewer buyerId={buyer.user && buyer.authorized ? buyer.user.id : null} savedModels={savedModels} catalogModels={catalogModels} materials={materials} nozzles={nozzles} printers={printers} today={new Date().toISOString().slice(0, 10)} libraryError={Boolean(uploads?.error)} />
+        <ModelViewer buyerId={buyer.user && buyer.authorized ? buyer.user.id : null} savedModels={savedModels} savedModelsPage={libraryPage} savedModelsPages={libraryPages} savedModelsCount={uploads?.count ?? 0} orcamento={orcamento} catalogModels={catalogModels} materials={materials} nozzles={nozzles} printers={printers} today={new Date().toISOString().slice(0, 10)} libraryError={Boolean(uploads?.error)} />
         <div className="viewer-page-foot shell"><strong>Compatibilidade nesta etapa</strong><span>STL e OBJ para malhas · 3MF, GLB e GLTF para cenas com materiais quando presentes. STL/OBJ pedem confirmação de unidade. Os arquivos ficam no dispositivo até você salvar o conjunto na biblioteca privada.</span></div>
       </main>
     </>

@@ -42,7 +42,7 @@ type ViewerCatalogProfile = {
   review_status: "draft" | "pending" | "published" | "rejected"; metrics: SavedSlicerMetrics;
 };
 
-export function ModelViewer({ buyerId, savedModels = [], catalogModels = [], materials = [], nozzles = [], printers = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; catalogModels?: ViewerCatalogModel[]; materials?: (CatalogMaterial & { label: string })[]; nozzles?: (CatalogNozzle & { brand: string })[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
+export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, savedModelsPages = 1, savedModelsCount = 0, orcamento, catalogModels = [], materials = [], nozzles = [], printers = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; savedModelsPage?: number; savedModelsPages?: number; savedModelsCount?: number; orcamento?: string; catalogModels?: ViewerCatalogModel[]; materials?: (CatalogMaterial & { label: string })[]; nozzles?: (CatalogNozzle & { brand: string })[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -774,7 +774,7 @@ export function ModelViewer({ buyerId, savedModels = [], catalogModels = [], mat
           <div className="inspector-divider" />
           <div className="file-summary"><span className="file-summary-icon"><Box size={17} /></span><div><strong>{fileName || "Seu arquivo 3D"}</strong><small>{fileKind ? `${fileKind.toUpperCase()} · conjunto de até ${Math.round(MAX_MODEL_FILE_BYTES / 1024 / 1024)} MB` : "STL, OBJ, 3MF, GLB ou GLTF · máximo 20 MB"}</small></div></div>
           <label className="viewer-upload-secondary"><Upload size={15} /> {rawDimensions ? "Trocar arquivo" : "Escolher arquivo"}<input type="file" multiple accept=".stl,.obj,.3mf,.glb,.gltf,.mtl,.bin,.png,.jpg,.jpeg,.webp,model/stl,model/obj,model/3mf,model/gltf-binary,model/gltf+json" onChange={(event) => { void loadFiles(Array.from(event.target.files ?? [])); event.currentTarget.value = ""; }} /></label>
-          <ModelUploadManager buyerId={buyerId} files={selectedFiles} savedModels={savedModels} materials={materials} dimensionsMm={dimensionsMm} today={today} onLoad={loadFiles} libraryError={libraryError} />
+          <ModelUploadManager buyerId={buyerId} files={selectedFiles} savedModels={savedModels} savedModelsPage={savedModelsPage} savedModelsPages={savedModelsPages} savedModelsCount={savedModelsCount} orcamento={orcamento} materials={materials} dimensionsMm={dimensionsMm} today={today} onLoad={loadFiles} libraryError={libraryError} />
           <p className="privacy-note">Os arquivos ficam no dispositivo até você salvar o conjunto na biblioteca privada. Para OBJ/GLTF com recursos externos, selecione também os arquivos MTL, BIN e texturas associados.</p>
         </aside>}
       </div>

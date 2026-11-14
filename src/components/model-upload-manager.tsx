@@ -21,10 +21,14 @@ export type SavedModelUpload = {
   created_at: string;
 };
 
-export function ModelUploadManager({ buyerId, files, savedModels, materials, dimensionsMm, today, onLoad, libraryError = false }: {
+export function ModelUploadManager({ buyerId, files, savedModels, savedModelsPage = 1, savedModelsPages = 1, savedModelsCount = 0, orcamento, materials, dimensionsMm, today, onLoad, libraryError = false }: {
   buyerId: string | null;
   files: File[];
   savedModels: SavedModelUpload[];
+  savedModelsPage?: number;
+  savedModelsPages?: number;
+  savedModelsCount?: number;
+  orcamento?: string;
   materials: { id: string; label: string }[];
   dimensionsMm: ModelDimensions | null;
   today: string;
@@ -35,6 +39,12 @@ export function ModelUploadManager({ buyerId, files, savedModels, materials, dim
   const [pending, setPending] = useState(false);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("");
+  const libraryPageHref = (page: number) => {
+    const params = new URLSearchParams();
+    if (orcamento) params.set("orcamento", orcamento);
+    if (page > 1) params.set("pagina", String(page));
+    return `/visualizador${params.size ? `?${params.toString()}` : ""}`;
+  };
 
   async function saveCurrentModel() {
     const prepared = prepareModelUploadFiles(files);
@@ -134,6 +144,7 @@ export function ModelUploadManager({ buyerId, files, savedModels, materials, dim
         <button className="viewer-icon-button" type="button" disabled={pending} aria-label={`Excluir ${model.model_name}`} title="Excluir" onClick={() => void removeSavedModel(model)}><Trash2 size={15} aria-hidden="true" /></button>
       </div>
     </li>)}</ul>}
+    {buyerId && savedModelsCount > savedModels.length && <nav className="catalog-pagination" aria-label="Paginação da biblioteca privada"><span>Página {savedModelsPage} de {savedModelsPages} · {savedModelsCount} conjuntos</span>{savedModelsPages > 1 && <div>{savedModelsPage > 1 && <Link className="button button-secondary" href={libraryPageHref(savedModelsPage - 1)}>Anterior</Link>}{savedModelsPage < savedModelsPages && <Link className="button button-secondary" href={libraryPageHref(savedModelsPage + 1)}>Próxima</Link>}</div>}</nav>}
     {buyerId && savedModels.length > 0 && <CustomPrintRequestForm models={savedModels} materials={materials} today={today} />}
   </section>;
 }
