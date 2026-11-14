@@ -14,6 +14,7 @@ export type CatalogPrinter = {
   maxBedTemperatureC: number | null;
   heatedBed: boolean | null;
   enclosure: boolean | null;
+  multicolorSupported?: boolean | null;
   multicolorSlots: number | null;
   supportedMaterials: Record<string, MaterialSupportEntry>;
 };
@@ -179,7 +180,9 @@ export function evaluateCompatibility(
   }
 
   if (options.useMulticolor && material.process === "filament") {
-    if (printer.multicolorSlots == null) {
+    if (printer.multicolorSupported === false) {
+      add("multicolor", "Sistema multicolorido", "incompatible", "Esta configuração não oferece impressão multicolorida.");
+    } else if (printer.multicolorSlots == null) {
       add("multicolor", "Sistema multicolorido", "unverified", "A capacidade do sistema multicolorido não está cadastrada.");
     } else if (printer.multicolorSlots < 2) {
       add("multicolor", "Sistema multicolorido", "incompatible", "A configuração cadastrada não permite múltiplos filamentos.");

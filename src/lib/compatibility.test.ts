@@ -70,6 +70,15 @@ describe("evaluateCompatibility", () => {
     expect(result.checks.some((check) => check.key === "multicolor" && check.status === "conditional")).toBe(true);
   });
 
+  it("rejects multicolor when the selected printer configuration does not support it", () => {
+    const result = evaluateCompatibility({ ...printer, multicolorSlots: null, multicolorSupported: false }, material, nozzle, { useMulticolor: true });
+
+    expect(result.status).toBe("incompatible");
+    expect(result.checks.find((check) => check.key === "multicolor")).toMatchObject({
+      status: "incompatible", detail: "Esta configuração não oferece impressão multicolorida.",
+    });
+  });
+
   it("returns unverified instead of assuming compatibility when critical catalog facts are missing", () => {
     const result = evaluateCompatibility(
       { ...printer, maxNozzleTemperatureC: null, supportedMaterials: {} },

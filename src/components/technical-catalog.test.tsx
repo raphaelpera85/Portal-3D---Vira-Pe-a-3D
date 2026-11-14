@@ -4,6 +4,22 @@ import { TechnicalCatalog } from "./technical-catalog";
 import { mapTechnicalCatalog } from "../lib/technical-catalog-data";
 
 describe("TechnicalCatalog manufacturer conditions", () => {
+  it("shows a known non-multicolor configuration instead of calling it unknown", () => {
+    const catalog = mapTechnicalCatalog(
+      [{
+        id: "sparkx-mini", manufacturer: "Creality", model: "SPARKX i7", variant: "CFS Mini AutoFill", technology: "FDM",
+        multicolor_system: null, multicolor_filament_count: null,
+        technical_properties: { multicolorSupported: false, includedFilamentSystem: "CFS Mini", cfsMiniSlots: 2 },
+        source_url: "https://example.com/sparkx", verified_at: "2026-11-14",
+      }],
+      [{ id: "pla", manufacturer: "Creality", product: "PLA", family: "PLA", process: "filament", source_url: "https://example.com/pla", verified_at: "2026-11-14" }],
+      [], [], [],
+    );
+
+    const markup = renderToStaticMarkup(<TechnicalCatalog {...catalog} notice={null} />);
+    expect(markup).toContain("Não oferece impressão multicolor nesta configuração");
+  });
+
   it("shows supported filaments, material/nozzle conditions and model-specific nozzle restrictions", () => {
     const catalog = mapTechnicalCatalog(
       [{

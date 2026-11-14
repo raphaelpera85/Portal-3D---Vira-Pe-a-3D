@@ -31,7 +31,7 @@ with printer_seed as (
       260, 260, 255, 1, 1.75, 0.4,
       300, 100, true, false,
       500, null, null, null,
-      '{"maxAccelerationMmPerSecondSquared":10000,"extruder":"Direct drive","supportedNozzleDiametersMm":[0.2,0.4,0.6,0.8],"ratedPowerWattsByVoltage":{"110V":400,"220V":700},"includedFilamentSystem":"CFS Mini","cfsMiniSlots":2,"cfsMiniSupportsMulticolor":false,"automaticFilamentRefill":true}'::jsonb,
+      '{"maxAccelerationMmPerSecondSquared":10000,"extruder":"Direct drive","supportedNozzleDiametersMm":[0.2,0.4,0.6,0.8],"ratedPowerWattsByVoltage":{"110V":400,"220V":700},"includedFilamentSystem":"CFS Mini","cfsMiniSlots":2,"multicolorSupported":false,"automaticFilamentRefill":true}'::jsonb,
       'https://store.creality.com/products/sparkx-i7-3d-printer',
       'https://store.creality.com/eu/blogs/news/creality-sparkx-i7-combo-new-arrival', date '2026-11-14'
     ),

@@ -80,6 +80,7 @@ Revisão em 14 de novembro de 2026. Esta página compara os requisitos de produt
 - A migration `20261115090000_expand_bambu_h2d_variants.sql` acrescenta H2D standard e H2D Pro ao fallback, totalizando 84 variantes. Na H2D Pro, apenas os dados confirmados no anúncio oficial são preenchidos; dimensões, mesa e quantidade de filamentos seguem desconhecidos. A migration permanece somente no Git.
 - A migration `20261115100000_seed_creality_ender_v3_neo_mega.sql` acrescenta quatro variantes Ender-3 V3 Neo/Mega, totalizando 88. As Combos incluem CFS nano; versões standard registram o sistema como opcional. O fallback diferencia velocidade de impressão do Mega (300 mm/s típica) do deslocamento de cabeçote (500 mm/s). Dados térmicos e bicos permanecem desconhecidos conforme as fichas oficiais consultadas; migration não aplicada remotamente.
 - A migration `20261115110000_seed_creality_sparkx_i7.sql` acrescenta quatro configurações SPARKX i7, totalizando 92 variantes locais. Distingue CFS Lite e CFS nano multicolor de quatro filamentos do CFS Mini AutoFill de dois compartimentos sem impressão multicolor; cadastra ainda os quatro diâmetros oficiais de bico e registra potência como nominal. Migration versionada no Git, sem aplicação remota.
+- O campo explícito de suporte multicolorizado agora diferencia uma capacidade confirmada como ausente de um dado desconhecido. A triagem recusa o multicolor no CFS Mini e mantém “não verificado” nas variantes sem essa confirmação; o visualizador recebe o mesmo sinal técnico.
 
 ## Próximas entregas
 

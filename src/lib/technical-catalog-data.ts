@@ -66,6 +66,8 @@ export function mapTechnicalCatalog(
       maximumSpeedDescription: toolheadSpeed == null ? null : `${toolheadSpeed} mm/s de deslocamento do cabeçote; velocidade de impressão não informada`,
       maximumPowerWatts: number(row.maximum_power_w), measuredAveragePowerWatts: number(row.measured_average_power_w),
       multicolorSlots: number(row.multicolor_filament_count), multicolorSystem: text(row.multicolor_system) || null,
+      multicolorSupported: typeof properties.multicolorSupported === "boolean" ? properties.multicolorSupported
+        : number(row.multicolor_filament_count) != null || Boolean(text(row.multicolor_system)) ? true : null,
       technicalProperties: properties,
       supportedMaterials, sources: source(row),
     };

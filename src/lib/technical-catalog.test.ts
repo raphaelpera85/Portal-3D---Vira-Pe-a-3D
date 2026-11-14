@@ -141,7 +141,7 @@ describe("verified technical catalog records", () => {
     expect(standard).toMatchObject({ buildVolumeMm: { x: 260, y: 260, z: 255 }, maximumSpeedMmPerSecond: 500, maximumPowerWatts: null });
     expect(standard?.multicolorSlots).toBeNull();
     expect(lite).toMatchObject({ multicolorSystem: "CFS Lite", multicolorSlots: 4, technicalProperties: { cfsLiteIncluded: true, cfsLiteSlots: 4 } });
-    expect(mini).toMatchObject({ multicolorSlots: null, technicalProperties: { includedFilamentSystem: "CFS Mini", cfsMiniSlots: 2, cfsMiniSupportsMulticolor: false } });
+    expect(mini).toMatchObject({ multicolorSlots: null, multicolorSupported: false, technicalProperties: { includedFilamentSystem: "CFS Mini", cfsMiniSlots: 2 } });
     expect(nano).toMatchObject({ multicolorSystem: "CFS nano", multicolorSlots: 4, technicalProperties: { cfsNanoIncluded: true, cfsNanoSlots: 4 } });
     expect(compatibleNozzles.map(({ diameterMm, material, original }) => ({ diameterMm, material, original }))).toEqual([
       { diameterMm: 0.2, material: "Aço endurecido", original: false },

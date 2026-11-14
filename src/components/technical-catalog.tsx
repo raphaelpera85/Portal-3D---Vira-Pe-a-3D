@@ -45,7 +45,7 @@ export function TechnicalCatalog(props: TechnicalCatalogProps) {
 function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatalogProps) {
   const [printerId, setPrinterId] = useState(printers[0].id);
   const [materialId, setMaterialId] = useState(materials.find((item) => item.process === processForPrinter(printers[0]))?.id ?? materials[0].id);
-  const [nozzleId, setNozzleId] = useState(nozzles.find((item) => item.original)?.id ?? nozzles[0].id);
+  const [nozzleId, setNozzleId] = useState(nozzles.find((item) => item.original)?.id ?? nozzles[0]?.id ?? "");
   const [dimensions, setDimensions] = useState({ x: "", y: "", z: "" });
   const [useMulticolor, setUseMulticolor] = useState(false);
   const printer = printers.find((item) => item.id === printerId) ?? printers[0];
@@ -149,7 +149,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
               <div><dt>Potência máxima</dt><dd>{powerText(printer.maximumPowerWatts)}</dd></div>
               {ratedPowerWatts !== null && <div><dt>Potência nominal</dt><dd>{ratedPowerWatts} W</dd></div>}
               <div><dt>Potência média medida</dt><dd>{powerText(printer.measuredAveragePowerWatts)}</dd></div>
-              <div><dt>Multicolorido</dt><dd>{multicolorSystem ? `${multicolorSystem}${printer.multicolorSlots == null ? "" : ` · até ${printer.multicolorSlots} filamentos`}` : "Não informado"}</dd></div>
+              <div><dt>Multicolorido</dt><dd>{multicolorSystem ? `${multicolorSystem}${printer.multicolorSlots == null ? "" : ` · até ${printer.multicolorSlots} filamentos`}` : printer.multicolorSupported === false ? "Não oferece impressão multicolor nesta configuração" : "Não informado"}</dd></div>
               {extraBoxFilamentLimit !== null && <div><dt>Expansão multicolorida</dt><dd>Até {extraBoxFilamentLimit} filamentos com caixas adicionais</dd></div>}
             </dl>
             {typeof printerProperties.compatibilityNotes === "string" && <p className="catalog-source-note">Condições do fabricante: {printerProperties.compatibilityNotes}</p>}

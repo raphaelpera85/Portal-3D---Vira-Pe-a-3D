@@ -50,7 +50,7 @@ export default async function ViewerPage({ searchParams }: { searchParams: Promi
       buildVolumeMm: volumeModes.length || cylindrical ? null : printer.buildVolumeMm,
       filamentDiameterMm: printer.filamentDiameterMm, maxNozzleTemperatureC: printer.maxNozzleTemperatureC,
       maxBedTemperatureC: printer.maxBedTemperatureC, heatedBed: printer.heatedBed, enclosure: printer.enclosure,
-      multicolorSlots: printer.multicolorSlots, supportedMaterials: printer.supportedMaterials, volumeModes, cylindrical,
+      multicolorSlots: printer.multicolorSlots, multicolorSupported: printer.multicolorSupported, supportedMaterials: printer.supportedMaterials, volumeModes, cylindrical,
     };
   });
   const nozzles = catalog.nozzles.map((nozzle): CatalogNozzle & { brand: string } => ({
