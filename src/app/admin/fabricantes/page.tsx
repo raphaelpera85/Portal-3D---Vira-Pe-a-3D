@@ -9,6 +9,7 @@ import { ProductImageGallery } from "@/components/product-image-gallery";
 import { publishProductAction, publishStoreAction, reviewMakerApplicationAction, reviewModelPrintProfileAction, reviewPrintProfileAction } from "./actions";
 import { getShowcaseModel } from "@/lib/model-showcase";
 import type { SavedSlicerMetrics } from "@/lib/saved-calculation";
+import { getPaginationRedirectPage } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Revisão do marketplace | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -26,16 +27,24 @@ const resultMessages: Record<string, string> = {
   erro: "Não foi possível concluir a ação. Atualize a página e confira as permissões.",
 };
 
-export default async function MarketplaceAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
-  const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
+const modelProfilePageSize = 24;
+
+export default async function MarketplaceAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string; modeloPagina?: string }> }) {
+  const [{ resultado, modeloPagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.authorized) redirect("/conta");
+  const requestedModelPage = typeof modeloPagina === "string" && /^\d+$/.test(modeloPagina) ? Number(modeloPagina) : 1;
+  const modelPage = Number.isSafeInteger(requestedModelPage) && requestedModelPage > 0 ? Math.min(requestedModelPage, 10000) : 1;
   const [applications, stores, products, printProfiles, modelPrintProfiles] = await Promise.all([
     actor.supabase.from("maker_applications").select("id, business_name, contact_email, description, portfolio_url, city, state_code, created_at").eq("status", "pending").order("created_at"),
     actor.supabase.from("stores").select("id, name, slug, description, city, state_code, created_at").eq("status", "pending").order("created_at"),
     actor.supabase.from("marketplace_products").select("id, name, slug, description, listing_type, price_mode, price_brl, media, video_url, created_at, digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl), store:stores!inner(name, status)").eq("catalog_status", "draft").eq("store.status", "published").order("created_at"),
     actor.supabase.from("maker_print_profiles").select("id, profile_name, profile_type, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, print_hours, material_grams, material_by_color, product:marketplace_products!inner(name), store:stores!inner(name)").eq("sharing_scope", "community").eq("review_status", "pending").order("created_at"),
-    actor.supabase.from("visible_model_print_profiles").select("id, model_slug, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at").eq("sharing_scope", "community").eq("review_status", "pending").order("created_at").limit(100),
+    actor.supabase.from("visible_model_print_profiles").select("id, model_slug, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at", { count: "exact" }).eq("sharing_scope", "community").eq("review_status", "pending").order("created_at").order("id").range((modelPage - 1) * modelProfilePageSize, modelPage * modelProfilePageSize - 1),
   ]);
+  const modelProfilePages = Math.max(1, Math.ceil((modelPrintProfiles.count ?? 0) / modelProfilePageSize));
+  const modelProfileRedirectPage = getPaginationRedirectPage(modelPage, modelProfilePages);
+  const modelProfilePageHref = (page: number) => `/admin/fabricantes?modeloPagina=${page}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}`;
+  if (!modelPrintProfiles.error && modelProfileRedirectPage !== null) redirect(modelProfilePageHref(modelProfileRedirectPage));
 
   return (
     <>
@@ -87,7 +96,8 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
           })}
         </section>
         <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">ETAPA 5</span><h2>Perfis comunitários dos modelos</h2></div>
-          {modelPrintProfiles.error ? <p className="auth-notice is-error">Não foi possível carregar os perfis comunitários dos modelos.</p> : (modelPrintProfiles.data?.length ?? 0) === 0 ? <p className="admin-empty">Nenhum perfil de modelo aguarda revisão.</p> : modelPrintProfiles.data?.map((profile) => {
+          {modelPrintProfiles.error ? <p className="auth-notice is-error">Não foi possível carregar os perfis comunitários dos modelos.</p> : (modelPrintProfiles.data?.length ?? 0) === 0 ? <p className="admin-empty">Nenhum perfil de modelo aguarda revisão.</p> : <>
+            {modelPrintProfiles.data?.map((profile) => {
             const model = getShowcaseModel(profile.model_slug);
             const metrics = profile.slicer_metrics as SavedSlicerMetrics;
             return <article className="admin-review-card" key={profile.id}>
@@ -99,7 +109,9 @@ export default async function MarketplaceAdminPage({ searchParams }: { searchPar
               </div>
               <form action={reviewModelPrintProfileAction}><input type="hidden" name="profileId" value={profile.id} /><input type="hidden" name="modelSlug" value={profile.model_slug} /><label>Retorno ao autor (opcional)<input name="note" maxLength={1000} /></label><div className="admin-review-actions"><button className="button button-primary" name="decision" value="community" type="submit" disabled={!model}>Aprovar comunitário</button><button className="button button-primary" name="decision" value="official" type="submit" disabled={!model}>Marcar como oficial</button><button className="button button-secondary" name="decision" value="rejected" type="submit">Recusar</button></div></form>
             </article>;
-          })}
+            })}
+            {modelProfilePages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos perfis de modelo">{modelPage > 1 ? <Link className="button button-secondary" href={modelProfilePageHref(modelPage - 1)}>← Página anterior</Link> : <span />}<span>Página {modelPage} de {modelProfilePages} · {modelPrintProfiles.count} perfis</span>{modelPage < modelProfilePages ? <Link className="button button-secondary" href={modelProfilePageHref(modelPage + 1)}>Próxima página →</Link> : <span />}</nav>}
+          </>}
         </section>
       </main>
       <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Aprovação de conteúdo ViraPeça 3D.</p><span>© 2026 ViraPeça 3D</span></div></footer>
