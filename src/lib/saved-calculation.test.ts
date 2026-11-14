@@ -139,6 +139,14 @@ describe("validateCalculationToSave", () => {
     expect(validateCalculationToSave("Cálculo antigo", JSON.stringify(snapshot)).calculation?.priceTargetId).toBeNull();
   });
 
+  it("preserves a validated model profile reference and accepts older snapshots", () => {
+    const modelProfile = { id: "76543210-abcd-4123-8123-abcdef123456", modelSlug: "803903c6b264", name: "Cat Glasses Holder · PLA detalhado" };
+    expect(validateCalculationToSave("Suporte de mesa", JSON.stringify({ ...snapshot, modelProfile })).calculation?.modelProfile).toEqual(modelProfile);
+    expect(validateCalculationToSave("Antigo", JSON.stringify(snapshot)).calculation?.modelProfile).toBeNull();
+    expect(validateCalculationToSave("Inválido", JSON.stringify({ ...snapshot, modelProfile: { ...modelProfile, modelSlug: "../private" } })).calculation).toBeNull();
+    expect(validateCalculationToSave("Inválido", JSON.stringify({ ...snapshot, modelProfile: { ...modelProfile, id: "not-a-uuid" } })).calculation).toBeNull();
+  });
+
   it("preserves checked nozzles for the main print and each production component", () => {
     const compatibilityNozzles = {
       main: { equipmentId: "76543210-abcd-4123-8123-abcdef123456", nozzleId: "bambu-a1-mini-0-4" },

@@ -28,7 +28,7 @@ type ExtraField = { id: string; name: string; amount: string };
 type ProductionComponentFields = { id: string; equipmentId: string } & Omit<Record<keyof ProductionComponent, string>, "id">;
 type CalculatorEquipment = EquipmentRateInput & { id: string; label: string; catalogPrinter?: CatalogPrinter | null };
 export type CalculatorProduct = { id: string; name: string; slug: string; published: boolean; listingType: "physical" | "digital"; priceMode: "fixed" | "from" | "quote"; priceBrl: number | null; variants: Array<{ id: string; options: Record<string, string>; priceBrl: number }>; canApplyPrice: boolean };
-type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number | null; lengthMeters: number | null }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics };
+type CalculatorProfile = { id: string; name: string; productId: string | null; quantity: number; materialName: string; printHours: number | null; materialGrams: number | null; materialByColor: Array<{ color: string; grams: number | null; lengthMeters: number | null }>; equipmentId: string | null; kind?: "maker" | "model"; modelMetrics?: SavedSlicerMetrics; modelSlug?: string };
 type CalculatorMaterial = MaterialEntry;
 type SavedCalculationAttachment = { name: string; url: string; sizeBytes: number };
 type SavedCalculation = { id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string; attachments: SavedCalculationAttachment[] };
@@ -126,6 +126,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedPriceTargetId, setSelectedPriceTargetId] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [appliedProfileId, setAppliedProfileId] = useState("");
   const [profileApplyNotice, setProfileApplyNotice] = useState("");
   const [slicerMetrics, setSlicerMetrics] = useState<SavedSlicerMetrics | null>(null);
   const [calculationOrigin, setCalculationOrigin] = useState<CalculationOrigin>("manual");
@@ -390,10 +391,16 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     }));
     setSlicerMetrics(values.slicerMetrics);
     setCalculationOrigin("profile");
+    setAppliedProfileId(selectedProfileId);
     if (profile.productId) setSelectedProductId(profile.productId);
     if (profile.equipmentId && equipment.some((item) => item.id === profile.equipmentId)) selectEquipment(profile.equipmentId);
     setProfileApplyNotice(`Consumo de “${profile.name}” aplicado para ${Math.max(1, Math.ceil(numberValue(fields.batchQuantity) / profile.quantity))} execução(ões). Confira os preços por kg antes de calcular.`);
   }
+
+  const selectedModelProfile = profiles.find((profile) => profile.id === appliedProfileId && profile.kind === "model");
+  const modelProfileReference = selectedModelProfile?.modelSlug && selectedModelProfile.id.startsWith("model:")
+    ? { id: selectedModelProfile.id.slice("model:".length), modelSlug: selectedModelProfile.modelSlug, name: selectedModelProfile.name }
+    : null;
 
   function applyOcr(extraction: ReturnType<typeof parseSlicerOcrTexts>): boolean | null {
     if (!hasReviewableSlicerOcrData(extraction)) return false;
@@ -414,6 +421,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       conflicts: extraction.conflicts.slice(0, 30),
     });
     setCalculationOrigin("ocr");
+    setAppliedProfileId("");
     return true;
   }
 
@@ -428,6 +436,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     }));
     setSlicerMetrics(metrics);
     setCalculationOrigin("3mf");
+    setAppliedProfileId("");
     return true;
   }
 
@@ -474,6 +483,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       setSelectedProductId(productId ?? "");
       setSelectedPriceTargetId(typeof saved.priceTargetId === "string" ? saved.priceTargetId : "");
       setSelectedProfileId(profileId ?? "");
+      setAppliedProfileId(profileId ?? "");
       setSlicerMetrics(saved.slicer ?? null);
       setCalculationOrigin(saved.origin ?? "unknown");
     } catch { /* Invalid saved data is ignored. */ }
@@ -723,8 +733,8 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             {profiles.length > 0 && <div className="calculator-profile-apply"><label htmlFor="calculation-profile">Perfil de impressão<select id="calculation-profile" name="profileSelector" value={selectedProfileId} onChange={(event) => { setSelectedProfileId(event.target.value); setProfileApplyNotice(""); }}><option value="">Sem vínculo com perfil</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.kind === "model" ? "Modelo 3D · " : "Loja · "}{profile.name}</option>)}</select><small>Escolha um perfil e aplique o consumo previsto para o lote.</small></label><button className="button button-secondary" type="button" onClick={applySelectedProfile} disabled={!selectedProfileId}>Aplicar consumo</button>{profileApplyNotice && <p className="price-profile-apply-note" role="status">{profileApplyNotice}</p>}</div>}
             <input type="hidden" name="productId" value={selectedProductId} />
             <input type="hidden" name="printerId" value={selectedEquipmentId} />
-            <input type="hidden" name="profileId" value={selectedProfileId.startsWith("model:") ? "" : selectedProfileId} />
-            <input type="hidden" name="snapshot" value={JSON.stringify({ input, channels: parsedChannels, slicer: slicerMetrics, origin: calculationOrigin, priceTargetId: selectedPriceTargetId || null, compatibilityNozzles: { main: { equipmentId: selectedEquipmentId || null, nozzleId: selectedNozzleId || null }, components: productionComponents.map((component) => ({ equipmentId: component.equipmentId || null, nozzleId: componentNozzleIds[component.id] || null })) } })} />
+            <input type="hidden" name="profileId" value={appliedProfileId.startsWith("model:") ? "" : appliedProfileId} />
+            <input type="hidden" name="snapshot" value={JSON.stringify({ input, channels: parsedChannels, slicer: slicerMetrics, origin: calculationOrigin, modelProfile: modelProfileReference, priceTargetId: selectedPriceTargetId || null, compatibilityNozzles: { main: { equipmentId: selectedEquipmentId || null, nozzleId: selectedNozzleId || null }, components: productionComponents.map((component) => ({ equipmentId: component.equipmentId || null, nozzleId: componentNozzleIds[component.id] || null })) } })} />
             <label className="price-ocr-consent"><input type="checkbox" name="keepSourceFiles" checked={keepSourceFiles} onChange={(event) => setKeepSourceFiles(event.target.checked)} disabled={sourceUploadPending || (!ocrSourceFiles.length && !threeMfSourceFile)} /><span>Guardar imagens do OCR ou arquivo 3MF junto ao histórico privado deste cálculo. O armazenamento é privado e limitado a 50 MiB por arquivo.</span></label>
             <button className="button button-primary" type="submit" disabled={saving || sourceUploadPending || !hasProductionCost || result.errors.length > 0}>{sourceUploadPending ? "Guardando arquivos…" : saving ? "Salvando…" : "Salvar cálculo"}</button>
             {saveState.message && <p className={saveState.success ? "auth-notice is-success" : "auth-notice is-error"} role="status">{saveState.message}</p>}

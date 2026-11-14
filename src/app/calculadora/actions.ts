@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { validateCalculationToSave } from "@/lib/saved-calculation";
+import { getShowcaseModel } from "@/lib/model-showcase";
 
 export type SaveCalculationState = { message: string; success: boolean; calculationId?: string; keepSourceFiles?: boolean };
 export type ApplyCalculatedPriceState = { message: string; success: boolean };
@@ -108,6 +109,15 @@ export async function saveMakerCalculation(_previous: SaveCalculationState, form
       .eq("id", validated.calculation.profileId).eq("store_id", store.id).maybeSingle();
     if (!profile) return { message: "Vincule apenas um perfil de impressão da sua própria loja.", success: false };
   }
+  let modelProfile: typeof validated.calculation.modelProfile = null;
+  if (validated.calculation.modelProfile) {
+    const reference = validated.calculation.modelProfile;
+    const { data: profile } = await actor.supabase.from("visible_model_print_profiles")
+      .select("id, model_slug, profile_name").eq("id", reference.id).eq("model_slug", reference.modelSlug).eq("is_owner", true).maybeSingle();
+    const model = profile ? getShowcaseModel(profile.model_slug) : null;
+    if (!profile || !model) return { message: "Vincule apenas um perfil de modelo da sua própria conta.", success: false };
+    modelProfile = { id: profile.id, modelSlug: profile.model_slug, name: `${model.name} · ${profile.profile_name}` };
+  }
 
   const { data: savedCalculation, error } = await actor.supabase.from("maker_cost_calculations").insert({
     store_id: store.id,
@@ -115,7 +125,7 @@ export async function saveMakerCalculation(_previous: SaveCalculationState, form
     printer_id: validated.calculation.printerId,
     profile_id: validated.calculation.profileId,
     title: validated.calculation.title,
-    input_snapshot: { input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin, priceTargetId: validated.calculation.priceTargetId, compatibilityNozzles: validated.calculation.compatibilityNozzles },
+    input_snapshot: { input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin, modelProfile, priceTargetId: validated.calculation.priceTargetId, compatibilityNozzles: validated.calculation.compatibilityNozzles },
     result_snapshot: validated.calculation.result,
   }).select("id").single();
   if (error || !savedCalculation) return { message: "Não foi possível salvar. Confira se as migrações do histórico, produtos, equipamentos e perfis estão aplicadas.", success: false };

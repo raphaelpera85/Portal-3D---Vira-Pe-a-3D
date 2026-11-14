@@ -12,6 +12,7 @@ const optionalUuid = (value: unknown) => value == null || value === "" ? null : 
 const optionalCatalogId = (value: unknown) => value == null || value === "" ? null : typeof value === "string" && value.length <= 120 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(value) ? value : undefined;
 export type SavedCompatibilityNozzleCheck = { equipmentId: string | null; nozzleId: string | null };
 export type SavedCompatibilityNozzles = { main: SavedCompatibilityNozzleCheck; components: SavedCompatibilityNozzleCheck[] };
+export type SavedModelProfileReference = { id: string; modelSlug: string; name: string };
 
 function parseCompatibilityNozzles(value: unknown): SavedCompatibilityNozzles | undefined {
   if (value === undefined) return { main: { equipmentId: null, nozzleId: null }, components: [] };
@@ -107,6 +108,15 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
   }
   const priceTargetId = optionalUuid(parsed.priceTargetId);
   if (priceTargetId === undefined) return { calculation: null, error: "O anúncio selecionado para receber o preço é inválido." };
+  const rawModelProfile = parsed.modelProfile;
+  const modelProfile = rawModelProfile === undefined || rawModelProfile === null ? null
+    : isRecord(rawModelProfile) && typeof rawModelProfile.id === "string" && uuidPattern.test(rawModelProfile.id)
+      && typeof rawModelProfile.modelSlug === "string" && rawModelProfile.modelSlug.length <= 120
+      && optionalCatalogId(rawModelProfile.modelSlug) === rawModelProfile.modelSlug
+      && typeof rawModelProfile.name === "string" && rawModelProfile.name.trim().length >= 2 && rawModelProfile.name.length <= 240
+      ? { id: rawModelProfile.id, modelSlug: rawModelProfile.modelSlug, name: rawModelProfile.name.trim() } satisfies SavedModelProfileReference
+      : undefined;
+  if (modelProfile === undefined) return { calculation: null, error: "A origem do perfil de modelo é inválida." };
   const compatibilityNozzles = parseCompatibilityNozzles(parsed.compatibilityNozzles);
   if (!compatibilityNozzles) return { calculation: null, error: "A seleção de bicos para a checagem de compatibilidade é inválida." };
   const slicer = parseSlicerMetrics(parsed.slicer);
@@ -186,7 +196,7 @@ export function validateCalculationToSave(rawTitle: unknown, rawSnapshot: unknow
 
   return {
     calculation: {
-      title: rawTitle.trim(), productId, printerId, profileId, priceTargetId, compatibilityNozzles, input: safeInput, channels: safeChannels,
+      title: rawTitle.trim(), productId, printerId, profileId, modelProfile, priceTargetId, compatibilityNozzles, input: safeInput, channels: safeChannels,
       slicer, origin: origin as CalculationOrigin,
       result: { breakdown: result.breakdown, unitCostCents: result.unitCostCents, channels: result.channels },
     },

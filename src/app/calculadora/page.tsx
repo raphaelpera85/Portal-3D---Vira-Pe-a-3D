@@ -131,7 +131,7 @@ export default async function CalculatorPage() {
           id: `model:${profile.id}`, name: `${model.name} · ${profile.profile_name}`, productId: null, quantity: profile.quantity,
           materialName: profile.material_snapshot, printHours: metrics.printHours, materialGrams: metrics.filamentGrams,
           materialByColor: metrics.filaments.flatMap((item) => item.color && /^#[0-9a-f]{6}$/i.test(item.color) && (item.grams != null || item.lengthMeters != null) ? [{ color: item.color, grams: item.grams, lengthMeters: item.lengthMeters }] : []),
-          equipmentId: null, kind: "model" as const, modelMetrics: metrics,
+          equipmentId: null, kind: "model" as const, modelMetrics: metrics, modelSlug: profile.model_slug,
         }] : [];
       });
       profiles = [...makerProfiles, ...modelProfiles];
@@ -162,12 +162,12 @@ export default async function CalculatorPage() {
           compatibilityNozzleLabels,
           printerId: validated.calculation.printerId,
           printerName: linkedPrinter?.label ?? null,
-          profileId: validated.calculation.profileId,
-          profileName: linkedProfile?.name ?? null,
+          profileId: validated.calculation.profileId ?? (validated.calculation.modelProfile ? `model:${validated.calculation.modelProfile.id}` : null),
+          profileName: linkedProfile?.name ?? validated.calculation.modelProfile?.name ?? null,
           slicer: validated.calculation.slicer,
           origin: validated.calculation.origin,
           attachments: attachmentsByCalculation.get(row.id) ?? [],
-          snapshot: JSON.stringify({ input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin, priceTargetId: validated.calculation.priceTargetId, compatibilityNozzles: validated.calculation.compatibilityNozzles }),
+          snapshot: JSON.stringify({ input: validated.calculation.input, channels: validated.calculation.channels, slicer: validated.calculation.slicer, origin: validated.calculation.origin, modelProfile: validated.calculation.modelProfile, priceTargetId: validated.calculation.priceTargetId, compatibilityNozzles: validated.calculation.compatibilityNozzles }),
         }];
       });
     }
