@@ -1,8 +1,12 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(new URL("../../supabase/migrations/20261113093503_marketplace_best_seller_ranking.sql", import.meta.url), "utf8");
 const hierarchyMigration = readFileSync(new URL("../../supabase/migrations/20261113133221_marketplace_category_tree_filter.sql", import.meta.url), "utf8");
+const migrationsDirectory = new URL("../../supabase/migrations/", import.meta.url);
+const latestRankingMigration = readdirSync(migrationsDirectory).filter((file) => file.endsWith(".sql")).sort().reverse()
+  .map((file) => readFileSync(new URL(file, migrationsDirectory), "utf8"))
+  .find((file) => file.includes("create or replace function public.get_marketplace_best_sellers(")) ?? "";
 
 describe("marketplace best-seller ranking migration", () => {
   it("counts only accepted, paid purchases and exposes only published catalog items", () => {
@@ -25,5 +29,13 @@ describe("marketplace category tree filter migration", () => {
     expect(hierarchyMigration).toContain("where child.active");
     expect(hierarchyMigration).toContain("category.id in (select id from selected_categories)");
     expect(hierarchyMigration).toContain("revoke all on function public.get_marketplace_best_sellers(text, text, integer, integer) from public");
+  });
+});
+
+describe("public best-seller ranking data", () => {
+  it("does not expose exact paid sales counts", () => {
+    expect(latestRankingMigration).toContain("order by product.units desc");
+    expect(latestRankingMigration).toContain("null::bigint as sold_units");
+    expect(latestRankingMigration).toContain("to anon, authenticated");
   });
 });

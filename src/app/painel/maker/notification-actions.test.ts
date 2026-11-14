@@ -54,7 +54,10 @@ describe.each(actions)("aviso de $0", (_name, action, field, operation) => {
     if (operation === "update") updateResult.mockResolvedValue({ error: failure });
     else rpc.mockResolvedValue({ error: failure });
 
-    await expect(action(form(field))).rejects.toThrow("redirect:/painel/maker?resultado=notificacao-lida-erro#notificacoes");
+    const expectedUrl = field === "orderId"
+      ? `redirect:/painel/maker?resultado=notificacao-lida-erro&pedido=${id}#notificacoes`
+      : "redirect:/painel/maker?resultado=notificacao-lida-erro#notificacoes";
+    await expect(action(form(field))).rejects.toThrow(expectedUrl);
 
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
