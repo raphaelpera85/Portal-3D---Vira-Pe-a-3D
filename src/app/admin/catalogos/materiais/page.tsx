@@ -45,11 +45,15 @@ function MaterialForm({ row }: { row?: RecordRow }) {
   </form>;
 }
 
-export default async function MaterialCatalogAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
-  const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
+export default async function MaterialCatalogAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string }> }) {
+  const [{ resultado, pagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
-  // shortcut: only the first 250 records are editable here; add pagination when the catalog exceeds this cap.
-  const rows = await actor.supabase.from("material_catalog").select("*", { count: "exact" }).order("manufacturer").order("product").limit(250);
+  const requestedPage = typeof pagina === "string" && /^[1-9]\d{0,3}$/.test(pagina) ? Number(pagina) : 1;
+  const pageSize = 30;
+  const rows = await actor.supabase.from("material_catalog").select("*", { count: "exact" })
+    .order("manufacturer").order("product").order("id").range((requestedPage - 1) * pageSize, requestedPage * pageSize - 1);
+  const pages = Math.max(1, Math.ceil((rows.count ?? 0) / pageSize));
+  if (!rows.error && requestedPage > pages) redirect(`/admin/catalogos/materiais?pagina=${pages}`);
   return <>
     <SiteHeader />
     <main className="admin-dashboard shell">
@@ -63,7 +67,7 @@ export default async function MaterialCatalogAdminPage({ searchParams }: { searc
           const row = value as unknown as RecordRow;
           return <article className="account-card admin-banner-record" key={row.id}><div className="admin-banner-record-heading"><div><span className="account-kicker">{field(row, "catalog_status").toUpperCase()} · {field(row, "process") === "resin" ? "RESINA" : "FILAMENTO"}</span><h3>{field(row, "manufacturer")} · {field(row, "product")}</h3><p>Fonte: {field(row, "source_url") || "não informada"} · conferido: {field(row, "verified_at") || "não informado"}</p></div></div><details className="equipment-edit-form"><summary>Editar especificações</summary><MaterialForm row={row} /></details></article>;
         })}
-        {(rows.count ?? 0) > 250 && <p className="admin-empty">Esta tela mostra os 250 primeiros registros.</p>}
+        {!rows.error && (rows.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação do catálogo de materiais"><span>Página {requestedPage} de {pages} · {rows.count} produtos</span><div>{requestedPage > 1 && <Link className="button button-secondary" href={`/admin/catalogos/materiais?pagina=${requestedPage - 1}`}>Anterior</Link>}{requestedPage < pages && <Link className="button button-secondary" href={`/admin/catalogos/materiais?pagina=${requestedPage + 1}`}>Próxima</Link>}</div></nav>}
       </section>
     </main>
     <footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Catálogo mestre ViraPeça 3D.</p><span>© 2026 ViraPeça 3D</span></div></footer>
