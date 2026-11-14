@@ -23,7 +23,8 @@ describe("mapTechnicalCatalog", () => {
     expect(catalog.printers.some((printer) => printer.id === "bambu-a1")).toBe(true);
     expect(catalog.materials.filter((material) => material.brand === fallbackMaterial.brand && material.name === fallbackMaterial.name)).toHaveLength(1);
     expect(catalog.nozzles.filter((nozzle) => nozzle.brand === fallbackNozzle.brand && nozzle.name === fallbackNozzle.name && nozzle.diameterMm === fallbackNozzle.diameterMm)).toHaveLength(1);
-    expect(catalog.nozzles.find((nozzle) => nozzle.id === "db-nozzle")?.printerCompatibility).toEqual({ "db-printer": "compatible" });
+    expect(catalog.nozzles.find((nozzle) => nozzle.id === "db-nozzle")?.printerCompatibility)
+      .toEqual({ "db-printer": "compatible", "prusa-core-one-l-plus": "compatible" });
   });
 
   it("keeps separate records when the database does not provide natural identity fields", () => {
