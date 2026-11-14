@@ -7,6 +7,7 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { CatalogImageSearch } from "@/components/catalog-image-search";
 import { getCatalogEmptyState } from "@/lib/catalog";
 import { getProductCategoryLabels } from "@/lib/product-category-hierarchy";
+import visualIndex from "@/lib/model-showcase-visual-index.json";
 
 type Props = {
   products: Product[];
@@ -60,7 +61,7 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
         <Link className={sort === "newest" ? "is-active" : ""} aria-current={sort === "newest" ? "page" : undefined} href={catalogUrl({ query, category: activeCategory, sort: "newest" })}>Novidades</Link>
         <Link className={sort === "popular" ? "is-active" : ""} aria-current={sort === "popular" ? "page" : undefined} href={catalogUrl({ query, category: activeCategory, sort: "popular" })}>Mais vendidos</Link>
       </nav>}
-      <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={activeCategory} />
+      <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category="" visualIndex={visualIndex} />
       <div className="product-grid" aria-live="polite">
         {products.map((product, index) => (
           <article className="product-card" key={product.id}>
