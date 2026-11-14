@@ -24,5 +24,7 @@ test("public pages reflow at a 320px viewport", async ({ page }) => {
       });
     });
     expect(bounds, `${path} has content outside the 320px viewport`).toEqual([]);
+    const documentWidth = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: window.innerWidth }));
+    expect(documentWidth.scroll, `${path} document exceeds the viewport width`).toBeLessThanOrEqual(documentWidth.viewport);
   }
 });
