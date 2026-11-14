@@ -9,7 +9,9 @@ import { downloadDigitalAssetAction } from "./digital-actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { formatBrl, formatBrlTotal } from "@/lib/money";
 import { getCustomPrintEventLabel } from "@/lib/custom-print-events";
+import { fetchInChunks } from "@/lib/fetch-in-chunks";
 import { isMercadoPagoCheckoutUrl } from "@/lib/mercado-pago-payments";
+import { fetchAllPages } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -67,13 +69,13 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const [addressResult, requestResult, orderResult, customResult] = await Promise.all([
     actor.supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default").eq("buyer_id", actor.user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
-    actor.supabase.from("product_quote_requests")
+    fetchAllPages((from, to) => actor.supabase.from("product_quote_requests")
       .select("id, request_type, license_type, product_id, unit_price_brl, product_name, store_name, quantity, customization, due_date, status, created_at, product:marketplace_products(slug), offer:product_quote_offers(id, total_brl, lead_days, terms, status), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), downloads:digital_asset_downloads(id, created_at)")
-      .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
-    actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, shipping_shipped_at, shipping_delivered_at, completed_at, items:seller_purchase_order_items(id, product_id, product_name, unit_price_brl, quantity), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), events:seller_purchase_order_events(id, event_type, description, created_at)")
-      .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
-    actor.supabase.from("custom_print_requests").select("id, upload_id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, winning_store_id, production_started_at, production_completed_at, created_at, offers:custom_print_offers(id, store_name, total_brl, lead_days, terms, status), delivery:custom_print_deliveries(*), payments:seller_order_payments(id, status, checkout_url, total_cents, shipping_cents, created_at, cancellations:seller_order_payment_cancellations(status)), targets:custom_print_request_targets(id, store:stores(name), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at))")
-      .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }),
+      .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
+    fetchAllPages((from, to) => actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, shipping_shipped_at, shipping_delivered_at, completed_at, items:seller_purchase_order_items(id, product_id, product_name, unit_price_brl, quantity), payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), events:seller_purchase_order_events(id, event_type, description, created_at)")
+      .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
+    fetchAllPages((from, to) => actor.supabase.from("custom_print_requests").select("id, upload_id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, winning_store_id, production_started_at, production_completed_at, created_at, offers:custom_print_offers(id, store_name, total_brl, lead_days, terms, status), delivery:custom_print_deliveries(*), payments:seller_order_payments(id, status, checkout_url, total_cents, shipping_cents, created_at, cancellations:seller_order_payment_cancellations(status)), targets:custom_print_request_targets(id, store:stores(name), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at))")
+      .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
   ]);
   const addresses = addressResult.data ?? [];
   const { data, error } = requestResult;
@@ -86,9 +88,9 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
     (shippingPackages ?? []).filter((parcel) => parcel.custom_print_request_id === request.id)]));
   const purchaseIds = (data ?? []).filter((request) => request.request_type === "purchase").map((request) => request.id);
   const [cartReviews, purchaseReviews, customPrintReviews] = await Promise.all([
-    orders.length ? actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, purchase_request_id, custom_print_request_id, review_type, rating, status").in("order_id", orders.map((order) => order.id)) : Promise.resolve({ data: [], error: null }),
-    purchaseIds.length ? actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, purchase_request_id, custom_print_request_id, review_type, rating, status").in("purchase_request_id", purchaseIds) : Promise.resolve({ data: [], error: null }),
-    customRequests.length ? actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, purchase_request_id, custom_print_request_id, review_type, rating, status").in("custom_print_request_id", customRequests.map((request) => request.id)) : Promise.resolve({ data: [], error: null }),
+    fetchInChunks(orders.map((order) => order.id), (ids) => actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, purchase_request_id, custom_print_request_id, review_type, rating, status").in("order_id", ids)),
+    fetchInChunks(purchaseIds, (ids) => actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, purchase_request_id, custom_print_request_id, review_type, rating, status").in("purchase_request_id", ids)),
+    fetchInChunks(customRequests.map((request) => request.id), (ids) => actor.supabase.from("marketplace_reviews").select("id, order_id, order_item_id, purchase_request_id, custom_print_request_id, review_type, rating, status").in("custom_print_request_id", ids)),
   ]);
   const reviewsUnavailable = Boolean(cartReviews.error || purchaseReviews.error || customPrintReviews.error);
   const reviews = [...(cartReviews.data ?? []), ...(purchaseReviews.data ?? []), ...(customPrintReviews.data ?? [])];
