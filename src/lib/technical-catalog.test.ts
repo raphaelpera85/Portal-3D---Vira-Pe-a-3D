@@ -15,6 +15,7 @@ const qidiPlus5Migration = readFileSync(new URL("../../supabase/migrations/20261
 const qidiQ2cMigration = readFileSync(new URL("../../supabase/migrations/20261114140000_seed_qidi_q2c.sql", import.meta.url), "utf8");
 const qidiQ2cPowerMigration = readFileSync(new URL("../../supabase/migrations/20261114150000_fix_qidi_q2c_rated_power.sql", import.meta.url), "utf8");
 const bambuH2cMigration = readFileSync(new URL("../../supabase/migrations/20261114160000_seed_bambu_h2c.sql", import.meta.url), "utf8");
+const bambuX1CarbonMigration = readFileSync(new URL("../../supabase/migrations/20261114170000_seed_bambu_x1_carbon.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -30,6 +31,8 @@ describe("verified technical catalog records", () => {
       ["Bambu Lab", "H3C", "AMS 3H Combo"],
       ["Bambu Lab", "P2S", "standard"],
       ["Bambu Lab", "P2S", "AMS 2 Pro Combo"],
+      ["Bambu Lab", "X1-Carbon", "standard"],
+      ["Bambu Lab", "X1-Carbon", "AMS Combo"],
       ["Creality", "K2 Plus", "standard"],
       ["Creality", "K2 Pro", "standard"],
       ["Creality", "K2 Pro", "CFS Combo"],
@@ -82,7 +85,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(58);
+    expect(printers).toHaveLength(60);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -391,6 +394,31 @@ describe("verified technical catalog records", () => {
       multicolorSlots: null,
       technicalProperties: { ams2ProIncluded: true, amsFilamentDrying: true },
     });
+  });
+
+  it("includes X1-Carbon and AMS Combo specs while preserving voltage and speed distinctions", () => {
+    const standard = printers.find((item) => item.id === "bambu-x1-carbon");
+    const combo = printers.find((item) => item.id === "bambu-x1-carbon-ams-combo");
+    const x1Nozzles = nozzles.filter((item) => item.printerCompatibility?.["bambu-x1-carbon"] === "compatible");
+
+    expect(standard).toMatchObject({
+      buildVolumeMm: { x: 256, y: 256, z: 256 },
+      maxNozzleTemperatureC: 300,
+      maxBedTemperatureC: null,
+      maximumSpeedMmPerSecond: null,
+      maximumPowerWatts: null,
+      multicolorSlots: null,
+      technicalProperties: {
+        maxToolheadSpeedMmPerSecond: 500,
+        maxBedTemperatureByVoltageC: { "110V": 120, "220V": 110 },
+        supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8],
+      },
+    });
+    expect(combo).toMatchObject({ multicolorSlots: 4, technicalProperties: { amsUnitsIncluded: 1, maximumAmsUnits: 4 } });
+    expect(x1Nozzles.map((item) => item.diameterMm).sort()).toEqual([0.2, 0.4, 0.6, 0.8]);
+    expect(x1Nozzles.every((item) => item.abrasionResistant === true)).toBe(true);
+    expect(bambuX1CarbonMigration).toContain("'X1-Carbon'");
+    expect(bambuX1CarbonMigration).toContain("printer_nozzle_compatibility");
   });
 
   it("includes Centauri 2 variants and keeps the CANVAS upgrade distinct from the included Combo", () => {
