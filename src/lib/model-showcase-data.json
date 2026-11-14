@@ -12,18 +12,6 @@
     "filePath": "models/capivara-final.3mf"
   },
   {
-    "id": "ed02512a7e12",
-    "name": "cat",
-    "category": "Suporte para Óculos",
-    "categorySlug": "suporte-para-oculos",
-    "image": "/modelos/ed02512a7e12.png",
-    "tags": [
-      "óculos",
-      "cat"
-    ],
-    "filePath": "models/cat.3mf"
-  },
-  {
     "id": "2a2e5f6c6d90",
     "name": "Coruja Descanso Oculos",
     "category": "Suporte para Óculos",
@@ -39,16 +27,24 @@
   },
   {
     "id": "803903c6b264",
-    "name": "Improved Cat Glasses Holder",
+    "name": "Suporte para Óculos de Gato",
     "category": "Suporte para Óculos",
     "categorySlug": "suporte-para-oculos",
     "image": "/modelos/803903c6b264.png",
     "tags": [
       "óculos",
       "improved",
-      "cat"
+      "cat",
+      "suporte",
+      "gato"
     ],
-    "filePath": "models/improved-cat-glasses-holder.3mf"
+    "filePath": "models/improved-cat-glasses-holder.3mf",
+    "downloads": [
+      {
+        "label": "Versão original",
+        "filePath": "models/cat.3mf"
+      }
+    ]
   },
   {
     "id": "882ecc1d8c46",
@@ -126,7 +122,7 @@
   },
   {
     "id": "254940e7f223",
-    "name": "3Deep Flexi Pug Keychain (AMS)",
+    "name": "Chaveiro Flexi Pug · 3Deep",
     "category": "Chaveiros",
     "categorySlug": "chaveiros",
     "image": "/modelos/254940e7f223.png",
@@ -136,21 +132,13 @@
       "flexi",
       "pug"
     ],
-    "filePath": "models/3deep-flexi-pug-keychain-ams-254940e7f223.3mf"
-  },
-  {
-    "id": "842b11790cac",
-    "name": "3Deep Flexi Pug Keychain (AMS)",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/842b11790cac-source.png",
-    "tags": [
-      "chaveiro",
-      "3deep",
-      "flexi",
-      "pug"
-    ],
-    "filePath": "models/3deep-flexi-pug-keychain-ams-842b11790cac.3mf"
+    "filePath": "models/3deep-flexi-pug-keychain-ams-254940e7f223.3mf",
+    "downloads": [
+      {
+        "label": "Versão 2",
+        "filePath": "models/3deep-flexi-pug-keychain-ams-842b11790cac.3mf"
+      }
+    ]
   },
   {
     "id": "6b7fd218dc9d",
@@ -166,7 +154,7 @@
   },
   {
     "id": "5e61567440ea",
-    "name": "Beagle Brown White",
+    "name": "Beagle Flexi · Chaveiro",
     "category": "Chaveiros",
     "categorySlug": "chaveiros",
     "image": "/modelos/5e61567440ea.png",
@@ -174,62 +162,37 @@
       "chaveiro",
       "beagle",
       "brown",
-      "white"
+      "white",
+      "flexi"
     ],
-    "filePath": "models/beagle-brown-white.3mf"
-  },
-  {
-    "id": "ffcd1251d90c",
-    "name": "Beagle Tricolor",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/ffcd1251d90c.png",
-    "tags": [
-      "chaveiro",
-      "beagle",
-      "tricolor"
-    ],
-    "filePath": "models/beagle-tricolor.3mf"
-  },
-  {
-    "id": "917ef3dc290d",
-    "name": "Black Pug",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/917ef3dc290d.png",
-    "tags": [
-      "chaveiro",
-      "black",
-      "pug"
-    ],
-    "filePath": "models/black-pug.3mf"
+    "filePath": "models/beagle-brown-white.3mf",
+    "downloads": [
+      {
+        "label": "Tricolor",
+        "filePath": "models/beagle-tricolor.3mf"
+      }
+    ]
   },
   {
     "id": "a08d58a5f11e",
-    "name": "Border Collie",
+    "name": "Border Collie Flexi · Chaveiro",
     "category": "Chaveiros",
     "categorySlug": "chaveiros",
     "image": "/modelos/a08d58a5f11e.png",
     "tags": [
       "chaveiro",
       "border",
-      "collie"
-    ],
-    "filePath": "models/border-collie.3mf"
-  },
-  {
-    "id": "9be8503eefde",
-    "name": "Border Collie Tricolor",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/9be8503eefde.png",
-    "tags": [
-      "chaveiro",
-      "border",
       "collie",
-      "tricolor"
+      "border collie",
+      "flexi"
     ],
-    "filePath": "models/border-collie-tricolor.3mf"
+    "filePath": "models/border-collie.3mf",
+    "downloads": [
+      {
+        "label": "Tricolor",
+        "filePath": "models/border-collie-tricolor.3mf"
+      }
+    ]
   },
   {
     "id": "d12cc7160bc2",
@@ -246,42 +209,32 @@
   },
   {
     "id": "e752bde69af8",
-    "name": "cat black",
+    "name": "Gatos Flexi · Chaveiros",
     "category": "Chaveiros",
     "categorySlug": "chaveiros",
     "image": "/modelos/e752bde69af8.png",
     "tags": [
       "chaveiro",
       "cat",
-      "black"
+      "black",
+      "gato",
+      "flexi"
     ],
-    "filePath": "models/cat-black.3mf"
-  },
-  {
-    "id": "cb706de3adc8",
-    "name": "cat gray",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/cb706de3adc8.png",
-    "tags": [
-      "chaveiro",
-      "cat",
-      "gray"
-    ],
-    "filePath": "models/cat-gray.3mf"
-  },
-  {
-    "id": "bcde0a3aca26",
-    "name": "cat white",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/bcde0a3aca26.png",
-    "tags": [
-      "chaveiro",
-      "cat",
-      "white"
-    ],
-    "filePath": "models/cat-white.3mf"
+    "filePath": "models/cat-black.3mf",
+    "downloads": [
+      {
+        "label": "Cinza",
+        "filePath": "models/cat-gray.3mf"
+      },
+      {
+        "label": "Branco",
+        "filePath": "models/cat-white.3mf"
+      },
+      {
+        "label": "Laranja e branco",
+        "filePath": "models/orange-white-cat.3mf"
+      }
+    ]
   },
   {
     "id": "e454ea0dcb3e",
@@ -377,30 +330,25 @@
   },
   {
     "id": "b593314ca05c",
-    "name": "French Bulldog",
+    "name": "Buldogue Francês Flexi · Chaveiro",
     "category": "Chaveiros",
     "categorySlug": "chaveiros",
     "image": "/modelos/b593314ca05c.png",
     "tags": [
       "chaveiro",
       "french",
-      "bulldog"
-    ],
-    "filePath": "models/french-bulldog.3mf"
-  },
-  {
-    "id": "2efa9477c8b0",
-    "name": "French Bulldog Black",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/2efa9477c8b0.png",
-    "tags": [
-      "chaveiro",
-      "french",
       "bulldog",
-      "black"
+      "buldogue francês",
+      "french bulldog",
+      "flexi"
     ],
-    "filePath": "models/french-bulldog-black.3mf"
+    "filePath": "models/french-bulldog.3mf",
+    "downloads": [
+      {
+        "label": "Preto",
+        "filePath": "models/french-bulldog-black.3mf"
+      }
+    ]
   },
   {
     "id": "54a04395187c",
@@ -641,20 +589,6 @@
     "filePath": "models/one-piece-christmas-40mm-4farben.3mf"
   },
   {
-    "id": "a0988396307f",
-    "name": "Orange & White Cat",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/a0988396307f.png",
-    "tags": [
-      "chaveiro",
-      "orange",
-      "white",
-      "cat"
-    ],
-    "filePath": "models/orange-white-cat.3mf"
-  },
-  {
     "id": "2b3b8197b828",
     "name": "panda ams",
     "category": "Chaveiros",
@@ -707,15 +641,22 @@
   },
   {
     "id": "6ad21ca46a99",
-    "name": "Pug",
+    "name": "Pug Flexi · Chaveiro",
     "category": "Chaveiros",
     "categorySlug": "chaveiros",
     "image": "/modelos/6ad21ca46a99.png",
     "tags": [
       "chaveiro",
-      "pug"
+      "pug",
+      "flexi"
     ],
-    "filePath": "models/pug.3mf"
+    "filePath": "models/pug.3mf",
+    "downloads": [
+      {
+        "label": "Preto",
+        "filePath": "models/black-pug.3mf"
+      }
+    ]
   },
   {
     "id": "2331df662d5c",
@@ -843,7 +784,7 @@
   },
   {
     "id": "8d0a92160a0b",
-    "name": "York Black and Tan",
+    "name": "Yorkshire Flexi · Chaveiro",
     "category": "Chaveiros",
     "categorySlug": "chaveiros",
     "image": "/modelos/8d0a92160a0b.png",
@@ -851,22 +792,17 @@
       "chaveiro",
       "york",
       "black",
-      "tan"
+      "tan",
+      "yorkshire",
+      "flexi"
     ],
-    "filePath": "models/york-black-and-tan.3mf"
-  },
-  {
-    "id": "d4211589e816",
-    "name": "York Silver",
-    "category": "Chaveiros",
-    "categorySlug": "chaveiros",
-    "image": "/modelos/d4211589e816.png",
-    "tags": [
-      "chaveiro",
-      "york",
-      "silver"
-    ],
-    "filePath": "models/york-silver.3mf"
+    "filePath": "models/york-black-and-tan.3mf",
+    "downloads": [
+      {
+        "label": "Prateado",
+        "filePath": "models/york-silver.3mf"
+      }
+    ]
   },
   {
     "id": "33be14321369",
@@ -1166,7 +1102,14 @@
       "decoração",
       "presépio",
       "presepio",
-      "exclusivo"
+      "exclusivo",
+      "religioso"
+    ],
+    "downloads": [
+      {
+        "label": "Versão final",
+        "filePath": "models/presepio-exclusivo-final.3mf"
+      }
     ]
   },
   {
@@ -1234,7 +1177,7 @@
   },
   {
     "id": "64a0f86f6baa",
-    "name": "Painted",
+    "name": "Acessório Anycubic · Versões de cor",
     "category": "Acessórios para Impressoras 3D",
     "categorySlug": "acessorios-para-impressora-3d",
     "image": "/modelos/64a0f86f6baa.png",
@@ -1243,22 +1186,15 @@
       "impressora 3d",
       "acessórios",
       "ferramentas",
-      "painted"
-    ]
-  },
-  {
-    "id": "30788cf83a54",
-    "name": "Two Colours",
-    "category": "Acessórios para Impressoras 3D",
-    "categorySlug": "acessorios-para-impressora-3d",
-    "image": "/modelos/30788cf83a54.png",
-    "filePath": "models/two-colours.3mf",
-    "tags": [
-      "impressora 3d",
-      "acessórios",
-      "ferramentas",
-      "two",
-      "colours"
+      "painted",
+      "anycubic",
+      "duas cores"
+    ],
+    "downloads": [
+      {
+        "label": "Versão em duas cores",
+        "filePath": "models/two-colours.3mf"
+      }
     ]
   },
   {
@@ -1268,7 +1204,13 @@
     "categorySlug": "infantil",
     "image": "/modelos/06b1b4d1984e.png",
     "filePath": "models/polvo-fofo.3mf",
-    "tags": ["polvo", "animal", "fofo", "infantil", "articulado"]
+    "tags": [
+      "polvo",
+      "animal",
+      "fofo",
+      "infantil",
+      "articulado"
+    ]
   },
   {
     "id": "0e214be34b87",
@@ -1277,12 +1219,30 @@
     "categorySlug": "diversos",
     "image": "/modelos/0e214be34b87.png",
     "filePath": "models/casal-100mm-6-cores-anycubic-experimental.3mf",
-    "tags": ["casal", "miniatura", "multicolorido", "presente", "6 cores"],
+    "tags": [
+      "casal",
+      "miniatura",
+      "multicolorido",
+      "presente",
+      "6 cores"
+    ],
     "downloads": [
-      { "label": "Versão Forever Together", "filePath": "models/casal-forever-together.3mf" },
-      { "label": "Forever Together · variação", "filePath": "models/casal-forever-together-v2.3mf" },
-      { "label": "Versão texturizada", "filePath": "models/casal-forever-together-texturizado.3mf" },
-      { "label": "Texturizada · variação 2", "filePath": "models/casal-forever-together-texturizado-v2.3mf" }
+      {
+        "label": "Versão Forever Together",
+        "filePath": "models/casal-forever-together.3mf"
+      },
+      {
+        "label": "Forever Together · variação",
+        "filePath": "models/casal-forever-together-v2.3mf"
+      },
+      {
+        "label": "Versão texturizada",
+        "filePath": "models/casal-forever-together-texturizado.3mf"
+      },
+      {
+        "label": "Texturizada · variação 2",
+        "filePath": "models/casal-forever-together-texturizado-v2.3mf"
+      }
     ]
   },
   {
@@ -1292,10 +1252,22 @@
     "categorySlug": "natal",
     "image": "/modelos/9492febb5ebe.png",
     "filePath": "models/gorro-de-pote.3mf",
-    "tags": ["natal", "gorro", "pote", "decoração", "crochê"],
+    "tags": [
+      "natal",
+      "gorro",
+      "pote",
+      "decoração",
+      "crochê"
+    ],
     "downloads": [
-      { "label": "Versão Papai Noel em crochê", "filePath": "models/gorro-de-pote-papai-noel-croche.3mf" },
-      { "label": "Versão multicolorida", "filePath": "models/gorro-de-pote-multicolor.3mf" }
+      {
+        "label": "Versão Papai Noel em crochê",
+        "filePath": "models/gorro-de-pote-papai-noel-croche.3mf"
+      },
+      {
+        "label": "Versão multicolorida",
+        "filePath": "models/gorro-de-pote-multicolor.3mf"
+      }
     ]
   },
   {
@@ -1305,7 +1277,12 @@
     "categorySlug": "natal",
     "image": "/modelos/b775843041e5.png",
     "filePath": "models/grinch.3mf",
-    "tags": ["grinch", "natal", "personagem", "decoração"]
+    "tags": [
+      "grinch",
+      "natal",
+      "personagem",
+      "decoração"
+    ]
   },
   {
     "id": "2baf73896077",
@@ -1314,7 +1291,13 @@
     "categorySlug": "natal",
     "image": "/modelos/2baf73896077.png",
     "filePath": "models/chapeus-papai-noel-multicolor.3mf",
-    "tags": ["natal", "papai noel", "gorro", "miniatura", "multicolorido"]
+    "tags": [
+      "natal",
+      "papai noel",
+      "gorro",
+      "miniatura",
+      "multicolorido"
+    ]
   },
   {
     "id": "79c18aefe674",
@@ -1323,18 +1306,18 @@
     "categorySlug": "diversos",
     "image": "/modelos/79c18aefe674.png",
     "filePath": "models/nossa-senhora-aparecida.3mf",
-    "tags": ["nossa senhora", "aparecida", "religioso", "imagem", "multicolorido"],
+    "tags": [
+      "nossa senhora",
+      "aparecida",
+      "religioso",
+      "imagem",
+      "multicolorido"
+    ],
     "downloads": [
-      { "label": "Versão para AMS · 37 mm", "filePath": "models/nossa-senhora-aparecida-37mm.3mf" }
+      {
+        "label": "Versão para AMS · 37 mm",
+        "filePath": "models/nossa-senhora-aparecida-37mm.3mf"
+      }
     ]
-  },
-  {
-    "id": "54f47885f43c",
-    "name": "Presépio Exclusivo",
-    "category": "Natal",
-    "categorySlug": "natal",
-    "image": "/modelos/54f47885f43c.png",
-    "filePath": "models/presepio-exclusivo-final.3mf",
-    "tags": ["natal", "presépio", "decoração", "religioso"]
   }
 ]

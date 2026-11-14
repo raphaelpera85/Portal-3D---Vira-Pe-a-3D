@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ModelDetailContent } from "@/components/model-detail-content";
 import { ModelRecommendations } from "@/components/model-showcase";
 import { SiteHeader } from "@/components/site-header";
-import { getModelAssetUrl, getRecommendedModels, getShowcaseModel, modelShowcase } from "@/lib/model-showcase";
+import { getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -44,6 +44,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   const [{ id }, { perfil }] = await Promise.all([params, searchParams]);
   const model = getShowcaseModel(id);
   if (!model) notFound();
+  if (model.id !== id) redirect(`/modelos/${encodeURIComponent(model.id)}`);
   const previewUrl = getModelAssetUrl(model.filePath);
   const downloadUrl = previewUrl;
   const downloadVariants = (model.downloads ?? []).flatMap(({ label, filePath }) => {
@@ -73,7 +74,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   const [profileResult, makerRoleResult] = await Promise.all([
     supabase ? supabase.from("visible_model_print_profiles")
       .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at, sharing_scope, review_status, review_note, is_owner")
-      .eq("model_slug", model.id).order("created_at", { ascending: false }).limit(100) : Promise.resolve(null),
+      .in("model_slug", getShowcaseModelIds(model.id)).order("created_at", { ascending: false }).limit(100) : Promise.resolve(null),
     supabase && auth.user ? supabase.from("user_roles").select("role").eq("user_id", auth.user.id).eq("role", "maker").maybeSingle() : Promise.resolve(null),
   ]);
   const profiles = (profileResult?.data ?? []).map(({ is_owner, ...profile }) => ({ ...profile, isOwner: is_owner })) as import("@/components/model-print-profile-manager").ModelPrintProfileRecord[];

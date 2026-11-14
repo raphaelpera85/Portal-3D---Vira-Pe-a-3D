@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getShowcaseModel } from "@/lib/model-showcase";
+import { getShowcaseModel, getShowcaseModelIds } from "@/lib/model-showcase";
 import { validateModelPrintProfile } from "@/lib/model-print-profiles";
 import { parseSavedSlicerMetrics } from "@/lib/saved-calculation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -15,7 +15,7 @@ export async function loadVisibleModelPrintProfiles(modelSlug: string) {
   if (!supabase) return { profiles: [], error: true };
   const { data, error } = await supabase.from("visible_model_print_profiles")
     .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, sharing_scope, review_status")
-    .eq("model_slug", modelSlug).order("created_at", { ascending: false }).limit(100);
+    .in("model_slug", getShowcaseModelIds(modelSlug)).order("created_at", { ascending: false }).limit(100);
   if (error) return { profiles: [], error: true };
   const profiles = (data ?? []).flatMap((profile) => {
     const metrics = parseSavedSlicerMetrics(profile.slicer_metrics);
@@ -52,7 +52,7 @@ export async function saveModelPrintProfile(formData: FormData) {
     reviewed_by: null, reviewed_at: null, review_note: null,
   };
   const result = input.id
-    ? await supabase.from("model_print_profiles").update(payload).eq("id", input.id).eq("model_slug", input.modelSlug).select("id").maybeSingle()
+    ? await supabase.from("model_print_profiles").update(payload).eq("id", input.id).in("model_slug", getShowcaseModelIds(model.id)).select("id").maybeSingle()
     : await supabase.from("model_print_profiles").insert(payload).select("id").single();
   if (result.error || !result.data) redirect(`/modelos/${model.id}?perfil=erro`);
   revalidatePath(`/modelos/${model.id}`);
@@ -70,7 +70,7 @@ export async function copyPublishedModelPrintProfile(formData: FormData) {
   if (!supabase || !auth.user) redirect("/conta");
   const { data: source, error: sourceError } = await supabase.from("visible_model_print_profiles")
     .select("profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, sharing_scope, review_status")
-    .eq("id", profileId).eq("model_slug", model.id).maybeSingle();
+    .eq("id", profileId).in("model_slug", getShowcaseModelIds(model.id)).maybeSingle();
   if (sourceError || !source || !["community", "official"].includes(source.sharing_scope) || source.review_status !== "published") redirect(`/modelos/${model.id}?perfil=erro`);
   const { error } = await supabase.from("model_print_profiles").insert({
     ...source, user_id: auth.user.id, model_slug: model.id, profile_name: `Cópia de ${source.profile_name}`.slice(0, 80),
@@ -90,7 +90,7 @@ export async function deleteModelPrintProfile(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   if (!supabase || !auth.user) redirect("/conta");
-  const { error } = await supabase.from("model_print_profiles").delete().eq("id", profileId).eq("model_slug", model.id);
+  const { error } = await supabase.from("model_print_profiles").delete().eq("id", profileId).in("model_slug", getShowcaseModelIds(model.id));
   if (error) redirect(`/modelos/${model.id}?perfil=erro`);
   revalidatePath(`/modelos/${model.id}`);
   revalidatePath("/calculadora");

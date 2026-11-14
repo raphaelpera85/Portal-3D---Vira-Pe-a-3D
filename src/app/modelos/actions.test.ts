@@ -17,7 +17,7 @@ const profileId = "76543210-abcd-4123-8123-abcdef123456";
 
 function configure() {
   const builder = {
-    select: vi.fn(() => builder), eq: vi.fn(() => builder), order: vi.fn(() => builder),
+    select: vi.fn(() => builder), eq: vi.fn(() => builder), in: vi.fn(() => builder), order: vi.fn(() => builder),
     limit: vi.fn(async () => ({ data: mocks.rows, error: mocks.queryError })),
   };
   const from = vi.fn(() => builder);
@@ -37,7 +37,7 @@ describe("loadVisibleModelPrintProfiles", () => {
     const result = await loadVisibleModelPrintProfiles(modelSlug);
 
     expect(from).toHaveBeenCalledWith("visible_model_print_profiles");
-    expect(builder.eq).toHaveBeenCalledWith("model_slug", modelSlug);
+    expect(builder.in).toHaveBeenCalledWith("model_slug", [modelSlug, "ed02512a7e12"]);
     expect(builder.limit).toHaveBeenCalledWith(100);
     expect(result.error).toBe(false);
     expect(result.profiles).toHaveLength(1);
