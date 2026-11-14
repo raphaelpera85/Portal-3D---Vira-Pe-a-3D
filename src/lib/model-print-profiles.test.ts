@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { validateModelPrintProfile } from "./model-print-profiles";
+import { mapSlicerOcrMetricsToModelProfile, validateModelPrintProfile } from "./model-print-profiles";
+import { parseSlicerOcrTexts } from "./slicer-ocr";
 
 const input = {
   modelSlug: "70bda315e46e",
@@ -57,6 +58,24 @@ describe("validateModelPrintProfile", () => {
     expect(validateModelPrintProfile({ ...input, filamentLines: "; ; ; ; 3" })).toBeNull();
   });
 
+  it("converts reviewed OCR data into a reusable model profile without saving slicer cost", () => {
+    const extraction = parseSlicerOcrTexts([`Simplify3D
+Build Time: 2h 30m
+Filament Length: 12,5 m
+Weight: 38 g
+Material Cost: R$ 4,20
+Filament 1: PLA red 12 g`]);
+    const metrics = mapSlicerOcrMetricsToModelProfile(extraction, "Simplify3D");
+
+    expect(metrics).toMatchObject({
+      slicer: "Simplify3D", modelGrams: 38, lengthMeters: 12.5, printHours: 2.5,
+      estimatedCost: null, estimatedCostCurrency: null,
+      filaments: [{ index: 1, grams: 12, material: "PLA", color: "red", pricePerKg: null }],
+    });
+    expect(metrics).not.toHaveProperty("text");
+    expect(mapSlicerOcrMetricsToModelProfile(parseSlicerOcrTexts(["Cost: R$ 2,00"]), "Manual")).toBeNull();
+  });
+
   it("rejects duplicate colors and color totals above total filament use", () => {
     expect(validateModelPrintProfile({ ...input, filamentLines: "#336699; PLA; 10; 2\n#336699; PETG; 10; 2" })).toBeNull();
     expect(validateModelPrintProfile({ ...input, totalGrams: "10", filamentGrams: "10", filamentLines: "#336699; PLA; 11; 2" })).toBeNull();
@@ -79,6 +98,17 @@ describe("validateModelPrintProfile", () => {
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, filamentChanges: 1.5 }) })).toBeNull();
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, estimatedCost: 12 }) })).toBeNull();
     expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, estimatedCostCurrency: "USD" }) })).toBeNull();
+  });
+
+  it("accepts recognized named colors in imported profile data but rejects arbitrary color CSS", () => {
+    const slicerMetrics = {
+      slicer: "OrcaSlicer", modelGrams: null, supportGrams: null, totalGrams: 12,
+      purgeGrams: null, wipeTowerGrams: null, filamentGrams: 12, derivedMass: false, lengthMeters: null,
+      printHours: null, filamentChanges: null, estimatedCost: null, materials: ["PLA"],
+      filaments: [{ index: 1, grams: 12, lengthMeters: null, pricePerKg: null, material: "PLA", color: "red" }], conflicts: [],
+    };
+    expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify(slicerMetrics) })?.metrics.filaments[0].color).toBe("red");
+    expect(validateModelPrintProfile({ ...input, importedMetrics: JSON.stringify({ ...slicerMetrics, filaments: [{ ...slicerMetrics.filaments[0], color: "url(javascript:alert(1))" }] }) })).toBeNull();
   });
 
   it("accepts imported 3MF metrics with up to 32 filaments", () => {

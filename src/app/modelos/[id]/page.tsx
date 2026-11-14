@@ -62,9 +62,12 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   const recommendations = getRecommendedModels(model);
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-  const profileResult = supabase ? await supabase.from("visible_model_print_profiles")
-    .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at, sharing_scope, review_status, review_note, is_owner")
-    .eq("model_slug", model.id).order("created_at", { ascending: false }).limit(100) : null;
+  const [profileResult, makerRoleResult] = await Promise.all([
+    supabase ? supabase.from("visible_model_print_profiles")
+      .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at, sharing_scope, review_status, review_note, is_owner")
+      .eq("model_slug", model.id).order("created_at", { ascending: false }).limit(100) : Promise.resolve(null),
+    supabase && auth.user ? supabase.from("user_roles").select("role").eq("user_id", auth.user.id).eq("role", "maker").maybeSingle() : Promise.resolve(null),
+  ]);
   const profiles = (profileResult?.data ?? []).map(({ is_owner, ...profile }) => ({ ...profile, isOwner: is_owner })) as import("@/components/model-print-profile-manager").ModelPrintProfileRecord[];
   const notice = profileResult?.error ? "erro" : ["salvo", "enviado", "copiado", "retirado", "excluido", "erro"].includes(perfil ?? "") ? perfil! : null;
 
@@ -78,7 +81,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
         <h1>{model.name}</h1>
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={`/modelos?q=${encodeURIComponent(tag)}#modelos`}>{tag}</Link></li>)}</ul>
       </div>
-      <ModelDetailContent modelId={model.id} modelName={model.name} previewUrl={previewUrl} today={new Date().toISOString().slice(0, 10)} profiles={profiles} authenticated={Boolean(auth.user)} notice={notice} />
+      <ModelDetailContent modelId={model.id} modelName={model.name} previewUrl={previewUrl} today={new Date().toISOString().slice(0, 10)} profiles={profiles} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />
       <ModelRecommendations models={recommendations} />
       <section className="shell model-detail-download" aria-label="Download do modelo">
         <div><p className="eyebrow">ARQUIVO ORIGINAL</p><h2>{model.name}.3mf</h2><p>Baixe o arquivo 3MF para abrir no seu fatiador ou programa de modelagem.</p></div>

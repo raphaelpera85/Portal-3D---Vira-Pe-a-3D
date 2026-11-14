@@ -1,4 +1,5 @@
 import type { SavedSlicerMetrics } from "./saved-calculation";
+import { slicerColorPresentation, type parseSlicerOcrTexts } from "./slicer-ocr";
 
 export const modelProfileTypes = ["economic", "fast", "detailed", "multicolor", "custom"] as const;
 export const modelProfileSlicers = ["Arquivo 3MF", "Anycubic Slicer Next", "OrcaSlicer", "Bambu Studio", "PrusaSlicer", "Creality Print", "ElegooSlicer", "FlashPrint", "ideaMaker", "Simplify3D", "UltiMaker Cura", "Cura", "Manual"] as const;
@@ -18,20 +19,38 @@ const decimal = (value: unknown): number | null | undefined => {
   return Number.isFinite(number) ? number : undefined;
 };
 const nullableMetric = (value: unknown): value is number | null => value === null || typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
+const manualColorPattern = String.raw`(?:#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})|preto|branco|vermelho|azul|verde|amarelo|laranja|roxo|rosa|cinza|marrom|black|white|red|blue|green|yellow|orange|purple|pink|gray|grey|brown)`;
+
+export function mapSlicerOcrMetricsToModelProfile(extraction: ReturnType<typeof parseSlicerOcrTexts>, slicer: ModelPrintProfileInput["slicer"]): SavedSlicerMetrics | null {
+  const fields = [extraction.modelGrams, extraction.supportGrams, extraction.totalGrams, extraction.purgeGrams,
+    extraction.wipeTowerGrams, extraction.filamentGrams, extraction.lengthMeters, extraction.printHours, extraction.filamentChanges];
+  if (!fields.some((value) => value !== null) && !extraction.materials.length && !extraction.filaments.length) return null;
+  return {
+    slicer, modelGrams: extraction.modelGrams, supportGrams: extraction.supportGrams,
+    totalGrams: extraction.totalGrams, purgeGrams: extraction.purgeGrams, wipeTowerGrams: extraction.wipeTowerGrams,
+    filamentGrams: extraction.filamentGrams, derivedMass: extraction.derivedMass, lengthMeters: extraction.lengthMeters,
+    printHours: extraction.printHours, filamentChanges: extraction.filamentChanges, estimatedCost: null, estimatedCostCurrency: null,
+    materials: extraction.materials.slice(0, 20),
+    filaments: extraction.filaments.slice(0, 32).map((filament) => ({ ...filament, pricePerKg: null })),
+    conflicts: extraction.conflicts.slice(0, 30),
+  };
+}
 
 function parseManualFilaments(value: unknown, materialName: string) {
   const lines = text(value).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   if (lines.length > 32) return undefined;
   if (!lines.length) return [];
   const filaments = lines.map((line, index) => {
-    const match = line.match(/^\s*(#[0-9a-f]{6})?\s*;\s*([^;]{0,40})\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*;\s*(\d{1,9}(?:[,.]\d{1,3})?)?\s*(?:;\s*(\d{1,3}))?\s*$/i);
+    const match = line.match(new RegExp(`^\\s*(${manualColorPattern})?\\s*;\\s*([^;]{0,40})\\s*;\\s*(\\d{1,9}(?:[,.]\\d{1,3})?)?\\s*;\\s*(\\d{1,9}(?:[,.]\\d{1,3})?)?\\s*(?:;\\s*(\\d{1,3}))?\\s*$`, "i"));
     if (!match || !match[3] && !match[4] && !match[1] && !match[2].trim()) return null;
     const grams = match[3] ? Number(match[3].replace(",", ".")) : null;
     const lengthMeters = match[4] ? Number(match[4].replace(",", ".")) : null;
     const filamentIndex = match[5] ? Number(match[5]) : index + 1;
     if (!Number.isSafeInteger(filamentIndex) || filamentIndex < 0) return null;
     if ([grams, lengthMeters].some((item) => item !== null && (!Number.isFinite(item) || item < 0))) return null;
-    return { index: filamentIndex, grams, lengthMeters, pricePerKg: null, material: match[2].trim() || materialName || null, color: match[1]?.toUpperCase() ?? null };
+    const rawColor = match[1];
+    return { index: filamentIndex, grams, lengthMeters, pricePerKg: null, material: match[2].trim() || materialName || null,
+      color: rawColor ? rawColor.startsWith("#") ? rawColor.toUpperCase() : rawColor.toLowerCase() : null };
   });
   if (filaments.some((item) => item === null)) return undefined;
   const validFilaments = filaments.filter((item): item is NonNullable<typeof item> => item !== null);
@@ -58,7 +77,7 @@ function validateImportedMetrics(value: unknown): SavedSlicerMetrics | null {
     || !(item.lengthMeters === null || nullableMetric(item.lengthMeters))
     || !(item.pricePerKg === null || nullableMetric(item.pricePerKg))
     || !(item.material === null || typeof item.material === "string" && item.material.length <= 40)
-    || !(item.color === null || typeof item.color === "string" && /^#[0-9a-f]{6}$/i.test(item.color)))) return null;
+    || !(item.color === null || typeof item.color === "string" && slicerColorPresentation(item.color)?.cssColor != null))) return null;
   if (metrics.estimatedCost !== null || metrics.estimatedCostCurrency != null || metrics.filamentChanges !== null && !Number.isSafeInteger(metrics.filamentChanges)) return null;
   const colors = filaments.map((item) => typeof item.color === "string" ? item.color.toUpperCase() : null).filter((item): item is string => item !== null);
   const colorGrams = filaments.reduce((sum, item) => sum + (typeof item.grams === "number" ? item.grams : 0), 0);

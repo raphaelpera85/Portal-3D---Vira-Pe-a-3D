@@ -9,11 +9,14 @@ describe("ModelPrintProfileManager", () => {
       slicer: "OrcaSlicer", modelGrams: null, supportGrams: null, totalGrams: null,
       purgeGrams: null, wipeTowerGrams: null, filamentGrams: null, derivedMass: false,
       lengthMeters: null, printHours: null, filamentChanges: null, estimatedCost: null,
-      materials: ["PLA Basic"], conflicts: [],
-      filaments: [{ index: 3, grams: null, lengthMeters: null, pricePerKg: null, material: "PLA Basic", color: "#336699" }],
+      materials: ["PLA Basic", "PETG"], conflicts: [],
+      filaments: [
+        { index: 3, grams: null, lengthMeters: null, pricePerKg: null, material: "PLA Basic", color: "#336699" },
+        { index: 4, grams: null, lengthMeters: null, pricePerKg: null, material: "PETG", color: "azul" },
+      ],
     };
     const markup = renderToStaticMarkup(<ModelPrintProfileManager
-      modelSlug="70bda315e46e" authenticated notice={null} plates={[]}
+      modelSlug="70bda315e46e" authenticated canUseOcr ocrConfigured notice={null} plates={[]}
       profiles={[{
         id: "123e4567-e89b-42d3-a456-426614174000", profile_name: "PLA", profile_type: "custom", slicer: "OrcaSlicer",
         printer_snapshot: "Printer", material_snapshot: "PLA Basic", nozzle_snapshot: "0.4 mm",
@@ -24,5 +27,8 @@ describe("ModelPrintProfileManager", () => {
     />);
 
     expect(markup).toContain("#336699; PLA Basic; ; ; 3");
+    expect(markup).toContain("azul; PETG; ; ; 4");
+    expect(markup).toContain("Ler imagem do fatiador");
+    expect(markup).toContain("o custo estimado mostrado pelo fatiador não é salvo como preço de material");
   });
 });
