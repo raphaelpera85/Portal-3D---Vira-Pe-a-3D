@@ -106,6 +106,25 @@ describe("mapTechnicalCatalog", () => {
       .toEqual({ "db-printer": "compatible", "prusa-core-one-l-plus": "compatible" });
   });
 
+  it("merges local and database technical properties for printers and materials", () => {
+    const fallbackPrinter = printers.find((printer) => printer.id === "prusa-mk4s")!;
+    const fallbackMaterial = materials.find((material) => material.id === "prusament-pla")!;
+    const catalog = mergeTechnicalCatalogWithFallback({
+      printers: [{ ...fallbackPrinter, id: "db-printer", technicalProperties: { databaseOnly: true, shared: "database" } }],
+      materials: [{ ...fallbackMaterial, id: "db-material", technicalProperties: { databaseOnly: true, shared: "database" } }],
+      nozzles: [],
+    }, {
+      printers: [{ ...fallbackPrinter, technicalProperties: { localOnly: true, shared: "local" } }],
+      materials: [{ ...fallbackMaterial, technicalProperties: { localOnly: true, shared: "local" } }],
+      nozzles: [],
+    });
+
+    expect(catalog.printers.find(({ id }) => id === "db-printer")?.technicalProperties)
+      .toEqual({ localOnly: true, databaseOnly: true, shared: "database" });
+    expect(catalog.materials.find(({ id }) => id === "db-material")?.technicalProperties)
+      .toEqual({ localOnly: true, databaseOnly: true, shared: "database" });
+  });
+
   it("keeps separate records when the database does not provide natural identity fields", () => {
     const printer = printers[0];
     const material = materials[0];

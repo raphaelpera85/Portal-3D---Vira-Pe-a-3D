@@ -163,10 +163,15 @@ export function mergeTechnicalCatalogWithFallback(
   const remap = <Value>(record: Record<string, Value> | null | undefined, ids: Map<string, string>) => record == null ? record :
     Object.fromEntries(Object.entries(record).map(([id, value]) => [ids.get(id) ?? id, value]));
 
-  const materials = merge(database.materials, fallback.materials, materialKey, (local, primary) => ({ ...local, ...primary }));
+  const materials = merge(database.materials, fallback.materials, materialKey, (local, primary) => ({
+    ...local,
+    ...primary,
+    technicalProperties: { ...local.technicalProperties, ...primary.technicalProperties },
+  }));
   const printers = merge(database.printers, fallback.printers, printerKey, (local, primary) => ({
     ...local,
     ...primary,
+    technicalProperties: { ...local.technicalProperties, ...primary.technicalProperties },
     supportedMaterials: { ...remap(local.supportedMaterials, materials.ids), ...primary.supportedMaterials },
   }));
   const nozzles = merge(database.nozzles, fallback.nozzles, nozzleKey, (local, primary) => ({
