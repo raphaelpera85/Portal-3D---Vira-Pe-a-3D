@@ -29,6 +29,7 @@ const elegooNeptune4Migration = readFileSync(new URL("../../supabase/migrations/
 const anycubicKobraXMigration = readFileSync(new URL("../../supabase/migrations/20261115060000_seed_anycubic_kobra_x.sql", import.meta.url), "utf8");
 const anycubicS1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261115070000_seed_anycubic_kobra_s1_max_and_photon_p1_max.sql", import.meta.url), "utf8");
 const crealityK2Migration = readFileSync(new URL("../../supabase/migrations/20261115080000_seed_creality_k2.sql", import.meta.url), "utf8");
+const bambuH2dVariantsMigration = readFileSync(new URL("../../supabase/migrations/20261115090000_expand_bambu_h2d_variants.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -99,6 +100,8 @@ describe("verified technical catalog records", () => {
       ["Anycubic", "Photon Mono M7 Max", "standard"],
       ["Anycubic", "Photon P1", "standard"],
       ["Bambu Lab", "H2D", "AMS 2 Pro Combo"],
+      ["Bambu Lab", "H2D", "standard"],
+      ["Bambu Lab", "H2D Pro", "standard"],
       ["Bambu Lab", "P1S", "standard"],
       ["Bambu Lab", "P1S", "Combo"],
       ["Creality", "Ender-3 V3", "standard"],
@@ -113,9 +116,35 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(82);
+    expect(printers).toHaveLength(84);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("keeps H2D base, AMS combo, and Pro configurations distinct", () => {
+    const base = printers.find((printer) => printer.id === "bambu-h2d");
+    const combo = printers.find((printer) => printer.id === "bambu-h2d-ams-2-pro-combo");
+    const pro = printers.find((printer) => printer.id === "bambu-h2d-pro");
+
+    expect(base).toMatchObject({
+      buildVolumeMm: { x: 325, y: 320, z: 325 }, extruders: 2,
+      maxNozzleTemperatureC: 350, multicolorSystem: "AMS 2 Pro (vendido separadamente)",
+      technicalProperties: { singleNozzleBuildVolumeMm: { x: 325, y: 320, z: 325 } },
+    });
+    expect(base?.multicolorSlots).toBeNull();
+    expect(combo?.multicolorSlots).toBe(4);
+    expect(pro).toMatchObject({
+      model: "H2D Pro", extruders: 2, maxNozzleTemperatureC: 350,
+      multicolorSystem: "AMS 2 Pro + AMS HT",
+      technicalProperties: {
+        activeChamberHeating: true, activeChamberMaximumTemperatureC: 65,
+        nozzleMaterial: "Tungsten carbide", ethernet: true, wpa2EnterpriseWifi: true,
+      },
+    });
+    expect(pro?.buildVolumeMm).toBeNull();
+    expect(pro?.multicolorSlots).toBeNull();
+    expect(bambuH2dVariantsMigration).toContain("'H2D', 'standard'");
+    expect(bambuH2dVariantsMigration).toContain("'H2D Pro', 'standard'");
   });
 
   it("keeps Kobra X native multicolor separate from the ACE 2 Pro combo and uses its documented nozzles", () => {
