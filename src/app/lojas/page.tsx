@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPaginationRedirectPage } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Lojas de impressão 3D | ViraPeça 3D", description: "Conheça fabricantes independentes e explore suas vitrines de impressão 3D." };
@@ -16,6 +18,8 @@ export default async function StoreDirectory({ searchParams }: { searchParams: P
     .eq("status", "published").order("created_at", { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1)
     : { data: [], count: 0, error: null };
   const pages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
+  const redirectPage = getPaginationRedirectPage(page, pages);
+  if (supabase && !error && redirectPage !== null) redirect(`/lojas?pagina=${redirectPage}`);
   return <><SiteHeader /><main className="account-page shell store-directory"><div className="account-heading"><p className="eyebrow">OFICINAS INDEPENDENTES</p><h1>Lojas que dão forma<br /><em>às suas ideias.</em></h1><p>Conheça fabricantes aprovados e explore os produtos e serviços de cada oficina.</p></div>
     {error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar as lojas agora.</p> : data?.length ? <div className="store-directory-grid">{data.map((store) => <article className="store-directory-card" key={store.slug}>
       {store.logo_url ? <img src={store.logo_url} alt={`Logotipo de ${store.name}`} width="72" height="72" loading="lazy" /> : <span className="store-directory-monogram" aria-hidden="true">{store.name.slice(0, 1).toUpperCase()}</span>}

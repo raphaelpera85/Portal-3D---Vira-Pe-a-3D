@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { ProductIllustration } from "@/components/product-illustration";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { mapMarketplaceProduct } from "@/lib/marketplace-data";
 import { getSiteUrl } from "@/lib/site-url";
+import { getPaginationRedirectPage } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ pagina?: string }> };
@@ -56,6 +57,8 @@ export default async function StoreProfilePage({ params, searchParams }: Props) 
   ]);
   const products = (productResult.data ?? []).map((row) => mapMarketplaceProduct(row as Record<string, unknown>));
   const pages = Math.max(1, Math.ceil((productResult.count ?? 0) / pageSize));
+  const redirectPage = getPaginationRedirectPage(page, pages);
+  if (!productResult.error && redirectPage !== null) redirect(`/lojas/${encodeURIComponent(store.slug)}?pagina=${redirectPage}#produtos`);
   const productCards = products.map((product) => <article className="product-card" key={product.id}>
     <Link className={`product-art art-${product.color}`} href={`/produtos/${product.slug}`} aria-label={`Ver ${product.name}`}>
       {product.media[0] ? <img src={product.media[0]} alt={product.name} width="480" height="380" loading="lazy" /> : product.visual ? <ProductIllustration product={product} /> : <span className="product-placeholder" aria-hidden="true">3D</span>}
