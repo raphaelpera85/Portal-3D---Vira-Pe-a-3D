@@ -10,6 +10,11 @@ describe("public sitemap", () => {
 
   beforeEach(() => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://virapeca.example");
+    vi.stubEnv("SITE_LEGAL_PAGES_APPROVED", "false");
+    vi.stubEnv("SITE_LEGAL_NAME", "");
+    vi.stubEnv("SITE_LEGAL_ID", "");
+    vi.stubEnv("SITE_LEGAL_ADDRESS", "");
+    vi.stubEnv("SITE_PRIVACY_EMAIL", "");
     tables.clear();
     mocks.createSupabaseServerClient.mockResolvedValue({
       from: vi.fn((table: string) => {
@@ -38,5 +43,30 @@ describe("public sitemap", () => {
     expect(products?.eq).toHaveBeenCalledWith("catalog_status", "published");
     expect(products?.eq).toHaveBeenCalledWith("store.status", "published");
     expect(products?.eq).toHaveBeenCalledWith("category.active", true);
+  });
+
+  it("keeps legal pages out of the sitemap until approved with complete contact details", async () => {
+    vi.stubEnv("SITE_LEGAL_PAGES_APPROVED", "true");
+    vi.stubEnv("SITE_LEGAL_NAME", "ViraPeça 3D");
+    vi.stubEnv("SITE_LEGAL_ID", "00.000.000/0001-00");
+    vi.stubEnv("SITE_LEGAL_ADDRESS", "Santos, SP");
+
+    const urls = (await sitemap()).map((page) => page.url);
+
+    expect(urls).not.toContain("https://virapeca.example/privacidade");
+    expect(urls).not.toContain("https://virapeca.example/termos");
+  });
+
+  it("adds legal pages when approval and all required identity fields are configured", async () => {
+    vi.stubEnv("SITE_LEGAL_PAGES_APPROVED", "true");
+    vi.stubEnv("SITE_LEGAL_NAME", "ViraPeça 3D");
+    vi.stubEnv("SITE_LEGAL_ID", "00.000.000/0001-00");
+    vi.stubEnv("SITE_LEGAL_ADDRESS", "Santos, SP");
+    vi.stubEnv("SITE_PRIVACY_EMAIL", "privacidade@virapeca3d.com.br");
+
+    const urls = (await sitemap()).map((page) => page.url);
+
+    expect(urls).toContain("https://virapeca.example/privacidade");
+    expect(urls).toContain("https://virapeca.example/termos");
   });
 });

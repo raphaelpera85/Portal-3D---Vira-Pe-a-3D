@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { modelShowcase } from "@/lib/model-showcase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
+import { areLegalPagesIndexable } from "@/lib/legal-page-indexing";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,11 @@ async function fetchRowsInPages<T>(
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
   if (!base) return [];
-  const fixedPages: MetadataRoute.Sitemap = ["", "/calculadora", "/catalogos", "/modelos", "/visualizador", "/lojas", "/designers"].map((path) => ({
+  const fixedPaths = [
+    "", "/calculadora", "/catalogos", "/modelos", "/visualizador", "/lojas", "/designers",
+    ...(areLegalPagesIndexable() ? ["/privacidade", "/termos"] : []),
+  ];
+  const fixedPages: MetadataRoute.Sitemap = fixedPaths.map((path) => ({
     url: new URL(path, base).toString(),
     changeFrequency: path === "" ? "weekly" : "monthly",
     priority: path === "" ? 1 : 0.6,

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { LegalDocument } from "@/components/legal-document";
+import { areLegalPagesIndexable } from "@/lib/legal-page-indexing";
 
 export const metadata: Metadata = {
   title: "Termos de Uso | ViraPeça 3D",
   description: "Regras de uso do marketplace e dos recursos ViraPeça 3D.",
-  robots: process.env.SITE_LEGAL_PAGES_APPROVED === "true" && [process.env.SITE_LEGAL_NAME, process.env.SITE_LEGAL_ID, process.env.SITE_LEGAL_ADDRESS, process.env.SITE_PRIVACY_EMAIL].every((value) => value?.trim())
+  robots: areLegalPagesIndexable()
     ? { index: true, follow: true }
     : { index: false, follow: true },
 };

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { LegalDocument } from "@/components/legal-document";
+import { areLegalPagesIndexable } from "@/lib/legal-page-indexing";
 
 export const metadata: Metadata = {
   title: "Política de Privacidade | ViraPeça 3D",
   description: "Como a ViraPeça 3D usa e protege dados pessoais no marketplace.",
-  robots: process.env.SITE_LEGAL_PAGES_APPROVED === "true" && [process.env.SITE_LEGAL_NAME, process.env.SITE_LEGAL_ID, process.env.SITE_LEGAL_ADDRESS, process.env.SITE_PRIVACY_EMAIL].every((value) => value?.trim())
+  robots: areLegalPagesIndexable()
     ? { index: true, follow: true }
     : { index: false, follow: true },
 };
