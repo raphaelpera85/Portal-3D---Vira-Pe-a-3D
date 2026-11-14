@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { modelShowcaseCategories, type ShowcaseModel } from "@/lib/model-showcase";
 import visualIndex from "@/lib/model-showcase-visual-index.json";
 import { CatalogImageSearch } from "@/components/catalog-image-search";
@@ -14,7 +15,7 @@ function galleryUrl(query: string, category: string, page = 1) {
 function ModelCards({ models }: { models: ShowcaseModel[] }) {
   return <div className="model-gallery-grid" aria-live="polite">
     {models.map((model) => <article className="model-gallery-card" key={model.id}>
-      <Link className="model-gallery-image" href={`/modelos/${model.id}`} prefetch={false} aria-label={`Abrir ${model.name}, visualizar e baixar modelo 3D`}><img src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width="480" height="360" loading="lazy" /></Link>
+      <Link className="model-gallery-image" href={`/modelos/${model.id}`} prefetch={false} aria-label={`Abrir ${model.name}, visualizar e baixar modelo 3D`}><Image src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width={480} height={360} sizes="(max-width: 390px) 100vw, (max-width: 640px) 50vw, (max-width: 900px) 33vw, 25vw" loading="lazy" /></Link>
       <div className="model-gallery-copy"><Link className="model-gallery-summary" href={`/modelos/${model.id}`} prefetch={false}><div className="product-meta"><span>{model.category}</span><span aria-hidden="true">3MF</span></div><h3>{model.name}</h3></Link>
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={galleryUrl(tag, model.categorySlug)}>{tag}</Link></li>)}</ul>
       </div>
