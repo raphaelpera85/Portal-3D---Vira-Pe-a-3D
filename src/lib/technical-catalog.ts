@@ -178,6 +178,11 @@ const crealityK1MaxNozzleSource = {
   url: "https://store.creality.com/products/genuine-e3d-obxidian%E2%84%A2-high-flow-nozzle-assembly",
   checkedAt: "2026-11-12",
 };
+const sovolSv08MaxSource = {
+  label: "Sovol — SV08 Max official specifications",
+  url: "https://www.sovol3d.com/products/sovol-sv08-max-3d-printer",
+  checkedAt: "2026-11-14",
+};
 type SeededPrinterFields = Partial<Pick<PrinterEntry,
   "buildVolumeDescription" | "buildVolumeMm" | "extruders" | "filamentDiameterMm" | "maxNozzleTemperatureC"
   | "maxBedTemperatureC" | "heatedBed" | "enclosure" | "maximumSpeedMmPerSecond" | "maximumSpeedDescription"
@@ -222,6 +227,8 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "elegoo-neptune-4-type-c", brand: "ELEGOO", model: "Neptune 4", variant: "Type-C version", technology: "FDM", buildVolumeMm: { x: 225, y: 225, z: 265 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true, maximumSpeedDescription: "500 mm/s de deslocamento do cabeçote; velocidade de impressão recomendada não informada", technicalProperties: { maxToolheadSpeedMmPerSecond: 500, maxAccelerationMmPerSecondSquared: 20000, ratedPowerWatts: 310, manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "Nylon"] }, sourceUrl: "https://www.elegoo.com/products/elegoo-neptune-4-fdm-3d-printer", documentationUrl: "https://eu.elegoo.com/en-be/collections/edm-exclude/products/elegoo-neptune-4-fdm-3d-printer", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "flashforge-adventurer-5m", brand: "Flashforge", model: "Adventurer 5M", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 220 }, maximumSpeedMmPerSecond: 600, sourceUrl: "https://www.flashforge.com/products/adventurer-5m-3d-printer" }),
   seededPrinter({ id: "sovol-sv08", brand: "Sovol", model: "SV08", variant: "standard", technology: "FDM", buildVolumeMm: { x: 350, y: 350, z: 345 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 700, sourceUrl: "https://www.sovol3d.com/products/sovol-sv08-3d-printer" }),
+  seededPrinter({ id: "sovol-sv08-max", brand: "Sovol", model: "SV08 Max", variant: "standard", technology: "FDM", buildVolumeMm: { x: 500, y: 500, z: 500 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 700, technicalProperties: { motionSystem: "CoreXY", maxAccelerationMmPerSecondSquared: 40000, maxVolumetricFlowRateMm3PerSecond: 50, originalNozzleDiameterMm: 0.4, includedNozzleCount: 2, supportedNozzleDiametersMm: [0.4, 0.6, 0.8], chamberHeatingModule: "Opcional; vendido separadamente", ratedBedPowerWatts: 1300, ratedBedPowerNote: "Potência nominal da mesa; consumo médio não informado.", manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "PA", "PC", "PLA-CF", "PETG-CF", "HP-PLA"] }, sourceUrl: sovolSv08MaxSource.url, sourceLabel: sovolSv08MaxSource.label, checkedAt: sovolSv08MaxSource.checkedAt }),
+  seededPrinter({ id: "sovol-sv08-max-enclosure", brand: "Sovol", model: "SV08 Max", variant: "com gabinete", technology: "FDM", buildVolumeMm: { x: 500, y: 500, z: 450 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 700, technicalProperties: { motionSystem: "CoreXY", maxAccelerationMmPerSecondSquared: 40000, maxVolumetricFlowRateMm3PerSecond: 50, originalNozzleDiameterMm: 0.4, includedNozzleCount: 2, supportedNozzleDiametersMm: [0.4, 0.6, 0.8], chamberHeatingModule: "Opcional; vendido separadamente", ratedBedPowerWatts: 1300, ratedBedPowerNote: "Potência nominal da mesa; consumo médio não informado.", enclosureKitIncluded: true, manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "ASA", "PA", "PC", "PLA-CF", "PETG-CF", "HP-PLA"] }, sourceUrl: sovolSv08MaxSource.url, sourceLabel: sovolSv08MaxSource.label, checkedAt: sovolSv08MaxSource.checkedAt }),
   seededPrinter({ id: "qidi-plus4", brand: "QIDI Tech", model: "Plus4", variant: "standard", technology: "FDM", buildVolumeMm: { x: 305, y: 305, z: 280 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 850, technicalProperties: { activeChamberMaximumTemperatureC: 65, ratedPowerComponentsW: [450, 400] }, sourceUrl: "https://us.qidi3d.com/pages/qidi-plus-4-techspecs" }),
   seededPrinter({ id: "qidi-max4", brand: "QIDI Tech", model: "Max4", variant: "standard", technology: "FDM", buildVolumeMm: { x: 390, y: 390, z: 340 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedDescription: "800 mm/s de deslocamento do cabeçote; velocidade de impressão não informada", multicolorSystem: "QIDI Box (vendido separadamente)", technicalProperties: { maxToolheadSpeedMmPerSecond: 800, activeChamberMaximumTemperatureC: 65, maxAccelerationMmPerSecondSquared: 30000, ratedPowerComponentsW: [150, 500, 700], manufacturerSupportedMaterials: ["PLA", "ABS", "ASA", "PETG", "TPU", "PA", "PC", "PPS-CF"] }, sourceUrl: "https://us.qidi3d.com/pages/qidi-max4-techspecs", checkedAt: "2026-11-13" }),
   seededPrinter({ id: "qidi-q2", brand: "QIDI Tech", model: "Q2", variant: "standard", technology: "FDM", buildVolumeMm: { x: 270, y: 270, z: 256 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedDescription: "600 mm/s de deslocamento do cabeçote; velocidade de impressão não informada", multicolorSystem: "QIDI Box (vendido separadamente)", technicalProperties: { maxToolheadSpeedMmPerSecond: 600, activeChamberMaximumTemperatureC: 65, maxAccelerationMmPerSecondSquared: 20000, ratedPowerComponentsW: [350, 280], manufacturerSupportedMaterials: ["PLA", "PETG", "ABS", "ASA", "TPU", "PA", "PC", "PPS-CF"], maximumMulticolorFilamentsWithExtraBoxes: 16 }, sourceUrl: "https://us.qidi3d.com/products/qidi-q2", checkedAt: "2026-11-13" }),
@@ -1454,6 +1461,19 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[0.4, 0.6, 0.8].map((diameter) => ({
+    id: `sovol-sv08-max-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · Sovol SV08 Max`,
+    brand: "Sovol",
+    diameterMm: diameter,
+    material: null,
+    maxTemperatureC: 300,
+    abrasionResistant: null,
+    printerCompatibility: { "sovol-sv08-max": "compatible" as const, "sovol-sv08-max-enclosure": "compatible" as const },
+    printerCompatibilityConditions: { "sovol-sv08-max": diameter === 0.4 ? "A ficha lista dois bicos padrão de 0,4 mm; o material não foi especificado." : "Opção oficial para SV08 Max; material do bico não especificado.", "sovol-sv08-max-enclosure": diameter === 0.4 ? "A ficha lista dois bicos padrão de 0,4 mm; o material não foi especificado." : "Opção oficial para SV08 Max com gabinete; material do bico não especificado." },
+    original: diameter === 0.4,
+    sources: [sovolSv08MaxSource],
+  })),
   ...[0.25, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `anycubic-kobra-s1-max-${diameter}`,
     name: `Bico ${diameter === 0.25 ? "de latão" : "de aço endurecido"} ${diameter.toLocaleString("pt-BR")} mm · Kobra S1 Max`,
