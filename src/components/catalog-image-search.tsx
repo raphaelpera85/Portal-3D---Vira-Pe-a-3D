@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageUp, LoaderCircle } from "lucide-react";
 import { differenceHash, rankVisualCandidates, type RankedVisualCandidate, type VisualImageCandidate } from "@/lib/visual-image-search";
 
@@ -9,6 +9,7 @@ const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export function CatalogImageSearch({ configured, category, redirectPath = "/modelos", visualIndex = [] }: { configured: boolean; category: string; redirectPath?: string; visualIndex?: VisualImageCandidate[] }) {
   const [image, setImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [localLoading, setLocalLoading] = useState(false);
@@ -17,6 +18,16 @@ export function CatalogImageSearch({ configured, category, redirectPath = "/mode
   const [error, setError] = useState(false);
   const localSearchAvailable = visualIndex.length > 0;
   const canUpload = configured || localSearchAvailable;
+
+  useEffect(() => {
+    if (!image) {
+      setImagePreviewUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(image);
+    setImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [image]);
 
   async function searchLocally() {
     if (!image || !localSearchAvailable || localLoading || loading) return;
@@ -82,7 +93,7 @@ export function CatalogImageSearch({ configured, category, redirectPath = "/mode
 
   return <div className="catalog-image-search">
     <label className="catalog-image-file"><ImageUp size={16} aria-hidden="true" /> Buscar por imagem<input type="file" accept="image/png,image/jpeg,image/webp" disabled={!canUpload || loading || localLoading} onChange={(event) => selectImage(event.target.files?.[0] ?? null)} /></label>
-    {image && <span className="catalog-image-name">{image.name}</span>}
+    {image && imagePreviewUrl && <span className="catalog-image-selected"><img src={imagePreviewUrl} alt={`Imagem selecionada: ${image.name}`} width="44" height="44" /><span className="catalog-image-name">{image.name}</span></span>}
     {localSearchAvailable && <button className="catalog-image-submit" type="button" onClick={searchLocally} disabled={!image || localLoading || loading}>{localLoading ? <><LoaderCircle size={14} className="spin" /> Comparando…</> : "Comparar com prévias"}</button>}
     {configured ? <>
       <label className="catalog-image-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> Enviar a imagem ao Google Cloud Vision para reconhecer objetos e encontrar modelos relacionados.</label>

@@ -254,6 +254,8 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .catalog-image-file { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); cursor: pointer; }
 .catalog-image-file input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
 .catalog-image-file:focus-within { outline: 3px solid var(--brand); outline-offset: 3px; }
+.catalog-image-selected { display: inline-flex; min-width: 0; align-items: center; gap: 8px; }
+.catalog-image-selected img { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 4px; object-fit: cover; }
 .catalog-image-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .catalog-image-consent { display: inline-flex; max-width: 325px; align-items: flex-start; gap: 6px; line-height: 1.45; }
 .catalog-image-submit { padding: 8px 11px; border: 0; border-radius: 5px; background: var(--ink); color: var(--paper); font-size: 10px; font-weight: 700; cursor: pointer; }
