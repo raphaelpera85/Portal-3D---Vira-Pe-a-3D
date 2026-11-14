@@ -11,6 +11,11 @@ import { normalizeCouponCode } from "@/lib/coupon";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const validSlug = (value: unknown): value is string => typeof value === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+function cartResultUrl(result: string, couponCode: string | null) {
+  const params = new URLSearchParams({ resultado: result });
+  if (couponCode) params.set("cupom", couponCode);
+  return `/carrinho?${params.toString()}`;
+}
 
 export async function addProductToCart(formData: FormData): Promise<void> {
   const slug = formData.get("slug");
@@ -37,24 +42,38 @@ export async function addProductToCart(formData: FormData): Promise<void> {
 export async function setCartItemQuantity(formData: FormData): Promise<void> {
   const itemId = formData.get("itemId");
   const quantity = validateProductQuoteRequest({ quantity: formData.get("quantity") });
+  const rawCouponCode = formData.get("couponCode");
+  const couponCode = normalizeCouponCode(rawCouponCode);
   if (typeof itemId !== "string" || !uuidPattern.test(itemId) || !quantity) redirect("/carrinho?resultado=erro");
   const actor = await getUserWithRole("buyer");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("set_cart_item_quantity", { p_item_id: itemId, p_quantity: quantity.quantity });
   revalidatePath("/carrinho");
-  if (error) redirect("/carrinho?resultado=erro");
-  redirect("/carrinho?resultado=atualizado");
+  if (error) redirect(cartResultUrl("erro", couponCode));
+  if (rawCouponCode && !couponCode) redirect(cartResultUrl("cupom-invalido", null));
+  if (couponCode) {
+    const { error: couponError } = await actor.supabase.rpc("preview_marketplace_coupon", { p_code: couponCode });
+    if (couponError) redirect(cartResultUrl(couponError.code === "22023" ? "cupom-invalido" : "erro", couponCode));
+  }
+  redirect(cartResultUrl("atualizado", couponCode));
 }
 
 export async function removeCartItem(formData: FormData): Promise<void> {
   const itemId = formData.get("itemId");
+  const rawCouponCode = formData.get("couponCode");
+  const couponCode = normalizeCouponCode(rawCouponCode);
   if (typeof itemId !== "string" || !uuidPattern.test(itemId)) redirect("/carrinho?resultado=erro");
   const actor = await getUserWithRole("buyer");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("remove_cart_item", { p_item_id: itemId });
   revalidatePath("/carrinho");
-  if (error) redirect("/carrinho?resultado=erro");
-  redirect("/carrinho?resultado=atualizado");
+  if (error) redirect(cartResultUrl("erro", couponCode));
+  if (rawCouponCode && !couponCode) redirect(cartResultUrl("cupom-invalido", null));
+  if (couponCode) {
+    const { error: couponError } = await actor.supabase.rpc("preview_marketplace_coupon", { p_code: couponCode });
+    if (couponError) redirect(cartResultUrl(couponError.code === "22023" ? "cupom-invalido" : "erro", couponCode));
+  }
+  redirect(cartResultUrl("atualizado", couponCode));
 }
 
 export async function applyCartCoupon(formData: FormData): Promise<void> {

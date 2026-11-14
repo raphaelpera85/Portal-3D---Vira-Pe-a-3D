@@ -65,8 +65,8 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
               return <li key={item.productId}>
                 <div><strong>{item.productName}</strong><span>{formatBrl(item.priceBrl)} cada · subtotal {formatBrl(item.totalBrl)}</span></div>
                 <div className="cart-item-actions">
-                  <form action={setCartItemQuantity}><input type="hidden" name="itemId" value={itemId} /><label><span className="sr-only">Quantidade de {item.productName}</span><input aria-label={`Quantidade de ${item.productName}`} name="quantity" type="number" min="1" max="100" defaultValue={item.quantity} /></label><button className="button button-secondary" type="submit">Atualizar</button></form>
-                  <form action={removeCartItem}><input type="hidden" name="itemId" value={itemId} /><button className="button button-secondary" type="submit">Remover</button></form>
+                  <form action={setCartItemQuantity}><input type="hidden" name="itemId" value={itemId} />{couponCode && <input type="hidden" name="couponCode" value={couponCode} />}<label><span className="sr-only">Quantidade de {item.productName}</span><input aria-label={`Quantidade de ${item.productName}`} name="quantity" type="number" min="1" max="100" defaultValue={item.quantity} /></label><button className="button button-secondary" type="submit">Atualizar</button></form>
+                  <form action={removeCartItem}><input type="hidden" name="itemId" value={itemId} />{couponCode && <input type="hidden" name="couponCode" value={couponCode} />}<button className="button button-secondary" type="submit">Remover</button></form>
                 </div>
               </li>;
             })}</ul>
