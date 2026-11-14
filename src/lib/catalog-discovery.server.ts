@@ -1,10 +1,10 @@
 import "server-only";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { fetchAllCatalogRows } from "./catalog-source-monitor";
-import { getUnknownPrinterCandidates, parseAnycubicPrinterFeed, readLimitedResponseText } from "./catalog-discovery";
+import { getUnknownPrinterCandidates, officialPrinterFeeds, parseOfficialPrinterFeed, readLimitedResponseText } from "./catalog-discovery";
 
-const feedUrl = "https://store.anycubic.com/products.json?limit=250";
 const maxFeedBytes = 8 * 1024 * 1024;
+// shortcut: scan at most 1,250 products per source per run; persist cursors if a feed needs broader coverage.
 const maxFeedPages = 5;
 
 export async function runCatalogModelDiscovery() {
@@ -17,41 +17,61 @@ export async function runCatalogModelDiscovery() {
     const knownSourceUrls = (known.data ?? []).map((row) => row.source_url).filter((url): url is string => typeof url === "string");
     let checked = 0;
     let candidateCount = 0;
-    const feedTimeout = AbortSignal.timeout(20_000);
-    for (let page = 1; page <= maxFeedPages; page += 1) {
-      const url = new URL(feedUrl);
-      url.searchParams.set("page", String(page));
-      const response = await fetch(url, {
-        cache: "no-store", redirect: "manual", signal: feedTimeout,
-        headers: { accept: "application/json", "user-agent": "ViraPeca3D-CatalogDiscovery/1.0" },
-      });
-      if (!response.ok || (response.status >= 300 && response.status < 400) || !response.headers.get("content-type")?.includes("application/json")) {
-        return { ok: false, checked, candidates: candidateCount, sourceFailures: 1, storageFailures: 0 };
-      }
-      const payload: unknown = JSON.parse(await readLimitedResponseText(response, maxFeedBytes));
-      if (payload == null || typeof payload !== "object" || !Array.isArray((payload as { products?: unknown }).products)) {
-        return { ok: false, checked, candidates: candidateCount, sourceFailures: 1, storageFailures: 0 };
-      }
-      const products = (payload as { products: unknown[] }).products;
-      checked += parseAnycubicPrinterFeed(payload).length;
-      const candidates = getUnknownPrinterCandidates(payload, knownSourceUrls);
-      if (candidates.length) {
-        const { error } = await supabase.from("catalog_discovery_candidates").upsert(candidates.map((candidate) => ({
-          manufacturer: candidate.manufacturer,
-          product_title: candidate.title,
-          product_type: candidate.productType,
-          source_url: candidate.sourceUrl,
-        })), { onConflict: "source_url", ignoreDuplicates: true });
-        if (error?.code === "PGRST205" || error?.code === "42P01") {
-          return { ok: true, skipped: "migration-required", checked, candidates: candidateCount + candidates.length, sourceFailures: 0, storageFailures: 0 };
+    let sourceFailures = 0;
+    let storageFailures = 0;
+    let truncated = false;
+
+    for (const feed of officialPrinterFeeds) {
+      const feedTimeout = AbortSignal.timeout(6_000);
+      for (let page = 1; page <= maxFeedPages; page += 1) {
+        const url = new URL(feed.url);
+        url.searchParams.set("page", String(page));
+        try {
+          const response = await fetch(url, {
+            cache: "no-store", redirect: "manual", signal: feedTimeout,
+            headers: { accept: "application/json", "user-agent": "ViraPeca3D-CatalogDiscovery/1.0" },
+          });
+          if (!response.ok || (response.status >= 300 && response.status < 400) || !response.headers.get("content-type")?.includes("application/json")) {
+            sourceFailures += 1;
+            break;
+          }
+          const payload: unknown = JSON.parse(await readLimitedResponseText(response, maxFeedBytes));
+          if (payload == null || typeof payload !== "object" || !Array.isArray((payload as { products?: unknown }).products)) {
+            sourceFailures += 1;
+            break;
+          }
+          const products = (payload as { products: unknown[] }).products;
+          checked += parseOfficialPrinterFeed(payload, feed).length;
+          const candidates = getUnknownPrinterCandidates(payload, knownSourceUrls, feed);
+          if (candidates.length) {
+            const { error } = await supabase.from("catalog_discovery_candidates").upsert(candidates.map((candidate) => ({
+              manufacturer: candidate.manufacturer,
+              product_title: candidate.title,
+              product_type: candidate.productType,
+              source_url: candidate.sourceUrl,
+            })), { onConflict: "source_url", ignoreDuplicates: true });
+            if (error?.code === "PGRST205" || error?.code === "42P01") {
+              return { ok: true, skipped: "migration-required", checked, candidates: candidateCount + candidates.length, sourceFailures, storageFailures };
+            }
+            if (error) {
+              storageFailures += 1;
+              break;
+            }
+            candidateCount += candidates.length;
+          }
+          if (products.length < 250) break;
+          if (page === maxFeedPages) {
+            sourceFailures += 1;
+            truncated = true;
+          }
+        } catch {
+          sourceFailures += 1;
+          break;
         }
-        if (error) return { ok: false, checked, candidates: candidateCount, sourceFailures: 0, storageFailures: 1 };
-        candidateCount += candidates.length;
       }
-      if (products.length < 250) return { ok: true, checked, candidates: candidateCount, sourceFailures: 0, storageFailures: 0 };
     }
-    // shortcut: cap at 1,250 products per run; persist a feed cursor if the official catalog grows beyond this cap.
-    return { ok: false, checked, candidates: candidateCount, sourceFailures: 1, storageFailures: 0, truncated: true };
+
+    return { ok: sourceFailures === 0 && storageFailures === 0, checked, candidates: candidateCount, sourceFailures, storageFailures, ...(truncated ? { truncated: true } : {}) };
   } catch {
     return { ok: false, checked: 0, candidates: 0, sourceFailures: 1, storageFailures: 0 };
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getUnknownPrinterCandidates, parseAnycubicPrinterFeed, readLimitedResponseText } from "./catalog-discovery";
+import { getUnknownPrinterCandidates, officialPrinterFeeds, parseAnycubicPrinterFeed, parseOfficialPrinterFeed, readLimitedResponseText } from "./catalog-discovery";
 
 describe("Anycubic official product feed", () => {
   it("returns only published printer products with canonical source URLs", () => {
@@ -31,5 +31,27 @@ describe("Anycubic official product feed", () => {
       { title: "New Model", handle: "new-model", product_type: "FDM 3D Printer", vendor: "ANYCUBIC", published_at: "2026-11-03T00:00:00Z" },
     ] };
     expect(getUnknownPrinterCandidates(feed, ["https://store.anycubic.com/products/kobra-model?variant=123"]).map(({ title }) => title)).toEqual(["New Model"]);
+  });
+});
+
+describe("additional official printer feeds", () => {
+  it("accepts ELEGOO printer types and skips accessory bundles", () => {
+    expect(parseOfficialPrinterFeed({ products: [
+      { title: "Centauri 2 Combo", handle: "centauri-2-combo", product_type: "FDM 3D Printers", vendor: "ELEGOO", published_at: "2026-11-01T00:00:00Z" },
+      { title: "Saturn 4 Ultra Starter Bundle", handle: "saturn-4-ultra-starter-bundle", product_type: "LCD 3D Printers", vendor: "ELEGOO", published_at: "2026-11-01T00:00:00Z" },
+      { title: "Unrelated", handle: "unrelated", product_type: "FDM 3D Printers", vendor: "Other", published_at: "2026-11-01T00:00:00Z" },
+    ] }, officialPrinterFeeds[1])).toEqual([{
+      manufacturer: "ELEGOO", title: "Centauri 2 Combo", productType: "FDM 3D Printers", sourceUrl: "https://us.elegoo.com/products/centauri-2-combo",
+    }]);
+  });
+
+  it("accepts only Creality printer listings from its official printer collection", () => {
+    expect(parseOfficialPrinterFeed({ products: [
+      { title: "K2 SE 4C 3D Printer", handle: "k2-se-4c-3d-printer", product_type: "Bundles", vendor: "Creality Official Store", published_at: "2026-11-01T00:00:00Z" },
+      { title: "CFS Spare Part", handle: "cfs-spare-part", product_type: "Accessories", vendor: "Creality Official Store", published_at: "2026-11-01T00:00:00Z" },
+      { title: "Other Brand 3D Printer", handle: "other-printer", product_type: "FDM 3D Printers", vendor: "Other", published_at: "2026-11-01T00:00:00Z" },
+    ] }, officialPrinterFeeds[2])).toEqual([{
+      manufacturer: "Creality", title: "K2 SE 4C 3D Printer", productType: "3D Printer", sourceUrl: "https://us.store.creality.com/products/k2-se-4c-3d-printer",
+    }]);
   });
 });
