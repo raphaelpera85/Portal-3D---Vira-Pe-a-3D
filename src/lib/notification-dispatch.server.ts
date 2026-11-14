@@ -23,6 +23,14 @@ export async function dispatchNotificationQueue() {
       else deferred += 1;
       return;
     }
+    if (delivery.channel === "whatsapp") {
+      const { data: authorized, error: authorizationError } = await supabase.rpc("authorize_store_notification_whatsapp_delivery", { delivery_id: delivery.id });
+      if (authorizationError || authorized !== true) {
+        if (authorizationError) await supabase.rpc("fail_store_notification_delivery", { delivery_id: delivery.id, reason: "whatsapp_consent_check_failed" });
+        failed += 1;
+        return;
+      }
+    }
     const destinationUrl = new URL(getNotificationPanelPath(delivery.payload.notification_type), siteUrl).toString();
     const result = await sendNotificationDelivery(delivery, destinationUrl);
     if (result.ok) {
