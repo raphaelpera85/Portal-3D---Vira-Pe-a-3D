@@ -162,16 +162,24 @@ export function mergeTechnicalCatalogWithFallback(
   };
   const remap = <Value>(record: Record<string, Value> | null | undefined, ids: Map<string, string>) => record == null ? record :
     Object.fromEntries(Object.entries(record).map(([id, value]) => [ids.get(id) ?? id, value]));
+  const mergeProperties = (local: Record<string, unknown> = {}, primary: Record<string, unknown> = {}): Record<string, unknown> =>
+    Object.fromEntries([...new Set([...Object.keys(local), ...Object.keys(primary)])].map((key) => {
+      const localValue = local[key], primaryValue = primary[key];
+      return [key, localValue && primaryValue && typeof localValue === "object" && typeof primaryValue === "object"
+        && !Array.isArray(localValue) && !Array.isArray(primaryValue)
+        ? mergeProperties(localValue as Record<string, unknown>, primaryValue as Record<string, unknown>)
+        : Object.hasOwn(primary, key) ? primaryValue : localValue];
+    }));
 
   const materials = merge(database.materials, fallback.materials, materialKey, (local, primary) => ({
     ...local,
     ...primary,
-    technicalProperties: { ...local.technicalProperties, ...primary.technicalProperties },
+    technicalProperties: mergeProperties(local.technicalProperties, primary.technicalProperties),
   }));
   const printers = merge(database.printers, fallback.printers, printerKey, (local, primary) => ({
     ...local,
     ...primary,
-    technicalProperties: { ...local.technicalProperties, ...primary.technicalProperties },
+    technicalProperties: mergeProperties(local.technicalProperties, primary.technicalProperties),
     supportedMaterials: { ...remap(local.supportedMaterials, materials.ids), ...primary.supportedMaterials },
   }));
   const nozzles = merge(database.nozzles, fallback.nozzles, nozzleKey, (local, primary) => ({

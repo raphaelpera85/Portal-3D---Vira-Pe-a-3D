@@ -110,19 +110,19 @@ describe("mapTechnicalCatalog", () => {
     const fallbackPrinter = printers.find((printer) => printer.id === "prusa-mk4s")!;
     const fallbackMaterial = materials.find((material) => material.id === "prusament-pla")!;
     const catalog = mergeTechnicalCatalogWithFallback({
-      printers: [{ ...fallbackPrinter, id: "db-printer", technicalProperties: { databaseOnly: true, shared: "database" } }],
-      materials: [{ ...fallbackMaterial, id: "db-material", technicalProperties: { databaseOnly: true, shared: "database" } }],
+      printers: [{ ...fallbackPrinter, id: "db-printer", technicalProperties: { databaseOnly: true, shared: "database", nested: { databaseOnly: true, shared: "database" } } }],
+      materials: [{ ...fallbackMaterial, id: "db-material", technicalProperties: { databaseOnly: true, shared: "database", nested: { databaseOnly: true, shared: "database" } } }],
       nozzles: [],
     }, {
-      printers: [{ ...fallbackPrinter, technicalProperties: { localOnly: true, shared: "local" } }],
-      materials: [{ ...fallbackMaterial, technicalProperties: { localOnly: true, shared: "local" } }],
+      printers: [{ ...fallbackPrinter, technicalProperties: { localOnly: true, shared: "local", nested: { localOnly: true, shared: "local" } } }],
+      materials: [{ ...fallbackMaterial, technicalProperties: { localOnly: true, shared: "local", nested: { localOnly: true, shared: "local" } } }],
       nozzles: [],
     });
 
     expect(catalog.printers.find(({ id }) => id === "db-printer")?.technicalProperties)
-      .toEqual({ localOnly: true, databaseOnly: true, shared: "database" });
+      .toEqual({ localOnly: true, databaseOnly: true, shared: "database", nested: { localOnly: true, databaseOnly: true, shared: "database" } });
     expect(catalog.materials.find(({ id }) => id === "db-material")?.technicalProperties)
-      .toEqual({ localOnly: true, databaseOnly: true, shared: "database" });
+      .toEqual({ localOnly: true, databaseOnly: true, shared: "database", nested: { localOnly: true, databaseOnly: true, shared: "database" } });
   });
 
   it("keeps separate records when the database does not provide natural identity fields", () => {
