@@ -1110,6 +1110,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .extra-costs-list { display: grid; gap: 7px; margin-top: 12px; }
 .extra-cost-row { display: grid; grid-template-columns: 1fr 150px 32px; gap: 7px; }
 .extra-cost-row > label, .price-channel-row > label { display: grid; min-width: 0; gap: 4px; color: var(--muted); font-size: 8px; }
+.extra-cost-row > label:focus-within, .price-channel-row > label:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; }
 .extra-cost-row label { border: 1px solid var(--line); border-radius: 4px; }
 .extra-cost-row input { min-height: 34px; }
 .extra-cost-row > button, .price-remove-channel { display: grid; width: 31px; height: 34px; place-items: center; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--muted); cursor: pointer; }
