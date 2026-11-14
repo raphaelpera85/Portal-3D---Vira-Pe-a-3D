@@ -5,16 +5,23 @@ import { SiteHeader } from "@/components/site-header";
 import { startSellerOrderPayment } from "@/app/orcamentos/payment-actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { isMercadoPagoCheckoutUrl } from "@/lib/mercado-pago-payments";
+import { getPaginationRedirectPage } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Pedidos de modelagem | ViraPeça 3D", robots: { index: false, follow: false } };
+const pageSize = 24;
 
-export default async function BuyerModelingRequestsPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
-  const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("buyer")]);
+export default async function BuyerModelingRequestsPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string }> }) {
+  const [{ resultado, pagina }, actor] = await Promise.all([searchParams, getUserWithRole("buyer")]);
   if (!actor.supabase || !actor.authorized) redirect("/conta");
-  const { data: requests, error } = await actor.supabase.from("designer_service_requests")
-    .select("id, title, brief, due_date, reference_url, status, quote_amount_cents, quote_lead_days, quote_notes, work_started_at, work_completed_at, created_at")
-    .eq("buyer_id", actor.user!.id).order("created_at", { ascending: false }).limit(100);
+  const requestedPage = typeof pagina === "string" && /^\d+$/.test(pagina) ? Number(pagina) : 1;
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 10000) : 1;
+  const { data: requests, count, error } = await actor.supabase.from("designer_service_requests")
+    .select("id, title, brief, due_date, reference_url, status, quote_amount_cents, quote_lead_days, quote_notes, work_started_at, work_completed_at, created_at", { count: "exact" })
+    .eq("buyer_id", actor.user!.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
+  const pages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
+  const redirectPage = getPaginationRedirectPage(page, pages);
+  if (!error && redirectPage !== null) redirect(`/conta/modelagem?pagina=${redirectPage}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}`);
   const requestIds = (requests ?? []).map((request) => request.id);
   const deliveriesResult = requestIds.length ? await actor.supabase.from("designer_service_deliveries")
     .select("id, request_id, notes, created_at, designer_service_delivery_files(id, file_name, file_size, storage_path)")
@@ -51,7 +58,7 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
     {paymentResult.error && <p className="auth-notice is-error" role="status">O status do checkout está temporariamente indisponível.</p>}
     {deliveriesResult.error && <p className="auth-notice is-error" role="status">Os arquivos da entrega estão temporariamente indisponíveis.</p>}
     {error ? <section className="account-card"><h2>Pedidos indisponíveis</h2><p>A migration de serviços de designers ainda precisa ser aplicada ao Supabase.</p></section>
-      : requests?.length ? <div className="designer-service-request-list">{requests.map((request) => {
+      : requests?.length ? <><div className="designer-service-request-list">{requests.map((request) => {
         const payment = paymentsByRequest.get(request.id);
         const checkoutUrl = payment?.status === "pending" && payment.checkout_url && isMercadoPagoCheckoutUrl(payment.checkout_url) ? payment.checkout_url : null;
         return <article className="account-card designer-service-request-card" key={request.id}>
@@ -74,6 +81,6 @@ export default async function BuyerModelingRequestsPage({ searchParams }: { sear
             {deliveriesByRequest.get(request.id)!.files.map((file) => file.downloadUrl ? <p key={file.id}><a href={file.downloadUrl}>{file.file_name} · {(Number(file.file_size) / 1024 / 1024).toFixed(1)} MiB ↓</a></p> : <p key={file.id}>{file.file_name} · download indisponível</p>)}
           </div>}
         </div>}
-      </article>})}</div> : <section className="account-card"><h2>Nenhum pedido enviado</h2><p>Escolha um designer no <Link href="/designers">diretório de designers</Link> para iniciar um briefing de modelagem.</p></section>}
+      </article>})}</div>{pages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos pedidos de modelagem">{page > 1 ? <Link className="button button-secondary" href={`/conta/modelagem?pagina=${page - 1}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}`}>← Página anterior</Link> : <span />}<span>Página {page} de {pages} · {count} pedidos</span>{page < pages ? <Link className="button button-secondary" href={`/conta/modelagem?pagina=${page + 1}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}`}>Próxima página →</Link> : <span />}</nav>}</> : <section className="account-card"><h2>Nenhum pedido enviado</h2><p>Escolha um designer no <Link href="/designers">diretório de designers</Link> para iniciar um briefing de modelagem.</p></section>}
   </main></>;
 }
