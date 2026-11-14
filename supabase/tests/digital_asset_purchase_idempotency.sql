@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(10);
 
 insert into auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -47,7 +47,87 @@ select is(
 reset role;
 update public.digital_assets set personal_price_brl = 24.90
 where product_id = '22000000-0000-4000-8000-000000000003';
+insert into public.store_payment_connections (
+  store_id, provider_user_id, access_token_ciphertext, refresh_token_ciphertext, token_expires_at
+) values (
+  '22000000-0000-4000-8000-000000000002', 'digital-maker-payment-test', 'test-access-ciphertext',
+  'test-refresh-ciphertext', now() + interval '1 hour'
+);
+set local role service_role;
+set local request.jwt.claim.role = 'service_role';
+select throws_ok(
+  $$select * from public.create_product_purchase_payment(
+    (select id from public.product_quote_requests where buyer_id = '12000000-0000-4000-8000-000000000001'
+      and product_id = '22000000-0000-4000-8000-000000000003' and request_type = 'purchase' and license_type = 'personal'),
+    '12000000-0000-4000-8000-000000000001', 199)$$,
+  '22023',
+  'Digital asset price has changed',
+  'rejects checkout with a stale license price'
+);
+reset role;
 set local role authenticated;
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claim.sub = '12000000-0000-4000-8000-000000000001';
+select is(
+  public.request_digital_asset_purchase('22000000-0000-4000-8000-000000000003', 'personal'),
+  (select id from public.product_quote_requests
+    where buyer_id = '12000000-0000-4000-8000-000000000001'
+      and product_id = '22000000-0000-4000-8000-000000000003'
+      and request_type = 'purchase' and license_type = 'personal'),
+  'reuses the same request after the buyer confirms the updated price'
+);
+select is(
+  (select unit_price_brl from public.product_quote_requests
+    where buyer_id = '12000000-0000-4000-8000-000000000001'
+      and product_id = '22000000-0000-4000-8000-000000000003'
+      and request_type = 'purchase' and license_type = 'personal'),
+  24.90::numeric,
+  'refreshes reused request price after buyer confirms current listing again'
+);
+
+reset role;
+set local role service_role;
+set local request.jwt.claim.role = 'service_role';
+select is(
+  (select payment_total_cents from public.create_product_purchase_payment(
+    (select id from public.product_quote_requests where buyer_id = '12000000-0000-4000-8000-000000000001'
+      and product_id = '22000000-0000-4000-8000-000000000003' and request_type = 'purchase' and license_type = 'personal'),
+    '12000000-0000-4000-8000-000000000001', 249)),
+  2490::bigint,
+  'creates payment at current digital license price'
+);
+select is(
+  (select count(*)::integer from public.seller_order_payment_stock_reservations),
+  0,
+  'does not reserve physical stock for a digital purchase'
+);
+select is(
+  (select payment_id from public.create_product_purchase_payment(
+    (select id from public.product_quote_requests where buyer_id = '12000000-0000-4000-8000-000000000001'
+      and product_id = '22000000-0000-4000-8000-000000000003' and request_type = 'purchase' and license_type = 'personal'),
+    '12000000-0000-4000-8000-000000000001', 249)),
+  (select id from public.seller_order_payments where purchase_request_id =
+    (select id from public.product_quote_requests where buyer_id = '12000000-0000-4000-8000-000000000001'
+      and product_id = '22000000-0000-4000-8000-000000000003' and request_type = 'purchase' and license_type = 'personal')),
+  'returns the existing payment when checkout is repeated'
+);
+
+reset role;
+update public.digital_assets set personal_price_brl = 29.90
+where product_id = '22000000-0000-4000-8000-000000000003';
+set local role service_role;
+set local request.jwt.claim.role = 'service_role';
+select is(
+  (select payment_total_cents from public.create_product_purchase_payment(
+    (select id from public.product_quote_requests where buyer_id = '12000000-0000-4000-8000-000000000001'
+      and product_id = '22000000-0000-4000-8000-000000000003' and request_type = 'purchase' and license_type = 'personal'),
+    '12000000-0000-4000-8000-000000000001', 249)),
+  2490::bigint,
+  'keeps an existing active checkout at its confirmed price after listing price changes'
+);
+reset role;
+set local role authenticated;
+set local request.jwt.claim.role = 'authenticated';
 set local request.jwt.claim.sub = '12000000-0000-4000-8000-000000000001';
 select public.request_digital_asset_purchase('22000000-0000-4000-8000-000000000003', 'personal');
 select is(
@@ -56,7 +136,7 @@ select is(
       and product_id = '22000000-0000-4000-8000-000000000003'
       and request_type = 'purchase' and license_type = 'personal'),
   24.90::numeric,
-  'refreshes reused request price after buyer confirms current listing again'
+  'does not change the confirmed price while checkout remains active'
 );
 
 reset role;

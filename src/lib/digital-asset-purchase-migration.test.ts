@@ -19,7 +19,7 @@ describe("digital asset purchase migration", () => {
 
   it("accepts a licensed digital asset checkout without reserving physical stock", () => {
     expect(migration).toContain("p.listing_type = 'digital' and p.fulfillment_mode = 'digital'");
-    expect(migration).toMatch(/digital_assets d where d\.product_id = p\.id and d\.store_id = p\.store_id[\s\S]*?end\) = request_row\.unit_price_brl/);
+    expect(migration).toMatch(/if request_row\.license_type is not null and not exists \(select 1 from public\.digital_assets d[\s\S]*?end\) = request_row\.unit_price_brl\) then/);
     expect(migration).toMatch(/if request_row\.license_type is null then[\s\S]*?reserve_seller_order_product_stock[\s\S]*?end if;/);
     expect(migration).toContain("request_row.license_type in ('personal', 'commercial')");
   });

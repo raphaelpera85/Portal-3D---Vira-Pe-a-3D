@@ -72,8 +72,7 @@ begin
           (request_row.license_type is null and p.listing_type = 'physical')
           or (request_row.license_type in ('personal', 'commercial') and request_row.quantity = 1 and request_row.variant_id is null
             and p.listing_type = 'digital' and p.fulfillment_mode = 'digital'
-            and exists (select 1 from public.digital_assets d where d.product_id = p.id and d.store_id = p.store_id
-              and (case request_row.license_type when 'personal' then d.personal_price_brl else d.commercial_price_brl end) = request_row.unit_price_brl))
+            and exists (select 1 from public.digital_assets d where d.product_id = p.id and d.store_id = p.store_id))
         )
     ) then
     raise exception using errcode = '22023', message = 'Seller payment account or product is unavailable';
@@ -85,6 +84,11 @@ begin
   if exists (select 1 from public.seller_order_payments p where p.purchase_request_id = p_request_id
       and p.status in ('paid', 'partially_refunded', 'refunded', 'charged_back')) then
     raise exception using errcode = '22023', message = 'Product purchase has already been charged';
+  end if;
+  if request_row.license_type is not null and not exists (select 1 from public.digital_assets d
+      where d.product_id = request_row.product_id and d.store_id = request_row.store_id
+        and (case request_row.license_type when 'personal' then d.personal_price_brl else d.commercial_price_brl end) = request_row.unit_price_brl) then
+    raise exception using errcode = '22023', message = 'Digital asset price has changed';
   end if;
   if request_row.license_type is null then
     if request_row.variant_id is not null then
