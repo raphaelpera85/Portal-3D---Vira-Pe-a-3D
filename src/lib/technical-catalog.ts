@@ -543,7 +543,11 @@ export const printers: PrinterEntry[] = [{
     activatedCarbonFilter: true,
     maximumAmsUnits: 4,
   },
-  supportedMaterials: {},
+  supportedMaterials: {
+    "bambu-pla-basic": { status: "compatible", conditions: "PLA consta entre os filamentos suportados pela X1-Carbon." },
+    "bambu-petg-hf": { status: "compatible", conditions: "PETG consta entre os filamentos suportados pela X1-Carbon." },
+    "bambu-ppa-cf": { status: "conditional", conditions: "PA e compósitos de carbono constam como ideais, mas o perfil do PPA-CF pode exigir até 310 °C; a X1-Carbon chega a 300 °C. Use perfil validado dentro do limite da impressora." },
+  },
   sources: [bambuX1CarbonSource],
 }, {
   id: "bambu-x1-carbon-ams-combo",
@@ -577,7 +581,11 @@ export const printers: PrinterEntry[] = [{
     amsUnitsIncluded: 1,
     maximumAmsUnits: 4,
   },
-  supportedMaterials: {},
+  supportedMaterials: {
+    "bambu-pla-basic": { status: "compatible", conditions: "PLA consta entre os filamentos suportados pela X1-Carbon." },
+    "bambu-petg-hf": { status: "compatible", conditions: "PETG consta entre os filamentos suportados pela X1-Carbon." },
+    "bambu-ppa-cf": { status: "conditional", conditions: "PA e compósitos de carbono constam como ideais, mas o perfil do PPA-CF pode exigir até 310 °C; a X1-Carbon chega a 300 °C. Use perfil validado dentro do limite da impressora e alimente diretamente, pois a Bambu não confirma PPA-CF para o AMS." },
+  },
   sources: [bambuX1CarbonSource, bambuX1CarbonComboSource],
 }, {
   id: "bambu-p2s",

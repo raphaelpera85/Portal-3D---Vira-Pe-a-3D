@@ -50,6 +50,8 @@ Revisão em 13 de novembro de 2026. Esta página compara os requisitos de produt
 
 - A migration `20261114170000_seed_bambu_x1_carbon.sql` acrescenta X1-Carbon standard e AMS Combo ao fallback e ao catálogo versionado. Inclui quatro diâmetros de bico endurecido, materiais publicados, mesa e potência por tensão, e separa deslocamento do cabeçote de velocidade de impressão. A migration fica somente no Git, sem aplicação no Supabase.
 
+- A migration `20261114180000_link_bambu_x1_carbon_materials.sql` relaciona PLA Basic e PETG HF aos dois modelos X1-Carbon e mantém PPA-CF como condicional pelo limite térmico e pela alimentação do AMS. O fallback e a checagem de compatibilidade usam os mesmos estados; nenhuma relation de material é inferida apenas pela família.
+
 - Os perfis de impressão por modelo agora oferecem os mesmos 11 fatiadores reconhecidos pelo OCR (Anycubic Slicer Next, OrcaSlicer, Bambu Studio, PrusaSlicer, Creality Print, ElegooSlicer, FlashPrint, ideaMaker, UltiMaker Cura, Cura e Simplify3D), permitindo salvar e reutilizar dados importados desses formatos.
 
 - A edição manual de perfis agora preserva a cor e o material de um filamento mesmo quando massa e comprimento ainda não foram medidos; uma linha sem qualquer dado útil continua inválida.
