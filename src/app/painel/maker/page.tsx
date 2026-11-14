@@ -64,7 +64,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
   ]);
   if (storeResult.error) return <main id="main-content" tabIndex={-1} className="account-page shell"><p className="auth-notice is-error">Não foi possível carregar a loja. Confira as migrações do marketplace.</p></main>;
   const store = storeResult.data;
-  const orderQuery = store ? actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, maker_read_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipping_quote_packages, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, items:seller_purchase_order_items(product_name, unit_price_brl, quantity), deliveries:store_notification_deliveries(id, channel, status, last_error), payments:seller_order_payments(status, total_cents, marketplace_fee_cents), events:seller_purchase_order_events(id, event_type, description, created_at)", { count: "exact" }).eq("store_id", store.id) : null;
+  const orderQuery = store ? actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, maker_read_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipping_quote_packages, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, deliveries:store_notification_deliveries(id, channel, status, last_error), payments:seller_order_payments(status, total_cents, marketplace_fee_cents), events:seller_purchase_order_events(id, event_type, description, created_at)", { count: "exact" }).eq("store_id", store.id) : null;
   if (requestedOrderId) orderQuery?.eq("id", requestedOrderId);
   const paymentAdmin = store ? createSupabaseAdminClient() : null;
   const [paymentConnection, shippingOriginResult, shippingConnection, shippingLabelsResult] = await Promise.all([
@@ -94,7 +94,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     actor.supabase.from("store_notification_contacts").select("email, whatsapp, whatsapp_opt_in").eq("store_id", store.id).maybeSingle(),
     orderQuery ? orderQuery.order("created_at", { ascending: false }).order("id", { ascending: false }).range((requestedOrdersPage - 1) * purchaseOrdersPageSize, requestedOrdersPage * purchaseOrdersPageSize - 1) : Promise.resolve({ data: [], count: 0, error: null }),
     actor.supabase.from("seller_purchase_orders").select("id, store_name, created_at", { count: "exact" }).eq("store_id", store.id).is("maker_read_at", null).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(50),
-    fetchAllPages((from, to) => actor.supabase.from("maker_printers").select("id, catalog_model_id, manufacturer_snapshot, model_snapshot, variant_snapshot, custom_manufacturer, custom_model, nickname, purchased_at, purchase_price_brl, residual_value_brl, useful_life_hours, accumulated_hours, installed_nozzle, modifications, measured_average_power_w, power_measurement_conditions, energy_tariff_per_kwh, operational_status, maintenance:printer_maintenance_events(id, performed_at, created_at, maintenance_type, component, cost_brl, hours_at_event, notes, next_due_at, next_due_hours)").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).order("performed_at", { ascending: false, referencedTable: "printer_maintenance_events" }).order("created_at", { ascending: false, referencedTable: "printer_maintenance_events" }).range(from, to)),
+    fetchAllPages((from, to) => actor.supabase.from("maker_printers").select("id, catalog_model_id, manufacturer_snapshot, model_snapshot, variant_snapshot, custom_manufacturer, custom_model, nickname, purchased_at, purchase_price_brl, residual_value_brl, useful_life_hours, accumulated_hours, installed_nozzle, modifications, measured_average_power_w, power_measurement_conditions, energy_tariff_per_kwh, operational_status").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("printer_models").select("id, manufacturer, model, variant").eq("catalog_status", "published").order("manufacturer").order("model").order("id").range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("maker_consignment_items").select("id, establishment, product_name, unit_cost_brl, sale_price_brl, commission_percent, commission_fixed_fee_brl, created_at").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("maker_print_profiles").select("id, product_id, profile_name, profile_type, sharing_scope, review_status, review_note, maker_printer_id, printer_snapshot, material_id, material_snapshot, nozzle_id, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, print_hours, material_grams, material_by_color").eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
@@ -102,6 +102,33 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     fetchAllPages((from, to) => actor.supabase.from("nozzle_catalog").select("id, manufacturer, model, diameter_mm, interface").eq("catalog_status", "published").order("manufacturer").order("model").order("id").range(from, to)),
     actor.supabase.from("printer_model_suggestions").select("id, manufacturer, model, variant, technology, source_url, notes, status, review_note, printer_model_id, created_at").eq("suggested_by", actor.user.id).order("created_at", { ascending: false }).limit(50),
   ]) : [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: null, error: null }, { data: [], count: 0, error: null }, { data: [], count: 0, error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }];
+  const [orderItemsResult, printerMaintenanceResult] = await Promise.all([
+    fetchInChunks((orderResult.data ?? []).map((order) => order.id), (orderIds) => fetchAllPages((from, to) => actor.supabase.from("seller_purchase_order_items")
+      .select("id, order_id, product_name, unit_price_brl, quantity, created_at").in("order_id", orderIds)
+      .order("order_id").order("created_at").order("id").range(from, to))),
+    fetchInChunks((equipmentResult.data ?? []).map((printer) => printer.id), (printerIds) => fetchAllPages((from, to) => actor.supabase.from("printer_maintenance_events")
+      .select("id, printer_id, performed_at, created_at, maintenance_type, component, cost_brl, hours_at_event, notes, next_due_at, next_due_hours").in("printer_id", printerIds)
+      .order("printer_id").order("performed_at", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to))),
+  ]);
+  const orderItemsByOrder = new Map<string, NonNullable<typeof orderItemsResult.data>>();
+  for (const item of orderItemsResult.data ?? []) {
+    const orderItems = orderItemsByOrder.get(item.order_id) ?? [];
+    orderItems.push(item);
+    orderItemsByOrder.set(item.order_id, orderItems);
+  }
+  const makerOrders = (orderResult.data ?? []).map((order) => ({ ...order, items: orderItemsByOrder.get(order.id) ?? [] }));
+  const maintenanceByPrinter = new Map<string, NonNullable<typeof printerMaintenanceResult.data>>();
+  for (const event of printerMaintenanceResult.data ?? []) {
+    const printerEvents = maintenanceByPrinter.get(event.printer_id) ?? [];
+    printerEvents.push(event);
+    maintenanceByPrinter.set(event.printer_id, printerEvents);
+  }
+  const makerEquipment = (equipmentResult.data ?? []).map((printer) => ({
+    ...printer,
+    maintenance: maintenanceByPrinter.get(printer.id) ?? [],
+  }));
+  const equipmentHistoryError = Boolean(equipmentResult.error || printerMaintenanceResult.error);
+  const orderLoadError = Boolean(orderResult.error || orderItemsResult.error);
   const consignmentMovementsResult = await fetchInChunks((consignmentResult.data ?? []).map((item) => item.id), (itemIds) => fetchAllPages((from, to) => actor.supabase.from("maker_consignment_movements")
     .select("id, item_id, movement_type, quantity, notes, created_at").in("item_id", itemIds)
     .order("item_id").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)));
@@ -180,7 +207,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
             {resultado === "manutencao-horimetro-erro" && <p className="auth-notice is-error" role="alert">O registro foi salvo, mas o horímetro atual não foi atualizado. Edite os dados da impressora antes de calcular custos ou lembretes por horas. O registro existente foi preservado.</p>}
             {(resultado === "equipamento-erro" || resultado === "manutencao-erro") && <p className="auth-notice is-error" role="alert">Não foi possível salvar os dados. Confira os campos e as migrações técnicas.</p>}
             {resultado === "modelo-indisponivel" && <p className="auth-notice is-error" role="alert">O modelo selecionado deixou de estar disponível no catálogo. Atualize o cadastro usando a opção de equipamento próprio ou selecione outro modelo.</p>}
-            {equipmentResult.error ? <p className="auth-notice is-error" role="alert">O cadastro de equipamentos ficará disponível após aplicar a migração de impressoras do fabricante.</p> : <MakerEquipmentManager storeId={store.id} models={printerModelsResult.data ?? []} printers={(equipmentResult.data ?? []).map((printer) => ({ ...printer, maintenance: printer.maintenance ?? [] }))} />}
+            {equipmentHistoryError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar os equipamentos e o histórico de manutenção. Confira as migrações técnicas e tente novamente.</p> : <MakerEquipmentManager storeId={store.id} models={printerModelsResult.data ?? []} printers={makerEquipment} />}
             {resultado === "modelo-sugerido" && <p className="auth-notice is-success" role="status">Sugestão enviada para revisão. A aprovação cria um rascunho, que será conferido antes de aparecer no catálogo.</p>}
             {resultado === "modelo-sugestao-duplicada" && <p className="auth-notice" role="status">Já existe uma sugestão pendente para esse modelo.</p>}
             {resultado === "modelo-sugestao-limite" && <p className="auth-notice" role="status">Você já tem cinco sugestões aguardando revisão. Envie outra após a análise da equipe.</p>}
@@ -328,12 +355,12 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
             </section>
             <section id="pedidos" className="account-card maker-products-card"><span className="account-kicker">CARRINHO MULTIVENDEDOR</span><h2>{requestedOrderId ? "Pedido selecionado" : "Pedidos de compra"}</h2>
               {requestedOrderId && <p className="quote-meta"><Link className="viewer-back-link" href={`/painel/maker${resultado ? `?resultado=${encodeURIComponent(resultado)}` : ""}#pedidos`}>Ver todos os pedidos</Link></p>}
-              {orderResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar os pedidos do carrinho. Confira a migração do carrinho multivendedor.</p> : !orderResult.data?.length ? <p>{requestedOrderId ? "Pedido não encontrado nesta loja." : "Pedidos enviados pelo carrinho aparecerão aqui, agrupados por loja."}</p> : <div className="quote-list">
+              {orderLoadError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar os pedidos do carrinho. Confira as migrações do carrinho multivendedor.</p> : !makerOrders.length ? <p>{requestedOrderId ? "Pedido não encontrado nesta loja." : "Pedidos enviados pelo carrinho aparecerão aqui, agrupados por loja."}</p> : <div className="quote-list">
                 {resultado === "frete-ofertado" && <p className="auth-notice is-success" role="status">Cotação enviada ao comprador.</p>}
                 {resultado === "frete-erro" && <p className="auth-notice is-error" role="alert">Não foi possível enviar a cotação. Confira os dados e se o pedido ainda aguarda uma tarifa.</p>}{resultado === "frete-pacote-erro" && <p className="auth-notice is-error" role="alert">Preencha o CEP de origem e as dimensões e o peso da embalagem de todos os produtos do pedido.</p>}{resultado === "frete-sem-opcoes" && <p className="auth-notice is-error" role="alert">O Melhor Envio não retornou tarifas para este pedido e endereço.</p>}
                 {resultado === "pedido-enviado" && <p className="auth-notice is-success" role="status">Rastreio enviado ao comprador.</p>}{resultado === "pedido-pronto-retirada" && <p className="auth-notice is-success" role="status">Pedido marcado como pronto para retirada.</p>}
                 {resultado === "envio-erro" && <p className="auth-notice is-error" role="alert">Não foi possível atualizar o rastreio. Confira os dados e o pagamento confirmado.</p>}
-                {orderResult.data.map((order) => <article className="quote-maker-card" key={order.id} id={`order-${order.id}`}>
+                {makerOrders.map((order) => <article className="quote-maker-card" key={order.id} id={`order-${order.id}`}>
                   <div className="quote-card-heading"><div><span className="account-kicker">PEDIDO DA LOJA · {order.store_name}</span><h3>{order.items?.length ?? 0} produto(s)</h3><span className="quote-meta">Recebido em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(order.created_at))}</span></div><span className={`quote-status status-${order.status}`}>{order.status === "cancelled" ? "Cancelado pelo comprador" : !order.maker_read_at ? "Novo pedido" : order.status === "pending" ? "Aguardando resposta" : order.status === "accepted" ? "Disponibilidade confirmada" : "Pedido recusado"}</span></div>
                   <ul className="cart-order-items">{order.items?.map((item, index) => <li key={`${item.product_name}-${index}`}><span>{item.quantity} × {item.product_name}</span><strong>{formatBrlTotal(item.unit_price_brl, item.quantity)}</strong></li>)}</ul>
                   {Number(order.coupon_discount_cents ?? 0) > 0 && <p className="quote-meta">Cupom {order.coupon_code}: desconto de {formatBrl(Number(order.coupon_discount_cents) / 100)} · sua comissão é calculada sobre o valor após o desconto.</p>}

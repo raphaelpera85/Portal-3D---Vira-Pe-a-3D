@@ -7,7 +7,8 @@ import { MakerChargebackEvidenceForm } from "@/components/maker-chargeback-evide
 import { formatBrl } from "@/lib/money";
 import { getSellerPaymentSource, summarizeSellerPayments } from "@/lib/seller-payment-ledger";
 import { getUserWithRole } from "@/lib/auth-role.server";
-import { getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
+import { fetchAllPages, getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
+import { fetchInChunks } from "@/lib/fetch-in-chunks";
 import { refundSellerOrderPayment } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -47,8 +48,8 @@ export default async function MakerFinancePage({ searchParams }: { searchParams:
   const { data: store } = await actor.supabase.from("stores").select("id, name").eq("owner_user_id", actor.user.id).maybeSingle();
   if (!store) redirect("/painel/maker");
 
-  const paymentSelect = "id, order_id, purchase_request_id, custom_print_request_id, designer_service_request_id, designer_service:designer_service_requests(title), total_cents, marketplace_fee_cents, provider_order_id, status, provider_status, created_at, refunds:seller_order_refunds(id, amount_cents, status, provider_status, created_at), chargebacks:seller_order_chargebacks(case_id, case_status, reason, amount_cents, currency, coverage_applied, documentation_status, documentation_deadline, documents_sent_at, documents_count)";
-  const legacyPaymentSelect = "id, order_id, purchase_request_id, custom_print_request_id, total_cents, marketplace_fee_cents, provider_order_id, status, provider_status, created_at, refunds:seller_order_refunds(id, amount_cents, status, provider_status, created_at), chargebacks:seller_order_chargebacks(case_id, case_status, reason, amount_cents, currency, coverage_applied, documentation_status, documentation_deadline, documents_sent_at, documents_count)";
+  const paymentSelect = "id, order_id, purchase_request_id, custom_print_request_id, designer_service_request_id, designer_service:designer_service_requests(title), total_cents, marketplace_fee_cents, provider_order_id, status, provider_status, created_at";
+  const legacyPaymentSelect = "id, order_id, purchase_request_id, custom_print_request_id, total_cents, marketplace_fee_cents, provider_order_id, status, provider_status, created_at";
   const [summaryResult, paymentResult, periodResult] = await Promise.all([
     actor.supabase.from("seller_order_payments").select(paymentSelect)
       .eq("store_id", store.id).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(summaryLimit),
@@ -67,10 +68,37 @@ export default async function MakerFinancePage({ searchParams }: { searchParams:
   ]);
   const summaryRows = legacySummaryResult?.data ?? summaryResult.data ?? [];
   const payments = legacyPaymentResult?.data ?? paymentResult.data;
-  const paymentError = legacyPaymentResult ? legacyPaymentResult.error : paymentResult.error;
+  const basePaymentError = legacyPaymentResult ? legacyPaymentResult.error : paymentResult.error;
+  const paymentRows = payments ?? [];
+  const paymentIds = paymentRows.map((payment) => payment.id);
+  const [refundResult, chargebackResult] = await Promise.all([
+    fetchInChunks(paymentIds, (ids) => fetchAllPages((from, to) => actor.supabase.from("seller_order_refunds")
+      .select("id, payment_id, amount_cents, status, provider_status, created_at").in("payment_id", ids)
+      .order("payment_id").order("created_at").order("id").range(from, to))),
+    fetchInChunks(paymentIds, (ids) => fetchAllPages((from, to) => actor.supabase.from("seller_order_chargebacks")
+      .select("case_id, payment_id, case_status, reason, amount_cents, currency, coverage_applied, documentation_status, documentation_deadline, documents_sent_at, documents_count")
+      .in("payment_id", ids).order("payment_id").order("created_at").order("case_id").range(from, to))),
+  ]);
+  const refundsByPayment = new Map<string, NonNullable<typeof refundResult.data>>();
+  for (const refund of refundResult.data ?? []) {
+    const paymentRefunds = refundsByPayment.get(refund.payment_id) ?? [];
+    paymentRefunds.push(refund);
+    refundsByPayment.set(refund.payment_id, paymentRefunds);
+  }
+  const chargebacksByPayment = new Map<string, NonNullable<typeof chargebackResult.data>>();
+  for (const chargeback of chargebackResult.data ?? []) {
+    const paymentChargebacks = chargebacksByPayment.get(chargeback.payment_id) ?? [];
+    paymentChargebacks.push(chargeback);
+    chargebacksByPayment.set(chargeback.payment_id, paymentChargebacks);
+  }
+  const paymentError = basePaymentError || refundResult.error || chargebackResult.error;
   const summaryError = legacySummaryResult ? legacySummaryResult.error : summaryResult.error;
   const { data: periodMetrics, error: periodError } = periodResult;
-  const rows = payments ?? [];
+  const rows = paymentRows.map((payment) => ({
+    ...payment,
+    refunds: refundsByPayment.get(payment.id) ?? [],
+    chargebacks: chargebacksByPayment.get(payment.id) ?? [],
+  }));
   const summary = summarizeSellerPayments(summaryRows);
   const totalPayments = legacyPaymentResult?.count ?? paymentResult.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalPayments / pageSize));
