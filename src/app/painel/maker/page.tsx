@@ -27,9 +27,11 @@ import { normalizeProductVariantOptions, validateProductVariantSelection } from 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { melhorEnvioLabelScopes } from "@/lib/melhor-envio";
 import { getModelAssetUrl, modelShowcase } from "@/lib/model-showcase";
+import { getPaginationRedirectPage, parsePageNumber } from "@/lib/pagination";
 import { disconnectMercadoPago, startMercadoPagoConnect } from "./payment-actions";
 
 const mercadoPagoOAuthManagementUrl = "https://www.mercadopago.com.br/developers/pt/docs/subscriptions/additional-content/security/oauth/management?scope=prod";
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -45,8 +47,12 @@ type CustomPrintTargetRow = {
   events: { id: string; event_type: string; event_data: Record<string, unknown>; actor_user_id: string | null; created_at: string }[] | null;
 };
 
-export default async function MakerDashboard({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
-  const { resultado } = await searchParams;
+const purchaseOrdersPageSize = 24;
+
+export default async function MakerDashboard({ searchParams }: { searchParams: Promise<{ resultado?: string; pedidos?: string; pedido?: string }> }) {
+  const { resultado, pedidos, pedido } = await searchParams;
+  const requestedOrdersPage = parsePageNumber(pedidos) ?? 1;
+  const requestedOrderId = typeof pedido === "string" && uuidPattern.test(pedido) ? pedido : null;
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user) redirect("/conta");
   if (!actor.authorized) redirect("/conta");
@@ -57,6 +63,8 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
   ]);
   if (storeResult.error) return <main id="main-content" tabIndex={-1} className="account-page shell"><p className="auth-notice is-error">Não foi possível carregar a loja. Confira as migrações do marketplace.</p></main>;
   const store = storeResult.data;
+  const orderQuery = store ? actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, maker_read_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipping_quote_packages, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, items:seller_purchase_order_items(product_name, unit_price_brl, quantity), deliveries:store_notification_deliveries(id, channel, status, last_error), payments:seller_order_payments(status, total_cents, marketplace_fee_cents), events:seller_purchase_order_events(id, event_type, description, created_at)", { count: "exact" }).eq("store_id", store.id) : null;
+  if (requestedOrderId) orderQuery?.eq("id", requestedOrderId);
   const paymentAdmin = store ? createSupabaseAdminClient() : null;
   const [paymentConnection, shippingOriginResult, shippingConnection, shippingLabelsResult, shippingLabelPackagesResult] = await Promise.all([
     paymentAdmin && store
@@ -75,12 +83,13 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
       ? paymentAdmin.from("seller_order_shipping_label_packages").select("label_id, package_index, packages, status, tracking_code, tracking_url, print_url").in("label_id", (await paymentAdmin.from("seller_order_shipping_labels").select("id").eq("store_id", store.id)).data?.map((row) => row.id) ?? []).order("package_index")
       : Promise.resolve({ data: [], error: null }),
   ]);
-  const [productResult, quoteResult, customPrintResult, contactResult, orderResult, equipmentResult, printerModelsResult, consignmentResult, printProfileResult, materialsResult, nozzlesResult, printerSuggestionsResult] = store ? await Promise.all([
+  const [productResult, quoteResult, customPrintResult, contactResult, orderResult, unreadOrderResult, equipmentResult, printerModelsResult, consignmentResult, printProfileResult, materialsResult, nozzlesResult, printerSuggestionsResult] = store ? await Promise.all([
     actor.supabase.from("marketplace_products").select("id, name, slug, listing_type, catalog_status, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, package_weight_g, package_length_cm, package_width_cm, package_height_cm, product_properties, updated_at, variants:marketplace_product_variants(variant_options, price_brl, stock_quantity), digital_asset:digital_assets(file_name, has_preview, personal_price_brl, commercial_price_brl)").eq("store_id", store.id).order("created_at", { ascending: false }),
     actor.supabase.from("product_quote_requests").select("id, request_type, unit_price_brl, product_name, quantity, customization, due_date, status, created_at, maker_read_at, offer:product_quote_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error), payments:seller_order_payments(status, total_cents, marketplace_fee_cents, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }),
     actor.supabase.from("custom_print_request_targets").select("id, status, compatibility, maker_read_at, request:custom_print_requests!inner(id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, production_started_at, production_completed_at, delivery:custom_print_deliveries(*), payments:seller_order_payments(status, total_cents, marketplace_fee_cents, created_at)), offer:custom_print_offers(id, total_brl, lead_days, terms, status), deliveries:store_notification_deliveries(id, channel, status, last_error), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }),
     actor.supabase.from("store_notification_contacts").select("email, whatsapp, whatsapp_opt_in").eq("store_id", store.id).maybeSingle(),
-    actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, maker_read_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipping_quote_packages, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, items:seller_purchase_order_items(product_name, unit_price_brl, quantity), deliveries:store_notification_deliveries(id, channel, status, last_error), payments:seller_order_payments(status, total_cents, marketplace_fee_cents), events:seller_purchase_order_events(id, event_type, description, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }),
+    orderQuery ? orderQuery.order("created_at", { ascending: false }).order("id", { ascending: false }).range((requestedOrdersPage - 1) * purchaseOrdersPageSize, requestedOrdersPage * purchaseOrdersPageSize - 1) : Promise.resolve({ data: [], count: 0, error: null }),
+    actor.supabase.from("seller_purchase_orders").select("id, store_name, created_at", { count: "exact" }).eq("store_id", store.id).is("maker_read_at", null).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(50),
     actor.supabase.from("maker_printers").select("id, catalog_model_id, manufacturer_snapshot, model_snapshot, variant_snapshot, custom_manufacturer, custom_model, nickname, purchased_at, purchase_price_brl, residual_value_brl, useful_life_hours, accumulated_hours, installed_nozzle, modifications, measured_average_power_w, power_measurement_conditions, energy_tariff_per_kwh, operational_status, maintenance:printer_maintenance_events(id, performed_at, created_at, maintenance_type, component, cost_brl, hours_at_event, notes, next_due_at, next_due_hours)").eq("store_id", store.id).order("created_at", { ascending: false }).order("performed_at", { ascending: false, referencedTable: "printer_maintenance_events" }).order("created_at", { ascending: false, referencedTable: "printer_maintenance_events" }),
     actor.supabase.from("printer_models").select("id, manufacturer, model, variant").eq("catalog_status", "published").order("manufacturer").order("model"),
     actor.supabase.from("maker_consignment_items").select("id, establishment, product_name, unit_cost_brl, sale_price_brl, commission_percent, commission_fixed_fee_brl, created_at, movements:maker_consignment_movements(id, movement_type, quantity, notes, created_at)").eq("store_id", store.id).order("created_at", { ascending: false }).order("created_at", { ascending: false, referencedTable: "maker_consignment_movements" }),
@@ -88,12 +97,18 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     actor.supabase.from("material_catalog").select("id, manufacturer, product, family").eq("catalog_status", "published").order("manufacturer").order("product"),
     actor.supabase.from("nozzle_catalog").select("id, manufacturer, model, diameter_mm, interface").eq("catalog_status", "published").order("manufacturer").order("model"),
     actor.supabase.from("printer_model_suggestions").select("id, manufacturer, model, variant, technology, source_url, notes, status, review_note, printer_model_id, created_at").eq("suggested_by", actor.user.id).order("created_at", { ascending: false }).limit(50),
-  ]) : [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: null, error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }];
+  ]) : [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: null, error: null }, { data: [], count: 0, error: null }, { data: [], count: 0, error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }];
   const products = productResult.data ?? [];
   const unreadQuotes = quoteResult.data?.filter((request) => !request.maker_read_at) ?? [];
   const customPrintTargets = (customPrintResult.data ?? []) as unknown as CustomPrintTargetRow[];
   const unreadCustomPrints = customPrintTargets.filter((target) => !target.maker_read_at);
-  const unreadOrders = orderResult.data?.filter((order) => !order.maker_read_at) ?? [];
+  const unreadOrders = unreadOrderResult.data ?? [];
+  const unreadOrderCount = unreadOrderResult.count ?? unreadOrders.length;
+  const totalOrders = orderResult.count ?? 0;
+  const totalOrdersPages = Math.max(1, Math.ceil(totalOrders / purchaseOrdersPageSize));
+  const orderPageHref = (page: number) => `/painel/maker?pedidos=${page}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}#pedidos`;
+  const orderPageRedirect = getPaginationRedirectPage(requestedOrdersPage, totalOrdersPages);
+  if (!orderResult.error && orderPageRedirect !== null) redirect(orderPageHref(orderPageRedirect));
   const packagesByShippingLabel = new Map<string, NonNullable<typeof shippingLabelPackagesResult.data>>();
   for (const parcel of shippingLabelPackagesResult.data ?? []) packagesByShippingLabel.set(parcel.label_id,
     [...(packagesByShippingLabel.get(parcel.label_id) ?? []), parcel]);
@@ -116,12 +131,13 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
         {!store ? <section className="account-card"><h2>Loja não encontrada</h2><p>Solicite a aprovação da sua conta ou fale com a equipe.</p></section> : (
           <>
             <section className="store-status-card"><span className={`store-status-dot status-${store.status}`} /> <div><strong>Status da loja: {store.status === "published" ? "Publicada" : store.status === "pending" ? "Aguardando aprovação" : "Suspensa"}</strong><p>{store.city ? `${store.city}${store.state_code ? ` · ${store.state_code}` : ""} · ` : ""}{store.description}</p></div></section>
-            <section id="notificacoes" className="account-card maker-products-card" aria-labelledby="maker-notifications-title" aria-live="polite" aria-relevant="additions text"><span className="account-kicker">CENTRAL DE AVISOS {unreadQuotes.length + unreadCustomPrints.length + unreadOrders.length > 0 ? `· ${unreadQuotes.length + unreadCustomPrints.length + unreadOrders.length} NOVO(S)` : ""}</span><h2 id="maker-notifications-title">Notificações</h2>
+            <section id="notificacoes" className="account-card maker-products-card" aria-labelledby="maker-notifications-title" aria-live="polite" aria-relevant="additions text"><span className="account-kicker">CENTRAL DE AVISOS {unreadQuotes.length + unreadCustomPrints.length + unreadOrderCount > 0 ? `· ${unreadQuotes.length + unreadCustomPrints.length + unreadOrderCount} NOVO(S)` : ""}</span><h2 id="maker-notifications-title">Notificações</h2>
                 {resultado === "notificacao-lida-erro" && <p className="auth-notice is-error" role="alert">Não foi possível marcar o aviso como lido. Atualize a página e tente novamente.</p>}
-                {quoteResult.error || customPrintResult.error || orderResult.error ? <p>As notificações ficarão disponíveis após aplicar as migrações do marketplace.</p> : unreadQuotes.length === 0 && unreadCustomPrints.length === 0 && unreadOrders.length === 0 ? <p>Você não tem novas solicitações.</p> : <>
+                {quoteResult.error || customPrintResult.error || orderResult.error || unreadOrderResult.error ? <p>As notificações ficarão disponíveis após aplicar as migrações do marketplace.</p> : unreadQuotes.length === 0 && unreadCustomPrints.length === 0 && unreadOrderCount === 0 ? <p>Você não tem novas solicitações.</p> : <>
                   {unreadQuotes.length > 0 && <ul className="maker-notification-list">{unreadQuotes.map((request) => <li key={request.id}><div><strong>{request.product_name}</strong><span>{request.request_type === "purchase" ? "Solicitação de compra" : "Pedido de orçamento"} · quantidade {request.quantity}</span></div><div className="maker-notification-actions"><Link className="viewer-back-link" href={`#request-${request.id}`}>Ver pedido</Link><form action={markQuoteRequestNotificationRead}><input type="hidden" name="requestId" value={request.id} /><button className="button button-secondary" type="submit">Marcar como lida</button></form></div></li>)}</ul>}
                   {unreadCustomPrints.map((target) => <div className="maker-notification-actions" key={target.id}><span>Impressão personalizada · {Array.isArray(target.request) ? target.request[0]?.model_name : target.request?.model_name}</span><Link className="viewer-back-link" href={`#custom-${target.id}`}>Ver pedido</Link><form action={markCustomPrintTargetRead}><input type="hidden" name="targetId" value={target.id} /><button className="button button-secondary" type="submit">Marcar como lida</button></form></div>)}
-                  {unreadOrders.map((order) => <div className="maker-notification-actions" key={order.id}><span>Solicitação de compra · carrinho · {order.store_name}</span><Link className="viewer-back-link" href={`#order-${order.id}`}>Ver pedido</Link><form action={markSellerOrderNotificationRead}><input type="hidden" name="orderId" value={order.id} /><button className="button button-secondary" type="submit">Marcar como lida</button></form></div>)}
+                  {unreadOrders.map((order) => <div className="maker-notification-actions" key={order.id}><span>Solicitação de compra · carrinho · {order.store_name} · {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(order.created_at))}</span><Link className="viewer-back-link" href={`/painel/maker?pedido=${encodeURIComponent(order.id)}#pedidos`}>Ver pedido</Link><form action={markSellerOrderNotificationRead}><input type="hidden" name="orderId" value={order.id} /><button className="button button-secondary" type="submit">Marcar como lida</button></form></div>)}
+                  {unreadOrderCount > unreadOrders.length && <p className="quote-small-note">Exibindo os 50 avisos de compra não lidos mais recentes. Os demais continuam não lidos.</p>}
                 </>}
             </section>
             {(resultado === "loja-perfil-salvo" || resultado === "loja-perfil-erro") && <p className={`auth-notice ${resultado === "loja-perfil-erro" ? "is-error" : "is-success"}`} role="status">{resultado === "loja-perfil-salvo" ? "Perfil público da loja atualizado." : "Não foi possível salvar o perfil. Confira os campos e se a migração 035 foi aplicada."}</p>}
@@ -298,8 +314,9 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
                 })}
               </div>}
             </section>
-            <section className="account-card maker-products-card"><span className="account-kicker">CARRINHO MULTIVENDEDOR</span><h2>Pedidos de compra</h2>
-              {orderResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar os pedidos do carrinho. Confira a migração do carrinho multivendedor.</p> : !orderResult.data?.length ? <p>Pedidos enviados pelo carrinho aparecerão aqui, agrupados por loja.</p> : <div className="quote-list">
+            <section id="pedidos" className="account-card maker-products-card"><span className="account-kicker">CARRINHO MULTIVENDEDOR</span><h2>{requestedOrderId ? "Pedido selecionado" : "Pedidos de compra"}</h2>
+              {requestedOrderId && <p className="quote-meta"><Link className="viewer-back-link" href={`/painel/maker${resultado ? `?resultado=${encodeURIComponent(resultado)}` : ""}#pedidos`}>Ver todos os pedidos</Link></p>}
+              {orderResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar os pedidos do carrinho. Confira a migração do carrinho multivendedor.</p> : !orderResult.data?.length ? <p>{requestedOrderId ? "Pedido não encontrado nesta loja." : "Pedidos enviados pelo carrinho aparecerão aqui, agrupados por loja."}</p> : <div className="quote-list">
                 {resultado === "frete-ofertado" && <p className="auth-notice is-success" role="status">Cotação enviada ao comprador.</p>}
                 {resultado === "frete-erro" && <p className="auth-notice is-error" role="alert">Não foi possível enviar a cotação. Confira os dados e se o pedido ainda aguarda uma tarifa.</p>}{resultado === "frete-pacote-erro" && <p className="auth-notice is-error" role="alert">Preencha o CEP de origem e as dimensões e o peso da embalagem de todos os produtos do pedido.</p>}{resultado === "frete-sem-opcoes" && <p className="auth-notice is-error" role="alert">O Melhor Envio não retornou tarifas para este pedido e endereço.</p>}
                 {resultado === "pedido-enviado" && <p className="auth-notice is-success" role="status">Rastreio enviado ao comprador.</p>}{resultado === "pedido-pronto-retirada" && <p className="auth-notice is-success" role="status">Pedido marcado como pronto para retirada.</p>}
@@ -331,6 +348,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
                   {order.shipment_status !== "awaiting_shipment" && <div className="order-delivery-address"><span className="account-kicker">ENVIO · {order.shipment_status === "ready_for_pickup" ? "PRONTO PARA RETIRADA" : order.shipment_status === "shipped" ? "EM TRÂNSITO" : order.shipment_status === "delivered" ? "ENTREGUE" : "CONCLUÍDO"}</span><strong>{order.shipping_service}</strong>{order.shipment_status === "shipped" && <span>Código: {order.shipping_tracking_code}</span>}{order.shipping_expected_date && <span>Previsão: {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${order.shipping_expected_date}T00:00:00Z`))}</span>}{order.shipping_tracking_url && <a href={order.shipping_tracking_url} target="_blank" rel="noreferrer">Abrir rastreio</a>}</div>}
                   {Array.isArray(order.events) && order.events.length > 0 && <div className="quote-delivery-status" aria-label="Histórico do pedido"><strong>Histórico</strong>{[...order.events].sort((a, b) => a.created_at.localeCompare(b.created_at)).map((event) => <div key={event.id}><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.created_at))} · {event.description}</span></div>)}</div>}
                 </article>)}
+                {totalOrdersPages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos pedidos de compra">{requestedOrdersPage > 1 ? <Link className="button button-secondary" href={orderPageHref(requestedOrdersPage - 1)}>← Página anterior</Link> : <span />}<span>Página {requestedOrdersPage} de {totalOrdersPages} · {totalOrders} pedidos</span>{requestedOrdersPage < totalOrdersPages ? <Link className="button button-secondary" href={orderPageHref(requestedOrdersPage + 1)}>Próxima página →</Link> : <span />}</nav>}
               </div>}
             </section>
             {store.status === "published" && !productResult.error && !categoryResult.error && <MakerProductForm storeId={store.id} categories={categoryResult.data ?? []} modelPreviews={modelShowcase.flatMap(({ id, name, filePath }) => getModelAssetUrl(filePath) ? [{ id, name }] : [])} />}
