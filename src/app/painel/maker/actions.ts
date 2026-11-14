@@ -778,7 +778,8 @@ export async function markQuoteRequestNotificationRead(formData: FormData): Prom
   if (typeof requestId !== "string" || !uuidPattern.test(requestId)) return;
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) return;
-  await actor.supabase.from("product_quote_requests").update({ maker_read_at: new Date().toISOString() }).eq("id", requestId).is("maker_read_at", null);
+  const { error } = await actor.supabase.from("product_quote_requests").update({ maker_read_at: new Date().toISOString() }).eq("id", requestId).is("maker_read_at", null);
+  if (error) redirect("/painel/maker?resultado=notificacao-lida-erro#notificacoes");
   revalidatePath("/painel/maker");
 }
 
@@ -787,7 +788,8 @@ export async function markCustomPrintTargetRead(formData: FormData): Promise<voi
   if (typeof targetId !== "string" || !uuidPattern.test(targetId)) return;
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) return;
-  await actor.supabase.rpc("mark_custom_print_target_read", { p_target_id: targetId });
+  const { error } = await actor.supabase.rpc("mark_custom_print_target_read", { p_target_id: targetId });
+  if (error) redirect("/painel/maker?resultado=notificacao-lida-erro#notificacoes");
   revalidatePath("/painel/maker");
 }
 
@@ -984,7 +986,8 @@ export async function markSellerOrderNotificationRead(formData: FormData): Promi
   if (typeof orderId !== "string" || !uuidPattern.test(orderId)) return;
   const actor = await getUserWithRole("maker");
   if (!actor.supabase || !actor.user || !actor.authorized) return;
-  await actor.supabase.rpc("mark_seller_order_read", { p_order_id: orderId });
+  const { error } = await actor.supabase.rpc("mark_seller_order_read", { p_order_id: orderId });
+  if (error) redirect("/painel/maker?resultado=notificacao-lida-erro#notificacoes");
   revalidatePath("/painel/maker");
 }
 
