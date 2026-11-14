@@ -94,6 +94,7 @@ Verificação incremental do catálogo de modelos: o JSON contém 89 entradas em
 ## Próximas entregas
 
 - A checagem das variáveis de Production na Vercel em 14/11 encontrou Supabase, URL pública e cron configurados; Google Cloud Vision, Search Console, Resend, WhatsApp Business, Mercado Pago e Melhor Envio ainda não aparecem no ambiente. Os valores secretos não foram lidos. Os fluxos desses provedores continuam sem validação operacional até a configuração das respectivas credenciais e, quando necessário, templates ou contas sandbox.
+- A consulta somente leitura ao Supabase em 14/11 confirmou o projeto ativo e 130 migrations aplicadas; a mais recente registrada é `20261113142507_localize_flashforge_ad5x_technical_notes`. O repositório contém migrations posteriores, até `20261116010000_vendor_notification_status_and_current_email.sql`; o schema remoto está atrás do código. O advisor sinalizou funções `SECURITY DEFINER` executáveis por usuários autenticados e nove tabelas sem políticas RLS; estas últimas são tabelas de servidor sem acesso direto do cliente. Revisar as funções por autorização interna antes de mudar permissões; não revogar grants em lote.
 
 1. Configurar Google Vision, Resend e WhatsApp na Vercel e validar reconhecimento semântico de imagem, OCR e notificações externas sem expor segredos no Git.
 2. Configurar e testar o OAuth, compra de etiquetas e webhook Melhor Envio em sandbox; depois validar o fluxo de produção com vendedores reconectados.
