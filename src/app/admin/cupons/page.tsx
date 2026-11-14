@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { getUserWithRole } from "@/lib/auth-role.server";
+import { getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
 import { createCouponAction, setCouponActiveAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +23,22 @@ function CouponForm() {
   </form>;
 }
 
-export default async function CouponAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
-  const [{ resultado }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
+export default async function CouponAdminPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string }> }) {
+  const [{ resultado, pagina }, actor] = await Promise.all([searchParams, getUserWithRole("admin")]);
   if (!actor.supabase || !actor.authorized) redirect("/conta");
-  const coupons = await actor.supabase.from("marketplace_coupons").select("id, code, discount_percent_bps, discount_fixed_cents, active, created_at").order("created_at", { ascending: false }).limit(250);
+  const pageSize = 24;
+  const requestedPage = parsePageNumber(pagina) ?? 1;
+  const coupons = await actor.supabase.from("marketplace_coupons").select("id, code, discount_percent_bps, discount_fixed_cents, active, created_at", { count: "exact" })
+    .order("created_at", { ascending: false }).order("id", { ascending: false }).range((requestedPage - 1) * pageSize, requestedPage * pageSize - 1);
+  const pages = Math.max(1, Math.ceil((coupons.count ?? 0) / pageSize));
+  const redirectPage = getPaginationRedirectPage(requestedPage, pages);
+  if (!coupons.error && redirectPage !== null) redirect(`/admin/cupons?pagina=${redirectPage}${resultado ? `&resultado=${encodeURIComponent(resultado)}` : ""}`);
+  const pageHref = (targetPage: number) => {
+    const params = new URLSearchParams();
+    if (targetPage > 1) params.set("pagina", String(targetPage));
+    if (resultado) params.set("resultado", resultado);
+    return `/admin/cupons${params.size ? `?${params.toString()}` : ""}`;
+  };
   return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">GESTÃO DO MARKETPLACE</p><h1>Cupons</h1><p>Cupons são pagos pelos vendedores. A comissão da plataforma é calculada após o desconto.</p></div>
@@ -36,8 +49,9 @@ export default async function CouponAdminPage({ searchParams }: { searchParams: 
         const value = coupon.discount_percent_bps == null
           ? `R$ ${(Number(coupon.discount_fixed_cents) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
           : `${(Number(coupon.discount_percent_bps) / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
-        return <article className="account-card admin-banner-record" key={coupon.id}><div className="admin-banner-record-heading"><div><span className="account-kicker">{coupon.active ? "ATIVO" : "INATIVO"}</span><h3>{coupon.code} · {value}</h3><p>Criado em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(coupon.created_at))}</p></div><form action={setCouponActiveAction}><input type="hidden" name="couponId" value={coupon.id} /><input type="hidden" name="active" value={String(!coupon.active)} /><button className="button button-secondary" type="submit">{coupon.active ? "Desativar" : "Ativar"}</button></form></div></article>;
+        return <article className="account-card admin-banner-record" key={coupon.id}><div className="admin-banner-record-heading"><div><span className="account-kicker">{coupon.active ? "ATIVO" : "INATIVO"}</span><h3>{coupon.code} · {value}</h3><p>Criado em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(coupon.created_at))}</p></div><form action={setCouponActiveAction}><input type="hidden" name="couponId" value={coupon.id} /><input type="hidden" name="active" value={String(!coupon.active)} /><input type="hidden" name="pagina" value={requestedPage} /><button className="button button-secondary" type="submit">{coupon.active ? "Desativar" : "Ativar"}</button></form></div></article>;
       })}
+      {!coupons.error && (coupons.count ?? 0) > pageSize && <nav className="catalog-pagination admin-catalog-pagination" aria-label="Paginação dos cupons"><span>Página {requestedPage} de {pages} · {coupons.count} cupons</span><div>{requestedPage > 1 && <Link className="button button-secondary" href={pageHref(requestedPage - 1)}>Anterior</Link>}{requestedPage < pages && requestedPage < maxPageNumber && <Link className="button button-secondary" href={pageHref(requestedPage + 1)}>Próxima</Link>}</div></nav>}
     </section>
   </main><footer className="site-footer"><div className="shell footer-inner"><Link className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></Link><p>Cupons do marketplace.</p><span>© 2026 ViraPeça 3D</span></div></footer></>;
 }
