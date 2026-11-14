@@ -22,6 +22,7 @@ const prusaXlPlusMigration = readFileSync(new URL("../../supabase/migrations/202
 const prusaCoreOneLPlusMigration = readFileSync(new URL("../../supabase/migrations/20261114210000_seed_prusa_core_one_l_plus.sql", import.meta.url), "utf8");
 const flsunS1SeriesMigration = readFileSync(new URL("../../supabase/migrations/20261114220000_seed_flsun_s1_series.sql", import.meta.url), "utf8");
 const flsunT1Migration = readFileSync(new URL("../../supabase/migrations/20261114230000_seed_flsun_t1.sql", import.meta.url), "utf8");
+const flsunT1ProMigration = readFileSync(new URL("../../supabase/migrations/20261115000000_seed_flsun_t1_pro.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -97,7 +98,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(67);
+    expect(printers).toHaveLength(68);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -684,6 +685,17 @@ describe("verified technical catalog records", () => {
     });
     expect(flsunT1Migration).toContain("'FLSUN', 'T1', 'standard', 'FDM'");
     expect(flsunT1Migration).toContain("T1 brass nozzle");
+  });
+
+  it("does not copy unverified T1 specifications onto the T1 Pro", () => {
+    const printer = printers.find((entry) => entry.id === "flsun-t1-pro");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: null, buildVolumeDescription: "Cilíndrico · Ø260 × 330 mm",
+      maximumSpeedMmPerSecond: 1000, filamentDiameterMm: null, maxNozzleTemperatureC: null,
+      technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 260, buildHeightMm: 330 },
+    });
+    expect(flsunT1ProMigration).toContain("'FLSUN', 'T1 Pro', 'standard', 'FDM'");
   });
 
   it("keeps Raise3D single- and dual-extrusion volumes distinct", () => {
