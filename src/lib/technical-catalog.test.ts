@@ -149,13 +149,14 @@ describe("verified technical catalog records", () => {
       ["ELEGOO", "Centauri Carbon 2", "standard"],
       ["ELEGOO", "Neptune 4 Plus", "Type-C version"],
       ["ELEGOO", "Neptune 4 Max", "Type-C version"],
+      ["ELEGOO", "Saturn 4 Ultra", "16K"],
       ["Flashforge", "AD5X", "standard"],
       ["Flashforge", "Adventurer 5M Pro", "standard"],
     ];
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(100);
+    expect(printers).toHaveLength(101);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
