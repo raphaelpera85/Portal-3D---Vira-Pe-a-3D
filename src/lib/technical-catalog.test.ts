@@ -24,6 +24,7 @@ const flsunS1SeriesMigration = readFileSync(new URL("../../supabase/migrations/2
 const flsunT1Migration = readFileSync(new URL("../../supabase/migrations/20261114230000_seed_flsun_t1.sql", import.meta.url), "utf8");
 const flsunT1ProMigration = readFileSync(new URL("../../supabase/migrations/20261115000000_seed_flsun_t1_pro.sql", import.meta.url), "utf8");
 const flsunT1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261115010000_seed_flsun_t1_max.sql", import.meta.url), "utf8");
+const flsunV400Migration = readFileSync(new URL("../../supabase/migrations/20261115020000_seed_flsun_v400.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -99,7 +100,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(69);
+    expect(printers).toHaveLength(70);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -712,6 +713,19 @@ describe("verified technical catalog records", () => {
     expect(nozzles.find((nozzle) => nozzle.id === "flsun-t1-max-0.4")).toMatchObject({ diameterMm: 0.4, abrasionResistant: true });
     expect(flsunT1MaxMigration).toContain("'FLSUN', 'T1 Max', 'standard', 'FDM'");
     expect(flsunT1MaxMigration).toContain("T1 Max hardened steel nozzle");
+  });
+
+  it("keeps the V400 cylindrical volume and unresolved speed conflict explicit", () => {
+    const printer = printers.find((entry) => entry.id === "flsun-v400");
+
+    expect(printer).toMatchObject({
+      buildVolumeMm: null, buildVolumeDescription: "Cilíndrico · Ø300 × 410 mm (maior altura anunciada; limite local não detalhado)",
+      extruders: 1, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, maximumSpeedMmPerSecond: null,
+      technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 300, buildHeightMm: 410, heightDefinition: "highestPoint" },
+    });
+    expect(printer?.maximumSpeedDescription).toContain("600 mm/s");
+    expect(printer?.maximumSpeedDescription).toContain("400 mm/s");
+    expect(flsunV400Migration).toContain("'FLSUN', 'V400', 'standard', 'FDM'");
   });
 
   it("keeps Raise3D single- and dual-extrusion volumes distinct", () => {
