@@ -19,6 +19,7 @@ const bambuX1CarbonMigration = readFileSync(new URL("../../supabase/migrations/2
 const bambuX1CarbonMaterialMigration = readFileSync(new URL("../../supabase/migrations/20261114180000_link_bambu_x1_carbon_materials.sql", import.meta.url), "utf8");
 const bambuX1CarbonAdditionalMaterialMigration = readFileSync(new URL("../../supabase/migrations/20261114190000_link_bambu_x1_carbon_additional_materials.sql", import.meta.url), "utf8");
 const prusaXlPlusMigration = readFileSync(new URL("../../supabase/migrations/20261114200000_seed_prusa_xl_plus.sql", import.meta.url), "utf8");
+const prusaCoreOneLPlusMigration = readFileSync(new URL("../../supabase/migrations/20261114210000_seed_prusa_core_one_l_plus.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -40,6 +41,8 @@ describe("verified technical catalog records", () => {
       ["Creality", "K2 Pro", "standard"],
       ["Creality", "K2 Pro", "CFS Combo"],
       ["Prusa Research", "CORE One+", "Gen 2"],
+      ["Prusa Research", "CORE One L+", "standard"],
+      ["Prusa Research", "CORE One L+", "HT Hotend"],
       ["Prusa Research", "XL+", "Single-Tool"],
       ["Prusa Research", "XL+", "Five-Head"],
       ["Prusa Research", "MK4S", "standard"],
@@ -90,7 +93,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(62);
+    expect(printers).toHaveLength(64);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -308,6 +311,34 @@ describe("verified technical catalog records", () => {
     expect(k2ProMigration).toContain("'K2 Pro', 'standard'");
     expect(k2ProMigration).toContain("'K2 Pro', 'CFS Combo'");
     expect(k2ProMigration).toContain('"includedCfsUnits":1');
+  });
+
+  it("keeps CORE One L+ hotend versions distinct with exact nozzle and material compatibility", () => {
+    const standard = printers.find((item) => item.id === "prusa-core-one-l-plus");
+    const ht = printers.find((item) => item.id === "prusa-core-one-l-plus-ht");
+    const standardNozzles = nozzles.filter((item) => item.printerCompatibility?.["prusa-core-one-l-plus"] === "compatible");
+    const htNozzles = nozzles.filter((item) => item.printerCompatibility?.["prusa-core-one-l-plus-ht"] === "compatible");
+
+    expect(standard).toMatchObject({
+      buildVolumeMm: { x: 300, y: 300, z: 330 }, filamentDiameterMm: 1.75,
+      maxNozzleTemperatureC: 290, maxBedTemperatureC: 120, enclosure: true, maximumSpeedMmPerSecond: null,
+      technicalProperties: { activeChamberHeating: true, activeChamberMaximumTemperatureC: 60, maxNozzleTemperatureWithHighTempHotendC: 400 },
+      supportedMaterials: {
+        "prusament-pla": { status: "compatible" },
+        "prusament-asa": { status: "conditional" },
+        "prusament-pa11-cf": { status: "conditional" },
+      },
+    });
+    expect(ht).toMatchObject({
+      variant: "HT Hotend", maxNozzleTemperatureC: 400,
+      technicalProperties: { includedHotend: "HT Hotend", includedNozzle: "ObXidian 500 endurecido, 0,4 mm" },
+    });
+    expect(standardNozzles.map((item) => item.diameterMm).sort((a, b) => a - b)).toEqual([0.25, 0.4, 0.4, 0.4, 0.6, 0.8]);
+    expect(htNozzles).toEqual([expect.objectContaining({ diameterMm: 0.4, abrasionResistant: true, maxTemperatureC: 400 })]);
+    expect(prusaCoreOneLPlusMigration).toContain("'CORE One L+', 'standard'");
+    expect(prusaCoreOneLPlusMigration).toContain("'CORE One L+', 'HT Hotend'");
+    expect(prusaCoreOneLPlusMigration).toContain("'Prusament PA11 Carbon Fiber'");
+    expect(prusaCoreOneLPlusMigration).toContain("'Prusa Nozzle ObXidian 500'");
   });
 
   it("keeps XL+ single-tool and five-head variants with optional chamber upgrades explicit", () => {
