@@ -1,7 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { classifyCatalogSourceResponse, getAllowedCatalogRedirect, getCatalogSourceCheckCycleStart, hasCatalogSourceBeenCheckedInCycle, isAllowedCatalogSourceUrl } from "./catalog-source-monitor";
+import { classifyCatalogSourceResponse, fetchAllCatalogRows, getAllowedCatalogRedirect, getCatalogSourceCheckCycleStart, getCatalogSourcesDueForCheck, hasCatalogSourceBeenCheckedInCycle, isAllowedCatalogSourceUrl } from "./catalog-source-monitor";
 
 describe("weekly catalog source checks", () => {
+  it("loads catalog records beyond the PostgREST default page size", async () => {
+    const calls: number[][] = [];
+    const result = await fetchAllCatalogRows(async (from, to) => {
+      calls.push([from, to]);
+      return { data: Array.from({ length: Math.min(500, 1105 - from) }, (_, index) => from + index), error: null };
+    });
+    expect(calls).toEqual([[0, 499], [500, 999], [1000, 1499]]);
+    expect(result.data).toHaveLength(1105);
+  });
+
+  it("prioritizes sources never checked or checked longest ago, with stable ties", () => {
+    const date = new Date("2026-11-16T12:00:00Z");
+    const sources = ["c", "b", "a"].map((id) => ({ catalog_type: "printer", id, source_url: `https://bambulab.com/${id}` }));
+    const watches = [
+      { catalog_type: "printer", record_id: "a", source_url: "https://bambulab.com/a", last_checked_at: "2026-11-09T09:00:00Z" },
+      { catalog_type: "printer", record_id: "b", source_url: "https://bambulab.com/b", last_checked_at: "2026-11-09T09:00:00Z" },
+    ];
+    expect(getCatalogSourcesDueForCheck(sources, watches, date).map(({ id }) => id)).toEqual(["c", "a", "b"]);
+    expect(getCatalogSourcesDueForCheck(sources, watches, date, "1", 2).map(({ id }) => id)).toEqual(["c", "a"]);
+  });
+
   it("only permits HTTPS sources on a known or explicitly approved manufacturer host", () => {
     expect(isAllowedCatalogSourceUrl("https://store.anycubic.com/products/kobra-3")).toBe(true);
     expect(isAllowedCatalogSourceUrl("https://bambulab-us.myshopify.com/products/pla-basic-filament")).toBe(true);

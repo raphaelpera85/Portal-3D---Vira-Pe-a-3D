@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { classifyCatalogSourceResponse, getAllowedCatalogRedirect, hasCatalogSourceBeenCheckedInCycle, isAllowedCatalogSourceUrl, type CatalogSourceEvent } from "./catalog-source-monitor";
+import { classifyCatalogSourceResponse, fetchAllCatalogRows, getAllowedCatalogRedirect, getCatalogSourcesDueForCheck, isAllowedCatalogSourceUrl, type CatalogSourceEvent } from "./catalog-source-monitor";
 import { fetchCatalogSourceContentFingerprint } from "./catalog-source-content.server";
 
 type CatalogType = "printer" | "material" | "nozzle";
@@ -34,9 +34,9 @@ export async function runCatalogSourceCheck(now = new Date()) {
   if (!supabase) return { ok: false, skipped: null, checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 1 };
 
   const [printerSources, materialSources, nozzleSources] = await Promise.all([
-    supabase.from("printer_models").select("id, manufacturer, model, variant, source_url").eq("catalog_status", "published").not("source_url", "is", null).limit(1000),
-    supabase.from("material_catalog").select("id, manufacturer, product, source_url").eq("catalog_status", "published").not("source_url", "is", null).limit(1000),
-    supabase.from("nozzle_catalog").select("id, manufacturer, model, interface, source_url").eq("catalog_status", "published").not("source_url", "is", null).limit(1000),
+    fetchAllCatalogRows(async (from, to) => await supabase.from("printer_models").select("id, manufacturer, model, variant, source_url").eq("catalog_status", "published").not("source_url", "is", null).order("id").range(from, to)),
+    fetchAllCatalogRows(async (from, to) => await supabase.from("material_catalog").select("id, manufacturer, product, source_url").eq("catalog_status", "published").not("source_url", "is", null).order("id").range(from, to)),
+    fetchAllCatalogRows(async (from, to) => await supabase.from("nozzle_catalog").select("id, manufacturer, model, interface, source_url").eq("catalog_status", "published").not("source_url", "is", null).order("id").range(from, to)),
   ]);
   if (printerSources.error || materialSources.error || nozzleSources.error) return { ok: false, skipped: null, checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 1 };
   const sourceRows: SourceRecord[] = [
@@ -45,23 +45,11 @@ export async function runCatalogSourceCheck(now = new Date()) {
     ...(nozzleSources.data ?? []).map((row) => ({ catalog_type: "nozzle" as const, id: row.id, record_label: [row.manufacturer, row.model, row.interface].filter(Boolean).join(" "), source_url: row.source_url! })),
   ];
 
-  const stateRows = await Promise.all(catalogTypes.map(async (catalog_type) => {
-    const ids = sourceRows.filter((row) => row.catalog_type === catalog_type).map((row) => row.id);
-    if (!ids.length) return [] as WatchState[];
-    const { data, error } = await supabase.from("catalog_source_watch_state").select("catalog_type, record_id, source_url, etag, last_modified, content_sha256, last_checked_at").eq("catalog_type", catalog_type).in("record_id", ids);
-    return error ? null : data as WatchState[];
-  }));
-  if (stateRows.some((rows) => rows == null)) return { ok: false, skipped: null, checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 1 };
-  const states = new Map((stateRows.flat() as WatchState[]).map((row) => [`${row.catalog_type}:${row.record_id}`, row]));
-  const ordered = sourceRows.filter((record) => {
-    const previous = states.get(`${record.catalog_type}:${record.id}`);
-    return previous?.source_url !== record.source_url || !hasCatalogSourceBeenCheckedInCycle(previous?.last_checked_at, now, process.env.CATALOG_SOURCE_CHECK_DAY_UTC);
-  }).sort((left, right) => {
-    const a = states.get(`${left.catalog_type}:${left.id}`)?.last_checked_at ?? "";
-    const b = states.get(`${right.catalog_type}:${right.id}`)?.last_checked_at ?? "";
-    return a.localeCompare(b);
-  // shortcut: cap each daily batch at 24 for the 60s function budget; add resumable workers if sources exceed 168 per week.
-  }).slice(0, 24);
+  const stateRows = await Promise.all(catalogTypes.map((catalog_type) => fetchAllCatalogRows(async (from, to) => await supabase.from("catalog_source_watch_state").select("catalog_type, record_id, source_url, etag, last_modified, content_sha256, last_checked_at").eq("catalog_type", catalog_type).order("record_id").range(from, to))));
+  if (stateRows.some((rows) => rows.error)) return { ok: false, skipped: null, checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 1 };
+  const watches = (stateRows.flatMap((rows) => rows.data ?? []) as WatchState[]);
+  const states = new Map(watches.map((row) => [`${row.catalog_type}:${row.record_id}`, row]));
+  const ordered = getCatalogSourcesDueForCheck(sourceRows, watches, now, process.env.CATALOG_SOURCE_CHECK_DAY_UTC, 24);
   if (!ordered.length) return { ok: true, skipped: "all-sources-checked-this-cycle", checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 0 };
   const extraHosts = process.env.CATALOG_SOURCE_ALLOWED_HOSTS ?? "";
   const counts = { ok: true, skipped: null as string | null, checked: 0, alerts: 0, uncheckable: 0, sourceFailures: 0, storageFailures: 0 };

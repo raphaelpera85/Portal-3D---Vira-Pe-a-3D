@@ -206,6 +206,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
         })}
         {data.map((request) => {
           const offer = Array.isArray(request.offer) ? request.offer[0] : request.offer;
+          const product = Array.isArray(request.product) ? request.product[0] : request.product;
           const payment = [...(request.payments ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
           return <article className="account-card quote-card" key={request.id}>
             <div className="quote-card-heading"><div><span className="account-kicker">{request.request_type === "purchase" ? "SOLICITAÇÃO DE COMPRA" : "ORÇAMENTO"} · {request.store_name}</span><h2>{request.product_name}</h2></div><span className={`quote-status status-${request.status}`}>{requestStatus(request.status, request.request_type)}</span></div>
@@ -222,7 +223,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
               {payment?.status === "creating" && <p className="quote-small-note" role="status">O checkout antigo ainda está sendo preparado. Atualize esta página antes de enviar outro pedido.</p>}
               {payment?.status === "pending" && <PendingPaymentCancellation payment={payment} />}
               {payment?.status === "paid" && <p className="quote-small-note">Este pedido já foi pago. Entre em contato com a loja para combinar a entrega.</p>}
-              {!payment || !["creating", "pending", "paid"].includes(payment.status) ? typeof request.product?.slug === "string" && <Link className="button button-secondary" href={`/produtos/${encodeURIComponent(request.product.slug)}#comprar`}>Abrir produto e adicionar ao carrinho</Link> : null}
+              {!payment || !["creating", "pending", "paid"].includes(payment.status) ? typeof product?.slug === "string" && <Link className="button button-secondary" href={`/produtos/${encodeURIComponent(product.slug)}#comprar`}>Abrir produto e adicionar ao carrinho</Link> : null}
             </>}
             {request.status === "accepted" && request.request_type === "purchase" && request.license_type && <>
               {payment?.status === "charged_back" ? <p className="auth-notice is-error" role="status">O Mercado Pago registrou uma contestação deste pagamento. Não faça outro pagamento; fale com a loja e consulte sua conta Mercado Pago.</p>

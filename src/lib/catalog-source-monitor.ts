@@ -1,5 +1,30 @@
 export type CatalogSourceEvent = "source_changed" | "source_unavailable" | "source_moved" | "source_check_failed";
 export type CatalogWatchState = "current" | "unavailable" | "moved" | "changed" | "uncheckable" | "failed";
+export type CatalogSourceCandidate = { catalog_type: string; id: string; source_url: string };
+export type CatalogSourceWatch = { catalog_type: string; record_id: string; source_url: string; last_checked_at: string };
+
+export async function fetchAllCatalogRows<T>(fetchPage: (from: number, to: number) => Promise<{ data: T[] | null; error: unknown }>, pageSize = 500) {
+  const rows: T[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < pageSize) return { data: rows, error: null };
+  }
+}
+
+export function getCatalogSourcesDueForCheck<T extends CatalogSourceCandidate, S extends CatalogSourceWatch>(sources: T[], watches: S[], now: Date, configuredDay = "1", limit = 24) {
+  const states = new Map(watches.map((watch) => [`${watch.catalog_type}:${watch.record_id}`, watch]));
+  return sources.filter((source) => {
+    const previous = states.get(`${source.catalog_type}:${source.id}`);
+    return previous?.source_url !== source.source_url || !hasCatalogSourceBeenCheckedInCycle(previous?.last_checked_at, now, configuredDay);
+  }).sort((left, right) => {
+    const a = states.get(`${left.catalog_type}:${left.id}`)?.last_checked_at ?? "";
+    const b = states.get(`${right.catalog_type}:${right.id}`)?.last_checked_at ?? "";
+    return a.localeCompare(b) || left.catalog_type.localeCompare(right.catalog_type) || left.id.localeCompare(right.id);
+  }).slice(0, limit);
+}
 
 const knownOfficialHosts = [
   "anycubic.com", "creality.com", "elegoo.com", "prusa3d.com", "flashforge.com", "sovol3d.com",
