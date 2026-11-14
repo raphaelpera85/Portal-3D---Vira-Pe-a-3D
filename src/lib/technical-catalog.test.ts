@@ -37,6 +37,7 @@ const crealityK1MaxMigration = readFileSync(new URL("../../supabase/migrations/2
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 const crealityHyperPlaMigration = readFileSync(new URL("../../supabase/migrations/20261116000000_enrich_creality_hyper_pla.sql", import.meta.url), "utf8");
 const elegooMars5UltraMigration = readFileSync(new URL("../../supabase/migrations/20261116030000_seed_elegoo_mars_5_ultra.sql", import.meta.url), "utf8");
+const elegooMars5Migration = readFileSync(new URL("../../supabase/migrations/20261116040000_seed_elegoo_mars_5.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("includes official Hyper PLA temperatures, settings, and named colors without guessed hex values", () => {
@@ -152,13 +153,14 @@ describe("verified technical catalog records", () => {
       ["ELEGOO", "Neptune 4 Max", "Type-C version"],
       ["ELEGOO", "Saturn 4 Ultra", "16K"],
       ["ELEGOO", "Mars 5 Ultra", "standard"],
+      ["ELEGOO", "Mars 5", "standard"],
       ["Flashforge", "AD5X", "standard"],
       ["Flashforge", "Adventurer 5M Pro", "standard"],
     ];
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(102);
+    expect(printers).toHaveLength(103);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -176,6 +178,21 @@ describe("verified technical catalog records", () => {
     });
     expect(elegooMars5UltraMigration).toContain("'ELEGOO', 'Mars 5 Ultra', 'standard', 'MSLA', 'published'");
     expect(elegooMars5UltraMigration).toContain('"resolutionPixels":"8520x4320"');
+  });
+
+  it("keeps official Mars 5 MSLA specifications in fallback and migration", () => {
+    const mars5 = printers.find((printer) => printer.id === "elegoo-mars-5");
+
+    expect(mars5).toMatchObject({
+      technology: "MSLA", buildVolumeMm: { x: 143.43, y: 89.6, z: 150 },
+      technicalProperties: {
+        resolution: "4K", resolutionPixels: "4098x2560", resolutionXYMicrons: [35, 35],
+        layerHeightRangeMm: { min: 0.01, max: 0.2 }, zAxisAccuracyMm: 0.02,
+        maxPrintSpeedMmPerHour: 70, wavelengthNm: 405, connectivity: ["USB"],
+      },
+    });
+    expect(elegooMars5Migration).toContain("'ELEGOO', 'Mars 5', 'standard', 'MSLA', 'published'");
+    expect(elegooMars5Migration).toContain('"resolutionPixels":"4098x2560"');
   });
 
   it("distinguishes SPARKX i7 filament system configurations", () => {
