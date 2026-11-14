@@ -76,7 +76,7 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
             <p className="product-price">{product.priceLabel}</p>
           </article>
         ))}
-        {products.length === 0 && <p className="empty-state">{emptyState === "unavailable" ? "O catálogo não pôde ser carregado agora." : emptyState === "no-published-products" ? <>Ainda não há produtos publicados. <Link href="/conta">Cadastre-se para vender</Link>.</> : "Nenhum produto encontrado. Tente outra busca ou categoria."}</p>}
+        {products.length === 0 && <p className="empty-state">{emptyState === "unavailable" ? "O catálogo não pôde ser carregado agora." : emptyState === "no-published-products" ? <>Ainda não há produtos publicados. <Link href="/modelos">Explore os modelos 3D</Link> ou <Link href="/conta">cadastre-se para vender</Link>.</> : "Nenhum produto encontrado. Tente outra busca ou categoria."}</p>}
       </div>
       {pages > 1 && <nav className="catalog-pagination" aria-label="Paginação de produtos">
         {page > 1 ? <Link className="button button-secondary" href={catalogUrl({ query, category, page: page - 1, sort })}>← Página anterior</Link> : <span />}

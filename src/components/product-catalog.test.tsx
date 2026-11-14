@@ -29,4 +29,22 @@ describe("ProductCatalog visual image search", () => {
       vi.unstubAllEnvs();
     }
   });
+
+  it("links buyers to the model catalog while no products are published", () => {
+    const markup = renderToStaticMarkup(<ProductCatalog
+      products={[]}
+      categories={[]}
+      source="database"
+      unavailable={false}
+      notice={null}
+      query=""
+      category=""
+      page={1}
+      pages={0}
+      sort="newest"
+    />);
+
+    expect(markup).toContain('href="/modelos">Explore os modelos 3D</a>');
+    expect(markup).toContain('href="/conta">cadastre-se para vender</a>');
+  });
 });
