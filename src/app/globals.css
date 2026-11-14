@@ -691,6 +691,10 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .admin-overview-card strong { color: var(--ink); font-family: Georgia, serif; font-size: 34px; font-weight: 400; line-height: 1; }
 .admin-overview-card small { color: var(--muted); font-size: 9px; }
 .admin-metrics-note { margin: 12px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.admin-period-report-form { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin: 16px 0; }
+.admin-period-report-form label { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
+.admin-period-report-form input { min-height: 40px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); color: var(--ink); }
+.admin-period-report-form > span { color: var(--muted); font-size: 10px; }
 .admin-overview-tools { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
 .integration-health-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
 .integration-health-card { display: grid; align-content: start; gap: 10px; padding: 20px; }

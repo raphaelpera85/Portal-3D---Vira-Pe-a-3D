@@ -74,6 +74,8 @@ export default async function AdminPage() {
     { label: "Lojas publicadas", value: metrics ? formatCount(metrics.published_store_count) : "—", detail: "Visíveis no marketplace" },
     { label: "Anúncios publicados", value: metrics ? formatCount(metrics.published_product_count) : "—", detail: "Em lojas publicadas" },
   ];
+  const reportEnd = new Date().toISOString().slice(0, 10);
+  const reportStart = new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10);
 
   return <><SiteHeader /><main className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
@@ -88,6 +90,12 @@ export default async function AdminPage() {
     </section>
     <section className="admin-overview-section" aria-labelledby="admin-period-metrics-title">
       <div className="admin-section-title"><span className="account-kicker">JANELAS MÓVEIS</span><h2 id="admin-period-metrics-title">Atividade recente</h2><a className="button button-secondary" href="/api/admin/reports">Baixar relatório CSV</a></div>
+      <form className="admin-period-report-form" action="/api/admin/reports/payments" method="get">
+        <label>De<input type="date" name="from" defaultValue={reportStart} required /></label>
+        <label>Até<input type="date" name="to" defaultValue={reportEnd} required /></label>
+        <button className="button button-secondary" type="submit">Baixar extrato detalhado</button>
+        <span>Até 31 dias e 5.000 cobranças por arquivo.</span>
+      </form>
       {periodMetricsResult.error && <p className="auth-notice is-error" role="alert">Relatórios por período indisponíveis. Confira se a migração de métricas periódicas foi aplicada.</p>}
       {periodMetrics.map((period) => <div key={period.window_days}>
         <h3>{period.window_days} dias</h3>
