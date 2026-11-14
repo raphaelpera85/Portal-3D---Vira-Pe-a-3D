@@ -127,6 +127,7 @@ export default async function AdminPage() {
         <Link className="button button-secondary" href="/admin/categorias">Categorias de produtos</Link>
         <Link className="button button-secondary" href="/admin/cupons">Cupons</Link>
         <Link className="button button-secondary" href="/admin/financeiro/contestacoes">Contestações de pagamento</Link>
+        <Link className="button button-secondary" href="/admin/financeiro/repasses">Conciliação de repasses</Link>
         <Link className="button button-secondary" href="/admin/catalogos/impressoras">Catálogo de impressoras</Link>
         <Link className="button button-secondary" href="/admin/catalogos/materiais">Materiais e resinas</Link>
         <Link className="button button-secondary" href="/admin/catalogos/bicos">Bicos e compatibilidade</Link>

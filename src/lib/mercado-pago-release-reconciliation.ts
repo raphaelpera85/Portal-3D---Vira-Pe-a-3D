@@ -63,16 +63,39 @@ function parseCsv(text: string): string[][] {
 }
 
 function amountCents(value: string) {
-  const clean = value.trim().replace(/[^\d,.-]/g, "");
-  if (!clean || !/^-?[\d.,]+$/.test(clean)) return 0;
+  const raw = value.trim();
+  if (!raw) return 0;
+  const clean = raw.replace(/^(-?)\s*R\$\s*/i, "$1").replace(/\s/g, "");
+  if (!clean || !/^-?[\d.,]+$/.test(clean)) return null;
   const negative = clean.startsWith("-");
   const unsigned = negative ? clean.slice(1) : clean;
-  const decimalSeparator = Math.max(unsigned.lastIndexOf("."), unsigned.lastIndexOf(","));
-  const whole = unsigned.slice(0, decimalSeparator).replace(/[.,]/g, "") || "0";
-  const decimals = decimalSeparator < 0 ? "" : unsigned.slice(decimalSeparator + 1).replace(/[.,]/g, "");
-  if (!/^\d+$/.test(whole) || !/^\d{0,2}$/.test(decimals)) return 0;
+  const commas = [...unsigned].filter((char) => char === ",").length;
+  const dots = [...unsigned].filter((char) => char === ".").length;
+  let whole = unsigned; let decimals = "";
+  if (commas && dots) {
+    const decimalSeparator = unsigned.lastIndexOf(",") > unsigned.lastIndexOf(".") ? "," : ".";
+    const groupingSeparator = decimalSeparator === "," ? "." : ",";
+    const [integer, fraction, ...extra] = unsigned.split(decimalSeparator);
+    const groups = integer.split(groupingSeparator);
+    if (extra.length || !/^\d{1,2}$/.test(fraction) || !/^\d{1,3}$/.test(groups[0]) || groups.slice(1).some((group) => !/^\d{3}$/.test(group))) return null;
+    whole = groups.join(""); decimals = fraction;
+  } else if (commas || dots) {
+    const separator = commas ? "," : ".";
+    const parts = unsigned.split(separator);
+    if (parts.length > 2 && parts.slice(1).every((part) => /^\d{3}$/.test(part)) && /^\d{1,3}$/.test(parts[0])) whole = parts.join("");
+    else if (parts.length > 1) {
+      const integerGroups = parts.slice(0, -1);
+      const fraction = parts[parts.length - 1];
+      if (!/^\d{1,3}$/.test(integerGroups[0]) || integerGroups.slice(1).some((group) => !/^\d{3}$/.test(group))) return null;
+      if (integerGroups.length > 1 && !/^\d{1,2}$/.test(fraction)) return null;
+      if (integerGroups.length === 1 && fraction.length === 3) whole = parts.join("");
+      else if (/^\d{1,2}$/.test(fraction)) { whole = integerGroups.join(""); decimals = fraction; }
+      else return null;
+    }
+  }
+  if (!/^\d+$/.test(whole) || !/^\d{0,2}$/.test(decimals)) return null;
   const cents = Number(whole) * 100 + Number(decimals.padEnd(2, "0"));
-  return Number.isSafeInteger(cents) ? (negative ? -cents : cents) : 0;
+  return Number.isSafeInteger(cents) ? (negative ? -cents : cents) : null;
 }
 
 export function listReleaseReportPaymentReferences(csv: string) {
@@ -102,10 +125,12 @@ export function reconcileReleaseReportCsv(csv: string, payments: ReconciliationP
     const get = (key: string) => row[indexes.get(key)!] ?? "";
     const reference = get("EXTERNAL_REFERENCE").trim();
     const credit = amountCents(get("NET_CREDIT_AMOUNT")); const debit = amountCents(get("NET_DEBIT_AMOUNT"));
+    const gross = amountCents(get("GROSS_AMOUNT")); const fee = amountCents(get("MP_FEE_AMOUNT"));
+    if (credit === null || debit === null || gross === null || fee === null) return null;
     if (!reference || !uuidPattern.test(reference) || !paymentIds.has(reference)) { unlinkedMovements += 1; unlinkedNetCents += credit - debit; continue; }
     const movement = movements.get(reference) ?? { count: 0, gross: 0, credit: 0, debit: 0, fee: 0 };
-    movement.count += 1; movement.gross += amountCents(get("GROSS_AMOUNT")); movement.credit += credit;
-    movement.debit += debit; movement.fee += amountCents(get("MP_FEE_AMOUNT")); movements.set(reference, movement);
+    movement.count += 1; movement.gross += gross; movement.credit += credit;
+    movement.debit += debit; movement.fee += fee; movements.set(reference, movement);
   }
   const matched = new Map(payments.map((payment) => [payment.id, payment]));
   const reconciled = [...movements.entries()].map(([paymentId, movement]) => {

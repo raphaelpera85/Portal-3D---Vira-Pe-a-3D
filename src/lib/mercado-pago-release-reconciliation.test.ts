@@ -40,4 +40,20 @@ describe("Mercado Pago release report reconciliation", () => {
     expect(listReleaseReportPaymentReferences("DATE;EXTERNAL_REFERENCE\n2026-01-01;" + paymentId)).toEqual([paymentId]);
     expect(reconcileReleaseReportCsv("DATE;EXTERNAL_REFERENCE\n2026-01-01;" + paymentId, [])).toBeNull();
   });
+
+  it("rejects malformed and unsafe amounts instead of reporting zero", () => {
+    const malformed = csv.replace("95,00", "R$ inválido");
+    const embeddedText = csv.replace("95,00", "oops 95,00");
+    const badSeparators = csv.replace("95,00", "1,2,3");
+    const unsafe = csv.replace("100,00", "999999999999999999999999");
+    expect(reconcileReleaseReportCsv(malformed, [])).toBeNull();
+    expect(reconcileReleaseReportCsv(embeddedText, [])).toBeNull();
+    expect(reconcileReleaseReportCsv(badSeparators, [])).toBeNull();
+    expect(reconcileReleaseReportCsv(unsafe, [])).toBeNull();
+  });
+
+  it("parses Brazilian currency with correctly grouped thousands", () => {
+    const grouped = csv.replace("95,00", "1.234,56");
+    expect(reconcileReleaseReportCsv(grouped, [{ id: paymentId, order_id: null, status: "paid", total_cents: 123456, marketplace_fee_cents: 0 }])?.reconciled[0]?.netCreditCents).toBe(123456);
+  });
 });
