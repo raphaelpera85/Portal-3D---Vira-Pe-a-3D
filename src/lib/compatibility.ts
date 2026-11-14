@@ -7,6 +7,7 @@ export type MaterialSupportEntry = MaterialSupport | { status: MaterialSupport; 
 export type CatalogPrinter = {
   id: string;
   name: string;
+  model?: string;
   technology: PrinterTechnology;
   buildVolumeMm: { x: number; y: number; z: number } | null;
   filamentDiameterMm: number | null;
@@ -17,6 +18,7 @@ export type CatalogPrinter = {
   multicolorSupported?: boolean | null;
   multicolorSlots: number | null;
   supportedMaterials: Record<string, MaterialSupportEntry>;
+  technicalProperties?: Record<string, unknown>;
   commercialStatus?: "available" | "in_production" | "discontinued" | "announced" | "unknown";
   commercialStatusSource?: { label: string; url: string; checkedAt: string } | null;
 };
@@ -35,6 +37,7 @@ export type CatalogMaterial = {
   multicolorCompatible: boolean | null;
   resinWavelengthNm?: number | null;
   resinExposureSeconds?: number | null;
+  technicalProperties?: Record<string, unknown>;
 };
 
 export type CatalogNozzle = {
@@ -110,6 +113,36 @@ export function evaluateCompatibility(
   else if (support === "not-recommended" || support === "conditional") add("material", "Material", "conditional", `O catálogo indica condições ou restrições para este material.${supportDetail}`);
   else if (support === "incompatible") add("material", "Material", "incompatible", `O catálogo indica que este material não é compatível com a impressora.${supportDetail}`);
   else add("material", "Material", "unverified", "O catálogo não confirma este material para a impressora.");
+
+  if (material.process === "resin" && processForTechnology(printer.technology) === "resin") {
+    const printerWavelength = printer.technicalProperties?.wavelengthNm;
+    if (material.resinWavelengthNm == null || typeof printerWavelength !== "number" || !Number.isFinite(printerWavelength)) {
+      add("resin-wavelength", "Comprimento de onda UV", "unverified", "O comprimento de onda da resina ou da impressora não está cadastrado.");
+    } else if (material.resinWavelengthNm !== printerWavelength) {
+      add("resin-wavelength", "Comprimento de onda UV", "incompatible", `A resina requer ${material.resinWavelengthNm} nm; a impressora informa ${printerWavelength} nm.`);
+    } else {
+      add("resin-wavelength", "Comprimento de onda UV", "compatible", `Resina e impressora informam ${printerWavelength} nm.`);
+    }
+
+    const exposureProfiles = material.technicalProperties?.exposureByPrinter;
+    const model = printer.model?.trim().toLocaleLowerCase("pt-BR");
+    const exposureProfile = Array.isArray(exposureProfiles) && model
+      ? exposureProfiles.find((entry) => entry && typeof entry === "object" && !Array.isArray(entry)
+        && typeof (entry as Record<string, unknown>).printer === "string"
+        && ((entry as Record<string, unknown>).printer as string).trim().toLocaleLowerCase("pt-BR") === model) as Record<string, unknown> | undefined
+      : undefined;
+    const layerHeight = exposureProfile?.layerHeightMm;
+    const normalExposure = exposureProfile?.normalExposureSeconds;
+    const bottomExposure = exposureProfile?.bottomExposureSeconds;
+    const bottomLayers = exposureProfile?.bottomLayers;
+    if ([layerHeight, normalExposure, bottomExposure, bottomLayers].every((value) => typeof value === "number" && Number.isFinite(value) && value > 0)) {
+      const format = (value: number) => value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+      add("resin-exposure", "Perfil de exposição", "compatible",
+        `Perfil cadastrado para ${printer.model} com camada de ${format(layerHeight as number)} mm, exposição normal de ${format(normalExposure as number)} s e base de ${format(bottomExposure as number)} s por ${format(bottomLayers as number)} camadas.`);
+    } else {
+      add("resin-exposure", "Perfil de exposição", "unverified", "Não há perfil de exposição cadastrado para este modelo de impressora e esta resina.");
+    }
+  }
 
   if (material.process === "filament") {
     if (material.filamentDiameterMm == null || printer.filamentDiameterMm == null) {

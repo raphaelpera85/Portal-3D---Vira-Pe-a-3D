@@ -93,12 +93,24 @@ describe("evaluateCompatibility", () => {
     expect(evaluateCompatibility(printer, { ...material, process: "resin" }, nozzle).status).toBe("incompatible");
   });
 
-  it("uses a verified printer and material relation for resin without requiring a nozzle fit", () => {
-    const resinPrinter: CatalogPrinter = { ...printer, id: "resin-printer", technology: "SLA", filamentDiameterMm: null, supportedMaterials: { "ABS-LIKE": "compatible" } };
-    const resinMaterial: CatalogMaterial = { ...material, id: "resin", family: "ABS-like", process: "resin", filamentDiameterMm: null, nozzleTemperatureC: null, bedTemperatureC: null };
+  it("requires a matching resin wavelength and an exact printer exposure profile", () => {
+    const resinPrinter: CatalogPrinter = {
+      ...printer, id: "mono-m7", name: "Anycubic Photon Mono M7", model: "Photon Mono M7",
+      technology: "MSLA", filamentDiameterMm: null, technicalProperties: { wavelengthNm: 405 },
+      supportedMaterials: { resin: "compatible" },
+    };
+    const resinMaterial: CatalogMaterial = {
+      ...material, id: "resin", family: "ABS-like", process: "resin", filamentDiameterMm: null,
+      nozzleTemperatureC: null, bedTemperatureC: null, resinWavelengthNm: 405,
+      technicalProperties: { exposureByPrinter: [{ printer: "Photon Mono M7", layerHeightMm: 0.05, normalExposureSeconds: 2.2, bottomExposureSeconds: 25, bottomLayers: 4 }] },
+    };
     const result = evaluateCompatibility(resinPrinter, resinMaterial, { ...nozzle, printerCompatibility: null });
     expect(result.status).toBe("compatible");
+    expect(result.checks.find((check) => check.key === "resin-wavelength")?.status).toBe("compatible");
+    expect(result.checks.find((check) => check.key === "resin-exposure")?.detail).toContain("2,2 s");
     expect(result.checks.some((check) => check.key === "nozzle-fit")).toBe(false);
+    expect(evaluateCompatibility({ ...resinPrinter, technicalProperties: { wavelengthNm: 385 } }, resinMaterial).status).toBe("incompatible");
+    expect(evaluateCompatibility(resinPrinter, { ...resinMaterial, technicalProperties: {} }).status).toBe("unverified");
   });
 
   it("allows a part that fits after the axes are oriented to the available build volume", () => {
