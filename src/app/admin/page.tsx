@@ -122,6 +122,7 @@ export default async function AdminPage() {
       <div className="admin-section-title"><span className="account-kicker">GESTÃO</span><h2 id="admin-tools-title">Módulos administrativos</h2></div>
       <nav className="admin-overview-tools" aria-label="Módulos administrativos">
         <Link className="button button-secondary" href="/admin/fabricantes">Fabricantes, lojas e anúncios</Link>
+        <Link className="button button-secondary" href="/admin/usuarios">Usuários</Link>
         <Link className="button button-secondary" href="/admin/designers">Designers</Link>
         <Link className="button button-secondary" href="/admin/banners">Banners da página inicial</Link>
         <Link className="button button-secondary" href="/admin/categorias">Categorias de produtos</Link>
