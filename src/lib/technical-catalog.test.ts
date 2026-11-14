@@ -26,6 +26,7 @@ const flsunT1ProMigration = readFileSync(new URL("../../supabase/migrations/2026
 const flsunT1MaxMigration = readFileSync(new URL("../../supabase/migrations/20261115010000_seed_flsun_t1_max.sql", import.meta.url), "utf8");
 const flsunV400Migration = readFileSync(new URL("../../supabase/migrations/20261115020000_seed_flsun_v400.sql", import.meta.url), "utf8");
 const elegooNeptune4Migration = readFileSync(new URL("../../supabase/migrations/20261115030000_seed_elegoo_neptune_4_type_c.sql", import.meta.url), "utf8");
+const anycubicKobraXMigration = readFileSync(new URL("../../supabase/migrations/20261115060000_seed_anycubic_kobra_x.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -85,6 +86,8 @@ describe("verified technical catalog records", () => {
       ["Anycubic", "Kobra S1", "Combo"],
       ["Anycubic", "Kobra 3 Max V2", "standard"],
       ["Anycubic", "Kobra 3 Max V2", "ACE 2 Pro Combo"],
+      ["Anycubic", "Kobra X", "standard"],
+      ["Anycubic", "Kobra X", "ACE GEN2 + ACE 2 Pro Combo"],
       ["Anycubic", "Kobra 4", "standard"],
       ["Anycubic", "Kobra 4", "ACE 2 Pro Combo"],
       ["Anycubic", "Photon Mono M7", "standard"],
@@ -106,9 +109,34 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(75);
+    expect(printers).toHaveLength(77);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("keeps Kobra X native multicolor separate from the ACE 2 Pro combo and uses its documented nozzles", () => {
+    const standard = printers.find((printer) => printer.id === "anycubic-kobra-x");
+    const combo = printers.find((printer) => printer.id === "anycubic-kobra-x-ace-2-pro");
+    const compatibleNozzles = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["anycubic-kobra-x"] === "compatible");
+
+    expect(standard).toMatchObject({
+      buildVolumeMm: { x: 260, y: 260, z: 260 }, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100,
+      maximumSpeedMmPerSecond: 600, multicolorSlots: 4, multicolorSystem: "ACE GEN2",
+      technicalProperties: { recommendedPrintSpeedMmPerSecond: 300, maximumMulticolorFilaments: 19, extraACE2ProUnitsForMaximumColors: 4 },
+    });
+    expect(combo).toMatchObject({
+      multicolorSlots: 7, multicolorSystem: "ACE GEN2 + ACE 2 Pro",
+      technicalProperties: { maximumMulticolorFilaments: 19, extraACE2ProUnitsForMaximumColors: 3 },
+    });
+    expect(compatibleNozzles.map(({ diameterMm, material, original }) => ({ diameterMm, material, original }))).toEqual([
+      { diameterMm: 0.25, material: "Latão", original: false },
+      { diameterMm: 0.4, material: "Aço endurecido", original: true },
+      { diameterMm: 0.6, material: "Aço endurecido", original: false },
+      { diameterMm: 0.8, material: "Aço endurecido", original: false },
+    ]);
+    expect(nozzles.some((nozzle) => nozzle.printerCompatibility?.["anycubic-kobra-x-ace-2-pro"] === "compatible")).toBe(true);
+    expect(anycubicKobraXMigration).toContain("maximumMulticolorFilaments");
+    expect(anycubicKobraXMigration).toContain("Anycubic Kobra X quick-release printhead");
   });
 
   it("keeps the Kobra 4 Combo's four-color base and marks TPU conditional for ACE 2 Pro", () => {
