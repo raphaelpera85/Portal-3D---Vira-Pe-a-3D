@@ -32,6 +32,7 @@ const crealityK2Migration = readFileSync(new URL("../../supabase/migrations/2026
 const bambuH2dVariantsMigration = readFileSync(new URL("../../supabase/migrations/20261115090000_expand_bambu_h2d_variants.sql", import.meta.url), "utf8");
 const crealityEnderV3NeoMegaMigration = readFileSync(new URL("../../supabase/migrations/20261115100000_seed_creality_ender_v3_neo_mega.sql", import.meta.url), "utf8");
 const crealitySparkXI7Migration = readFileSync(new URL("../../supabase/migrations/20261115110000_seed_creality_sparkx_i7.sql", import.meta.url), "utf8");
+const crealityK2SeMigration = readFileSync(new URL("../../supabase/migrations/20261115120000_seed_creality_k2_se.sql", import.meta.url), "utf8");
 const prusaMk4sMigration = readFileSync(new URL("../../supabase/migrations/20261113134452_prusa_mk4s_catalog.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
@@ -115,6 +116,8 @@ describe("verified technical catalog records", () => {
       ["Creality", "SPARKX i7", "CFS Lite Color Combo"],
       ["Creality", "SPARKX i7", "CFS Mini AutoFill"],
       ["Creality", "SPARKX i7", "CFS nano Combo"],
+      ["Creality", "K2 SE", "standard"],
+      ["Creality", "K2 SE", "CFS 4-Color Combo"],
       ["Creality", "Ender-3 V3 Plus", "standard"],
       ["Creality", "Ender-3 V3 SE", "standard"],
       ["ELEGOO", "Centauri Carbon 2", "standard"],
@@ -126,7 +129,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(92);
+    expect(printers).toHaveLength(94);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -152,6 +155,28 @@ describe("verified technical catalog records", () => {
     expect(crealitySparkXI7Migration).toContain("'SPARKX i7', 'CFS Mini AutoFill'");
     expect(crealitySparkXI7Migration).toContain("'SPARKX i7', 'CFS nano Combo'");
     expect(crealitySparkXI7Migration).toContain("'SPARKX i7 hotend'");
+  });
+
+  it("keeps K2 SE single-color and CFS configurations distinct", () => {
+    const standard = printers.find((printer) => printer.id === "creality-k2-se");
+    const combo = printers.find((printer) => printer.id === "creality-k2-se-cfs-combo");
+
+    expect(standard).toMatchObject({
+      buildVolumeMm: { x: 220, y: 215, z: 245 },
+      maxNozzleTemperatureC: 300,
+      maxBedTemperatureC: 100,
+      maximumSpeedMmPerSecond: 500,
+      multicolorSupported: false,
+      technicalProperties: { ratedPowerWatts: 350 },
+    });
+    expect(combo).toMatchObject({
+      multicolorSystem: "CFS",
+      multicolorSlots: 4,
+      technicalProperties: { cfsIncluded: true, maximumMulticolorFilaments: 16, additionalCfsUnitsForMaximumColors: 3 },
+    });
+    expect(combo?.supportedMaterials["creality-hp-tpu"]).toMatchObject({ status: "conditional" });
+    expect(crealityK2SeMigration).toContain("'K2 SE', 'CFS 4-Color Combo'");
+    expect(crealityK2SeMigration).toContain('"additionalCfsUnitsForMaximumColors":3');
   });
 
   it("keeps Ender-3 V3 Neo and Mega specs and CFS nano bundles distinct", () => {
