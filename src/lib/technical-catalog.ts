@@ -94,6 +94,9 @@ const bambuX1CarbonComboSource = {
   url: "https://cdn1.bambulab.com/documentation/Quick%20Start%20Guide%20for%20X1%20Combo%26X1-Carbon%20Combo-v1.pdf",
   checkedAt: "2026-11-13",
 };
+const bambuAbsSupport = {
+  "bambu-abs": { status: "compatible" as const, conditions: "A Bambu lista ABS como ideal; use o gabinete fechado e siga o perfil do fabricante." },
+};
 const bambuH2sSource = {
   label: "Bambu Lab — H2S specifications",
   url: "https://blog.bambulab.com/h2s-the-ultimate-single-nozzle-3d-printer-now-bigger-than-ever/",
@@ -285,8 +288,8 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "creality-sparkx-i7-cfs-nano", brand: "Creality", model: "SPARKX i7", variant: "CFS nano Combo", technology: "FDM", buildVolumeMm: { x: 260, y: 260, z: 255 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 500, multicolorSystem: "CFS nano", multicolorSlots: 4, supportedMaterials: { PLA: "compatible", "PLA Silk": "compatible", PETG: "compatible", "PLA-CF": "compatible" }, technicalProperties: { maxAccelerationMmPerSecondSquared: 10000, extruder: "Direct drive", includedNozzleDiameterMm: 0.4, supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8], ratedPowerWattsByVoltage: { "110V": 400, "220V": 700 }, cfsNanoIncluded: true, cfsNanoSlots: 4, cfsNanoSupportsMulticolor: true }, sourceUrl: "https://store.creality.com/products/sparkx-i7-3d-printer", documentationUrl: "https://store.creality.com/eu/blogs/news/creality-sparkx-i7-combo-new-arrival", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "creality-k2-se", brand: "Creality", model: "K2 SE", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 215, z: 245 }, extruders: 1, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 500, supportedMaterials: { "creality-hyper-pla": "compatible", "creality-hyper-petg": "compatible", "creality-hp-tpu": "compatible" }, technicalProperties: { maxAccelerationMmPerSecondSquared: 20000, extruder: "Sprite direct drive", ratedPowerWatts: 350, manufacturerSupportedMaterials: ["Hyper PLA", "PLA", "TPU 95A", "PETG"], multicolorSupported: false, multicolorUpgradeDescription: "CFS vendido separadamente; até 16 filamentos com quatro unidades CFS" }, sourceUrl: "https://store.creality.com/uk/products/k2-se-combo-3d-printer", documentationUrl: "https://wiki.creality.com/products/fully-enclosed/k2se/%E8%AF%B4%E6%98%8E%E4%B9%A6/k2_se-sm-001_user_manual%28pt-br%29.pdf", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "creality-k2-se-cfs-combo", brand: "Creality", model: "K2 SE", variant: "CFS 4-Color Combo", technology: "FDM", buildVolumeMm: { x: 220, y: 215, z: 245 }, extruders: 1, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 500, multicolorSystem: "CFS", multicolorSlots: 4, supportedMaterials: { "creality-hyper-pla": "compatible", "creality-hyper-petg": "compatible", "creality-hp-tpu": { status: "conditional", conditions: "TPU deve ser alimentado diretamente; não use o CFS." } }, technicalProperties: { maxAccelerationMmPerSecondSquared: 20000, extruder: "Sprite direct drive", ratedPowerWatts: 350, manufacturerSupportedMaterials: ["Hyper PLA", "PLA", "TPU 95A", "PETG"], cfsIncluded: true, maximumMulticolorFilaments: 16, additionalCfsUnitsForMaximumColors: 3 }, sourceUrl: "https://store.creality.com/uk/products/k2-se-combo-3d-printer", documentationUrl: "https://wiki.creality.com/products/fully-enclosed/k2se/%E8%AF%B4%E6%98%8E%E4%B9%A6/k2_se-sm-001_user_manual%28pt-br%29.pdf", checkedAt: "2026-11-14" }),
-  seededPrinter({ id: "bambu-p1s", brand: "Bambu Lab", model: "P1S", variant: "standard", technology: "FDM", buildVolumeMm: { x: 256, y: 256, z: 256 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumPowerWatts: 1000, technicalProperties: { maxToolheadSpeedMmPerSecond: 500, maxToolheadAccelerationMmPerSecondSquared: 20000, maxHotendFlowMm3PerSecond: 32, maxHotendFlowConditions: "ABS, 150 × 150 mm, parede única, 280 °C", maximumPowerByVoltageW: { "100-120V": 350, "220-240V": 1000 }, supportedMaterials: { ideal: ["PLA", "PETG", "TPU", "ABS", "ASA", "PVA", "PET"], capable: ["PA", "PC"], notRecommended: ["carbon/glass fiber reinforced"] }, multicolorSystem: "AMS opcional" }, sourceUrl: "https://blog.bambulab.com/the-icon-redefined-meet-the-p2s-a-completely-reengineered-version-of-the-ultra-productive-p1-series/", documentationUrl: "https://cdn1.bambulab.com/documentation/quick-start-59b0cefdc0fc4/P1S/English%20version-Quick%20Start%20Guide%20for%20P1S.pdf", checkedAt: "2026-11-13" }),
-  seededPrinter({ id: "bambu-p1s-ams-combo", brand: "Bambu Lab", model: "P1S", variant: "Combo", technology: "FDM", buildVolumeMm: { x: 256, y: 256, z: 256 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumPowerWatts: 1000, multicolorSystem: "AMS", multicolorSlots: 4, technicalProperties: { maxToolheadSpeedMmPerSecond: 500, maxToolheadAccelerationMmPerSecondSquared: 20000, maxHotendFlowMm3PerSecond: 32, maxHotendFlowConditions: "ABS, 150 × 150 mm, parede única, 280 °C", maximumPowerByVoltageW: { "100-120V": 350, "220-240V": 1000 }, supportedMaterials: { ideal: ["PLA", "PETG", "TPU", "ABS", "ASA", "PVA", "PET"], capable: ["PA", "PC"], notRecommended: ["carbon/glass fiber reinforced"] }, amsUnitsIncluded: 1, maximumMulticolorFilaments: 16 }, sourceUrl: "https://forum.bambulab.com/t/the-bambu-lab-p1s-is-launched/19959", documentationUrl: "https://cdn1.bambulab.com/documentation/quick-start-0fa3c8ddd3d3f/P1S%20Combo/English%20version-Quick%20Start%20Guide%20for%20P1S-Combo.pdf", checkedAt: "2026-11-13" }),
+  seededPrinter({ id: "bambu-p1s", brand: "Bambu Lab", model: "P1S", variant: "standard", technology: "FDM", buildVolumeMm: { x: 256, y: 256, z: 256 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumPowerWatts: 1000, supportedMaterials: bambuAbsSupport, technicalProperties: { maxToolheadSpeedMmPerSecond: 500, maxToolheadAccelerationMmPerSecondSquared: 20000, maxHotendFlowMm3PerSecond: 32, maxHotendFlowConditions: "ABS, 150 × 150 mm, parede única, 280 °C", maximumPowerByVoltageW: { "100-120V": 350, "220-240V": 1000 }, supportedMaterials: { ideal: ["PLA", "PETG", "TPU", "ABS", "ASA", "PVA", "PET"], capable: ["PA", "PC"], notRecommended: ["carbon/glass fiber reinforced"] }, multicolorSystem: "AMS opcional" }, sourceUrl: "https://blog.bambulab.com/the-icon-redefined-meet-the-p2s-a-completely-reengineered-version-of-the-ultra-productive-p1-series/", documentationUrl: "https://cdn1.bambulab.com/documentation/quick-start-59b0cefdc0fc4/P1S/English%20version-Quick%20Start%20Guide%20for%20P1S.pdf", checkedAt: "2026-11-13" }),
+  seededPrinter({ id: "bambu-p1s-ams-combo", brand: "Bambu Lab", model: "P1S", variant: "Combo", technology: "FDM", buildVolumeMm: { x: 256, y: 256, z: 256 }, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, enclosure: true, maximumPowerWatts: 1000, supportedMaterials: bambuAbsSupport, multicolorSystem: "AMS", multicolorSlots: 4, technicalProperties: { maxToolheadSpeedMmPerSecond: 500, maxToolheadAccelerationMmPerSecondSquared: 20000, maxHotendFlowMm3PerSecond: 32, maxHotendFlowConditions: "ABS, 150 × 150 mm, parede única, 280 °C", maximumPowerByVoltageW: { "100-120V": 350, "220-240V": 1000 }, supportedMaterials: { ideal: ["PLA", "PETG", "TPU", "ABS", "ASA", "PVA", "PET"], capable: ["PA", "PC"], notRecommended: ["carbon/glass fiber reinforced"] }, amsUnitsIncluded: 1, maximumMulticolorFilaments: 16 }, sourceUrl: "https://forum.bambulab.com/t/the-bambu-lab-p1s-is-launched/19959", documentationUrl: "https://cdn1.bambulab.com/documentation/quick-start-0fa3c8ddd3d3f/P1S%20Combo/English%20version-Quick%20Start%20Guide%20for%20P1S-Combo.pdf", checkedAt: "2026-11-13" }),
   seededPrinter({ id: "creality-ender-3-v3", brand: "Creality", model: "Ender-3 V3", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 250 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 110, heatedBed: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 350, technicalProperties: { typicalPrintSpeedMmPerSecond: 300, maxAccelerationMmPerSecondSquared: 20000, motionSystem: "CoreXZ", extruder: "direct drive", nozzleMaterial: "hardened steel", supportedMaterials: ["PLA", "TPU 90A", "PETG", "ABS", "PLA-CF", "PETG-CF"] }, sourceUrl: "https://www.creality.com/products/creality-ender-3-v3", documentationUrl: "https://www.creality.com/support/creality-ender-3-v3", checkedAt: "2026-11-13" }),
   seededPrinter({ id: "creality-ender-3-v3-plus", brand: "Creality", model: "Ender-3 V3 Plus", variant: "standard", technology: "FDM", buildVolumeMm: { x: 300, y: 300, z: 330 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 350, technicalProperties: { typicalPrintSpeedMmPerSecond: 300, maxAccelerationMmPerSecondSquared: 20000, motionSystem: "CoreXZ" }, sourceUrl: "https://store.creality.com/products/ender-3-v3-plus-3d-printer", documentationUrl: "https://store.creality.com/blogs/all/ender-3-v3-plus-review" }),
   seededPrinter({ id: "creality-ender-3-v3-se", brand: "Creality", model: "Ender-3 V3 SE", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 250 }, extruders: 1, maxNozzleTemperatureC: 260, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 250, maximumPowerWatts: 350, technicalProperties: { typicalPrintSpeedMmPerSecond: 180, maxAccelerationMmPerSecondSquared: 2500, nozzleMaterial: "brass", supportedMaterials: ["PLA", "TPU 95A", "PETG"] }, sourceUrl: "https://www.creality.com/support/creality-ender-3-v3-se", documentationUrl: "https://wiki.creality.com/products/diy/ender%E7%B3%BB%E5%88%97/ender-3v3se/%E5%A4%9A%E8%AF%AD%E7%A7%8D%E8%AF%B4%E6%98%8E%E4%B9%A6/ender-3_v3_se-sm-002_user_manual%EF%BC%88en%EF%BC%89.pdf", checkedAt: "2026-11-13" }),
@@ -380,6 +383,7 @@ const bambuPetgHfSources = [
   { label: "Bambu Lab — PETG HF", url: "https://bambu-lab-uk.myshopify.com/products/petg-hf", checkedAt: "2026-11-13" },
   { label: "Bambu Lab — Filament Guide", url: "https://cdn1.bambulab.com/filament/filament-guide/wksdyyzd8n9/filament-guide-en.pdf", checkedAt: "2026-11-13" },
 ];
+const bambuAbsSource = { label: "Bambu Lab — ABS filament guide", url: "https://cdn1.bambulab.com/filament/FilamentGuide-EN-2.pdf", checkedAt: "2026-11-14" };
 
 export const printers: PrinterEntry[] = [{
   id: "bambu-a1-mini-ams-lite",
@@ -901,6 +905,7 @@ export const printers: PrinterEntry[] = [{
     maximumAmsUnits: 4,
   },
   supportedMaterials: {
+    ...bambuAbsSupport,
     "creality-hyper-pla": { status: "compatible", conditions: "A ficha da X1-Carbon lista PLA como suportado." },
     "creality-hyper-abs": { status: "compatible", conditions: "ABS consta como suportado; imprima com a câmara fechada e siga o perfil do material." },
     "creality-hyper-petg": { status: "compatible", conditions: "A ficha da X1-Carbon lista PETG como suportado." },
@@ -952,6 +957,7 @@ export const printers: PrinterEntry[] = [{
     maximumAmsUnits: 4,
   },
   supportedMaterials: {
+    ...bambuAbsSupport,
     "creality-hyper-pla": { status: "compatible", conditions: "A ficha da X1-Carbon lista PLA como suportado." },
     "creality-hyper-abs": { status: "compatible", conditions: "ABS consta como suportado; imprima com a câmara fechada e siga o perfil do material." },
     "creality-hyper-petg": { status: "compatible", conditions: "A ficha da X1-Carbon lista PETG como suportado." },
@@ -1379,6 +1385,28 @@ export const materials: MaterialEntry[] = [
       { name: "Cinza", hex: "#ADB1B2" }, { name: "Cinza Escuro", hex: "#515151" },
     ],
     sources: bambuPetgHfSources,
+  },
+  {
+    id: "bambu-abs",
+    name: "ABS",
+    brand: "Bambu Lab",
+    family: "ABS",
+    process: "filament",
+    filamentDiameterMm: 1.75,
+    densityGPerCm3: null,
+    nozzleTemperatureC: { min: 240, max: 280 },
+    bedTemperatureC: { min: 90, max: 100 },
+    nozzleDiametersMm: null,
+    enclosureRequired: true,
+    abrasive: false,
+    multicolorCompatible: true,
+    printSpeedMaximumMmPerSecond: null,
+    drying: { required: false, temperatureC: 80, hours: 8 },
+    resinWavelengthNm: null,
+    resinExposureSeconds: null,
+    technicalProperties: { printSpeedLimit: "< 300 mm/s", drying: "Optional; 80 °C for 8 hours", amsCompatible: true },
+    colors: [],
+    sources: [bambuAbsSource],
   },
   ...[
     { id: "creality-hyper-pla", name: "Hyper PLA", family: "PLA", enclosureRequired: null, multicolorCompatible: null, url: "https://store.creality.com/eu/products/hyper-1-75mm-pla-3d-printing-filament-1kg" },
