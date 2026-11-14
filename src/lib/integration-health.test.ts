@@ -53,6 +53,16 @@ describe("getIntegrationHealth", () => {
     expect(result.mercadoPago.status).toBe("configured");
   });
 
+  it("rejects base URLs with paths or query strings that runtime helpers cannot use", () => {
+    const result = Object.fromEntries(getIntegrationHealth({
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co/rest/v1",
+      NEXT_PUBLIC_SITE_URL: "https://virapeca.example/portal?preview=1",
+    }).map((item) => [item.id, item]));
+
+    expect(result.supabase.missingVariables).toContain("NEXT_PUBLIC_SUPABASE_URL");
+    expect(result.siteUrl.missingVariables).toContain("NEXT_PUBLIC_SITE_URL");
+  });
+
   it("marks incomplete channels and malformed critical values as missing", () => {
     const result = Object.fromEntries(getIntegrationHealth({
       NEXT_PUBLIC_SUPABASE_URL: "",
@@ -66,6 +76,7 @@ describe("getIntegrationHealth", () => {
     }).map((item) => [item.id, item]));
 
     expect(result.supabase.status).toBe("missing");
+    expect(result.supabase.missingVariables).toContain("NEXT_PUBLIC_SUPABASE_URL");
     expect(result.email.status).toBe("missing");
     expect(result.whatsapp.status).toBe("missing");
     expect(result.mercadoPago.status).toBe("missing");

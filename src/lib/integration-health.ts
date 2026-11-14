@@ -1,3 +1,5 @@
+import { resolveSiteUrl } from "./site-url";
+
 type Environment = Record<string, string | undefined>;
 
 export type IntegrationHealthItem = {
@@ -14,13 +16,7 @@ function present(env: Environment, key: string) {
 }
 
 function hasHttpUrl(value: string | undefined, requireHttps = false) {
-  try {
-    const url = new URL(value ?? "");
-    return (url.protocol === "https:" || (!requireHttps && url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname)))
-      && Boolean(url.host);
-  } catch {
-    return false;
-  }
+  return Boolean(value?.trim()) && resolveSiteUrl(value, requireHttps) !== null;
 }
 
 function hasEmail(value: string | undefined) {
