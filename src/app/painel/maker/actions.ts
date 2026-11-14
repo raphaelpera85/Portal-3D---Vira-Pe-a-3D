@@ -1088,6 +1088,16 @@ export async function logPrinterMaintenance(formData: FormData): Promise<void> {
     notes: verifiedEntry.notes, next_due_at: verifiedEntry.nextDueAt, next_due_hours: verifiedEntry.nextDueHours,
   });
   if (error) redirect("/painel/maker?resultado=manutencao-erro#equipamentos");
+  if (verifiedEntry.hoursAtEvent != null && verifiedEntry.hoursAtEvent > Number(printer.accumulated_hours)) {
+    const { error: hourMeterError } = await actor.supabase.from("maker_printers")
+      .update({ accumulated_hours: verifiedEntry.hoursAtEvent, updated_at: new Date().toISOString() })
+      .eq("id", printerId).eq("store_id", store.id)
+      .lt("accumulated_hours", verifiedEntry.hoursAtEvent);
+    if (hourMeterError) {
+      revalidatePath("/painel/maker");
+      redirect("/painel/maker?resultado=manutencao-horimetro-erro#equipamentos");
+    }
+  }
   revalidatePath("/painel/maker");
   redirect("/painel/maker?resultado=manutencao-salva#equipamentos");
 }

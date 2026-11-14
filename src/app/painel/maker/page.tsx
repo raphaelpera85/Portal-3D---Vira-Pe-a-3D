@@ -149,6 +149,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
             </section>
             {resultado === "equipamento-salvo" && <p className="auth-notice is-success" role="status">Equipamento salvo.</p>}
             {resultado === "manutencao-salva" && <p className="auth-notice is-success" role="status">Registro de manutenção salvo.</p>}
+            {resultado === "manutencao-horimetro-erro" && <p className="auth-notice is-error" role="alert">O registro foi salvo, mas o horímetro atual não foi atualizado. Edite os dados da impressora antes de calcular custos ou lembretes por horas. O registro existente foi preservado.</p>}
             {(resultado === "equipamento-erro" || resultado === "manutencao-erro") && <p className="auth-notice is-error" role="alert">Não foi possível salvar os dados. Confira os campos e as migrações técnicas.</p>}
             {resultado === "modelo-indisponivel" && <p className="auth-notice is-error" role="alert">O modelo selecionado deixou de estar disponível no catálogo. Atualize o cadastro usando a opção de equipamento próprio ou selecione outro modelo.</p>}
             {equipmentResult.error ? <p className="auth-notice is-error" role="alert">O cadastro de equipamentos ficará disponível após aplicar a migração de impressoras do fabricante.</p> : <MakerEquipmentManager storeId={store.id} models={printerModelsResult.data ?? []} printers={(equipmentResult.data ?? []).map((printer) => ({ ...printer, maintenance: printer.maintenance ?? [] }))} />}
