@@ -39,6 +39,7 @@ const crealityHyperPlaMigration = readFileSync(new URL("../../supabase/migration
 const elegooMars5UltraMigration = readFileSync(new URL("../../supabase/migrations/20261116030000_seed_elegoo_mars_5_ultra.sql", import.meta.url), "utf8");
 const elegooMars5Migration = readFileSync(new URL("../../supabase/migrations/20261116040000_seed_elegoo_mars_5.sql", import.meta.url), "utf8");
 const elegooCentauriCarbon2ComboMigration = readFileSync(new URL("../../supabase/migrations/20261116050000_seed_elegoo_centauri_carbon_2_combo.sql", import.meta.url), "utf8");
+const elegooSaturn4Migration = readFileSync(new URL("../../supabase/migrations/20261116060000_seed_elegoo_saturn_4.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("includes official Hyper PLA temperatures, settings, and named colors without guessed hex values", () => {
@@ -154,6 +155,7 @@ describe("verified technical catalog records", () => {
       ["ELEGOO", "Neptune 4 Plus", "Type-C version"],
       ["ELEGOO", "Neptune 4 Max", "Type-C version"],
       ["ELEGOO", "Saturn 4 Ultra", "16K"],
+      ["ELEGOO", "Saturn 4", "standard"],
       ["ELEGOO", "Mars 5 Ultra", "standard"],
       ["ELEGOO", "Mars 5", "standard"],
       ["Flashforge", "AD5X", "standard"],
@@ -162,7 +164,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(104);
+    expect(printers).toHaveLength(105);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -210,6 +212,21 @@ describe("verified technical catalog records", () => {
     expect(elegooCentauriCarbon2ComboMigration).toContain("'ELEGOO', 'Centauri Carbon 2', 'CANVAS Combo'");
     expect(elegooCentauriCarbon2ComboMigration).toContain("multicolor_filament_count");
     expect(elegooCentauriCarbon2ComboMigration).toContain("source_url = 'https://us.elegoo.com/products/centauri-carbon-2'");
+  });
+
+  it("keeps official Saturn 4 MSLA specifications in fallback and migration", () => {
+    const saturn4 = printers.find((printer) => printer.id === "elegoo-saturn-4");
+
+    expect(saturn4).toMatchObject({
+      technology: "MSLA", buildVolumeMm: { x: 218.88, y: 122.88, z: 220 },
+      technicalProperties: {
+        resolution: "12K", resolutionPixels: "11520x5120", resolutionXYMicrons: [19, 24],
+        layerHeightRangeMm: { min: 0.01, max: 0.2 }, zAxisAccuracyMm: 0.02,
+        maxPrintSpeedMmPerHour: 70, wavelengthNm: 405,
+      },
+    });
+    expect(elegooSaturn4Migration).toContain("'ELEGOO', 'Saturn 4', 'standard', 'MSLA', 'published'");
+    expect(elegooSaturn4Migration).toContain('"resolutionPixels":"11520x5120"');
   });
 
   it("distinguishes SPARKX i7 filament system configurations", () => {
