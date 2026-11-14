@@ -55,6 +55,22 @@ test("mobile 3D viewer fits the viewport without horizontal scrolling", async ({
   expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewport);
 });
 
+test("viewer exposes standard, multi-mode, and special printer volume checks", async ({ page }) => {
+  await page.goto("/visualizador");
+  const printer = page.getByLabel("Impressora para verificar as dimensões");
+  await printer.selectOption({ label: "Bambu Lab A1 mini standard" });
+  await expect(page.locator(".viewer-volume-value")).toContainText("180 × 180 × 180 mm");
+
+  await printer.selectOption({ label: "Bambu Lab H2D AMS 2 Pro Combo" });
+  await expect(page.getByLabel("Configuração do volume de impressão")).toBeVisible();
+  await page.getByLabel("Configuração do volume de impressão").selectOption("combinedNozzleBuildVolumeMm");
+  await expect(page.locator(".viewer-volume-value")).toContainText("350 × 320 × 325 mm");
+
+  await printer.selectOption({ label: "FLSUN V400 Max standard" });
+  await expect(page.locator(".viewer-volume-check")).toContainText("cilíndrico");
+  await expect(page.locator(".viewer-volume-check > li")).toHaveClass(/status-unverified/);
+});
+
 test("technical catalog shows Flashforge AD5X conditions after selecting it", async ({ page }) => {
   await page.goto("/catalogos");
 

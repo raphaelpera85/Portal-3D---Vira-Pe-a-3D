@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateCompatibility, evaluateMaterialCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter } from "./compatibility";
+import { evaluateBuildVolume, evaluateCompatibility, evaluateMaterialCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter } from "./compatibility";
 
 const printer: CatalogPrinter = {
   id: "printer", name: "A1 mini", technology: "FDM", buildVolumeMm: { x: 180, y: 180, z: 180 },
@@ -18,6 +18,12 @@ const nozzle: CatalogNozzle = {
 };
 
 describe("evaluateCompatibility", () => {
+  it("reports volume fit with axis reorientation and leaves missing volume unverified", () => {
+    expect(evaluateBuildVolume({ x: 180, y: 180, z: 180 }, { x: 200, y: 170, z: 160 }).status).toBe("incompatible");
+    expect(evaluateBuildVolume({ x: 180, y: 180, z: 220 }, { x: 220, y: 180, z: 180 }).status).toBe("compatible");
+    expect(evaluateBuildVolume(null, { x: 100, y: 100, z: 100 }).status).toBe("unverified");
+  });
+
   it("evaluates material and printer compatibility without claiming a nozzle check", () => {
     const result = evaluateMaterialCompatibility(printer, material);
 

@@ -1260,6 +1260,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .part-dimensions input { width: 100%; min-width: 0; height: 32px; padding: 0 5px; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 10px; }
 .part-dimensions label:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; }
 .compatibility-checks { display: grid; gap: 0; margin: 15px 0 0; padding: 0; list-style: none; }
+.viewer-volume-check { margin-top: 8px; }
+.viewer-volume-value { margin: 6px 0 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
 .compatibility-checks li { display: flex; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line); }
 .compatibility-check-mark { display: grid; width: 19px; height: 19px; flex: 0 0 19px; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); font-size: 10px; font-weight: 800; }
 .check-compatible { border-color: color-mix(in srgb, var(--green) 45%, var(--line)); color: var(--green); }

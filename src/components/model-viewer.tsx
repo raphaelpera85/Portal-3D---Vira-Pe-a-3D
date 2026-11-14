@@ -8,11 +8,20 @@ import type * as THREE from "three";
 import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { ModelUploadManager, type SavedModelUpload } from "@/components/model-upload-manager";
 import { createMeterExportCopy } from "@/lib/model-export";
+import { evaluateBuildVolume, type CompatibilityStatus } from "@/lib/compatibility";
 import {
   formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
   type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds,
   formatThreeMfFilamentLabel, getModelColorMatchedTriangleIndexes, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
+
+type ViewerPrinter = {
+  id: string;
+  name: string;
+  buildVolumeMm: ModelDimensions | null;
+  volumeModes: { id: string; label: string; dimensionsMm: ModelDimensions }[];
+  cylindrical: boolean;
+};
 
 type ViewName = "frente" | "tras" | "topo" | "base" | "esquerda" | "direita";
 const views: { name: ViewName; label: string; direction: [number, number, number] }[] = [
@@ -25,7 +34,7 @@ const views: { name: ViewName; label: string; direction: [number, number, number
 ];
 type ViewerComponent = { id: string; name: string; visible: boolean; colors: string[] };
 
-export function ModelViewer({ buyerId, savedModels = [], materials = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: { id: string; label: string }[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
+export function ModelViewer({ buyerId, savedModels = [], materials = [], printers = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; materials?: { id: string; label: string }[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -56,6 +65,8 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [unit, setUnit] = useState<ModelUnit | "">("");
   const [scale, setScale] = useState(100);
+  const [printerId, setPrinterId] = useState(() => printers.find((printer) => printer.volumeModes.length || printer.buildVolumeMm)?.id ?? printers[0]?.id ?? "");
+  const [volumeModeId, setVolumeModeId] = useState("");
   const [showGrid, setShowGrid] = useState(true);
   const [showAxes, setShowAxes] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -537,6 +548,16 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
   const dimensionsMm = rawDimensions && unit
     ? formatModelDimensions(rawDimensions, sourceUnit ?? unit, "mm", 1)
     : null;
+  const scaledDimensionsMm = rawDimensions && unit
+    ? formatModelDimensions(rawDimensions, sourceUnit ?? unit, "mm", scale / 100)
+    : null;
+  const selectedPrinter = printers.find((printer) => printer.id === printerId);
+  const selectedVolumeMode = selectedPrinter?.volumeModes.find((mode) => mode.id === volumeModeId) ?? selectedPrinter?.volumeModes[0];
+  const fitVolume = selectedVolumeMode?.dimensionsMm ?? selectedPrinter?.buildVolumeMm ?? null;
+  const fitCheck = scaledDimensionsMm && selectedPrinter && !selectedPrinter.cylindrical
+    ? evaluateBuildVolume(fitVolume, scaledDimensionsMm)
+    : null;
+  const fitStatus: CompatibilityStatus = fitCheck?.status ?? "unverified";
 
   return (
     <section className="viewer-shell shell" aria-label="Visualizador de modelos 3D">
@@ -610,6 +631,25 @@ export function ModelViewer({ buyerId, savedModels = [], materials = [], today, 
           <input className="scale-slider" aria-label="Escala proporcional do modelo" type="range" min="10" max="300" step="5" value={scale} onChange={(event) => updateScale(Number(event.target.value))} disabled={!rawDimensions} />
           <div className="scale-limits"><span>10%</span><span>300%</span></div>
           <p className="scale-note">A escala altera a prévia. Baixe uma nova cópia GLB para aplicar a escala; o original permanece intacto.{!unit && rawDimensions ? " Confirme a unidade para exportar corretamente." : ""}</p>
+          <div className="inspector-divider" />
+          <div className="inspector-section-head"><h2>Compatibilidade dimensional</h2></div>
+          {printers.length > 0 ? <>
+            <label className="technical-select">Impressora<select aria-label="Impressora para verificar as dimensões" value={printerId} onChange={(event) => { setPrinterId(event.target.value); setVolumeModeId(""); }}>
+              {printers.map((printer) => <option key={printer.id} value={printer.id}>{printer.name}</option>)}
+            </select></label>
+            {selectedPrinter && selectedPrinter.volumeModes.length > 1 && <label className="technical-select">Configuração de volume<select aria-label="Configuração do volume de impressão" value={selectedVolumeMode?.id ?? ""} onChange={(event) => setVolumeModeId(event.target.value)}>
+              {selectedPrinter.volumeModes.map((mode) => <option key={mode.id} value={mode.id}>{mode.label}</option>)}
+            </select></label>}
+            <ul className="compatibility-checks viewer-volume-check">
+              <li className={`status-${fitStatus}`}>
+                <span className={`compatibility-check-mark check-${fitStatus}`} aria-hidden="true">{fitStatus === "compatible" ? "✓" : fitStatus === "incompatible" ? "!" : "?"}</span>
+                <div><strong>{fitCheck?.label ?? "Volume de impressão"}</strong><p>{selectedPrinter?.cylindrical ? "O volume cilíndrico desta impressora exige uma comparação própria; a estimativa retangular não se aplica." : !rawDimensions ? "Abra um arquivo 3D para calcular as dimensões." : !unit ? "Confirme a unidade do modelo para comparar as medidas." : fitCheck?.detail}</p></div>
+              </li>
+            </ul>
+            {selectedPrinter && !selectedPrinter.volumeModes.length && selectedPrinter.buildVolumeMm && <p className="viewer-volume-value">Volume cadastrado: {selectedPrinter.buildVolumeMm.x} × {selectedPrinter.buildVolumeMm.y} × {selectedPrinter.buildVolumeMm.z} mm</p>}
+            {selectedVolumeMode && <p className="viewer-volume-value">Volume · {selectedVolumeMode.label}: {selectedVolumeMode.dimensionsMm.x} × {selectedVolumeMode.dimensionsMm.y} × {selectedVolumeMode.dimensionsMm.z} mm</p>}
+            <p className="compatibility-disclaimer">Estimativa pelas dimensões alinhadas aos eixos, na escala atual. Não considera o formato da mesa, inclinações, suportes ou garante o sucesso da impressão.</p>
+          </> : <p className="scale-note">O catálogo de impressoras não está disponível para verificar o volume.</p>}
           {modelColors.length > 0 && <>
             <div className="inspector-divider" />
             <div className="inspector-section-head"><h2>Cores do arquivo</h2><span className="component-count">{modelColors.length}</span></div>

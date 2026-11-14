@@ -6,6 +6,7 @@
 - Leitura e renderização no navegador por padrão; compradores autenticados podem salvar o conjunto na biblioteca privada da conta.
 - Orbit, zoom, panorâmica, vistas frontal/traseira/superior/inferior/laterais, enquadramento, grade, eixos, tela cheia e captura PNG.
 - Dimensões do limite da malha e escala proporcional de 10% a 300% na prévia.
+- Verificação dimensional opcional contra o volume cadastrado de uma impressora, considerando a escala atual e os modos de volume publicados para a máquina.
 - STL e OBJ não carregam uma unidade padronizada. O usuário precisa confirmá-la antes que as dimensões sejam mostradas.
 - 3MF lê a unidade do arquivo (milímetro por padrão no padrão 3MF); unidades desconhecidas precisam de confirmação manual. GLB/GLTF usam metros, como definido pelo glTF. A dimensão pode ser mostrada em mm, cm ou m.
 - A paleta mostra cores de vértice, materiais e atribuições presentes no arquivo, como aparência visual, sem atribuir filamentos. Selecione uma amostra para realçar os componentes correspondentes no modelo e na lista.
@@ -19,6 +20,7 @@
 
 - OBJ/GLTF podem ser selecionados junto com arquivos externos MTL, BIN e texturas. Os nomes dos recursos precisam corresponder aos caminhos do modelo; em caso de ambiguidade por nomes repetidos, use um pacote GLB/3MF.
 - Texturas baseadas em arquivo são renderizadas, mas não são convertidas em swatches de cor de filamento.
+- A verificação dimensional compara a caixa da peça com os eixos da área retangular cadastrada; não cobre inclinações, formato da mesa, folgas, suportes ou garante que a impressão será bem-sucedida. Volumes cilíndricos ou ausentes aparecem como não verificados.
 - Perfis ainda não são associados a uma malha aberta no visualizador local; a seleção e o consumo declarado aparecem na página do produto.
 - A exportação cria um GLB com a geometria, materiais e componentes visíveis compatíveis com glTF; metadados específicos de impressão ou do formato de origem podem não ser preservados. O arquivo original permanece intacto.
 - A biblioteca usa bucket privado, limita os arquivos e o conjunto a 20 MB e verifica a propriedade antes de registrar o upload. A migração `20261112040057_private_model_uploads.sql` está aplicada ao projeto Supabase configurado.

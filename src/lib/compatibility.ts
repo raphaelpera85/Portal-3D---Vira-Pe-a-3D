@@ -51,6 +51,23 @@ export type CompatibilityCheck = {
   detail: string;
 };
 
+export function evaluateBuildVolume(
+  buildVolumeMm: CatalogPrinter["buildVolumeMm"],
+  dimensions: { x: number; y: number; z: number },
+): CompatibilityCheck {
+  if (![dimensions.x, dimensions.y, dimensions.z].every((value) => Number.isFinite(value) && value > 0)) {
+    return { key: "volume", label: "Volume de impressão", status: "unverified", detail: "Informe três dimensões positivas em milímetros." };
+  }
+  if (buildVolumeMm == null) {
+    return { key: "volume", label: "Volume de impressão", status: "unverified", detail: "O volume útil da impressora não está cadastrado." };
+  }
+  const part = [dimensions.x, dimensions.y, dimensions.z].sort((a, b) => b - a);
+  const volume = [buildVolumeMm.x, buildVolumeMm.y, buildVolumeMm.z].sort((a, b) => b - a);
+  return part.some((size, index) => size > volume[index])
+    ? { key: "volume", label: "Volume de impressão", status: "incompatible", detail: "A peça excede o volume útil cadastrado, mesmo após orientar seus eixos." }
+    : { key: "volume", label: "Volume de impressão", status: "compatible", detail: "As dimensões informadas cabem no volume útil." };
+}
+
 type CompatibilityOptions = {
   partDimensionsMm?: { x: number; y: number; z: number };
   useMulticolor?: boolean;
@@ -158,20 +175,7 @@ export function evaluateCompatibility(
   }
 
   if (options.partDimensionsMm) {
-    const dimensions = options.partDimensionsMm;
-    if (![dimensions.x, dimensions.y, dimensions.z].every((value) => Number.isFinite(value) && value > 0)) {
-      add("volume", "Volume de impressão", "unverified", "Informe três dimensões positivas em milímetros.");
-    } else if (printer.buildVolumeMm == null) {
-      add("volume", "Volume de impressão", "unverified", "O volume útil da impressora não está cadastrado.");
-    } else {
-      const part = [dimensions.x, dimensions.y, dimensions.z].sort((a, b) => b - a);
-      const volume = [printer.buildVolumeMm.x, printer.buildVolumeMm.y, printer.buildVolumeMm.z].sort((a, b) => b - a);
-      if (part.some((size, index) => size > volume[index])) {
-        add("volume", "Volume de impressão", "incompatible", "A peça excede o volume útil cadastrado, mesmo após orientar seus eixos.");
-      } else {
-        add("volume", "Volume de impressão", "compatible", "As dimensões informadas cabem no volume útil.");
-      }
-    }
+    checks.push(evaluateBuildVolume(printer.buildVolumeMm, options.partDimensionsMm));
   }
 
   if (options.useMulticolor && material.process === "filament") {
