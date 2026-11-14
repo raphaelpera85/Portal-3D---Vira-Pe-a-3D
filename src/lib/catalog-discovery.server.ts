@@ -4,8 +4,10 @@ import { fetchAllCatalogRows } from "./catalog-source-monitor";
 import { getUnknownPrinterCandidates, officialPrinterFeeds, parseOfficialPrinterFeed, readLimitedResponseText } from "./catalog-discovery";
 
 const maxFeedBytes = 8 * 1024 * 1024;
-// shortcut: scan at most 1,250 products per source per run; persist cursors if a feed needs broader coverage.
 const maxFeedPages = 5;
+const rotatingFeedPages = maxFeedPages - 1;
+const feedPageWindows = 125;
+const lastFeedPage = 1 + rotatingFeedPages * feedPageWindows;
 
 export async function runCatalogModelDiscovery() {
   const supabase = createSupabaseAdminClient();
@@ -22,8 +24,23 @@ export async function runCatalogModelDiscovery() {
     let truncated = false;
 
     for (const feed of officialPrinterFeeds) {
+      const cursorQuery = await supabase.from("catalog_discovery_cursors").select("next_page").eq("manufacturer", feed.manufacturer).maybeSingle();
+      if (cursorQuery.error?.code === "PGRST205" || cursorQuery.error?.code === "42P01") {
+        return { ok: true, skipped: "migration-required", checked, candidates: candidateCount, sourceFailures, storageFailures };
+      }
+      if (cursorQuery.error) {
+        storageFailures += 1;
+        continue;
+      }
+      const cursorPage = cursorQuery.data?.next_page;
+      const startPage = typeof cursorPage === "number" && Number.isInteger(cursorPage) && cursorPage >= 2 && cursorPage <= lastFeedPage
+        ? cursorPage
+        : 2;
       const feedTimeout = AbortSignal.timeout(6_000);
-      for (let page = 1; page <= maxFeedPages; page += 1) {
+      const pages = [1, ...Array.from({ length: rotatingFeedPages }, (_, index) => startPage + index)];
+      let failed = false;
+      let reachedEnd = false;
+      for (const [index, page] of pages.entries()) {
         const url = new URL(feed.url);
         url.searchParams.set("page", String(page));
         try {
@@ -33,11 +50,13 @@ export async function runCatalogModelDiscovery() {
           });
           if (!response.ok || (response.status >= 300 && response.status < 400) || !response.headers.get("content-type")?.includes("application/json")) {
             sourceFailures += 1;
+            failed = true;
             break;
           }
           const payload: unknown = JSON.parse(await readLimitedResponseText(response, maxFeedBytes));
           if (payload == null || typeof payload !== "object" || !Array.isArray((payload as { products?: unknown }).products)) {
             sourceFailures += 1;
+            failed = true;
             break;
           }
           const products = (payload as { products: unknown[] }).products;
@@ -55,19 +74,29 @@ export async function runCatalogModelDiscovery() {
             }
             if (error) {
               storageFailures += 1;
+              failed = true;
               break;
             }
             candidateCount += candidates.length;
           }
-          if (products.length < 250) break;
-          if (page === maxFeedPages) {
-            sourceFailures += 1;
-            truncated = true;
+          if (products.length < 250) {
+            reachedEnd = true;
+            break;
           }
+          if (index === pages.length - 1) truncated = true;
         } catch {
           sourceFailures += 1;
+          failed = true;
           break;
         }
+      }
+      if (!failed) {
+        const nextPage = reachedEnd || startPage + rotatingFeedPages > lastFeedPage ? 2 : startPage + rotatingFeedPages;
+        const { error } = await supabase.from("catalog_discovery_cursors").upsert({ manufacturer: feed.manufacturer, next_page: nextPage }, { onConflict: "manufacturer" });
+        if (error?.code === "PGRST205" || error?.code === "42P01") {
+          return { ok: true, skipped: "migration-required", checked, candidates: candidateCount, sourceFailures, storageFailures };
+        }
+        if (error) storageFailures += 1;
       }
     }
 
