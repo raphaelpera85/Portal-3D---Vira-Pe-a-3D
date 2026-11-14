@@ -9,6 +9,8 @@ import { readPrintProfileColors } from "@/lib/print-profile-colors";
 import { loadTechnicalCatalog } from "@/lib/technical-catalog.server";
 import { getShowcaseModel } from "@/lib/model-showcase";
 import { getCalculatorProductPrefill } from "@/lib/calculator-price-target";
+import { fetchInChunks } from "@/lib/fetch-in-chunks";
+import { fetchAllPages } from "@/lib/pagination";
 
 export const metadata: Metadata = {
   title: "Calculadora de impressão 3D | ViraPeça 3D",
@@ -40,17 +42,17 @@ export default async function CalculatorPage({ searchParams }: { searchParams: P
       calculationStoreId = store.id;
       canSaveCalculations = true;
       const [{ data, error }, history, productResult, profileResult, modelProfileResult] = await Promise.all([
-        actor.supabase.from("maker_printers")
+        fetchAllPages((from, to) => actor.supabase!.from("maker_printers")
           .select("id, catalog_model_id, manufacturer_snapshot, model_snapshot, nickname, purchase_price_brl, residual_value_brl, useful_life_hours, accumulated_hours, measured_average_power_w, energy_tariff_per_kwh")
-          .eq("store_id", store.id).neq("operational_status", "inactive").order("nickname"),
+          .eq("store_id", store.id).neq("operational_status", "inactive").order("nickname").order("id").range(from, to)),
         actor.supabase.from("maker_cost_calculations").select("id, title, input_snapshot, product_id, printer_id, profile_id, created_at")
           .eq("store_id", store.id).order("created_at", { ascending: false }).limit(20),
-        actor.supabase.from("marketplace_products").select("id, name, slug, catalog_status, listing_type, price_mode, price_brl, product_properties, variants:marketplace_product_variants(id, variant_options, price_brl)")
-          .eq("store_id", store.id).order("name"),
-        actor.supabase.from("maker_print_profiles").select("id, product_id, profile_name, quantity, material_snapshot, print_hours, material_grams, material_by_color, maker_printer_id")
-          .eq("store_id", store.id).order("profile_name"),
-        actor.supabase.from("visible_model_print_profiles").select("id, model_slug, profile_name, quantity, material_snapshot, slicer_metrics")
-          .eq("is_owner", true).order("profile_name"),
+        fetchAllPages((from, to) => actor.supabase!.from("marketplace_products").select("id, name, slug, catalog_status, listing_type, price_mode, price_brl, product_properties, variants:marketplace_product_variants(id, variant_options, price_brl)")
+          .eq("store_id", store.id).order("name").order("id").range(from, to)),
+        fetchAllPages((from, to) => actor.supabase!.from("maker_print_profiles").select("id, product_id, profile_name, quantity, material_snapshot, print_hours, material_grams, material_by_color, maker_printer_id")
+          .eq("store_id", store.id).order("profile_name").order("id").range(from, to)),
+        fetchAllPages((from, to) => actor.supabase!.from("visible_model_print_profiles").select("id, model_slug, profile_name, quantity, material_snapshot, slicer_metrics")
+          .eq("is_owner", true).order("profile_name").order("id").range(from, to)),
       ]);
       if (error) equipmentNotice = "Não foi possível carregar seus equipamentos. A calculadora manual continua disponível.";
       if (productResult.error) productNotice = "Não foi possível carregar os produtos desta loja para vinculá-los ao cálculo.";
@@ -78,16 +80,12 @@ export default async function CalculatorPage({ searchParams }: { searchParams: P
       }
       const maintenanceCosts = new Map<string, number>();
       const printerIds = (data ?? []).map((printer) => printer.id);
-      for (let offset = 0; printerIds.length > 0; offset += 1000) {
-        const { data: events, error: maintenanceError } = await actor.supabase.from("printer_maintenance_events")
-          .select("printer_id, cost_brl").in("printer_id", printerIds).range(offset, offset + 999);
-        if (maintenanceError) {
-          maintenanceCosts.clear();
-          equipmentNotice = "Não foi possível carregar o histórico de manutenção para sugerir uma taxa média; informe-a manualmente.";
-          break;
-        }
-        for (const event of events ?? []) maintenanceCosts.set(event.printer_id, (maintenanceCosts.get(event.printer_id) ?? 0) + Number(event.cost_brl));
-        if ((events?.length ?? 0) < 1000) break;
+      const maintenanceResult = await fetchInChunks(printerIds, (ids) => fetchAllPages((from, to) => actor.supabase!.from("printer_maintenance_events")
+        .select("printer_id, cost_brl").in("printer_id", ids).order("printer_id").order("id").range(from, to)));
+      if (maintenanceResult.error) {
+        equipmentNotice = "Não foi possível carregar o histórico de manutenção para sugerir uma taxa média; informe-a manualmente.";
+      } else {
+        for (const event of maintenanceResult.data ?? []) maintenanceCosts.set(event.printer_id, (maintenanceCosts.get(event.printer_id) ?? 0) + Number(event.cost_brl));
       }
       equipment = (data ?? []).map((printer) => ({
         id: printer.id, label: `${printer.nickname} · ${printer.manufacturer_snapshot} ${printer.model_snapshot}`,
