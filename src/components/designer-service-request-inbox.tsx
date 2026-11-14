@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { DesignerServiceQuoteForm } from "@/components/designer-service-quote-form";
 import { advanceDesignerServiceWork } from "@/app/painel/designer/actions";
 import { DesignerServiceDeliveryForm } from "@/components/designer-service-delivery-form";
@@ -18,13 +19,13 @@ type DesignerServiceRequest = {
   delivery: { notes: string; created_at: string; files: { id: string; file_name: string; file_size: number; downloadUrl: string | null }[] } | null;
 };
 
-export function DesignerServiceRequestInbox({ requests, error }: { requests: DesignerServiceRequest[]; error: boolean }) {
+export function DesignerServiceRequestInbox({ requests, page, pages, error }: { requests: DesignerServiceRequest[]; page: number; pages: number; error: boolean }) {
   return <section className="account-card designer-service-inbox" aria-labelledby="designer-service-inbox-title">
     <span className="account-kicker">NOVOS PROJETOS</span>
     <h2 id="designer-service-inbox-title">Pedidos de modelagem</h2>
     <p>Briefings privados enviados pelo seu perfil público. Revise os requisitos antes de estimar o trabalho.</p>
     {error ? <p className="auth-notice is-error" role="alert">Pedidos indisponíveis. Confira se a migration de serviços de designers foi aplicada.</p>
-      : requests.length ? <div className="designer-service-request-list">{requests.map((request) => <article className="designer-service-request-card" key={request.id}>
+      : requests.length ? <><div className="designer-service-request-list">{requests.map((request) => <article className="designer-service-request-card" key={request.id}>
         <span className="account-kicker">{request.status === "paid" ? "CONTRATAÇÃO PAGA" : request.status === "in_progress" ? "EM MODELAGEM" : request.status === "completed" ? "MODELAGEM CONCLUÍDA" : request.status === "accepted" ? "AGUARDANDO PAGAMENTO" : request.status === "quoted" ? "PROPOSTA ENVIADA" : `Recebido em ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(request.created_at))}`}</span>
         <h3>{request.title}</h3>
         <p className="designer-service-brief">{request.brief}</p>
@@ -41,6 +42,6 @@ export function DesignerServiceRequestInbox({ requests, error }: { requests: Des
           {request.status === "completed" && <><p>Entrega enviada em {request.work_completed_at ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" }).format(new Date(request.work_completed_at)) : "—"}.</p>{request.delivery?.notes && <p>{request.delivery.notes}</p>}
             {request.delivery?.files.map((file) => file.downloadUrl ? <p key={file.id}><a href={file.downloadUrl}>{file.file_name} · {(Number(file.file_size) / 1024 / 1024).toFixed(1)} MiB ↓</a></p> : <p key={file.id}>{file.file_name} · download indisponível</p>)}</>}
         </div>}
-      </article>)}</div> : <p className="designer-service-empty">Ainda não há pedidos de modelagem.</p>}
+      </article>)}</div>{pages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos pedidos de modelagem">{page > 1 ? <Link className="button button-secondary" href={`/painel/designer?pagina=${page - 1}`}>← Página anterior</Link> : <span />}<span>Página {page} de {pages}</span>{page < pages ? <Link className="button button-secondary" href={`/painel/designer?pagina=${page + 1}`}>Próxima página →</Link> : <span />}</nav>}</> : <p className="designer-service-empty">Ainda não há pedidos de modelagem.</p>}
   </section>;
 }
