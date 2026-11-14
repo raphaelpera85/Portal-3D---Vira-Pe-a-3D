@@ -74,7 +74,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     fetchAllPages((from, to) => actor.supabase.from("seller_purchase_orders").select("id, store_name, status, created_at, coupon_code, coupon_discount_cents, delivery_recipient_name, delivery_postal_code, delivery_street, delivery_number, delivery_complement, delivery_district, delivery_city, delivery_state_code, delivery_reference, shipping_quote_status, shipping_carrier, shipping_service, shipping_cost_cents, shipping_delivery_days, shipment_status, shipping_tracking_code, shipping_tracking_url, shipping_expected_date, shipping_shipped_at, shipping_delivered_at, completed_at, payments:seller_order_payments(id, status, checkout_url, total_cents, created_at, cancellations:seller_order_payment_cancellations(status)), events:seller_purchase_order_events(id, event_type, description, created_at)")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
-    fetchAllPages((from, to) => actor.supabase.from("custom_print_requests").select("id, upload_id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, winning_store_id, production_started_at, production_completed_at, created_at, offers:custom_print_offers(id, store_name, total_brl, lead_days, terms, status), delivery:custom_print_deliveries(*), payments:seller_order_payments(id, status, checkout_url, total_cents, shipping_cents, created_at, cancellations:seller_order_payment_cancellations(status)), targets:custom_print_request_targets(id, store:stores(name), events:custom_print_request_events(id, event_type, event_data, actor_user_id, created_at))")
+    fetchAllPages((from, to) => actor.supabase.from("custom_print_requests").select("id, upload_id, model_name, dimensions_x_mm, dimensions_y_mm, dimensions_z_mm, scale_percent, material_snapshot, quantity, color, quality, due_date, notes, status, winning_store_id, production_started_at, production_completed_at, created_at, delivery:custom_print_deliveries(*), payments:seller_order_payments(id, status, checkout_url, total_cents, shipping_cents, created_at, cancellations:seller_order_payment_cancellations(status))")
       .eq("buyer_id", actor.user.id).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
     actor.supabase.rpc("get_my_digital_asset_download_stats"),
   ]);
@@ -88,7 +88,46 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
   for (const item of orderItemsResult.data ?? []) orderItemsByOrder.set(item.order_id,
     [...(orderItemsByOrder.get(item.order_id) ?? []), item]);
   const orders = baseOrders.map((order) => ({ ...order, items: orderItemsByOrder.get(order.id) ?? [] }));
-  const customRequests = customResult.data ?? [];
+  const baseCustomRequests = customResult.data ?? [];
+  const customRequestIds = baseCustomRequests.map((request) => request.id);
+  const [customOffersResult, customTargetsResult] = await Promise.all([
+    fetchInChunks(customRequestIds, (ids) => fetchAllPages((from, to) => actor.supabase.from("custom_print_offers")
+      .select("id, request_id, store_name, total_brl, lead_days, terms, status").in("request_id", ids)
+      .order("request_id").order("created_at").order("id").range(from, to))),
+    fetchInChunks(customRequestIds, (ids) => fetchAllPages((from, to) => actor.supabase.from("custom_print_request_targets")
+      .select("id, request_id, store_id, compatibility, maker_read_at, status, created_at, store:stores(name)").in("request_id", ids)
+      .order("request_id").order("created_at").order("id").range(from, to))),
+  ]);
+  const customTargets = customTargetsResult.data ?? [];
+  const customTargetIds = customTargets.map((target) => target.id);
+  const customTargetEventsResult = await fetchInChunks(customTargetIds, (ids) => fetchAllPages((from, to) => actor.supabase.from("custom_print_request_events")
+    .select("id, target_id, event_type, event_data, actor_user_id, created_at").in("target_id", ids)
+    .order("target_id").order("created_at").order("id").range(from, to)));
+  const customOffersByRequest = new Map<string, NonNullable<typeof customOffersResult.data>>();
+  for (const offer of customOffersResult.data ?? []) {
+    const requestOffers = customOffersByRequest.get(offer.request_id) ?? [];
+    requestOffers.push(offer);
+    customOffersByRequest.set(offer.request_id, requestOffers);
+  }
+  const customEventsByTarget = new Map<string, NonNullable<typeof customTargetEventsResult.data>>();
+  for (const event of customTargetEventsResult.data ?? []) {
+    const targetEvents = customEventsByTarget.get(event.target_id) ?? [];
+    targetEvents.push(event);
+    customEventsByTarget.set(event.target_id, targetEvents);
+  }
+  type CustomPrintTarget = NonNullable<typeof customTargetsResult.data>[number] & { events: NonNullable<typeof customTargetEventsResult.data> };
+  const customTargetsByRequest = new Map<string, CustomPrintTarget[]>();
+  for (const target of customTargets) {
+    const requestTargets = customTargetsByRequest.get(target.request_id) ?? [];
+    requestTargets.push({ ...target, events: customEventsByTarget.get(target.id) ?? [] });
+    customTargetsByRequest.set(target.request_id, requestTargets);
+  }
+  const customRequests = baseCustomRequests.map((request) => ({
+    ...request,
+    offers: customOffersByRequest.get(request.id) ?? [],
+    targets: customTargetsByRequest.get(request.id) ?? [],
+  }));
+  const customOrderError = Boolean(customResult.error || customOffersResult.error || customTargetsResult.error || customTargetEventsResult.error);
   const downloadStatsByRequest = new Map<string, { count: number | string; lastDownloadAt: string | null }>(
     ((downloadStatsResult.data ?? []) as { request_id: string; download_count: number | string; last_download_at: string | null }[])
       .map((row) => [row.request_id, { count: row.download_count, lastDownloadAt: row.last_download_at }] as const),
@@ -116,7 +155,7 @@ export default async function BuyerQuotesPage({ searchParams }: { searchParams: 
       {resultado === "frete-endereco" && <p className="auth-notice is-success" role="status">Endereço de entrega enviado somente à loja vencedora. Aguardando cotação de frete.</p>}
       {resultado === "entrega-confirmada" && <p className="auth-notice is-success" role="status">Recebimento confirmado. Obrigado pela compra.</p>}
       {reviewsUnavailable && <p className="auth-notice is-error" role="status">Algumas avaliações estão temporariamente indisponíveis. A equipe precisa aplicar as migrações 034 e 036 do banco.</p>}
-      {error || orderResult.error || orderItemsResult.error || customResult.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar seus pedidos. Confira as migrações do marketplace e de impressão personalizada.</p> : !data?.length && !orders.length && !customRequests.length ? <section className="account-card"><h2>Nenhum pedido por enquanto</h2><p>Explore produtos ou envie um modelo 3D para receber propostas de impressão.</p><Link className="button button-primary" href="/#produtos">Explorar produtos</Link><Link className="button button-secondary" href="/visualizador">Enviar modelo 3D</Link></section> : <section className="quote-list" aria-label="Pedidos e orçamentos">
+      {error || orderResult.error || orderItemsResult.error || customOrderError ? <p className="auth-notice is-error" role="alert">Não foi possível carregar seus pedidos. Confira as migrações do marketplace e de impressão personalizada.</p> : !data?.length && !orders.length && !customRequests.length ? <section className="account-card"><h2>Nenhum pedido por enquanto</h2><p>Explore produtos ou envie um modelo 3D para receber propostas de impressão.</p><Link className="button button-primary" href="/#produtos">Explorar produtos</Link><Link className="button button-secondary" href="/visualizador">Enviar modelo 3D</Link></section> : <section className="quote-list" aria-label="Pedidos e orçamentos">
         {customRequests.map((request) => {
           const payment = [...(request.payments ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
           const acceptedOffer = request.offers?.find((offer) => offer.status === "accepted");
