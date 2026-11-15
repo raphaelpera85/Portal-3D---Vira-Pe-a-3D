@@ -12,6 +12,20 @@ const profileHash = (profiles: unknown) => {
 };
 
 describe("mapTechnicalCatalog", () => {
+  it("keeps Raise3D Pro3 Plus HS available in the local fallback with both build modes", () => {
+    const printer = printers.find((entry) => entry.id === "raise3d-pro3-plus-hs");
+
+    expect(printer).toMatchObject({
+      brand: "Raise3D", model: "Pro3 Plus HS", variant: "standard", extruders: 2,
+      buildVolumeDescription: "300 × 300 × 605 mm (extrusão simples) · 255 × 300 × 605 mm (dupla)",
+      technicalProperties: {
+        singleExtrusionVolumeMm: { x: 300, y: 300, z: 605 },
+        dualExtrusionVolumeMm: { x: 255, y: 300, z: 605 },
+      },
+    });
+    expect(getBuildVolumeModes(printer!.technicalProperties!)).toHaveLength(2);
+  });
+
   it("includes Formlabs Form 4L with its official resin build volume and resolution data", () => {
     const form4L = printers.find((printer) => printer.id === "formlabs-form-4l");
 
