@@ -9,6 +9,22 @@ export function calculateMarketplaceFeeCents(totalCents: number, percent: number
   return fee;
 }
 
+export function calculateMarketplaceCheckoutAmounts(subtotalCents: number, discountCents: number, shippingCents: number, feePercent: number) {
+  if (!Number.isSafeInteger(subtotalCents) || subtotalCents < 1 || !Number.isSafeInteger(discountCents) || discountCents < 0
+    || discountCents >= subtotalCents || !Number.isSafeInteger(shippingCents) || shippingCents < 0) {
+    throw new Error("Invalid marketplace checkout amounts");
+  }
+  const payableSubtotalCents = subtotalCents - discountCents;
+  const totalCents = payableSubtotalCents + shippingCents;
+  if (!Number.isSafeInteger(totalCents) || totalCents < 1) throw new Error("Invalid marketplace checkout total");
+  return {
+    payableSubtotalCents,
+    shippingCents,
+    totalCents,
+    marketplaceFeeCents: calculateMarketplaceFeeCents(payableSubtotalCents, feePercent),
+  };
+}
+
 export function isMercadoPagoCheckoutUrl(value: string) {
   try {
     const url = new URL(value);

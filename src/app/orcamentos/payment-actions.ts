@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getMercadoPagoSellerAccessToken } from "@/lib/mercado-pago-access-token.server";
-import { calculateMarketplaceFeeCents, customPrintOfferPaymentItem, formatMercadoPagoAmount, isMercadoPagoOrderForPayment, mapMercadoPagoOrderStatus, parseMercadoPagoOrderResponse } from "@/lib/mercado-pago-payments";
+import { calculateMarketplaceCheckoutAmounts, customPrintOfferPaymentItem, formatMercadoPagoAmount, isMercadoPagoOrderForPayment, mapMercadoPagoOrderStatus, parseMercadoPagoOrderResponse } from "@/lib/mercado-pago-payments";
 import { getMercadoPagoOrderCancellationStatus } from "@/lib/mercado-pago-cancellations";
 import { getSiteUrl } from "@/lib/site-url";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -95,18 +95,14 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
   });
   const subtotalCents = items.reduce((sum, item) => sum + item.unitCents * item.quantity, 0);
   const couponDiscountCents = isOrder ? Number(orderRow.coupon_discount_cents ?? 0) : 0;
-  const payableSubtotalCents = subtotalCents - couponDiscountCents;
   const shippingCents = isOrder ? Number(orderRow.shipping_cost_cents) : isCustomPrint ? Number(customPrintDelivery.shipping_cost_cents) : 0;
-  const totalCents = payableSubtotalCents + shippingCents;
-  if (!Number.isSafeInteger(subtotalCents) || subtotalCents < 1 || !Number.isSafeInteger(couponDiscountCents) || couponDiscountCents < 0
-    || payableSubtotalCents < 1 || !Number.isSafeInteger(shippingCents) || shippingCents < 0
-    || !Number.isSafeInteger(totalCents) || totalCents < 1
-    || items.some((item) => !item.name || !Number.isSafeInteger(item.unitCents) || item.unitCents < 1 || !Number.isInteger(item.quantity) || item.quantity < 1)) {
+  let payableSubtotalCents: number, totalCents: number, feeCents: number;
+  try {
+    ({ payableSubtotalCents, totalCents, marketplaceFeeCents: feeCents } = calculateMarketplaceCheckoutAmounts(subtotalCents, couponDiscountCents, shippingCents, feePercent));
+  } catch { resultPage("pagamento-erro"); }
+  if (items.some((item) => !item.name || !Number.isSafeInteger(item.unitCents) || item.unitCents < 1 || !Number.isInteger(item.quantity) || item.quantity < 1)) {
     resultPage("pagamento-erro");
   }
-  let feeCents: number;
-  try { feeCents = calculateMarketplaceFeeCents(payableSubtotalCents, feePercent); }
-  catch { resultPage("pagamento-configurar"); }
 
   const { data: connection } = await admin.from("store_payment_connections").select("provider_user_id")
     .eq("store_id", storeId).maybeSingle();
@@ -135,7 +131,7 @@ export async function startSellerOrderPayment(formData: FormData): Promise<void>
   const persistedTotalCents = Number(payment.payment_total_cents);
   const persistedFeeCents = Number(payment.payment_fee_cents);
   if (payment.payment_status !== "creating" || persistedTotalCents !== totalCents || !Number.isSafeInteger(persistedFeeCents)
-    || persistedFeeCents < 0 || persistedFeeCents >= subtotalCents) {
+    || persistedFeeCents < 0 || persistedFeeCents >= payableSubtotalCents) {
     resultPage("pagamento-erro");
   }
 

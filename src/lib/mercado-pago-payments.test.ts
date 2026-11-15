@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { calculateMarketplaceFeeCents, customPrintOfferPaymentItem, formatMercadoPagoAmount, isMercadoPagoCheckoutUrl, isMercadoPagoOrderForPayment, mapMercadoPagoOrderStatus, mercadoPagoAmountToCents, parseMercadoPagoOrderResponse, verifyMercadoPagoWebhookSignature } from "./mercado-pago-payments";
+import { calculateMarketplaceCheckoutAmounts, calculateMarketplaceFeeCents, customPrintOfferPaymentItem, formatMercadoPagoAmount, isMercadoPagoCheckoutUrl, isMercadoPagoOrderForPayment, mapMercadoPagoOrderStatus, mercadoPagoAmountToCents, parseMercadoPagoOrderResponse, verifyMercadoPagoWebhookSignature } from "./mercado-pago-payments";
 
 describe("Mercado Pago payment helpers", () => {
   it("calculates a configurable marketplace fee in integer cents", () => {
@@ -8,6 +8,17 @@ describe("Mercado Pago payment helpers", () => {
     expect(calculateMarketplaceFeeCents(1, 50)).toBe(0);
     expect(() => calculateMarketplaceFeeCents(100, -1)).toThrow();
     expect(() => calculateMarketplaceFeeCents(0, 10)).toThrow();
+  });
+
+  it("calculates the seller-funded coupon before commission and adds shipping after the discount", () => {
+    expect(calculateMarketplaceCheckoutAmounts(10_000, 1_500, 1_000, 10)).toEqual({
+      payableSubtotalCents: 8_500, shippingCents: 1_000, totalCents: 9_500, marketplaceFeeCents: 850,
+    });
+    expect(calculateMarketplaceCheckoutAmounts(10_000, 0, 1_000, 10)).toEqual({
+      payableSubtotalCents: 10_000, shippingCents: 1_000, totalCents: 11_000, marketplaceFeeCents: 1_000,
+    });
+    expect(() => calculateMarketplaceCheckoutAmounts(10_000, 10_000, 0, 10)).toThrow();
+    expect(() => calculateMarketplaceCheckoutAmounts(10_000, 10_001, 0, 10)).toThrow();
   });
 
   it("accepts only HTTPS checkout URLs on Mercado Pago domains", () => {

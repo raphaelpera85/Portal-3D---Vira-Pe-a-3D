@@ -16,8 +16,8 @@ describe("marketplace coupon checkout", () => {
     expect(couponMigration).toContain("discounted_subtotal_cents := subtotal_cents - order_row.coupon_discount_cents");
     expect(couponMigration).toContain("calculated_total := discounted_subtotal_cents + order_row.shipping_cost_cents");
     expect(couponMigration).toContain("p_marketplace_fee_cents >= discounted_subtotal_cents");
-    expect(paymentAction).toContain("const payableSubtotalCents = subtotalCents - couponDiscountCents");
-    expect(paymentAction).toContain("calculateMarketplaceFeeCents(payableSubtotalCents, feePercent)");
+    expect(paymentAction).toContain("calculateMarketplaceCheckoutAmounts(subtotalCents, couponDiscountCents, shippingCents, feePercent)");
+    expect(paymentAction).toContain("persistedFeeCents >= payableSubtotalCents");
   });
 
   it("keeps payment creation behind the server service role", () => {
