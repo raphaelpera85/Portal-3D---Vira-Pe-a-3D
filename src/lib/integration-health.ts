@@ -1,4 +1,5 @@
 import { resolveSiteUrl } from "./site-url";
+import { isHuggingFaceSpaceId } from "./huggingface-space";
 
 type Environment = Record<string, string | undefined>;
 
@@ -46,6 +47,10 @@ export function getIntegrationHealth(env: Environment): IntegrationHealthItem[] 
     {
       id: "googleVision", title: "Google Cloud Vision", description: "OCR de imagens de fatiadores e busca de modelos por imagem.", setupHref: "https://github.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/blob/main/docs/integrations.md",
       missing: present(env, "GOOGLE_CLOUD_VISION_API_KEY") ? [] : ["GOOGLE_CLOUD_VISION_API_KEY"],
+    },
+    {
+      id: "triposr", title: "TripoSR · Hugging Face", description: "Geração piloto de rascunhos 3D a partir de imagens.", setupHref: "https://github.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/blob/main/docs/integrations.md#geracao-de-rascunho-3d",
+      missing: isHuggingFaceSpaceId(env.TRIPOSR_SPACE_ID?.trim() ?? "") ? [] : ["TRIPOSR_SPACE_ID"],
     },
     {
       id: "googleSearchConsole", title: "Google Search Console", description: "Verificação da propriedade do portal e envio do sitemap.", setupHref: "https://github.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/blob/main/docs/google-search-console.md",

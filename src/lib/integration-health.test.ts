@@ -8,6 +8,7 @@ describe("getIntegrationHealth", () => {
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "publishable-secret-value",
       SUPABASE_SECRET_KEY: "sb_secret_private-value",
       GOOGLE_CLOUD_VISION_API_KEY: "vision-private-value",
+      TRIPOSR_SPACE_ID: "raphaelpera85/virapeca-triposr",
       NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: "google-verification-token",
       RESEND_API_KEY: "resend-private-value",
       RESEND_FROM_EMAIL: "mail@example.com",
@@ -81,6 +82,7 @@ describe("getIntegrationHealth", () => {
     expect(result.whatsapp.status).toBe("missing");
     expect(result.mercadoPago.status).toBe("missing");
     expect(result.googleVision.status).toBe("missing");
+    expect(result.triposr.missingVariables).toContain("TRIPOSR_SPACE_ID");
     expect(result.googleSearchConsole.status).toBe("missing");
     expect(result.googleSearchConsole.missingVariables).toContain("NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION");
     expect(result.melhorEnvio.status).toBe("missing");

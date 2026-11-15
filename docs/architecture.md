@@ -16,6 +16,7 @@ flowchart LR
   Viewer --> LocalFiles[Arquivos processados no navegador]
   Next --> Ocr[API OCR protegida]
   Ocr --> Vision[Google Cloud Vision]
+  Browser --> Triposr[Space TripoSR · Hugging Face ZeroGPU]
   SSR --> Auth[Supabase Auth]
   SSR --> DB[(PostgreSQL com RLS)]
   DB --> Queue[Fila de notificações]
@@ -58,6 +59,7 @@ flowchart LR
 - E-mail e WhatsApp usam fila persistente com tentativas; WhatsApp depende de consentimento do maker e template aprovado. Briefings de modelagem entram nessa fila e podem avisar o designer por e-mail e WhatsApp com o título do projeto e link para o painel, sem incluir o briefing; o WhatsApp usa template aprovado específico e só é enfileirado para contatos com consentimento.
 - `/catalogos` consulta os registros publicados no banco quando disponíveis e usa dados locais de referência quando não há conexão.
 - `/visualizador` lê arquivos STL, OBJ, 3MF, GLB e GLTF localmente no navegador; compradores podem salvar conjuntos validados no Supabase Storage privado e reabri-los depois. `/calculadora` estima custos e preços por canal; makers salvam snapshots privados e, se Cloud Vision estiver configurado, leem capturas de tela com consentimento.
+- `/gerar-modelo` envia a imagem diretamente do navegador a um Space Gradio TripoSR configurado por `TRIPOSR_SPACE_ID`; a página exige consentimento, limita imagens a 5 MiB e apresenta o resultado GLB como rascunho que ainda requer validação para impressão. A integração fica indisponível até o proprietário criar e ativar um Space ZeroGPU.
 - O histórico de custos pode ser associado a um anúncio e ao equipamento principal da própria loja sem alterar o snapshot recalculado; os vínculos são validados no servidor e na política RLS.
 - `/admin` reúne indicadores brutos do marketplace, contagens das filas pendentes (fabricantes, lojas, anúncios, perfis, designers, denúncias, avaliações e sugestões de impressora) e atalhos para as ferramentas administrativas existentes. As filas usam a sessão autenticada e as políticas RLS; a RPC financeira é acessada pelo servidor após verificar papel admin e só pode ser executada com `service_role`.
 - Administradores podem baixar `/api/admin/reports` como CSV de totais e `/api/admin/reports/payments` como extrato detalhado, com filtro de até 31 dias e 5.000 cobranças. Ambos verificam o papel antes de consultar com `service_role`, desativam cache e identificam valores internos como brutos, sem conciliação de liquidação ou receita líquida.
