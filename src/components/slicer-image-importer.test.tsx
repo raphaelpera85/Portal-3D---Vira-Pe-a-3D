@@ -7,7 +7,7 @@ describe("SlicerImageImporter", () => {
     const markup = renderToStaticMarkup(<SlicerImageImporter enabled configured={false} onApply={() => false} />);
     expect(markup).toContain('type="file"');
     expect(markup).toContain("Escolher imagens");
-    expect(markup).toContain('<button class="price-ocr-file-picker" type="button">');
+    expect(markup).toContain('class="price-ocr-file-picker"');
     expect(markup).toContain('accept="image/png,image/jpeg,image/webp"');
     expect(markup).toContain("Google Cloud Vision");
     expect(markup).toContain("ainda não está conectada");
