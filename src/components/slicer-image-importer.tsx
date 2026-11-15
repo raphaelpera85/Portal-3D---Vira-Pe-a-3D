@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ImageUp, LoaderCircle } from "lucide-react";
 import { MAX_SLICER_OCR_IMAGE_BYTES, MAX_SLICER_OCR_IMAGES, MAX_SLICER_OCR_TOTAL_BYTES } from "@/lib/ocr-image-validation";
 import { confirmSlicerOcrCostCurrency, slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
@@ -31,6 +31,7 @@ function errorMessage(code: string) {
 export function SlicerImageImporter({ enabled, configured, onApply, onFilesChange }: {
   enabled: boolean; configured: boolean; onApply: (extraction: Extraction) => boolean | null; onFilesChange?: (files: File[]) => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -91,7 +92,7 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
   return <section className="price-card slicer-ocr-card" aria-labelledby="slicer-ocr-title">
     <div className="price-card-heading"><span className="price-step"><ImageUp size={15} aria-hidden="true" /></span><div><h2 id="slicer-ocr-title">Ler imagem do fatiador</h2><p>Extraia peso, tempo e outras informações para revisar antes de usar no cálculo.</p></div></div>
     {!enabled ? <p className="price-ocr-note">Entre em uma conta de criador aprovada para usar a leitura de imagens.</p> : <>
-      <div className="price-ocr-file"><span>Capturas de tela do fatiador</span><label className="price-ocr-file-picker"><ImageUp size={15} aria-hidden="true" /> Escolher imagens<input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(event) => { selectFiles(Array.from(event.target.files ?? [])); event.currentTarget.value = ""; }} aria-label="Escolher imagens do fatiador" aria-describedby="ocr-privacy-note" /></label><small>PNG, JPEG ou WebP · até 3 imagens, 2 MiB por imagem e 4 MiB no total.</small></div>
+      <div className="price-ocr-file"><span>Capturas de tela do fatiador</span><button className="price-ocr-file-picker" type="button" onClick={() => fileInputRef.current?.click()}><ImageUp size={15} aria-hidden="true" /> Escolher imagens</button><input ref={fileInputRef} className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(event) => { selectFiles(Array.from(event.target.files ?? [])); event.currentTarget.value = ""; }} aria-label="Escolher imagens do fatiador" aria-describedby="ocr-privacy-note" tabIndex={-1} /></div>
       {files.length > 0 && <ul className="price-ocr-files">{files.map((file, index) => <li key={`${file.name}-${index}`}><span>{file.name} · {file.type.replace("image/", "").toUpperCase()}</span><small>{new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(file.size / 1024)} KB</small></li>)}</ul>}
       {!configured ? <p className="price-ocr-note" id="ocr-privacy-note">A leitura ainda não está conectada ao Google Cloud Vision. Você pode selecionar imagens e anexá-las ao histórico privado ao salvar o cálculo; para reconhecer os dados, falta configurar a chave do serviço.</p> : <>
       <label className="price-ocr-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> <span id="ocr-privacy-note">Autorizo o envio dessas imagens ao Google Cloud Vision para leitura. Elas só serão guardadas no histórico se eu marcar a opção separada ao salvar o cálculo.</span></label>
