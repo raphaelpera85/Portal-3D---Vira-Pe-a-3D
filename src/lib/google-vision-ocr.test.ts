@@ -3,9 +3,9 @@ import { recognizeCatalogImage, recognizeSlicerImages } from "./google-vision-oc
 
 describe("Google Vision OCR adapter", () => {
   it("sends images privately to document text detection and returns plain text", async () => {
-    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ responses: [{ fullTextAnnotation: { text: "Total filament: 20 g" } }] }), { status: 200 }));
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ responses: [{ fullTextAnnotation: { text: "Total filament: 20 g", pages: [{ width: 100, height: 100, blocks: [{ paragraphs: [{ words: [{ symbols: [{ text: "1" }], boundingBox: { vertices: [{ x: 10, y: 20 }, { x: 15, y: 20 }, { x: 15, y: 30 }, { x: 10, y: 30 }] } }] }] }] }] } }] }), { status: 200 }));
     const result = await recognizeSlicerImages([{ content: new Uint8Array([1, 2, 3]), mimeType: "image/png" }], "server-key", fetcher);
-    expect(result).toEqual(["Total filament: 20 g"]);
+    expect(result).toEqual([{ text: "Total filament: 20 g", filamentRows: [{ index: 1, x: 0.1, y: 0.25, height: 0.1 }] }]);
     const [url, init] = fetcher.mock.calls[0];
     expect(url).toBe("https://vision.googleapis.com/v1/images:annotate");
     expect(new Headers(init?.headers).get("x-goog-api-key")).toBe("server-key");

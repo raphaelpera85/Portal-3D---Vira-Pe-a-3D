@@ -44,8 +44,14 @@ export async function POST(request: Request) {
   if (!withinQuota) return Response.json({ error: "ocr_daily_limit_reached" }, { status: 429 });
 
   try {
-    const texts = await recognizeSlicerImages(images.map(({ bytes, type }) => ({ content: bytes, mimeType: type })), apiKey);
-    return Response.json({ extraction: parseSlicerOcrTexts(texts) });
+    const recognized = await recognizeSlicerImages(images.map(({ bytes, type }) => ({ content: bytes, mimeType: type })), apiKey);
+    const extraction = parseSlicerOcrTexts(recognized.map((image) => image.text));
+    return Response.json({
+      extraction,
+      filamentRowsByImage: extraction.slicer === "Anycubic Slicer Next"
+        ? recognized.map((image) => /Anycubic\s*Slicer\s*Next/i.test(image.text) ? image.filamentRows : [])
+        : [],
+    });
   } catch {
     return Response.json({ error: "ocr_provider_failed" }, { status: 502 });
   }

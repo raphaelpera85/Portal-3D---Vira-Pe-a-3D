@@ -72,8 +72,8 @@ describe("slicer OCR upload limit", () => {
 
   it("reads multiple slicer images together and charges quota by image count", async () => {
     mocks.recognizeSlicerImages.mockResolvedValue([
-      "Anycubic Slicer Next\nModel\n211,63 g",
-      "Anycubic Slicer Next\nSupports\n12,17 g",
+      { text: "Anycubic Slicer Next\nModel\n211,63 g", filamentRows: [] },
+      { text: "Anycubic Slicer Next\nSupports\n12,17 g", filamentRows: [] },
     ]);
 
     const response = await POST(requestWithImageCount(2));
@@ -88,7 +88,11 @@ describe("slicer OCR upload limit", () => {
   });
 
   it("accepts the real Anycubic screenshot fixture and parses its OCR response", async () => {
-    mocks.recognizeSlicerImages.mockResolvedValue([anycubicOcrText]);
+    const filamentRows = [
+      { index: 1, x: 0.1, y: 0.097, height: 0.017 },
+      { index: 2, x: 0.1, y: 0.15, height: 0.017 },
+    ];
+    mocks.recognizeSlicerImages.mockResolvedValue([{ text: anycubicOcrText, filamentRows }]);
     const { request: screenshotRequest, screenshot } = requestWithScreenshotFixture();
 
     const response = await POST(screenshotRequest);
@@ -105,5 +109,18 @@ describe("slicer OCR upload limit", () => {
       filamentChanges: 1018,
     });
     expect(result.extraction.filaments).toContainEqual(expect.objectContaining({ index: 5, grams: 42.82, lengthMeters: 14.47 }));
+    expect(result.filamentRowsByImage).toEqual([filamentRows]);
+  });
+
+  it("does not return Anycubic swatch coordinates for another slicer", async () => {
+    mocks.recognizeSlicerImages.mockResolvedValue([{
+      text: "OrcaSlicer\nFilament 1: PLA 20 g",
+      filamentRows: [{ index: 1, x: 0.1, y: 0.2, height: 0.02 }],
+    }]);
+
+    const response = await POST(request("yes"));
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).filamentRowsByImage).toEqual([]);
   });
 });

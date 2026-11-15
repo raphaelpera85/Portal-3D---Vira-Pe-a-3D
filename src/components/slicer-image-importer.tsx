@@ -4,8 +4,31 @@ import { useState } from "react";
 import { ImageUp, LoaderCircle } from "lucide-react";
 import { validateSlicerOcrFileSelections } from "@/lib/ocr-image-validation";
 import { confirmSlicerOcrCostCurrency, slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
+import type { SlicerFilamentRow } from "@/lib/google-vision-ocr";
+import { mergeSlicerFilamentColors, sampleSlicerFilamentColors } from "@/lib/slicer-swatch-colors";
 
 type Extraction = ReturnType<typeof parseSlicerOcrTexts>;
+
+async function readSwatchColors(file: File, rows: SlicerFilamentRow[]) {
+  if (!rows.length || typeof createImageBitmap === "undefined") return [];
+  let bitmap: ImageBitmap | null = null;
+  try {
+    bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / bitmap.width, 1600 / bitmap.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return [];
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+    return sampleSlicerFilamentColors(pixels, rows);
+  } catch {
+    return [];
+  } finally {
+    bitmap?.close();
+  }
+}
 
 function errorMessage(code: string) {
   if (code === "ocr_not_configured") return "O OCR ainda não foi conectado ao Google Cloud Vision.";
@@ -55,9 +78,10 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
       files.forEach((file) => form.append("images", file));
       form.set("consent", "yes");
       const response = await fetch("/api/ocr/slicer", { method: "POST", body: form });
-      const data = await response.json().catch(() => null) as { extraction?: Extraction; error?: string } | null;
+      const data = await response.json().catch(() => null) as { extraction?: Extraction; filamentRowsByImage?: SlicerFilamentRow[][]; error?: string } | null;
       if (!response.ok || !data?.extraction) throw new Error(errorMessage(data?.error ?? "ocr_provider_failed"));
-      setExtraction(data.extraction);
+      const swatches = await Promise.all(files.map((file, index) => readSwatchColors(file, data.filamentRowsByImage?.[index] ?? [])));
+      setExtraction({ ...data.extraction, filaments: mergeSlicerFilamentColors(data.extraction.filaments, swatches.flat()) });
       setCostCurrencyChoice("");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível ler as imagens.");
