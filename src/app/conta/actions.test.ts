@@ -24,7 +24,7 @@ vi.mock("next/headers", () => ({ headers: mocks.headers }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 
-import { requestPasswordResetAction, updatePasswordAction } from "./actions";
+import { requestPasswordResetAction, signUpAction, updatePasswordAction } from "./actions";
 
 const initialState = { message: "", success: false };
 const form = (fields: Record<string, string>) => {
@@ -98,5 +98,46 @@ describe("account password recovery", () => {
 
     expect(result.success).toBe(false);
     expect(updateUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("account signup return destination", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://virapeca3d.example");
+    mocks.createSupabaseServerClient.mockReset();
+    mocks.validateRegistration.mockReturnValue({ displayName: "Raphael", email: "raphael@example.com", password: "password-123" });
+    mocks.redirect.mockReset();
+  });
+
+  it("preserves the model registration destination through email confirmation", async () => {
+    const signUp = vi.fn().mockResolvedValue({ data: { session: null }, error: null });
+    mocks.createSupabaseServerClient.mockResolvedValue({ auth: { signUp } });
+
+    const result = await signUpAction(initialState, form({ destination: "maker-model-registration" }));
+
+    expect(result.success).toBe(true);
+    expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
+      options: expect.objectContaining({ emailRedirectTo: "https://virapeca3d.example/auth/callback?next=%2Fconta%3Fdestino%3Dmodelo-3d" }),
+    }));
+  });
+
+  it("returns an immediately created session to the model registration destination", async () => {
+    const signUp = vi.fn().mockResolvedValue({ data: { session: { access_token: "session" } }, error: null });
+    mocks.createSupabaseServerClient.mockResolvedValue({ auth: { signUp } });
+
+    await signUpAction(initialState, form({ destination: "maker-model-registration" }));
+
+    expect(mocks.redirect).toHaveBeenCalledWith("/conta?destino=modelo-3d");
+  });
+
+  it("ignores unrecognized signup destinations", async () => {
+    const signUp = vi.fn().mockResolvedValue({ data: { session: null }, error: null });
+    mocks.createSupabaseServerClient.mockResolvedValue({ auth: { signUp } });
+
+    await signUpAction(initialState, form({ destination: "https://evil.example" }));
+
+    expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
+      options: expect.objectContaining({ emailRedirectTo: "https://virapeca3d.example/auth/callback?next=%2Fconta" }),
+    }));
   });
 });

@@ -70,13 +70,16 @@ export async function signUpAction(_previous: AuthActionState, formData: FormDat
   if (!supabase) return { message: "O acesso ainda não está conectado. Configure o Supabase para habilitar contas.", success: false };
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? (await headers()).get("origin") ?? "http://localhost:3000";
+  const destination = formData.get("destination") === "maker-model-registration" ? "/conta?destino=modelo-3d" : "/conta";
+  const callback = new URL("/auth/callback", origin);
+  callback.searchParams.set("next", destination);
   const { data, error } = await supabase.auth.signUp({
     email: registration.email,
     password: registration.password,
-    options: { data: { display_name: registration.displayName }, emailRedirectTo: `${origin}/auth/callback?next=/conta` },
+    options: { data: { display_name: registration.displayName }, emailRedirectTo: callback.toString() },
   });
   if (error) return { message: "Não foi possível criar a conta. Verifique os dados ou tente novamente mais tarde.", success: false };
-  if (data.session) redirect("/conta");
+  if (data.session) redirect(destination);
   return { message: "Cadastro iniciado. Confira seu e-mail para confirmar a conta e entrar.", success: true };
 }
 

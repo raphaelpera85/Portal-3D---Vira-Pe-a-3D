@@ -27,6 +27,7 @@ export function AuthForms({ returnToModelRegistration = false }: { returnToModel
       <section className="account-card account-card-signup">
         <span className="account-kicker">PRIMEIRA VEZ AQUI?</span><h2>Crie seu espaço</h2>
         <form className="auth-form" action={signUp}>
+          {returnToModelRegistration && <input type="hidden" name="destination" value="maker-model-registration" />}
           <label>Como podemos chamar você?<input type="text" name="displayName" autoComplete="name" minLength={2} maxLength={80} required /></label>
           <label>E-mail<input type="email" name="email" autoComplete="email" maxLength={254} required /></label>
           <label>Crie uma senha<input type="password" name="password" autoComplete="new-password" minLength={8} maxLength={128} required /><small>Use pelo menos 8 caracteres.</small></label>
