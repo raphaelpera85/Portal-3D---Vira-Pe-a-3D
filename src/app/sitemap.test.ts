@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ createSupabaseServerClient: vi.fn() }));
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/creator-models.server", () => ({ loadPublishedCreatorModels: vi.fn().mockResolvedValue([]) }));
 vi.mock("@/lib/supabase/server", () => ({ createSupabaseServerClient: mocks.createSupabaseServerClient }));
 
 import sitemap from "./sitemap";

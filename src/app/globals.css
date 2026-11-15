@@ -318,6 +318,17 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   .model-gallery-copy h3 { transition: color .16s; }
 .model-gallery-copy .product-tags { margin-block: 10px 0; }
 .model-gallery-copy .product-tags a { font-size: 10px; }
+.model-gallery-creator, .model-detail-creator { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
+.model-detail-creator a { color: var(--brand); font-weight: 650; text-decoration: none; }
+.model-detail-creator a:hover { text-decoration: underline; }
+.creator-model-rights { display: flex !important; align-items: flex-start; gap: 9px !important; line-height: 1.5; }
+.creator-model-rights input { flex: 0 0 16px; width: 16px; height: 16px; margin: 1px 0 0; accent-color: var(--brand); }
+.admin-model-review-list { display: grid; gap: 14px; }
+.admin-model-review-card { display: grid; grid-template-columns: 1fr minmax(220px, .6fr); gap: 22px; }
+.admin-model-review-card h2 { margin: 6px 0; font-size: 20px; }
+.admin-model-review-card p { color: var(--muted-strong); font-size: 12px; }
+.admin-model-review-card .auth-form { align-content: start; }
+@media (max-width: 640px) { .admin-model-review-card { grid-template-columns: 1fr; } }
 .model-showcase .account-heading { margin-bottom: 24px; }
   .model-detail-page { min-height: 70vh; padding-block: 34px 72px; }
   .model-detail-heading { margin-bottom: 20px; }

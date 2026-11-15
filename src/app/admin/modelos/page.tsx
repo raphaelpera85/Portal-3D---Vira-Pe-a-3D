@@ -1,0 +1,42 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { SiteHeader } from "@/components/site-header";
+import { reviewCreatorModel } from "./actions";
+import { getUserWithRole } from "@/lib/auth-role.server";
+import { getModelAssetUrl, modelShowcaseCategories } from "@/lib/model-showcase";
+
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Revisão de modelos | Administração | ViraPeça 3D", robots: { index: false, follow: false } };
+
+export default async function AdminCreatorModelsPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
+  const actor = await getUserWithRole("admin");
+  if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
+  const { resultado } = await searchParams;
+  const { data, error } = await actor.supabase.from("creator_model_submissions")
+    .select("id, name, category_slug, asset_path, tags, creator_name, source_url, created_at, store:stores!inner(name, slug)")
+    .eq("review_status", "pending").order("created_at", { ascending: true }).order("id", { ascending: true }).limit(100);
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
+    <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
+    <div className="account-heading maker-dashboard-heading"><p className="eyebrow">MODERAÇÃO DO CATÁLOGO</p><h1>Modelos 3D enviados</h1><p>Confira o arquivo e os dados de autoria antes de publicar.</p></div>
+    {resultado === "publicado" && <p className="auth-notice is-success" role="status">Modelo publicado na coleção.</p>}
+    {resultado === "rejeitado" && <p className="auth-notice is-success" role="status">Envio rejeitado.</p>}
+    {resultado === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível revisar esse envio. Talvez ele já tenha sido analisado.</p>}
+    {error ? <p className="auth-notice is-error" role="alert">Fila indisponível. Confira se a migração do catálogo comunitário foi aplicada.</p> : !data?.length ? <section className="account-card"><h2>Nenhum envio pendente</h2><p>Novos modelos enviados por vendedores aparecerão aqui.</p></section> : <div className="admin-model-review-list">
+      {data.map((row) => {
+        const store = Array.isArray(row.store) ? row.store[0] : row.store;
+        const category = modelShowcaseCategories.find(({ slug }) => slug === row.category_slug)?.name ?? row.category_slug;
+        const assetUrl = getModelAssetUrl(row.asset_path);
+        return <article className="account-card admin-model-review-card" key={row.id}>
+          <div><span className="account-kicker">{category} · {store?.name ?? "Loja"}</span><h2>{row.name}</h2><p>Criador informado: {row.creator_name} · arquivo: <code>{row.asset_path}</code></p>
+            <ul className="product-tags">{(row.tags as string[]).map((tag: string) => <li key={tag}>{tag}</li>)}</ul>
+            {row.source_url && <p><a href={row.source_url} target="_blank" rel="noreferrer">Abrir fonte informada ↗</a></p>}
+            {assetUrl && <p><a href={assetUrl} target="_blank" rel="noreferrer">Conferir 3MF ↗</a></p>}
+          </div>
+          <form action={reviewCreatorModel} className="auth-form"><label>Observação para o vendedor<textarea name="reviewNote" rows={2} maxLength={1000} /></label><input type="hidden" name="id" value={row.id} /><button className="button button-primary" type="submit" name="decision" value="published">Aprovar e publicar</button><button className="button button-secondary" type="submit" name="decision" value="rejected">Rejeitar</button></form>
+        </article>;
+      })}
+    </div>}
+    {data?.length === 100 && <p className="quote-small-note">Exibindo os 100 envios pendentes mais antigos.</p>}
+  </main></>;
+}

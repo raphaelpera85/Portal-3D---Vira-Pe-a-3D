@@ -16,7 +16,7 @@ function ModelCards({ models }: { models: ShowcaseModel[] }) {
   return <div className="model-gallery-grid" aria-live="polite">
     {models.map((model) => <article className="model-gallery-card" key={model.id}>
       <Link className="model-gallery-image" href={`/modelos/${model.id}`} prefetch={false} aria-label={`Abrir ${model.name}, visualizar e baixar modelo 3D`}><Image src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width={480} height={360} sizes="(max-width: 390px) 100vw, (max-width: 640px) 50vw, (max-width: 900px) 33vw, 25vw" loading="lazy" /></Link>
-      <div className="model-gallery-copy"><Link className="model-gallery-summary" href={`/modelos/${model.id}`} prefetch={false}><div className="product-meta"><span>{model.category}</span><span aria-hidden="true">3MF</span></div><h3>{model.name}</h3></Link>
+      <div className="model-gallery-copy"><Link className="model-gallery-summary" href={`/modelos/${model.id}`} prefetch={false}><div className="product-meta"><span>{model.category}</span><span aria-hidden="true">3MF</span></div><h3>{model.name}</h3></Link>{model.creatorName && <p className="model-gallery-creator">Criado por {model.creatorName}</p>}
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={galleryUrl(tag, model.categorySlug)}>{tag}</Link></li>)}</ul>
       </div>
     </article>)}
@@ -41,7 +41,7 @@ export function ModelRecommendations({ models }: { models: ShowcaseModel[] }) {
 
 export function ModelShowcase({ models, query, category, page, pages }: { models: ShowcaseModel[]; query: string; category: string; page: number; pages: number }) {
   return <section className="model-showcase shell" id="modelos">
-    <div className="account-heading"><p className="eyebrow">ARQUIVOS 3D · COLEÇÃO RAPHAEL</p><h1>Modelos para <em>inspirar.</em></h1><p>Prévia visual dos arquivos 3MF, com categorias e tags para facilitar a descoberta.</p></div>
+    <div className="account-heading"><p className="eyebrow">ARQUIVOS 3D · COMUNIDADE VIRAPEÇA</p><h1>Modelos para <em>inspirar.</em></h1><p>Prévia visual dos arquivos 3MF, com categorias, tags e criadores para facilitar a descoberta.</p></div>
     <div className="model-gallery-controls">
       <nav className="category-list" aria-label="Filtrar modelos por categoria">
         <Link className={`category-chip${!category ? " is-active" : ""}`} aria-current={!category ? "page" : undefined} href={galleryUrl(query, "")}>Todos</Link>

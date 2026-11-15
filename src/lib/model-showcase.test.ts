@@ -3,6 +3,8 @@ import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { filterHomepageModelShowcase, filterModelShowcase, getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase, modelShowcaseCategories, type ShowcaseModel } from "./model-showcase";
 import visualIndex from "./model-showcase-visual-index.json";
+import gitModelAssets from "./git-model-assets.json";
+import { getUnregisteredGitModelAssets } from "./creator-model-assets";
 
 const models: ShowcaseModel[] = [
   { id: "owl", name: "Coruja descanso", category: "Suporte para Óculos", categorySlug: "suporte-para-oculos", image: "/modelos/coruja.png", filePath: "models/owl.3mf", tags: ["suporte", "óculos", "coruja"] },
@@ -38,11 +40,14 @@ describe("filterModelShowcase", () => {
     expect(modelShowcase.find(({ id }) => id === "9492febb5ebe")?.downloads).toHaveLength(2);
   });
 
-  it("references every 3MF in the repository models directory", () => {
+  it("keeps the Git asset manifest complete while allowing newly added files to be registered", () => {
     const referencedFiles = modelShowcase.flatMap((model) => [model.filePath, ...(model.downloads ?? []).map(({ filePath }) => filePath)]);
     const referencedSet = [...new Set(referencedFiles)].sort();
     const repositoryFiles = listThreeMfFiles(path.join(process.cwd(), "models")).sort();
-    expect(referencedSet).toEqual(repositoryFiles);
+    expect(referencedSet.every((filePath) => repositoryFiles.includes(filePath))).toBe(true);
+    expect(gitModelAssets).toEqual(repositoryFiles);
+    expect(getUnregisteredGitModelAssets()).toEqual([]);
+    expect(getUnregisteredGitModelAssets([], ["models/new-model.3mf", "models/batman.3mf"])).toEqual(["models/new-model.3mf"]);
   });
 
   it("opens a model by id and returns no model for unknown ids", () => {

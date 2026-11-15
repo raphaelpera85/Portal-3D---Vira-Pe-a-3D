@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title">
+  <title id="title">Prévia 3D não disponível</title>
+  <rect width="640" height="480" fill="#eef3fb"/>
+  <g fill="none" stroke="#9aabc5" stroke-width="8" stroke-linejoin="round">
+    <path d="m320 102 145 84v168l-145 84-145-84V186z"/>
+    <path d="m175 186 145 84 145-84M320 270v168"/>
+  </g>
+  <path d="m320 102 145 84-145 84-145-84z" fill="#dce6f4" opacity=".8"/>
+</svg>

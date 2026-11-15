@@ -3,6 +3,7 @@ import { modelShowcase } from "@/lib/model-showcase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 import { areLegalPagesIndexable } from "@/lib/legal-page-indexing";
+import { loadPublishedCreatorModels } from "@/lib/creator-models.server";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ async function fetchRowsInPages<T>(
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
   if (!base) return [];
+  const creatorModels = await loadPublishedCreatorModels();
   const fixedPaths = [
     "", "/calculadora", "/catalogos", "/modelos", "/visualizador", "/lojas", "/designers",
     ...(areLegalPagesIndexable() ? ["/privacidade", "/termos"] : []),
@@ -35,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: path === "" ? "weekly" : "monthly",
     priority: path === "" ? 1 : 0.6,
   }));
-  const modelPages: MetadataRoute.Sitemap = modelShowcase.map((model) => ({
+  const modelPages: MetadataRoute.Sitemap = [...modelShowcase, ...creatorModels].map((model) => ({
     url: new URL(`/modelos/${encodeURIComponent(model.id)}`, base).toString(),
     changeFrequency: "monthly",
     priority: 0.7,

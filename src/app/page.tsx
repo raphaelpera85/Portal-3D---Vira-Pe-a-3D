@@ -7,6 +7,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { filterHomepageModelShowcase, modelShowcase } from "@/lib/model-showcase";
 import { FeaturedModelShowcase } from "@/components/model-showcase";
+import { loadPublishedCreatorModels } from "@/lib/creator-models.server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { ...(getSiteUrl() ? { alternates: { canonical: "/" }, openGraph: { url: "/" } } : {}) };
@@ -60,14 +61,14 @@ function PrinterIllustration() {
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; categoria?: string; pagina?: string; ordem?: string }> }) {
   const params = await searchParams;
-  const modelPreviews = filterHomepageModelShowcase(modelShowcase, typeof params.q === "string" ? params.q : "", typeof params.categoria === "string" ? params.categoria : "").slice(0, 6);
   const sort = params.ordem === "popular" ? "popular" : "newest";
-  const [catalog, buyer, featuredStores] = await Promise.all([loadMarketplaceCatalog({
+  const [catalog, buyer, featuredStores, creatorModels] = await Promise.all([loadMarketplaceCatalog({
     query: typeof params.q === "string" ? params.q : "",
     category: typeof params.categoria === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(params.categoria) ? params.categoria : "",
     page: typeof params.pagina === "string" && /^\d+$/.test(params.pagina) ? Number(params.pagina) : 1,
     sort,
-  }), getUserWithRole("buyer"), loadRecommendedStores()]);
+  }), getUserWithRole("buyer"), loadRecommendedStores(), loadPublishedCreatorModels()]);
+  const modelPreviews = filterHomepageModelShowcase([...modelShowcase, ...creatorModels], typeof params.q === "string" ? params.q : "", typeof params.categoria === "string" ? params.categoria : "").slice(0, 6);
   const [favoritesResult, bannersResult] = await Promise.all([
     buyer.supabase && buyer.user && buyer.authorized && catalog.products.length > 0
       ? buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id).in("product_id", catalog.products.map((product) => product.id))

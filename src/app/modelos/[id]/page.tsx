@@ -6,6 +6,7 @@ import { ModelRecommendations } from "@/components/model-showcase";
 import { SiteHeader } from "@/components/site-header";
 import { getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
+import { loadPublishedCreatorModel } from "@/lib/creator-models.server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPaginationRedirectPage, maxPageNumber, parsePageNumber } from "@/lib/pagination";
 
@@ -19,7 +20,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: ModelPageProps): Promise<Metadata> {
   const { id } = await params;
-  const model = getShowcaseModel(id);
+  const model = getShowcaseModel(id) ?? await loadPublishedCreatorModel(id);
   return model ? {
     title: `${model.name} | Modelos 3D | ViraPeça 3D`,
     description: `Visualize o modelo 3D ${model.name} e baixe o arquivo 3MF original.`,
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }: ModelPageProps): Promise<Meta
 
 export default async function ModelPage({ params, searchParams }: ModelPageProps) {
   const [{ id }, { perfil, perfilPagina }] = await Promise.all([params, searchParams]);
-  const model = getShowcaseModel(id);
+  const model = getShowcaseModel(id) ?? await loadPublishedCreatorModel(id);
   if (!model) notFound();
   if (model.id !== id) redirect(`/modelos/${encodeURIComponent(model.id)}`);
   const previewUrl = getModelAssetUrl(model.filePath);
@@ -74,10 +75,11 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   const supabase = await createSupabaseServerClient();
   const { data: auth } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   const requestedProfilePage = parsePageNumber(perfilPagina) ?? 1;
+  const profileModelIds = getShowcaseModelIds(model.id).length ? getShowcaseModelIds(model.id) : [model.id];
   const [profileResult, makerRoleResult] = await Promise.all([
     supabase ? supabase.from("visible_model_print_profiles")
       .select("id, profile_name, profile_type, slicer, printer_snapshot, material_snapshot, nozzle_snapshot, layer_height_mm, infill_percent, wall_count, supports, orientation, scale_percent, quantity, slicer_metrics, created_at, sharing_scope, review_status, review_note, is_owner", { count: "exact" })
-      .in("model_slug", getShowcaseModelIds(model.id)).order("created_at", { ascending: false }).order("id", { ascending: false })
+      .in("model_slug", profileModelIds).order("created_at", { ascending: false }).order("id", { ascending: false })
       .range((requestedProfilePage - 1) * profilePageSize, requestedProfilePage * profilePageSize - 1) : Promise.resolve(null),
     supabase && auth.user ? supabase.from("user_roles").select("role").eq("user_id", auth.user.id).eq("role", "maker").maybeSingle() : Promise.resolve(null),
   ]);
@@ -102,6 +104,7 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
         <Link href="/modelos" className="model-detail-back">← Voltar à coleção</Link>
         <p className="eyebrow">{model.category} · ARQUIVO 3MF</p>
         <h1>{model.name}</h1>
+        {model.creatorName && <p className="model-detail-creator">Criado por <strong>{model.creatorName}</strong>{model.sourceUrl && <> · <a href={model.sourceUrl} target="_blank" rel="noreferrer">Fonte original ↗</a></>}</p>}
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={`/modelos?q=${encodeURIComponent(tag)}#modelos`}>{tag}</Link></li>)}</ul>
       </div>
       <ModelDetailContent key={model.id} modelId={model.id} modelName={model.name} previewUrl={previewUrl} previewVersions={previewVersions} today={new Date().toISOString().slice(0, 10)} profiles={profiles} profilesPage={requestedProfilePage} profilesPages={profilePages} profilesCount={profileResult?.count ?? 0} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />

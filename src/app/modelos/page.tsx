@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/site-header";
 import { ModelShowcase } from "@/components/model-showcase";
 import { filterModelShowcase, modelShowcase, modelShowcaseCategories } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
+import { loadPublishedCreatorModels } from "@/lib/creator-models.server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ export default async function ModelsPage({ searchParams }: { searchParams: Promi
   const query = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
   const allowedCategories = new Set<string>(modelShowcaseCategories.map(({ slug }) => slug));
   const category = typeof params.categoria === "string" && allowedCategories.has(params.categoria) ? params.categoria : "";
-  const filtered = filterModelShowcase(modelShowcase, query, category);
+  const filtered = filterModelShowcase([...modelShowcase, ...await loadPublishedCreatorModels()], query, category);
   const pages = Math.ceil(filtered.length / 24);
   const requestedPage = typeof params.pagina === "string" && /^\d+$/.test(params.pagina) ? Number(params.pagina) : 1;
   const page = pages ? Math.max(1, Math.min(requestedPage, pages)) : 1;
