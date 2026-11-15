@@ -26,7 +26,7 @@ export default async function CalculatorPage({ searchParams }: { searchParams: P
   if (!actor.user || !actor.authorized) redirect("/conta");
 
   const [{ produto }, catalog] = await Promise.all([searchParams, loadTechnicalCatalog()]);
-  const canUseOcr = Boolean(actor.supabase && actor.user && actor.roles.includes("maker"));
+  const canUseOcr = Boolean(actor.supabase && actor.user && actor.roles.some((role) => role === "maker" || role === "designer"));
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
   let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string; catalogPrinterId: string | null }> = [];
   let products: CalculatorProduct[] = [];

@@ -33,6 +33,7 @@ describe("slicer OCR upload limit", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "ocr_consent_required" });
+    expect(mocks.getUserWithRole).toHaveBeenCalledWith(["maker", "designer"]);
     expect(mocks.consumeQuota).not.toHaveBeenCalled();
     expect(mocks.recognizeSlicerImages).not.toHaveBeenCalled();
   });

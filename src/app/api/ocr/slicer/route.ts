@@ -11,9 +11,9 @@ export const maxDuration = 30;
 const MAX_MULTIPART_BYTES = Math.floor(4.25 * 1024 * 1024);
 
 export async function POST(request: Request) {
-  const actor = await getUserWithRole("maker");
+  const actor = await getUserWithRole(["maker", "designer"]);
   if (!actor.user) return Response.json({ error: "authentication_required" }, { status: 401 });
-  if (!actor.authorized) return Response.json({ error: "maker_account_required" }, { status: 403 });
+  if (!actor.authorized) return Response.json({ error: "creator_account_required" }, { status: 403 });
 
   const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
   if (!apiKey) return Response.json({ error: "ocr_not_configured" }, { status: 503 });
