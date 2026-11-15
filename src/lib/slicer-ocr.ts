@@ -61,14 +61,23 @@ function readTableMeasurements(line: string, units: string, normalize: (value: n
     .map((match) => normalize(parseNumber(match[1]), match[2].toLowerCase()));
 }
 
-function findAnycubicSummaryTotalGrams(lines: string[]) {
+function findAnycubicSummaryMassColumns(lines: string[], conflicts: string[]) {
   const table = findAnycubicSummaryTable(lines);
   if (!table) return null;
   const normalize = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
-  const rows = lines.slice(table.totalIndex, table.totalIndex + 3);
-  const values = rows.map((line) => readTableMeasurements(line, String.raw`(?:g|gr|grams?|gramas?|kg)`, normalize))
+  const values = lines.slice(table.totalIndex, table.totalIndex + 3)
+    .map((line) => readTableMeasurements(line, String.raw`(?:g|gr|grams?|gramas?|kg)`, normalize))
     .find((measurements) => measurements.length >= 5);
-  return values?.at(-1) ?? null;
+  if (!values) return null;
+  const lengths = readTableMeasurements(lines[table.totalIndex], String.raw`(?:mm|m)`, (value, unit) => unit === "mm" ? value / 1000 : value);
+  const labels = ["peso do modelo", "peso dos suportes", "purga", "torre de limpeza", "peso total"];
+  return values.slice(0, 5).map((grams, index) => {
+    if (grams === 0 && lengths[index] !== undefined && lengths[index] > 0) {
+      conflicts.push(`${labels[index]} incompatível com comprimento`);
+      return null;
+    }
+    return grams;
+  });
 }
 
 function findAnycubicSummaryFilamentReadings(lines: string[], conflicts: string[]) {
@@ -335,8 +344,8 @@ function parseOne(text: string) {
   const grams = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
   const length = findFilamentLength(lines, conflicts);
   const gcodeTotalGrams = findGcodeFilamentTotal(lines, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams);
-  const anycubicSummaryTotalGrams = slicer === "Anycubic Slicer Next" ? findAnycubicSummaryTotalGrams(lines) : null;
-  if (anycubicSummaryTotalGrams === 0 && length !== null && length > 0) conflicts.push("peso total incompatível com comprimento");
+  const anycubicSummaryMasses = slicer === "Anycubic Slicer Next" ? findAnycubicSummaryMassColumns(lines, conflicts) : null;
+  const anycubicSummaryTotalGrams = anycubicSummaryMasses?.[4] ?? null;
   const cost = findCost(lines, conflicts);
   const materials = [...new Set(lines.flatMap((line) => {
     const match = new RegExp(`(?<![a-z0-9])${materialPattern}(?![a-z0-9])`, "i").exec(line);
@@ -361,14 +370,13 @@ function parseOne(text: string) {
   });
   return {
     slicer,
-    modelGrams: findMeasurement(lines, slicer === "Simplify3D" ? `${massLabels.model}|weight` : massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "peso do modelo", conflicts),
-    supportGrams: findMeasurement(lines, massLabels.support, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "peso dos suportes", conflicts),
+    modelGrams: anycubicSummaryMasses?.[0] ?? findMeasurement(lines, slicer === "Simplify3D" ? `${massLabels.model}|weight` : massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "peso do modelo", conflicts),
+    supportGrams: anycubicSummaryMasses?.[1] ?? findMeasurement(lines, massLabels.support, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "peso dos suportes", conflicts),
     totalGrams: gcodeTotalGrams !== undefined ? gcodeTotalGrams
-      : slicer === "Anycubic Slicer Next" ? anycubicSummaryTotalGrams === 0 && length !== null && length > 0 ? null
-        : anycubicSummaryTotalGrams ?? findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "consumo total", conflicts)
+      : slicer === "Anycubic Slicer Next" ? anycubicSummaryTotalGrams ?? findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "consumo total", conflicts)
         : findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "consumo total", conflicts),
-    purgeGrams: findMeasurement(lines, String.raw`(?:purge|flush|purga|filamento\s+descartado)`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, /(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza)/i, "purga", conflicts),
-    wipeTowerGrams: findMeasurement(lines, String.raw`(?:(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza))`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "torre de limpeza", conflicts),
+    purgeGrams: anycubicSummaryMasses?.[2] ?? findMeasurement(lines, String.raw`(?:purge|flush|purga|filamento\s+descartado)`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, /(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza)/i, "purga", conflicts),
+    wipeTowerGrams: anycubicSummaryMasses?.[3] ?? findMeasurement(lines, String.raw`(?:(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza))`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "torre de limpeza", conflicts),
     lengthMeters: length,
     printHours: findPrintHours(lines, conflicts),
     filamentChanges: findCount(lines, String.raw`(?:filament\s+changes?|color\s+changes?|trocas?(?:\s+de\s+(?:filamento|cor))?|mudan[cç]as\s+de\s+(?:filamento|cor)|swaps?)\s*[:=\-]?`, conflicts),

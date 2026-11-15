@@ -1,6 +1,6 @@
 # Extração de dados de imagens de fatiadores
 
-O importador da calculadora envia capturas de tela a `POST /api/ocr/slicer` e mostra os valores reconhecidos para conferência manual. A implementação usa OCR de texto do Google Cloud Vision e regras genéricas de leitura; ela não identifica o fatiador para escolher um parser específico.
+O importador da calculadora envia capturas de tela a `POST /api/ocr/slicer` e mostra os valores reconhecidos para conferência manual. A implementação usa OCR de texto do Google Cloud Vision e regras por rótulo; além delas, interpreta a tabela de filamentos do Anycubic Slicer Next quando reconhece seu cabeçalho.
 
 ## Acesso, privacidade e limites
 
@@ -28,6 +28,8 @@ O parser procura rótulos em português e inglês e só preenche valores associa
 Os nomes de fatiador reconhecidos são Anycubic Slicer Next, OrcaSlicer, Bambu Studio, Cura, UltiMaker Cura, PrusaSlicer, Creality Print, ElegooSlicer, FlashPrint e ideaMaker. Reconhecer o nome não garante que todos os campos daquele programa ou versão sejam extraídos.
 
 O parser também lê comentários de estatísticas G-code do OrcaSlicer e PrusaSlicer com unidades entre colchetes, somando listas de comprimento e massa por filamento. No Bambu Studio, reconhece `BambuStudio`, o tempo total estimado, comprimento e peso; ignora o tempo do modelo quando não há estimativa total. No Cura, soma comprimentos por extrusor e interpreta `TIME` como segundos. Não estima massa a partir do comprimento. Também lê valores apresentados na linha logo abaixo do rótulo, como em resumos que mostram “Model” e “211,63 g” em linhas separadas. A regra exige que a linha seguinte contenha apenas o valor e a unidade esperada; moeda explícita continua associada ao custo e não é inferida de `$` isolado.
+
+Na tabela de resumo do Anycubic Slicer Next (`Filamento / Modelo / Suporte / Limpo / Torre / Total`), o parser extrai os totais de modelo, suportes, purga/flushing, torre e consumo total, além do comprimento e dos valores por filamento. O teste de regressão usa a transcrição do print de referência; ele valida a interpretação dos valores, mas não executa o Google Cloud Vision sobre o PNG. Leituras de zero grama acompanhadas por comprimento positivo ficam vazias e são sinalizadas como incompatíveis.
 
 O reconhecimento textual de material preserva nomes de produtos do catálogo, incluindo Bambu Lab PLA Basic e PPA-CF, Creality Hyper PLA/ABS/PETG e HP ASA/TPU, além de PA11 Carbon Fiber, PETG Carbon Fiber, PC Blend, Water-Wash Resin 2.0 e ABS-Like Resin V3.0. O OCR não associa automaticamente a leitura a um registro ou perfil do catálogo.
 

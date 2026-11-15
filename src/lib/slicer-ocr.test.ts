@@ -209,6 +209,7 @@ Tempo total: 21h54m`]);
 
     expect(result).toMatchObject({
       slicer: "Anycubic Slicer Next", totalGrams: 359.88, filamentGrams: 359.88,
+      modelGrams: 61.36, supportGrams: 40.35, purgeGrams: 216.33, wipeTowerGrams: 41.84,
       lengthMeters: 121.64, printHours: 21 + 54 / 60, filamentChanges: 1018,
       estimatedCost: 26.99, estimatedCostCurrency: null,
       filaments: [
@@ -231,10 +232,15 @@ Total 0,10 m 0,10 m 0,10 m 0,10 m 0,40 m
 
     expect(result).toMatchObject({
       lengthMeters: 0.4, totalGrams: null, filamentGrams: null, derivedMass: false,
+      modelGrams: null, supportGrams: null, purgeGrams: null, wipeTowerGrams: null,
       filaments: [{ index: 1, lengthMeters: 0.4, grams: null }],
     });
     expect(result.conflicts).toEqual(expect.arrayContaining([
       "peso do filamento 1 incompatível com comprimento",
+      "peso do modelo incompatível com comprimento",
+      "peso dos suportes incompatível com comprimento",
+      "purga incompatível com comprimento",
+      "torre de limpeza incompatível com comprimento",
       "peso total incompatível com comprimento",
     ]));
   });
