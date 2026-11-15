@@ -21,3 +21,5 @@ Space Gradio usado pela página `/gerar-modelo`. O código do TripoSR e os pesos
 5. Defina esse identificador em `TRIPOSR_SPACE_ID` no `.env.local` e no ambiente Production da Vercel. Não é necessário token HF no portal.
 
 Contas gratuitas precisam atender os critérios de elegibilidade da Hugging Face para hospedar ZeroGPU. A cota gratuita é pequena e compartilhada conforme autenticação/conta do usuário; fila e disponibilidade não são garantidas.
+
+Para verificar a validação local das imagens: `python -m unittest discover -s . -p 'test_*.py'`.

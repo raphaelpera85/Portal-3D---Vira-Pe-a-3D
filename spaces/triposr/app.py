@@ -9,11 +9,11 @@ import rembg
 import spaces
 import torch
 from PIL import Image
+from PIL import UnidentifiedImageError
+from policy import validate_image_metadata, validate_image_size
 
 TSR_REVISION = "107cefdc244c39106fa830359024f6a2f1c78871"
 TSR_DIR = "/tmp/TripoSR"
-MAX_IMAGE_BYTES = 5 * 1024 * 1024
-MAX_IMAGE_PIXELS = 20_000_000
 
 if not os.path.exists(os.path.join(TSR_DIR, "tsr", "system.py")):
     subprocess.run(["git", "init", TSR_DIR], check=True)
@@ -41,14 +41,15 @@ rembg_session = rembg.new_session()
 def validate_image(path):
     if not path or not os.path.isfile(path):
         raise gr.Error("Envie uma imagem válida.")
-    if os.path.getsize(path) > MAX_IMAGE_BYTES:
-        raise gr.Error("A imagem deve ter até 5 MiB.")
-    with Image.open(path) as image:
-        if image.format not in ("PNG", "JPEG", "WEBP"):
-            raise gr.Error("Use uma imagem PNG, JPEG ou WebP.")
-        if image.width * image.height > MAX_IMAGE_PIXELS:
-            raise gr.Error("A imagem excede o limite de resolução.")
-        return image.convert("RGB")
+    try:
+        validate_image_size(os.path.getsize(path))
+        with Image.open(path) as image:
+            validate_image_metadata(image.format, image.width, image.height)
+            return image.convert("RGB")
+    except ValueError as error:
+        raise gr.Error(str(error)) from error
+    except (OSError, UnidentifiedImageError, Image.DecompressionBombError) as error:
+        raise gr.Error("A imagem está inválida ou corrompida.") from error
 
 
 def fill_background(image):
