@@ -1183,8 +1183,11 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .price-remove-channel { margin-bottom: 1px; }
 .slicer-ocr-card { display: grid; gap: 14px; margin-bottom: 17px; padding: 20px; }
 .slicer-ocr-card .price-card-heading { margin-bottom: 0; }
-.price-ocr-file { display: grid; gap: 7px; color: var(--muted-strong); font-size: 9px; font-weight: 700; }
-.price-ocr-file input { max-width: 100%; min-height: 38px; padding: 7px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
+.price-ocr-file { display: grid; justify-items: start; gap: 7px; color: var(--muted-strong); font-size: 9px; font-weight: 700; }
+.price-ocr-file-picker { position: relative; display: inline-flex; min-height: 40px; align-items: center; gap: 8px; overflow: hidden; padding: 0 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--brand); font-size: 10px; cursor: pointer; }
+.price-ocr-file-picker:hover { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 5%, var(--surface)); }
+.price-ocr-file-picker:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; }
+.price-ocr-file-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .price-ocr-currency { display: grid; gap: 6px; max-width: 320px; color: var(--muted-strong); font-size: 9px; font-weight: 700; }
 .price-ocr-currency select { min-height: 38px; padding: 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
 .price-ocr-file small, .price-ocr-note { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.5; }

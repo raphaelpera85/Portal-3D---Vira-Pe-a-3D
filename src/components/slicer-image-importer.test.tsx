@@ -6,6 +6,8 @@ describe("SlicerImageImporter", () => {
   it("shows the image picker to an approved maker when Vision is not configured", () => {
     const markup = renderToStaticMarkup(<SlicerImageImporter enabled configured={false} onApply={() => false} />);
     expect(markup).toContain('type="file"');
+    expect(markup).toContain("Escolher imagens");
+    expect(markup).toContain('accept="image/png,image/jpeg,image/webp"');
     expect(markup).toContain("Google Cloud Vision");
     expect(markup).toContain("ainda não está conectada");
   });
