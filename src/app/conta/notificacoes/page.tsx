@@ -30,7 +30,7 @@ export default async function UserNotificationsPage({ searchParams }: { searchPa
     <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
     <div className="account-heading"><p className="eyebrow">SUA CONTA</p><h1>Notificações.</h1><p>Acompanhe propostas, pagamentos e o andamento dos seus serviços de modelagem.</p></div>
     {resultado === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível atualizar a notificação. Atualize a página e tente novamente.</p>}
-    {error ? <section className="account-card"><h2>Notificações indisponíveis</h2><p>A migration de notificações da conta ainda precisa ser aplicada ao Supabase.</p></section>
+    {error ? <section className="account-card"><h2>Notificações indisponíveis</h2><p>Não foi possível carregar suas notificações agora. Atualize a página e tente novamente mais tarde.</p></section>
       : notifications?.length ? <section className="designer-service-request-list" aria-label="Notificações recentes">
         <p className="quote-small-note">{unreadResult.error ? "Não foi possível contar as notificações não lidas." : unreadCount ? `${unreadCount} não lida(s)` : "Todas as notificações foram lidas."}</p>
         {notifications.map((notification) => <article className="account-card designer-service-request-card" key={notification.id}>
