@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261114050000_designer_service_request_notifications.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015425_designer_service_request_notifications.sql", import.meta.url), "utf8");
 
 describe("designer service notification migration", () => {
   it("queues only a minimal email to the designer's registered store contact", () => {

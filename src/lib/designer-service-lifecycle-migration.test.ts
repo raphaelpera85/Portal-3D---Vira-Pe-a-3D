@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261114080000_designer_service_lifecycle.sql", import.meta.url), "utf8");
-const deliveryMigration = readFileSync(new URL("../../supabase/migrations/20261114100000_designer_service_deliveries.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015431_designer_service_lifecycle.sql", import.meta.url), "utf8");
+const deliveryMigration = readFileSync(new URL("../../supabase/migrations/20261115015451_designer_service_deliveries.sql", import.meta.url), "utf8");
 
 describe("designer service lifecycle migration", () => {
   it("records work dates only in valid paid and completed states", () => {

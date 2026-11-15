@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261114060000_designer_service_whatsapp.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015427_designer_service_whatsapp.sql", import.meta.url), "utf8");
 
 describe("designer service WhatsApp notification migration", () => {
   it("queues WhatsApp only for designers with a stored number and opt-in", () => {

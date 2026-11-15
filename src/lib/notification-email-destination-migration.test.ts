@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261116010000_vendor_notification_status_and_current_email.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015552_vendor_notification_status_and_current_email.sql", import.meta.url), "utf8");
 
 describe("seller notification status and email destination migration", () => {
   it("publishes delivery state changes while keeping email lookup service-role-only", () => {

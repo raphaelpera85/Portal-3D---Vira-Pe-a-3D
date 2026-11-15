@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261115233000_digital_asset_purchase_idempotency.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015548_digital_asset_purchase_idempotency.sql", import.meta.url), "utf8");
 
 describe("digital asset purchase migration", () => {
   it("serializes identical purchase intents and returns an existing active request", () => {

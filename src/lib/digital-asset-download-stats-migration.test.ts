@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261116091500_digital_download_stats.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015620_digital_download_stats.sql", import.meta.url), "utf8");
 
 describe("digital asset download statistics RPC", () => {
   it("returns only the authenticated buyer's per-request count and latest download", () => {

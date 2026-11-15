@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261114070000_designer_service_checkout.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015429_designer_service_checkout.sql", import.meta.url), "utf8");
 
 describe("designer service checkout migration", () => {
   it("accepts only the buyer's quoted service and persists its price and store snapshot", () => {

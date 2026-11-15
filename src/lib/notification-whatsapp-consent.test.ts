@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261115232000_whatsapp_notification_consent.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015545_whatsapp_notification_consent.sql", import.meta.url), "utf8");
 
 describe("WhatsApp notification consent migration", () => {
   it("cancels delivery when the current contact no longer matches or consents", () => {

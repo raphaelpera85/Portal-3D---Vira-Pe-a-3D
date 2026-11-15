@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { validateDesignerServiceRequest } from "./designer-service-request";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261114040000_designer_service_requests.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015423_designer_service_requests.sql", import.meta.url), "utf8");
 
 describe("designer service request validation", () => {
   it("normalizes a modeling brief without accepting an identity from the browser", () => {

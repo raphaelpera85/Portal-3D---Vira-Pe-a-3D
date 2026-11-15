@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20261114090000_user_notifications.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20261115015436_user_notifications.sql", import.meta.url), "utf8");
 
 describe("user notifications migration", () => {
   it("creates private read-only notification records for designer service milestones", () => {
