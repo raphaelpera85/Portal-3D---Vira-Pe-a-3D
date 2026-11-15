@@ -990,6 +990,8 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .viewer-back-link:hover { color: var(--brand); }
 .viewer-page-intro p { margin: 0; color: var(--brand); font-size: 9px; font-weight: 800; letter-spacing: 1.4px; }
 .viewer-shell { padding-bottom: 0; }
+.creator-model-preview .viewer-shell.shell { width: 100%; max-width: none; margin-inline: 0; }
+.creator-model-preview .viewer-readonly .viewer-stage { min-height: clamp(280px, 42vw, 380px); }
 .viewer-topline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: 1px; }
 .viewer-topline span:first-child { display: flex; align-items: center; gap: 9px; color: var(--brand); }
 .viewer-layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; min-width: 0; min-height: 620px; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 18px 60px var(--shadow-wash); }
@@ -1028,6 +1030,10 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .viewer-canvas-label i { width: 3px; height: 3px; align-self: center; border-radius: 50%; background: var(--green); }
 .viewer-toolbar { display: flex; min-height: 54px; align-items: center; flex-wrap: wrap; gap: 5px; padding: 8px 13px; border-top: 1px solid var(--line); }
 .viewer-readonly-colors { display: grid; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line); background: var(--paper); }
+.viewer-readonly-dimensions { display: grid; gap: 7px; padding: 14px 16px; border-top: 1px solid var(--line); background: var(--paper); }
+.viewer-readonly-dimensions .inspector-section-head { margin: 0; }
+.viewer-readonly-dimensions .inspector-section-head > span, .viewer-readonly-dimensions small { color: var(--muted); font-size: 10px; }
+.viewer-readonly-dimensions p { margin: 0; color: var(--ink); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .viewer-readonly-colors ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .viewer-readonly-colors li { display: inline-flex; }
 .viewer-readonly-color { display: inline-flex; min-height: 32px; align-items: center; gap: 7px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--muted-strong); font-size: 9px; font-variant-numeric: tabular-nums; cursor: pointer; }

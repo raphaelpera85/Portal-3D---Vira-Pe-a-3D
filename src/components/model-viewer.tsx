@@ -42,7 +42,7 @@ type ViewerCatalogProfile = {
   review_status: "draft" | "pending" | "published" | "rejected"; metrics: SavedSlicerMetrics;
 };
 
-export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, savedModelsPages = 1, savedModelsCount = 0, orcamento, catalogModels = [], materials = [], nozzles = [], printers = [], today, libraryError = false, previewUrl, modelName, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; savedModelsPage?: number; savedModelsPages?: number; savedModelsCount?: number; orcamento?: string; catalogModels?: ViewerCatalogModel[]; materials?: (CatalogMaterial & { label: string })[]; nozzles?: (CatalogNozzle & { brand: string })[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; modelName?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
+export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, savedModelsPages = 1, savedModelsCount = 0, orcamento, catalogModels = [], materials = [], nozzles = [], printers = [], today, libraryError = false, previewUrl, localPreviewFile, modelName, previewLabel, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; savedModelsPage?: number; savedModelsPages?: number; savedModelsCount?: number; orcamento?: string; catalogModels?: ViewerCatalogModel[]; materials?: (CatalogMaterial & { label: string })[]; nozzles?: (CatalogNozzle & { brand: string })[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; localPreviewFile?: File | null; modelName?: string; previewLabel?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -490,6 +490,10 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
     return () => controller.abort();
   }, [previewUrl, readOnly, modelName]);
 
+  useEffect(() => {
+    if (readOnly && localPreviewFile) void loadFiles([localPreviewFile], false, MAX_PUBLIC_MODEL_FILE_BYTES);
+  }, [localPreviewFile, readOnly]);
+
   function fitView() {
     const camera = cameraRef.current;
     const controls = controlsRef.current;
@@ -625,7 +629,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
 
   return (
     <section className="viewer-shell shell" aria-label="Visualizador de modelos 3D">
-      <div className="viewer-topline"><span><Box size={16} aria-hidden="true" /> VISUALIZADOR VIRAPEÇA 3D</span><span>{readOnly ? `${modelName ? "MODELO PÚBLICO · 3MF" : "PRÉVIA PÚBLICA · GLB"}` : "PRÉVIA LOCAL · ENVIO OPCIONAL"}</span></div>
+      <div className="viewer-topline"><span><Box size={16} aria-hidden="true" /> VISUALIZADOR VIRAPEÇA 3D</span><span>{previewLabel ?? (readOnly ? `${modelName ? "MODELO PÚBLICO · 3MF" : "PRÉVIA PÚBLICA · GLB"}` : "PRÉVIA LOCAL · ENVIO OPCIONAL")}</span></div>
       <div className={`viewer-layout${readOnly ? " viewer-readonly" : ""}`}>
         <div className="viewer-stage-wrap">
           <div className="viewer-stage-toolbar">
@@ -650,7 +654,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
             onDrop={(event) => { if (!readOnly) { event.preventDefault(); void loadFiles(Array.from(event.dataTransfer.files)); } }}
           >
             <div className="viewer-canvas-label">X <i /> Y <i /> Z</div>
-            {!rawDimensions && !busy && <div className="viewer-empty"><div className="viewer-empty-icon"><Box size={30} /></div><h2>{readOnly ? modelName ? `Visualize ${modelName} em 3D` : "Prévia 3D do produto" : "Veja seu modelo ganhar forma."}</h2><p>{readOnly ? modelName ? "Carregando o arquivo 3MF original." : "Carregando a cópia de prévia enviada pelo fabricante." : "Abra ou arraste um arquivo STL, OBJ, 3MF ou GLB para explorar a peça em 3D."}</p>{!readOnly && <span>Até 20 MB no conjunto · processamento no seu dispositivo</span>}</div>}
+            {!rawDimensions && !busy && <div className="viewer-empty"><div className="viewer-empty-icon"><Box size={30} /></div><h2>{readOnly ? modelName ? `Visualize ${modelName} em 3D` : "Prévia 3D do produto" : "Veja seu modelo ganhar forma."}</h2><p>{readOnly ? localPreviewFile ? "Carregando o arquivo 3MF selecionado localmente." : modelName ? "Carregando o arquivo 3MF original." : "Carregando a cópia de prévia enviada pelo fabricante." : "Abra ou arraste um arquivo STL, OBJ, 3MF ou GLB para explorar a peça em 3D."}</p>{!readOnly && <span>Até 20 MB no conjunto · processamento no seu dispositivo</span>}</div>}
             {busy && <div className="viewer-loading" role="status"><span className="viewer-spinner" />Preparando modelo 3D…</div>}
             {webglError && <div className="viewer-loading" role="alert">Este dispositivo não conseguiu iniciar a visualização 3D (WebGL).</div>}
             {message && <div className={`viewer-message${message.startsWith("Não foi") || message.includes("Escolha") || message.includes("20 MB") || message.includes("50 MB") || message.includes("vazio") || message.includes("Selecione") || message.includes("compatível") ? " is-error" : ""}`} role="status"><span>{message}</span><button type="button" onClick={() => setMessage("")} aria-label="Dispensar mensagem"><X size={14} /></button></div>}
@@ -659,6 +663,11 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
             {views.map((view) => <button key={view.name} type="button" className="viewer-view-button" disabled={!rawDimensions} onClick={() => selectView(view.name)}>{view.label}</button>)}
             <span className="viewer-hint">Arraste para girar · scroll para zoom · botão direito para mover</span>
           </div>
+          {readOnly && rawDimensions && <section className="viewer-readonly-dimensions" aria-label="Dimensões do modelo">
+            <div className="inspector-section-head"><h2>Dimensões do modelo</h2><span>{unit || "unidade do arquivo"}</span></div>
+            <p>{(dimensionsMm ?? rawDimensions).x.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} × {(dimensionsMm ?? rawDimensions).y.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} × {(dimensionsMm ?? rawDimensions).z.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} {unit ? "mm" : "unid."}</p>
+            {!unit && <small>O arquivo não informa uma unidade; confirme as medidas no fatiador.</small>}
+          </section>}
           {readOnly && modelColors.length > 0 && <section className="viewer-readonly-colors" aria-label="Cores do modelo">
             <div className="inspector-section-head"><h2>Cores do arquivo</h2><span className="component-count">{modelColors.length}</span></div>
             <ul>{modelColors.map((color) => <li key={color}><button type="button" className={`viewer-readonly-color${selectedColor === color ? " is-selected" : ""}`} aria-label={`Destacar componentes da cor #${color}`} aria-pressed={selectedColor === color} onClick={() => setSelectedColor(selectedColor === color ? null : color)}><i style={{ backgroundColor: `#${color}` }} aria-hidden="true" /><span>#{color.toUpperCase()}</span></button></li>)}</ul>

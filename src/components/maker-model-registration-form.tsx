@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type DragEvent, type FormEvent } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CREATOR_MODEL_MAX_PREVIEW_BYTES, CREATOR_MODEL_MAX_UPLOAD_BYTES, normalizeCreatorModelPreview, normalizeCreatorModelUpload } from "@/lib/creator-model-upload";
@@ -8,6 +9,11 @@ import { differenceHash } from "@/lib/visual-image-search";
 import { readThreeMfPackage } from "@/lib/model-file";
 import { discardCreatorModelUpload, finalizeCreatorModelUpload, prepareCreatorModelUpload, submitCreatorModel, type CreatorModelUploadPreparation } from "@/app/painel/maker/model-actions";
 import { modelShowcaseCategories } from "@/lib/model-showcase";
+
+const LocalModelPreview = dynamic(() => import("@/components/model-viewer").then((module) => module.ModelViewer), {
+  ssr: false,
+  loading: () => <p className="auth-notice" role="status">Preparando visualizador 3D…</p>,
+});
 
 export function MakerModelRegistrationForm({ availableAssets }: { availableAssets: string[] }) {
   const router = useRouter();
@@ -178,6 +184,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
         <label>Tags separadas por vírgula<input name="tags" maxLength={400} placeholder="ex.: dragão, articulado, brinquedo" required disabled={pending} /></label>
         <label>Link da fonte (opcional)<input name="sourceUrl" type="url" maxLength={2048} placeholder="https://..." disabled={pending} /></label>
       </div>
+      {selectedFile && <div className="creator-model-preview"><LocalModelPreview buyerId={null} today={new Date().toISOString().slice(0, 10)} localPreviewFile={selectedFile} modelName={selectedFile.name.replace(/\.3mf$/i, "")} previewLabel="PRÉVIA LOCAL · 3MF" readOnly /></div>}
       <label className="creator-model-rights"><input type="checkbox" name="rightsConfirmed" required disabled={pending} /> Confirmo que tenho os direitos ou autorização para publicar este arquivo e os dados informados.</label>
       <button className="button button-primary" type="submit" disabled={pending}>{pending ? "Enviando…" : "Enviar para revisão"}</button>
     </form>
