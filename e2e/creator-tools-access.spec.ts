@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-test("visitors are sent to sign in before opening creator tools", async ({ page }) => {
-  for (const route of ["/catalogos", "/calculadora"]) {
+test("visitors are sent to sign in before opening private tools", async ({ page }) => {
+  for (const route of ["/catalogos", "/calculadora", "/admin/integracoes"]) {
     await page.goto(route);
     await expect(page).toHaveURL(/\/conta(?:\?|$)/);
   }
