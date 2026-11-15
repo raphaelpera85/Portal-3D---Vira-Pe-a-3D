@@ -42,6 +42,7 @@ const elegooCentauriCarbon2ComboMigration = readFileSync(new URL("../../supabase
 const elegooSaturn4Migration = readFileSync(new URL("../../supabase/migrations/20261116060000_seed_elegoo_saturn_4.sql", import.meta.url), "utf8");
 const elegooNeptune4MaxRibbonMigration = readFileSync(new URL("../../supabase/migrations/20261116070000_seed_elegoo_neptune_4_max_ribbon_cable.sql", import.meta.url), "utf8");
 const elegooNeptune4PlusRibbonMigration = readFileSync(new URL("../../supabase/migrations/20261116080000_seed_elegoo_neptune_4_plus_ribbon_cable.sql", import.meta.url), "utf8");
+const artilleryX4PlusMigration = readFileSync(new URL("../../supabase/migrations/20261116100000_seed_artillery_sidewinder_x4_plus.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("includes official Hyper PLA temperatures, settings, and named colors without guessed hex values", () => {
@@ -111,6 +112,7 @@ describe("verified technical catalog records", () => {
       ["QIDI Tech", "Q2C", "standard"],
       ["QIDI Tech", "Q2C", "QIDI Box Combo"],
       ["Artillery", "M1 Pro", "standard"],
+      ["Artillery", "Sidewinder X4 Plus", "standard"],
       ["FLSUN", "V400 Max", "standard"],
       ["FLSUN", "S1", "standard"],
       ["FLSUN", "S1 Pro", "standard"],
@@ -168,9 +170,22 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(107);
+    expect(printers).toHaveLength(108);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
+  });
+
+  it("adds the officially documented Artillery Sidewinder X4 Plus to the fallback and database seed", () => {
+    const printer = printers.find((item) => item.id === "artillery-sidewinder-x4-plus");
+
+    expect(printer).toMatchObject({
+      brand: "Artillery", model: "Sidewinder X4 Plus", variant: "standard",
+      buildVolumeMm: { x: 300, y: 300, z: 400 }, maxNozzleTemperatureC: 300,
+      maxBedTemperatureC: 100, maximumSpeedMmPerSecond: 500,
+      technicalProperties: { autoBedLevelingPoints: 121, firmware: "Klipper" },
+    });
+    expect(printer?.sources[0].url).toBe("https://www.artillery3d.com/blogs/projects/artillery-sidewinder-x4-plus-review-3d-printer-testing-settings-tips");
+    expect(artilleryX4PlusMigration).toContain("'Artillery', 'Sidewinder X4 Plus', 'standard', 'FDM', 'published'");
   });
 
   it("keeps official Mars 5 Ultra MSLA specifications in fallback and migration", () => {
