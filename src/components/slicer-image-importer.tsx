@@ -42,7 +42,7 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
   function selectFiles(nextFiles: File[]) {
     const validation = validateFiles(nextFiles);
     setFiles(validation ? [] : nextFiles);
-    onFilesChange?.([]);
+    onFilesChange?.(validation ? [] : nextFiles);
     setExtraction(null);
     setCostCurrencyChoice("");
     setAgreed(false);
@@ -90,9 +90,10 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
 
   return <section className="price-card slicer-ocr-card" aria-labelledby="slicer-ocr-title">
     <div className="price-card-heading"><span className="price-step"><ImageUp size={15} aria-hidden="true" /></span><div><h2 id="slicer-ocr-title">Ler imagem do fatiador</h2><p>Extraia peso, tempo e outras informações para revisar antes de usar no cálculo.</p></div></div>
-    {!enabled ? <p className="price-ocr-note">Entre em uma conta de fabricante aprovada para usar a leitura de imagens.</p> : !configured ? <p className="price-ocr-note">O serviço de OCR ainda não está configurado. O preenchimento manual continua disponível.</p> : <>
+    {!enabled ? <p className="price-ocr-note">Entre em uma conta de fabricante aprovada para usar a leitura de imagens.</p> : <>
       <label className="price-ocr-file">Adicionar capturas de tela<input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(event) => selectFiles(Array.from(event.target.files ?? []))} aria-describedby="ocr-privacy-note" /><small>PNG, JPEG ou WebP · até 3 imagens, 2 MiB por imagem e 4 MiB no total.</small></label>
       {files.length > 0 && <ul className="price-ocr-files">{files.map((file, index) => <li key={`${file.name}-${index}`}><span>{file.name} · {file.type.replace("image/", "").toUpperCase()}</span><small>{new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(file.size / 1024)} KB</small></li>)}</ul>}
+      {!configured ? <p className="price-ocr-note" id="ocr-privacy-note">A leitura ainda não está conectada ao Google Cloud Vision. Você pode selecionar imagens e anexá-las ao histórico privado ao salvar o cálculo; para reconhecer os dados, falta configurar a chave do serviço.</p> : <>
       <label className="price-ocr-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> <span id="ocr-privacy-note">Autorizo o envio dessas imagens ao Google Cloud Vision para leitura. Elas só serão guardadas no histórico se eu marcar a opção separada ao salvar o cálculo.</span></label>
       <button className="button button-secondary" type="button" onClick={readImages} disabled={loading || !files.length || !agreed}>{loading ? <><LoaderCircle size={15} className="spin" /> Lendo…</> : "Ler dados das imagens"}</button>
       {error && <p className="auth-notice is-error" role="alert">{error}</p>}
@@ -127,6 +128,7 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
         {extraction.text && <details className="price-ocr-text"><summary>Conferir texto reconhecido</summary><pre>{extraction.text}</pre></details>}
         <button className="button button-primary" type="button" onClick={apply} disabled={needsCostCurrencyChoice && !costCurrencyChoice}>Revisar e preencher dados</button>
       </div>}
+      </>}
     </>}
   </section>;
 }
