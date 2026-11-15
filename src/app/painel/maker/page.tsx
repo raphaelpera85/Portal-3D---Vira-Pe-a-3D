@@ -185,6 +185,11 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     fetchAllPages((from, to) => actor.supabase!.from("creator_model_submissions").select("asset_path")
       .eq("submitted_by", actor.user!.id).not("asset_path", "is", null).order("asset_path").range(from, to)),
   ]) : [{ data: [], count: 0, error: null }, { data: [], error: null }];
+  const creatorProductPreviewsResult = store?.status === "published"
+    ? await fetchAllPages((from, to) => actor.supabase.from("creator_model_submissions").select("id, name")
+      .eq("store_id", store.id).eq("submitted_by", actor.user.id).eq("review_status", "published")
+      .order("name").order("id").range(from, to))
+    : { data: [], error: null };
   const creatorModelPages = Math.max(1, Math.ceil((creatorModelsResult.count ?? 0) / creatorModelsPageSize));
   const availableModelAssets = creatorModelAssetsResult.error ? [] : getUnregisteredGitModelAssets(
     (creatorModelAssetsResult.data ?? []).flatMap((model) => model.asset_path ? [model.asset_path] : []),
@@ -465,7 +470,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
                 {totalOrdersPages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos pedidos de compra">{requestedOrdersPage > 1 ? <Link className="button button-secondary" href={orderPageHref(requestedOrdersPage - 1)}>← Página anterior</Link> : <span />}<span>Página {requestedOrdersPage} de {totalOrdersPages} · {totalOrders} pedidos</span>{requestedOrdersPage < totalOrdersPages ? <Link className="button button-secondary" href={orderPageHref(requestedOrdersPage + 1)}>Próxima página →</Link> : <span />}</nav>}
               </div>}
             </section>
-            {store.status === "published" && !productResult.error && !categoryResult.error && <MakerProductForm storeId={store.id} categories={categoryResult.data ?? []} modelPreviews={modelShowcase.flatMap(({ id, name, filePath }) => getModelAssetUrl(filePath) ? [{ id, name }] : [])} />}
+            {store.status === "published" && !productResult.error && !categoryResult.error && <MakerProductForm storeId={store.id} categories={categoryResult.data ?? []} modelPreviews={[...modelShowcase.flatMap(({ id, name, filePath }) => getModelAssetUrl(filePath) ? [{ id, name }] : []), ...(creatorProductPreviewsResult.data ?? [])]} />}
             {store.status !== "published" && <p className="account-next-step">O cadastro de anúncios será liberado quando a loja for aprovada pela equipe.</p>}
           </>
         )}

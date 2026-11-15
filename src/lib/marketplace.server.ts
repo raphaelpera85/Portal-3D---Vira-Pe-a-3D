@@ -7,6 +7,8 @@ import { mapMarketplaceProduct, orderProductsByIds } from "@/lib/marketplace-dat
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getFavoriteProductRecommendations } from "@/lib/favorite-product-recommendations";
 import { getProductCategoryTreeIds } from "@/lib/product-category-hierarchy";
+import { loadPublishedCreatorModel } from "@/lib/creator-models.server";
+import { getModelAssetUrl } from "@/lib/model-showcase";
 
 const pageSize = 24;
 const slugify = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -127,7 +129,17 @@ export const loadMarketplaceProduct = cache(async (slug: string) => {
   const { data, error } = await supabase.from("marketplace_products").select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, product_properties, media, video_url, tags, color_theme, visual, variants:marketplace_product_variants(id, variant_options, price_brl, stock_quantity), digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)").eq("slug", slug).eq("catalog_status", "published").eq("store.status", "published").maybeSingle();
   if (error || !data) return null;
   const product = mapMarketplaceProduct(data as Record<string, unknown>);
-  if (product.listingType !== "digital" || !product.digitalAsset) return product;
+  if (product.listingType !== "digital") {
+    if (product.modelPreview) return product;
+    const properties = data.product_properties && typeof data.product_properties === "object" && !Array.isArray(data.product_properties)
+      ? data.product_properties as Record<string, unknown> : {};
+    const modelId = typeof properties.model_preview_id === "string" ? properties.model_preview_id : "";
+    if (!modelId) return product;
+    const model = await loadPublishedCreatorModel(modelId);
+    const previewUrl = model?.assetUrl ?? (model ? getModelAssetUrl(model.filePath) : null);
+    return model && previewUrl ? { ...product, modelPreview: { name: model.name, url: previewUrl } } : product;
+  }
+  if (!product.digitalAsset) return product;
   const admin = createSupabaseAdminClient();
   if (!admin) return product;
   const { data: asset } = await admin.from("digital_assets").select("preview_path").eq("product_id", product.id).maybeSingle();

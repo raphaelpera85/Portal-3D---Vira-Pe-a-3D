@@ -266,7 +266,7 @@ export async function createProductDraft(_previous: MakerProductState, formData:
   });
   const storeId = formData.get("storeId");
   if (!product || !itemSpecifications || modelSlug === undefined
-    || (modelSlug != null && (!previewModel || !previewUrl)) || (product.listingType === "digital" && modelSlug != null)
+    || (product.listingType === "digital" && modelSlug != null)
     || typeof storeId !== "string" || !uuidPattern.test(storeId)) return { message: "Confira os dados e as especificações do anúncio.", success: false };
 
   const actor = await getUserWithRole("maker");
@@ -274,6 +274,11 @@ export async function createProductDraft(_previous: MakerProductState, formData:
   if (!actor.authorized) return { message: "Esta conta não tem acesso ao painel de fabricantes.", success: false };
   const { data: store } = await actor.supabase.from("stores").select("id").eq("id", storeId).eq("owner_user_id", actor.user.id).eq("status", "published").maybeSingle();
   if (!store) return { message: "A loja ainda não foi aprovada para publicar rascunhos.", success: false };
+  if (modelSlug && !(previewModel && previewUrl)) {
+    const { data: creatorModel, error: creatorModelError } = await actor.supabase.from("creator_model_submissions").select("id")
+      .eq("id", modelSlug).eq("store_id", store.id).eq("submitted_by", actor.user.id).eq("review_status", "published").maybeSingle();
+    if (creatorModelError || !creatorModel) return { message: "Selecione um modelo público aprovado da sua loja.", success: false };
+  }
 
   const baseSlug = product.name.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "produto";
   const { data: createdProduct, error } = await actor.supabase.from("marketplace_products").insert({
