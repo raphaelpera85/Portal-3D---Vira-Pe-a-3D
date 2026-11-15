@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { strToU8, zipSync } from "fflate";
 import { BufferAttribute } from "three";
-import { exceedsThreeMfExpansionLimit, formatModelDimensions, formatThreeMfFilamentLabel, getModelColorMatchedComponentIds, getModelColorMatchedTriangleIndexes, getModelFormat, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
+import { exceedsThreeMfExpansionLimit, formatModelDimensions, formatThreeMfFilamentLabel, getModelColorMatchedComponentIds, getModelColorMatchedTriangleIndexes, getModelFormat, getModelViewerRotationX, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
 import { mapThreeMfPlateToSlicerMetrics } from "./saved-calculation";
 
 describe("model upload validation", () => {
@@ -47,6 +47,14 @@ describe("model upload validation", () => {
     expect(validateModelFiles([{ name: "Improved Cat Glasses Holder.3mf", size: 36_500_000 }], MAX_MODEL_PREVIEW_FILE_BYTES)).toBeNull();
     expect(validateModelFiles([{ name: "Batman.3mf", size: 23_500_000 }], MAX_MODEL_FILE_BYTES)).toContain("20 MB");
     expect(validateModelFiles([{ name: "catalog.3mf", size: 51 * 1024 * 1024 }], MAX_MODEL_PREVIEW_FILE_BYTES)).toContain("50 MB");
+  });
+});
+
+describe("model viewer coordinate systems", () => {
+  it("keeps 3MF geometry Z-up while converting glTF assets to the viewer's Z-up frame", () => {
+    expect(getModelViewerRotationX("3mf")).toBe(0);
+    expect(getModelViewerRotationX("glb")).toBe(Math.PI / 2);
+    expect(getModelViewerRotationX("gltf")).toBe(Math.PI / 2);
   });
 });
 

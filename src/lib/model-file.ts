@@ -49,6 +49,10 @@ export function getModelFormat(fileName: string): ModelFormat | null {
     : null;
 }
 
+export function getModelViewerRotationX(format: ModelFormat) {
+  return format === "glb" || format === "gltf" ? Math.PI / 2 : 0;
+}
+
 export function validateModelFile(file: Pick<File, "name" | "size">): string | null {
   if (!getModelFormat(file.name)) return "Escolha um arquivo STL, OBJ, 3MF, GLB ou GLTF.";
   if (file.size > MAX_MODEL_FILE_BYTES) return "O arquivo precisa ter até 20 MB.";

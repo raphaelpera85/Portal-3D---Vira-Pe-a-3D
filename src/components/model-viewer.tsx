@@ -12,7 +12,7 @@ import { createMeterExportCopy } from "@/lib/model-export";
 import { evaluateBuildVolume, evaluateCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter, type CompatibilityCheck } from "@/lib/compatibility";
 import type { SavedSlicerMetrics } from "@/lib/saved-calculation";
 import {
-  formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, type ModelDimensions, type ModelUnit,
+  formatModelDimensions, getModelViewerRotationX, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, type ModelDimensions, type ModelUnit,
   type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds,
   formatThreeMfFilamentLabel, getModelColorMatchedTriangleIndexes, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
@@ -378,16 +378,15 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
         modelUnit = packageData.unit;
         object = new ThreeMFLoader(manager).parse(buffer);
         applyThreeMfColors(object, packageData.colors, THREE);
-        object.rotation.x = -Math.PI / 2;
       } else {
         const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
         const gltf = await new Promise<{ scene: THREE.Group }>((resolve, reject) => {
           new GLTFLoader(manager).parse(kind === "gltf" ? new TextDecoder().decode(buffer) : buffer, "", resolve, reject);
         });
         object = gltf.scene;
-        object.rotation.x = Math.PI / 2;
         modelUnit = "m";
       }
+      object.rotation.x = getModelViewerRotationX(kind);
       const THREEAgain = await import("three");
       const wrapper = new THREEAgain.Group();
       wrapper.add(object);
