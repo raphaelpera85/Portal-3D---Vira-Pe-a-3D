@@ -1,6 +1,6 @@
 # Status do Prompt Master V5.0
 
-Revisão em 14 de novembro de 2026. Esta página compara os requisitos de produto do Prompt Master V5.0 enviado pelo proprietário com o estado atual do repositório e da produção. “Implementado” significa que o fluxo existe no código; integrações externas ainda dependem de credenciais e testes operacionais.
+Revisão em 15 de novembro de 2026. Esta página compara os requisitos de produto do Prompt Master V5.0 enviado pelo proprietário com o estado atual do repositório e da produção. “Implementado” significa que o fluxo existe no código; integrações externas ainda dependem de credenciais e testes operacionais.
 
 ## Estado por fase
 
@@ -104,8 +104,7 @@ As notas de migrations abaixo registram o estado no momento em que foram escrita
 
 - A checagem das variáveis de Production na Vercel em 14/11 encontrou Supabase, URL pública e cron configurados; Google Cloud Vision, Search Console, Resend, WhatsApp Business, Mercado Pago e Melhor Envio ainda não aparecem no ambiente. Os valores secretos não foram lidos. Os fluxos desses provedores continuam sem validação operacional até a configuração das respectivas credenciais e, quando necessário, templates ou contas sandbox.
 - Na consulta de 15/11, o Supabase registrou 211 migrations aplicadas; o repositório tem 210 arquivos SQL. A migration local `20261115050000_revoke_designer_status_trigger_rpc.sql` aparece no histórico remoto como `20261115043515`. Os nomes correspondem após normalizar os prefixos/sufixos de data, mas o histórico remoto contém duas entradas para `hide_marketplace_best_seller_sales_counts` (`20261115000721` e `20261115015100`). O advisor não sinaliza mais `security_definer_view` nem funções `SECURITY DEFINER` públicas: `visible_model_print_profiles` usa `security_invoker`, seu helper está em `app_private`, `get_marketplace_best_sellers` só pode ser executada por `service_role` no servidor e a função de trigger `notify_designer_service_status` não é mais executável diretamente por `authenticated`; a rotina continua ligada ao trigger. Restam 79 avisos genéricos de funções `SECURITY DEFINER` executáveis por usuários autenticados e o alerta de proteção de senhas vazadas desativada. Há 11 tabelas com RLS habilitado e sem políticas; nenhuma concede leitura por tabela ou coluna a `anon` ou `authenticated`. Revisar as funções individualmente antes de alterar permissões; não revogar grants em lote.
-- O commit `7b526c3` foi enviado ao Git e publicado automaticamente pela Vercel em produção (`READY`).
-- Os commits `272d79f`, `637e8f4` e `bff21c0` estão no `main`, mas a Vercel recusou os builds automáticos por `build-rate-limit`; a produção ainda está em `7b526c3`.
+- Em 15/11, a Vercel publicou automaticamente o commit `ae9e82b` em produção (`READY`), confirmado na lista de deployments. Esse commit contém os ajustes anteriores de acesso à calculadora e do seletor de imagens do fatiador; não foi feito deploy manual.
 
 1. Configurar Google Vision, Resend e WhatsApp na Vercel e validar reconhecimento semântico de imagem, OCR e notificações externas sem expor segredos no Git.
 2. Configurar e testar o OAuth, compra de etiquetas e webhook Melhor Envio em sandbox; depois validar o fluxo de produção com vendedores reconectados.
