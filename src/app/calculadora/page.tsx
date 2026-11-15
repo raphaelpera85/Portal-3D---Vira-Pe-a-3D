@@ -23,7 +23,8 @@ export const dynamic = "force-dynamic";
 
 export default async function CalculatorPage({ searchParams }: { searchParams: Promise<{ produto?: string | string[] }> }) {
   const actor = await getUserWithRole(["maker", "designer"]);
-  if (!actor.user || !actor.authorized) redirect("/conta");
+  if (!actor.user) redirect("/conta");
+  if (!actor.authorized) redirect("/conta?acesso=calculadora");
 
   const [{ produto }, catalog] = await Promise.all([searchParams, loadTechnicalCatalog()]);
   const canUseOcr = Boolean(actor.supabase && actor.user && actor.roles.some((role) => role === "maker" || role === "designer"));

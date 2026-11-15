@@ -23,7 +23,7 @@ export function DesignerProfileForm({ profile }: { profile?: DesignerProfileValu
   const [state, action, pending] = useActionState(submitDesignerProfile, initialState);
   const locked = profile?.status === "suspended";
   return (
-    <section className="account-card maker-application-card">
+    <section id="perfil-criador" className="account-card maker-application-card">
       <span className="account-kicker">PORTFÓLIO CRIATIVO</span><h2>{profile ? "Seu perfil de designer" : "Apresente seu trabalho"}</h2>
       {profile?.status && <p className={`designer-status status-${profile.status}`}>Status: {statusLabels[profile.status]}</p>}
       {profile?.response_note && <p className="auth-notice">Retorno da equipe: {profile.response_note}</p>}

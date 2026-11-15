@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AccountPage({ searchParams }: { searchParams: Promise<{ confirmacao?: string; endereco?: string }> }) {
-  const [{ confirmacao, endereco }, supabase] = await Promise.all([searchParams, createSupabaseServerClient()]);
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ confirmacao?: string; endereco?: string; acesso?: string }> }) {
+  const [{ confirmacao, endereco, acesso }, supabase] = await Promise.all([searchParams, createSupabaseServerClient()]);
   const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   const user = data.user;
   const displayName = typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name : null;
@@ -50,6 +50,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <Link className="viewer-back-link" href="/">← Voltar para o início</Link>
         <div className="account-heading"><p className="eyebrow">VIRAPEÇA 3D · SUA CONTA</p><h1>{user ? `Olá, ${displayName ?? "criador(a)"}.` : <>Sua próxima ideia<br /><em>começa por aqui.</em></>}</h1><p>Salve suas escolhas e prepare seu espaço para comprar, fabricar e criar.</p></div>
         {confirmacao === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível confirmar o e-mail. Solicite um novo link de confirmação.</p>}
+        {user && acesso === "calculadora" && <section className="account-card" aria-labelledby="calculator-access-title"><span className="account-kicker">FERRAMENTAS DE CRIAÇÃO</span><h2 id="calculator-access-title">A calculadora é para makers e designers aprovados</h2><p>O envio de imagens do fatiador aparece dentro da calculadora para contas com loja maker ou perfil de designer aprovado.</p><div className="account-links">{!isMaker && <Link className="button button-secondary" href="#solicitar-loja">Solicitar uma loja</Link>}{isBuyer && <Link className="button button-secondary" href="#perfil-criador">Apresentar perfil de criador</Link>}</div></section>}
         {!user ? <AuthForms /> : (
           <>
             <section className="account-card" aria-label="Conta conectada">
@@ -68,9 +69,9 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             </section>
             {isBuyer && addressesResult && <BuyerAddressManager addresses={addressesResult.data ?? []} error={Boolean(addressesResult.error)} result={endereco} />}
             {!isMaker && (rolesResult?.error || applicationResult?.error) ? (
-              <section className="account-card"><span className="account-kicker">ÁREA DE FABRICANTES</span><h2>Preparando o cadastro de lojas</h2><p>A migração do fluxo de fabricantes ainda não foi aplicada neste backend.</p></section>
+              <section id="solicitar-loja" className="account-card"><span className="account-kicker">ÁREA DE FABRICANTES</span><h2>Preparando o cadastro de lojas</h2><p>A migração do fluxo de fabricantes ainda não foi aplicada neste backend.</p></section>
             ) : !isMaker && application?.status === "pending" ? (
-              <section className="account-card"><span className="account-kicker">SOLICITAÇÃO EM ANÁLISE</span><h2>Recebemos seu pedido</h2><p>A equipe está analisando os dados da sua oficina. Você poderá acompanhar o resultado nesta página.</p></section>
+              <section id="solicitar-loja" className="account-card"><span className="account-kicker">SOLICITAÇÃO EM ANÁLISE</span><h2>Recebemos seu pedido</h2><p>A equipe está analisando os dados da sua oficina. Você poderá acompanhar o resultado nesta página.</p></section>
             ) : !isMaker ? (
               <>
                 {application?.status === "rejected" && <p className="auth-notice is-error" role="status">A solicitação anterior não foi aprovada. {application.response_note ?? "Você pode enviar uma nova solicitação com mais informações."}</p>}

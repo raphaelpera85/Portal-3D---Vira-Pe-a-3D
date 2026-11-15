@@ -8,7 +8,7 @@ const initialState: MakerApplicationState = { message: "", success: false };
 export function MakerApplicationForm() {
   const [state, action, pending] = useActionState(submitMakerApplication, initialState);
   return (
-    <section className="account-card maker-application-card">
+    <section id="solicitar-loja" className="account-card maker-application-card">
       <span className="account-kicker">PARA QUEM FABRICA</span><h2>Solicite sua loja</h2>
       <p>Conte sobre sua oficina. A equipe revisará as informações antes de liberar a publicação de produtos.</p>
       <form className="auth-form" action={action}>
