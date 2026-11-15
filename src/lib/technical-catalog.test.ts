@@ -43,6 +43,7 @@ const elegooSaturn4Migration = readFileSync(new URL("../../supabase/migrations/2
 const elegooNeptune4MaxRibbonMigration = readFileSync(new URL("../../supabase/migrations/20261115015616_seed_elegoo_neptune_4_max_ribbon_cable.sql", import.meta.url), "utf8");
 const elegooNeptune4PlusRibbonMigration = readFileSync(new URL("../../supabase/migrations/20261115015618_seed_elegoo_neptune_4_plus_ribbon_cable.sql", import.meta.url), "utf8");
 const artilleryX4PlusMigration = readFileSync(new URL("../../supabase/migrations/20261115015622_seed_artillery_sidewinder_x4_plus.sql", import.meta.url), "utf8");
+const ultimakerS7Migration = readFileSync(new URL("../../supabase/migrations/20261115120000_seed_ultimaker_s7_print_cores.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("includes official Hyper PLA temperatures, settings, and named colors without guessed hex values", () => {
@@ -1133,6 +1134,28 @@ describe("verified technical catalog records", () => {
     expect(printer?.maximumSpeedDescription).toContain("600 mm/s");
     expect(printer?.maximumSpeedDescription).toContain("400 mm/s");
     expect(flsunV400Migration).toContain("'FLSUN', 'V400', 'standard', 'FDM'");
+  });
+
+  it("lists only the official UltiMaker S7 print cores and marks its included AA/BB cores", () => {
+    const printer = printers.find((entry) => entry.id === "ultimaker-s7");
+    const s7Nozzles = nozzles.filter((entry) => entry.printerCompatibility?.["ultimaker-s7"] === "compatible");
+
+    expect(printer?.technicalProperties).toMatchObject({
+      supportedPrintCores: { AA: [0.25, 0.4, 0.8], BB: [0.4, 0.8], CC: [0.4, 0.6], DD: [0.4] },
+      includedPrintCores: ["AA 0.4 mm", "AA 0.4 mm", "BB 0.4 mm"],
+    });
+    expect(s7Nozzles.map(({ name, diameterMm, original }) => ({ name, diameterMm, original }))).toEqual([
+      { name: "Print Core AA UltiMaker S7", diameterMm: 0.25, original: false },
+      { name: "Print Core AA UltiMaker S7", diameterMm: 0.4, original: true },
+      { name: "Print Core AA UltiMaker S7", diameterMm: 0.8, original: false },
+      { name: "Print Core BB UltiMaker S7", diameterMm: 0.4, original: true },
+      { name: "Print Core BB UltiMaker S7", diameterMm: 0.8, original: false },
+      { name: "Print Core CC UltiMaker S7", diameterMm: 0.4, original: false },
+      { name: "Print Core CC UltiMaker S7", diameterMm: 0.6, original: false },
+      { name: "Print Core DD UltiMaker S7", diameterMm: 0.4, original: false },
+    ]);
+    expect(ultimakerS7Migration).toContain("('Print Core CC UltiMaker S7', 0.6, false)");
+    expect(ultimakerS7Migration).toContain("('Print Core DD UltiMaker S7', 0.4, false)");
   });
 
   it("keeps Raise3D single- and dual-extrusion volumes distinct", () => {

@@ -296,7 +296,7 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "formlabs-form-4", brand: "Formlabs", model: "Form 4", variant: "standard", technology: "MSLA", buildVolumeMm: { x: 200, y: 125, z: 210 }, technicalProperties: { openMaterialMode: true }, sourceUrl: "https://formlabs.com/products/form-4-basic-package/", documentationUrl: "https://formlabs.com/support/What-is-the-largest-part-I-can-print-on-a-Formlabs-printer/" }),
   seededPrinter({ id: "formlabs-form-4l", brand: "Formlabs", model: "Form 4L", variant: "standard", technology: "MSLA", buildVolumeMm: { x: 353, y: 196, z: 350 }, technicalProperties: { printEngine: "Low Force Display (LFD)", openMaterialMode: true, layerThicknessRangeMicrons: { min: 25, max: 200 } }, sourceUrl: "https://formlabs.com/products/form-4l-basic-package/", documentationUrl: "https://formlabs.com/support/What-is-the-largest-part-I-can-print-on-a-Formlabs-printer/", sourceLabel: "Formlabs — Form 4L official specifications", checkedAt: "2026-11-15" }),
   seededPrinter({ id: "phrozen-sonic-mighty-revo-16k", brand: "Phrozen", model: "Sonic Mighty Revo 16K", variant: "standard", technology: "MSLA", buildVolumeMm: { x: 211.68, y: 118.37, z: 235 }, technicalProperties: { resolution: "16K", pixelSizeMicrons: "14 × 19", wavelengthNm: 405 }, sourceUrl: "https://us.phrozen3d.com/products/sonic-mighty-16k-printer", sourceLabel: "Phrozen — Sonic Mighty Revo 16K specifications", checkedAt: "2026-11-15" }),
-  seededPrinter({ id: "ultimaker-s7", brand: "Ultimaker", model: "S7", variant: "standard", technology: "FDM", buildVolumeMm: { x: 330, y: 240, z: 300 }, extruders: 2, filamentDiameterMm: 2.85, maxNozzleTemperatureC: 280, maximumPowerWatts: 500, sourceUrl: "https://ultimaker.com/3d-printers/s-series/ultimaker-s7/" }),
+  seededPrinter({ id: "ultimaker-s7", brand: "Ultimaker", model: "S7", variant: "standard", technology: "FDM", buildVolumeMm: { x: 330, y: 240, z: 300 }, extruders: 2, filamentDiameterMm: 2.85, maxNozzleTemperatureC: 280, maximumPowerWatts: 500, technicalProperties: { supportedPrintCores: { AA: [0.25, 0.4, 0.8], BB: [0.4, 0.8], CC: [0.4, 0.6], DD: [0.4] }, includedPrintCores: ["AA 0.4 mm", "AA 0.4 mm", "BB 0.4 mm"] }, sourceUrl: "https://ultimaker.com/3d-printers/s-series/ultimaker-s7/", documentationUrl: "https://support.ultimaker.com/articles/Knowledge/000002903", sourceLabel: "UltiMaker — S7 official specifications", checkedAt: "2026-11-15" }),
   seededPrinter({ id: "creality-ender-3-v3-ke", brand: "Creality", model: "Ender-3 V3 KE", variant: "standard", technology: "FDM", buildVolumeMm: { x: 220, y: 220, z: 240 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 500, maximumPowerWatts: 350, technicalProperties: { typicalPrintSpeedMmPerSecond: 300, maxAccelerationMmPerSecondSquared: 8000 }, sourceUrl: "https://www.creality.com/products/creality-ender-3-v3-ke", documentationUrl: "https://cdn.creality.com/ow/official/8b3ce46c-754d-4a8c-b5c2-8003b9f5e374.pdf" }),
   seededPrinter({ id: "elegoo-saturn-4-ultra-12k", brand: "ELEGOO", model: "Saturn 4 Ultra", variant: "12K", technology: "MSLA", buildVolumeMm: { x: 218.88, y: 122.88, z: 220 }, supportedMaterials: { "elegoo-abs-like-resin-v3-0": { status: "compatible", conditions: "O fabricante declara compatibilidade da ABS-Like Resin V3.0 com impressoras LCD da série Saturn. A Saturn 4 Ultra usa LCD/MSLA com UV de 405 nm. Os tempos de exposição específicos não foram preenchidos; consulte e calibre pelo perfil oficial da resina." } }, technicalProperties: { resolution: "12K", resolutionPixels: "11520x5120", resolutionXYMicrons: [19, 24], maxPrintSpeedMmPerHour: 150, wavelengthNm: 405, powerRequirements: "100-240V 50/60Hz 24V 6A" }, sourceUrl: "https://www.elegoo.com/collections/3d-printing/products/saturn-4-ultra-12k-10inch-monochrome-lcd-resin-3d-printer" }),
   seededPrinter({ id: "elegoo-saturn-4", brand: "ELEGOO", model: "Saturn 4", variant: "standard", technology: "MSLA", buildVolumeMm: { x: 218.88, y: 122.88, z: 220 }, technicalProperties: { resolution: "12K", resolutionPixels: "11520x5120", resolutionXYMicrons: [19, 24], layerHeightRangeMm: { min: 0.01, max: 0.2 }, zAxisAccuracyMm: 0.02, maxPrintSpeedMmPerHour: 70, wavelengthNm: 405, powerRequirements: "100-240V 50/60Hz 24V 6A", lcd: "10-inch monochrome", connectivity: ["USB"], system: "EL3D-3.0.1" }, sourceUrl: "https://www.elegoo.com/products/saturn-4-12k-10inch-monochrome-lcd-resin-3d-printer", documentationUrl: "https://www.elegoo.com/pages/elegoo-saturn-4", checkedAt: "2026-11-14" }),
@@ -1998,6 +1998,27 @@ const nozzleDiameters = [
 ];
 
 export const nozzles: NozzleEntry[] = [
+  ...[
+    { core: "AA", diameter: 0.25, original: false },
+    { core: "AA", diameter: 0.4, original: true },
+    { core: "AA", diameter: 0.8, original: false },
+    { core: "BB", diameter: 0.4, original: true },
+    { core: "BB", diameter: 0.8, original: false },
+    { core: "CC", diameter: 0.4, original: false },
+    { core: "CC", diameter: 0.6, original: false },
+    { core: "DD", diameter: 0.4, original: false },
+  ].map(({ core, diameter, original }) => ({
+    id: `ultimaker-s7-${core.toLowerCase()}-${diameter}`,
+    name: `Print Core ${core} UltiMaker S7`,
+    brand: "Ultimaker",
+    diameterMm: diameter,
+    material: null,
+    maxTemperatureC: null,
+    abrasionResistant: null,
+    printerCompatibility: { "ultimaker-s7": "compatible" as const },
+    original,
+    sources: [{ label: "UltiMaker — tipos e compatibilidade de Print Cores", url: "https://support.ultimaker.com/articles/Knowledge/000002903", checkedAt: "2026-11-15" }],
+  })),
   ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `snapmaker-artisan-${diameter}`,
     name: "Bico Snapmaker Artisan",
