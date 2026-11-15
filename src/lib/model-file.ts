@@ -5,6 +5,16 @@ export const MAX_THREE_MF_UNCOMPRESSED_BYTES = 300 * 1024 * 1024;
 export const MAX_OBJ_ARCHIVE_BYTES = 60 * 1024 * 1024;
 export const MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES = 130 * 1024 * 1024;
 
+export function isSafePublicModelPreviewResource(resource: string, origin: string) {
+  if (resource.startsWith("data:")) return true;
+  try {
+    const url = new URL(resource);
+    return url.protocol === "blob:" && url.origin === origin;
+  } catch {
+    return false;
+  }
+}
+
 export type ModelUnit = "mm" | "cm" | "m";
 export type ModelSourceUnit = ModelUnit | "um" | "in" | "ft";
 export type ModelFormat = "stl" | "obj" | "3mf" | "glb" | "gltf";

@@ -12,7 +12,7 @@ import { createMeterExportCopy } from "@/lib/model-export";
 import { evaluateBuildVolume, evaluateCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter, type CompatibilityCheck } from "@/lib/compatibility";
 import type { SavedSlicerMetrics } from "@/lib/saved-calculation";
 import {
-  formatModelDimensions, getModelViewerRotationX, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, MAX_OBJ_ARCHIVE_BYTES, MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES, type ModelDimensions, type ModelUnit,
+  formatModelDimensions, getModelViewerRotationX, isSafePublicModelPreviewResource, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, MAX_OBJ_ARCHIVE_BYTES, MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES, type ModelDimensions, type ModelUnit,
   type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds,
   formatThreeMfFilamentLabel, getModelColorMatchedTriangleIndexes, getModelFormat, readObjModelArchive, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
@@ -349,7 +349,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
         try { filename = decodeURIComponent(filename); } catch {}
         const localFile = fileUrls.get(filename.toLowerCase());
         if (localFile) return localFile;
-        if (publicPreview && kind !== "3mf" && !resource.startsWith("data:")) throw new Error("A prévia precisa incluir todos os recursos dentro do GLB.");
+        if (publicPreview && kind !== "3mf" && !isSafePublicModelPreviewResource(resource, window.location.origin)) throw new Error("A prévia precisa incluir todos os recursos dentro do GLB.");
         return resource;
       });
       let object: THREE.Object3D;

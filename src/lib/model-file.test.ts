@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { strToU8, zipSync } from "fflate";
 import { BufferAttribute } from "three";
-import { exceedsThreeMfExpansionLimit, formatModelDimensions, formatThreeMfFilamentLabel, getModelColorMatchedComponentIds, getModelColorMatchedTriangleIndexes, getModelFormat, getModelViewerRotationX, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
+import { exceedsThreeMfExpansionLimit, formatModelDimensions, formatThreeMfFilamentLabel, getModelColorMatchedComponentIds, getModelColorMatchedTriangleIndexes, getModelFormat, getModelViewerRotationX, isSafePublicModelPreviewResource, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, MAX_THREE_MF_UNCOMPRESSED_BYTES, modelUnitToMeters, parseThreeMfColors, parseThreeMfSliceInfo, parseThreeMfUnit, readThreeMfPackage, readThreeMfUnit, validateModelFile, validateModelFiles } from "./model-file";
 import { mapThreeMfPlateToSlicerMetrics } from "./saved-calculation";
 
 describe("model upload validation", () => {
@@ -55,6 +55,17 @@ describe("model viewer coordinate systems", () => {
     expect(getModelViewerRotationX("3mf")).toBe(0);
     expect(getModelViewerRotationX("glb")).toBe(Math.PI / 2);
     expect(getModelViewerRotationX("gltf")).toBe(Math.PI / 2);
+  });
+});
+
+describe("public model preview resources", () => {
+  it("allows embedded data and same-origin blob textures while rejecting remote resources", () => {
+    const origin = "https://virapeca3d.example";
+    expect(isSafePublicModelPreviewResource("data:image/png;base64,AA==", origin)).toBe(true);
+    expect(isSafePublicModelPreviewResource("blob:https://virapeca3d.example/texture-id", origin)).toBe(true);
+    expect(isSafePublicModelPreviewResource("blob:https://attacker.example/texture-id", origin)).toBe(false);
+    expect(isSafePublicModelPreviewResource("https://attacker.example/texture.png", origin)).toBe(false);
+    expect(isSafePublicModelPreviewResource("blob:null/texture-id", origin)).toBe(false);
   });
 });
 
