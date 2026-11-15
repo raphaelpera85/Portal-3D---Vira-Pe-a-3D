@@ -7,6 +7,7 @@ import { getUserWithRole } from "@/lib/auth-role.server";
 import { getModelAssetUrl, modelShowcaseCategories } from "@/lib/model-showcase";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isCreatorModelPreviewPath, isCreatorModelUploadPath } from "@/lib/creator-model-upload";
+import { CreatorModelReviewPreview } from "./creator-model-review-preview";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Revisão de modelos | Administração | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -49,7 +50,7 @@ export default async function AdminCreatorModelsPage({ searchParams }: { searchP
             {previewUrl && <img src={previewUrl} alt={`Capa enviada para ${row.name}`} width="240" height="180" style={{ display: "block", width: "min(240px, 100%)", height: 180, objectFit: "contain", background: "var(--surface)" }} />}
             <ul className="product-tags">{(row.tags as string[]).map((tag: string) => <li key={tag}>{tag}</li>)}</ul>
             {row.source_url && <p><a href={row.source_url} target="_blank" rel="noreferrer">Abrir fonte informada ↗</a></p>}
-            {assetUrl && <p><a href={assetUrl} target="_blank" rel="noreferrer">Conferir 3MF ↗</a></p>}
+            {assetUrl && <><CreatorModelReviewPreview assetUrl={assetUrl} modelName={row.name} id={row.id} /><p><a href={assetUrl} target="_blank" rel="noreferrer">Baixar arquivo 3MF ↗</a></p></>}
           </div>
           <form action={reviewCreatorModel} className="auth-form"><label>Observação para o vendedor<textarea name="reviewNote" rows={2} maxLength={1000} /></label><input type="hidden" name="id" value={row.id} /><button className="button button-primary" type="submit" name="decision" value="published">Aprovar e publicar</button><button className="button button-secondary" type="submit" name="decision" value="rejected">Rejeitar</button></form>
         </article>;

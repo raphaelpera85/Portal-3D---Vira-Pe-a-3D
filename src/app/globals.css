@@ -343,6 +343,10 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .creator-model-file-colors li { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; }
 .creator-model-file-colors i { width: 15px; height: 15px; border: 1px solid var(--line-strong); border-radius: 50%; }
 .admin-model-review-list { display: grid; gap: 14px; }
+.admin-creator-model-preview { display: grid; gap: 10px; margin-top: 12px; }
+.admin-creator-model-preview-canvas { min-width: 0; }
+.admin-creator-model-preview-canvas .viewer-shell.shell { width: 100%; max-width: none; margin-inline: 0; }
+.admin-creator-model-preview-canvas .viewer-readonly .viewer-stage { min-height: clamp(260px, 36vw, 360px); }
 .admin-model-review-card { display: grid; grid-template-columns: 1fr minmax(220px, .6fr); gap: 22px; }
 .admin-model-review-card h2 { margin: 6px 0; font-size: 20px; }
 .admin-model-review-card p { color: var(--muted-strong); font-size: 12px; }
