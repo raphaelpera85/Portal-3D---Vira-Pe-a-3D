@@ -47,6 +47,12 @@ describe("public sitemap", () => {
     expect(products?.eq).toHaveBeenCalledWith("category.active", true);
   });
 
+  it("keeps the creator-only calculator out of the public sitemap", async () => {
+    const urls = (await sitemap()).map((page) => page.url);
+
+    expect(urls).not.toContain("https://virapeca.example/calculadora");
+  });
+
   it("keeps legal pages out of the sitemap until approved with complete contact details", async () => {
     vi.stubEnv("SITE_LEGAL_PAGES_APPROVED", "true");
     vi.stubEnv("SITE_LEGAL_NAME", "ViraPeça 3D");

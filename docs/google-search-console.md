@@ -10,7 +10,7 @@
 - Título padrão: **ViraPeça 3D — Sua ideia vira realidade**
 - Origem pública atual: `https://virapeca3d.vercel.app/`
 - Propriedade Search Console recomendada: **Prefixo do URL** `https://virapeca3d.vercel.app/` (a ViraPeça não controla o DNS de `vercel.app` para criar uma propriedade Domínio)
-- Sitemap: <https://virapeca3d.vercel.app/sitemap.xml> (inclui 89 páginas individuais de modelos 3D e anúncios, perfis e lojas públicos)
+- Sitemap: <https://virapeca3d.vercel.app/sitemap.xml> (inclui páginas públicas de modelos 3D, anúncios, perfis e lojas; não inclui a calculadora restrita a criadores aprovados)
 - Robots: <https://virapeca3d.vercel.app/robots.txt>
 - Cartão social padrão: <https://virapeca3d.vercel.app/opengraph-image> (PNG, 1200 × 630, também usado pelo Twitter quando a página não define uma imagem própria)
 
@@ -21,7 +21,7 @@ A produção está configurada com `NEXT_PUBLIC_SITE_URL=https://virapeca3d.verc
 1. No Search Console, crie a propriedade **Prefixo do URL** `https://virapeca3d.vercel.app/`.
 2. Escolha o método de verificação por tag HTML e copie apenas o conteúdo do atributo `content` fornecido pelo Google para `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` no ambiente de produção. A aplicação publica esse token no `<head>` da página inicial. Não reutilize nem invente o token.
 3. Depois de publicar com o token correto, confirme que a página inicial contém `meta name="google-site-verification"` e conclua a verificação no Search Console.
-4. Envie `sitemap.xml` no relatório **Sitemaps** e confira `robots.txt`. O sitemap inclui os modelos 3D e páginas públicas de anúncios, perfis de designers e lojas aprovados; ignora parâmetros de busca e filtros.
+4. Envie `sitemap.xml` no relatório **Sitemaps** e confira `robots.txt`. O sitemap inclui os modelos 3D e páginas públicas de anúncios, perfis de designers e lojas aprovados; ignora parâmetros de busca e filtros. A calculadora exige uma conta de criador aprovada e fica fora do sitemap e do rastreamento.
 
 Ainda não foi criada propriedade no Search Console nem configurado o token de verificação. O token deve ser copiado da própria propriedade do Google após criá-la; o acesso à conta Google é necessário para concluir a verificação e enviar o sitemap.
 
@@ -29,7 +29,7 @@ As páginas `/privacidade` e `/termos` entram no sitemap somente quando `SITE_LE
 
 ## Metadados e rastreamento
 
-A aplicação define título, descrição, URL canônica quando o domínio está configurado, Open Graph, Twitter Card e schema `WebSite` na homepage; lojas públicas também têm schema `Store`. Produtos publicados incluem schema `Product`; `Offer` aparece quando o preço exato está visível (incluindo cada licença digital) e a disponibilidade só é informada quando conhecida. Variantes físicas recebem `ProductGroup`, uma oferta por combinação e URL própria `?variant=<id>`; o seletor público atualiza preço, estoque e endereço. Anúncios "a partir de" e sob orçamento não publicam uma oferta ambígua. O JSON-LD escapa conteúdo fornecido pelo fabricante antes de inseri-lo na página. Ainda não há nota agregada; avaliações verificadas aparecem no conteúdo visível, sem marcação `AggregateRating`. A conta recebe `noindex`; o callback de autenticação é bloqueado pelo `robots.txt`. Produtos de demonstração recebem `noindex` e não aparecem no sitemap.
+A aplicação define título, descrição, URL canônica quando o domínio está configurado, Open Graph, Twitter Card e schema `WebSite` na homepage; lojas públicas também têm schema `Store`. Produtos publicados incluem schema `Product`; `Offer` aparece quando o preço exato está visível (incluindo cada licença digital) e a disponibilidade só é informada quando conhecida. Variantes físicas recebem `ProductGroup`, uma oferta por combinação e URL própria `?variant=<id>`; o seletor público atualiza preço, estoque e endereço. Anúncios "a partir de" e sob orçamento não publicam uma oferta ambígua. O JSON-LD escapa conteúdo fornecido pelo fabricante antes de inseri-lo na página. Ainda não há nota agregada; avaliações verificadas aparecem no conteúdo visível, sem marcação `AggregateRating`. A conta recebe `noindex`; calculadora e callback de autenticação são bloqueados pelo `robots.txt`. Produtos de demonstração recebem `noindex` e não aparecem no sitemap.
 
 A homepage fornece um cartão social de marca com 1200 × 630 px. Modelos e anúncios com mídia própria usam sua imagem; lojas sem banner e perfis de designers usam a imagem padrão. A arte não contém texto de produto nem informação de preço.
 

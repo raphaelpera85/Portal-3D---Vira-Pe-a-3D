@@ -29,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!base) return [];
   const creatorModels = await loadPublishedCreatorModels();
   const fixedPaths = [
-    "", "/calculadora", "/catalogos", "/modelos", "/visualizador", "/lojas", "/designers",
+    "", "/catalogos", "/modelos", "/visualizador", "/lojas", "/designers",
     ...(areLegalPagesIndexable() ? ["/privacidade", "/termos"] : []),
   ];
   const fixedPages: MetadataRoute.Sitemap = fixedPaths.map((path) => ({
