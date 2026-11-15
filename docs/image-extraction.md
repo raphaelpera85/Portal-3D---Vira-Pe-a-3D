@@ -1,6 +1,6 @@
 # Extração de dados de imagens de fatiadores
 
-O importador da calculadora envia capturas de tela a `POST /api/ocr/slicer` e mostra os valores reconhecidos para conferência manual. A implementação usa OCR de texto do Google Cloud Vision e regras por rótulo; além delas, interpreta a tabela de filamentos do Anycubic Slicer Next quando reconhece seu cabeçalho.
+O importador da calculadora envia capturas de tela a `POST /api/ocr/slicer` e mostra os valores reconhecidos para conferência manual. A implementação usa OCR de texto do Google Cloud Vision e regras por rótulo; além delas, interpreta a tabela de filamentos do Anycubic Slicer Next quando reconhece seu cabeçalho. Para esse fatiador, também usa as caixas de texto reconhecidas para localizar as amostras de cor junto aos números dos filamentos; a leitura dos pixels ocorre no navegador, sobre o arquivo selecionado.
 
 ## Acesso, privacidade e limites
 
@@ -22,14 +22,14 @@ O parser procura rótulos em português e inglês e só preenche valores associa
 | Tempo de impressão | Horas decimais a partir de `hh:mm`, dias, horas, minutos e segundos; comentários Cura `TIME` são lidos como segundos |
 | Trocas de filamento/cor | Número inteiro |
 | Material e fatiador | Nomes reconhecidos no texto |
-| Linhas por filamento | Índice, massa, comprimento, material e cor, quando legíveis |
+| Linhas por filamento | Índice, massa, comprimento, material e cor, quando legíveis no texto; no Anycubic Slicer Next, a amostra visual do filamento preenche uma cor ausente |
 | Custo exibido pelo fatiador | Valor numérico sem moeda assumida |
 
 Os nomes de fatiador reconhecidos são Anycubic Slicer Next, OrcaSlicer, Bambu Studio, Cura, UltiMaker Cura, PrusaSlicer, Creality Print, ElegooSlicer, FlashPrint e ideaMaker. Reconhecer o nome não garante que todos os campos daquele programa ou versão sejam extraídos.
 
 O parser também lê comentários de estatísticas G-code do OrcaSlicer e PrusaSlicer com unidades entre colchetes, somando listas de comprimento e massa por filamento. No Bambu Studio, reconhece `BambuStudio`, o tempo total estimado, comprimento e peso; ignora o tempo do modelo quando não há estimativa total. No Cura, soma comprimentos por extrusor e interpreta `TIME` como segundos. Não estima massa a partir do comprimento. Também lê valores apresentados na linha logo abaixo do rótulo, como em resumos que mostram “Model” e “211,63 g” em linhas separadas. A regra exige que a linha seguinte contenha apenas o valor e a unidade esperada; moeda explícita continua associada ao custo e não é inferida de `$` isolado.
 
-Na tabela de resumo do Anycubic Slicer Next (`Filamento / Modelo / Suporte / Limpo / Torre / Total`), o parser extrai os totais de modelo, suportes, purga/flushing, torre e consumo total, além do comprimento e dos valores por filamento. O print e sua transcrição ficam versionados em `src/lib/fixtures/anycubic-slicer-next-filament-panel.*`; execute `npm run test:slicer-ocr` para testar o parser e a rota usando o PNG real e uma resposta Vision simulada, sem abrir o Next ou enviar a imagem ao Google Cloud Vision. O teste não verifica o reconhecimento visual do PNG pelo provedor. Leituras de zero grama acompanhadas por comprimento positivo ficam vazias e são sinalizadas como incompatíveis.
+Na tabela de resumo do Anycubic Slicer Next (`Filamento / Modelo / Suporte / Limpo / Torre / Total`), o parser extrai os totais de modelo, suportes, purga/flushing, torre e consumo total, além do comprimento e dos valores por filamento. O print e sua transcrição ficam versionados em `src/lib/fixtures/anycubic-slicer-next-filament-panel.*`; execute `npm run test:slicer-ocr` para testar parser, rota e amostragem de cores sem iniciar o Next nem chamar o Google Cloud Vision. O teste da rota envia o PNG fixture com uma resposta Vision simulada; o teste do amostrador usa pixels sintéticos, então não verifica as caixas de texto reais retornadas pelo Google nem a decodificação do PNG no navegador. Leituras de zero grama acompanhadas por comprimento positivo ficam vazias e são sinalizadas como incompatíveis.
 
 O reconhecimento textual de material preserva nomes de produtos do catálogo, incluindo Bambu Lab PLA Basic e PPA-CF, Creality Hyper PLA/ABS/PETG e HP ASA/TPU, além de PA11 Carbon Fiber, PETG Carbon Fiber, PC Blend, Water-Wash Resin 2.0 e ABS-Like Resin V3.0. O OCR não associa automaticamente a leitura a um registro ou perfil do catálogo.
 
@@ -45,9 +45,9 @@ O OCR não inicia cálculos nem salva resultados por conta própria. O fabricant
 
 ## Limites conhecidos
 
-- O Cloud Vision extrai texto, mas não entende a semântica de cada painel de fatiador. Layouts, idiomas, rótulos, unidades e versões diferentes podem deixar campos vazios ou produzir leituras incorretas.
+- O Cloud Vision extrai texto e caixas de posição, mas não entende a semântica de cada painel de fatiador. A amostragem visual de cor é específica ao layout do Anycubic Slicer Next validado; outros layouts, idiomas, rótulos, unidades e versões diferentes podem deixar campos vazios ou produzir leituras incorretas.
 - Não há confirmação automática de moeda, perfil, impressora, escala, temperatura ou custo por cor. O custo extraído não substitui o motor de precificação.
-- A captura real versionada do Anycubic Slicer Next é enviada à rota no teste automatizado, que simula a resposta textual do Vision e verifica a extração. O provedor não reconhece a imagem durante o teste; validar o OCR visual real exige credencial e chamada externa. Não há capturas versionadas de todos os fatiadores e versões; a cobertura precisa crescer antes de considerar qualquer layout garantido.
+- A captura real versionada do Anycubic Slicer Next é enviada à rota no teste automatizado, que simula a resposta de texto e as posições do Vision e verifica a extração. A amostragem de cor é testada com pixels sintéticos. O provedor não reconhece a imagem durante o teste; validar as caixas e cores retornadas pelo OCR real exige credencial e chamada externa. Não há capturas versionadas de todos os fatiadores e versões; a cobertura precisa crescer antes de considerar qualquer layout garantido.
 - Sem `GOOGLE_CLOUD_VISION_API_KEY` na Production, a interface informa que o serviço não está configurado e mantém o cálculo manual disponível.
 
 Os limites de implementação estão descritos junto à [calculadora](pricing-engine.md#limites-atuais), e a preparação da chave e do projeto Google Cloud está em [integrações](integrations.md#ocr-de-imagens-de-fatiadores).
