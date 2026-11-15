@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync, statSync } from "node:fs";
 import { confirmSlicerOcrCostCurrency, hasReviewableSlicerOcrData, parseSlicerOcrTexts, slicerColorPresentation } from "./slicer-ocr";
 
 describe("parseSlicerOcrTexts", () => {
@@ -186,26 +187,11 @@ Tempo total: 1d3h58m`]);
   });
 
   it("parses the Anycubic Slicer Next filament panel shown in the regression screenshot", () => {
-    const result = parseSlicerOcrTexts([`Anycubic Slicer Next
-Filamento Modelo Suporte Limpo Torre Total
-1 6,17 m 6,02 m 16,83 m 3,11 m 32,13 m
-18,25 g 17,80 g 49,80 g 9,19 g 95,05 g
-2 6,30 m 4,26 m 19,27 m 2,16 m 31,99 m
-18,64 g 12,62 g 57,00 g 6,40 g 94,66 g
-3 1,99 m 1,11 m 10,52 m 2,75 m 16,37 m
-5,90 g 3,29 g 31,11 g 8,13 g 48,44 g
-4 5,23 m 2,17 m 15,08 m 4,20 m 26,68 m
-15,49 g 6,41 g 44,61 g 12,42 g 78,92 g
-5 1,04 m 0,08 m 11,43 m 1,92 m 14,47 m
-3,08 g 0,23 g 33,81 g 5,69 g 42,82 g
-Total 20,74 m 13,64 m 73,12 m 14,14 m 121,64 m
-61,36 g 40,35 g 216,33 g 41,84 g 359,88 g
-Quantidade de trocas de filamento: 1018
-Custo: 26,99
-Estimativa de Tempo
-Tempo de preparo: 1s
-Tempo de impressão do modelo: 21h54m
-Tempo total: 21h54m`]);
+    const fixture = new URL("./fixtures/anycubic-slicer-next-filament-panel.txt", import.meta.url);
+    const screenshot = new URL("./fixtures/anycubic-slicer-next-filament-panel.png", import.meta.url);
+    const text = readFileSync(fixture, "utf8");
+    expect(statSync(screenshot).size).toBeGreaterThan(0);
+    const result = parseSlicerOcrTexts([text]);
 
     expect(result).toMatchObject({
       slicer: "Anycubic Slicer Next", totalGrams: 359.88, filamentGrams: 359.88,
