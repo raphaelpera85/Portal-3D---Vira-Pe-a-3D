@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CREATOR_MODEL_MAX_PREVIEW_BYTES, CREATOR_MODEL_MAX_UPLOAD_BYTES, normalizeCreatorModelPreview, normalizeCreatorModelUpload } from "@/lib/creator-model-upload";
 import { differenceHash } from "@/lib/visual-image-search";
+import { readThreeMfPackage } from "@/lib/model-file";
 import { discardCreatorModelUpload, finalizeCreatorModelUpload, prepareCreatorModelUpload, submitCreatorModel, type CreatorModelUploadPreparation } from "@/app/painel/maker/model-actions";
 import { modelShowcaseCategories } from "@/lib/model-showcase";
 
@@ -13,9 +14,37 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileInspection, setFileInspection] = useState<Awaited<ReturnType<typeof readThreeMfPackage>> | null>(null);
+  const [fileInspectionPending, setFileInspectionPending] = useState(false);
+  const [fileInspectionError, setFileInspectionError] = useState(false);
   const [selectedPreview, setSelectedPreview] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const [draggingFile, setDraggingFile] = useState(false);
+
+  useEffect(() => {
+    if (!selectedFile) { setFileInspection(null); setFileInspectionError(false); setFileInspectionPending(false); return; }
+    let current = true;
+    setFileInspection(null);
+    setFileInspectionError(false);
+    setFileInspectionPending(true);
+    void selectedFile.arrayBuffer().then((buffer) => readThreeMfPackage(new Uint8Array(buffer))).then((result) => {
+      if (current) setFileInspection(result);
+    }).catch(() => {
+      if (current) setFileInspectionError(true);
+    }).finally(() => {
+      if (current) setFileInspectionPending(false);
+    });
+    return () => { current = false; };
+  }, [selectedFile]);
+
+  const detectedColors = fileInspection ? [...new Set([
+    ...fileInspection.colors.palette,
+    ...fileInspection.colors.objectColors,
+    ...fileInspection.colors.componentPaintColors.flat(),
+    ...fileInspection.colors.componentPartColors.flat(),
+    ...Object.values(fileInspection.colors.namedColors),
+    ...fileInspection.colors.paintPaletteColors,
+  ])].filter((color) => /^[\da-f]{6}$/i.test(color)).slice(0, 12) : [];
 
   function selectModelFile(file: File | undefined) {
     if (!file) return;
@@ -129,6 +158,15 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
             <small>{draggingFile ? "Solte o arquivo para selecioná-lo" : `Arraste um 3MF até aqui ou escolha no dispositivo · máximo ${Math.round(CREATOR_MODEL_MAX_UPLOAD_BYTES / 1024 / 1024)} MiB`}</small>
           </label>
           {selectedFile && <div className="creator-model-file-selection"><span>{selectedFile.name} · {(selectedFile.size / (1024 * 1024)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MiB</span><button className="button button-secondary" type="button" disabled={pending} onClick={() => setSelectedFile(null)}>Remover arquivo</button></div>}
+          {selectedFile && <div className="creator-model-file-inspection" aria-live="polite">
+            {fileInspectionPending ? <small>Lendo metadados locais do 3MF…</small> : fileInspectionError ? <small>Não foi possível ler os metadados deste arquivo. Ele ainda pode ser enviado para revisão.</small> : fileInspection && <>
+              <strong>Informações encontradas no arquivo</strong>
+              <small>Unidade: {fileInspection.unit ?? "não informada"} · Placas de fatiamento: {fileInspection.slicePlates.length || "não encontradas"}</small>
+              {fileInspection.slicePlates.length > 0 && <small>{fileInspection.slicePlates.map((plate, index) => `Placa ${plate.index ?? index + 1}: ${plate.weightGrams == null ? "peso não informado" : `${plate.weightGrams.toLocaleString("pt-BR")} g`}${plate.printTimeSeconds == null ? "" : ` · ${(plate.printTimeSeconds / 3600).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} h`}`).join("; ")}</small>}
+              <small>Cores encontradas nos metadados: {detectedColors.length || "nenhuma"}. Confira a aparência no visualizador após a aprovação.</small>
+              {detectedColors.length > 0 && <ul className="creator-model-file-colors" aria-label="Cores encontradas no arquivo">{detectedColors.map((color) => <li key={color}><i style={{ backgroundColor: `#${color}` }} aria-hidden="true" /><code>#{color.toUpperCase()}</code></li>)}</ul>}
+            </>}
+          </div>}
           <label className="creator-model-preview-file">Capa do modelo (opcional)<input type="file" accept="image/png,image/jpeg,image/webp" disabled={pending} onChange={(event) => { selectPreview(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} /><small>PNG, JPEG ou WebP · até {Math.round(CREATOR_MODEL_MAX_PREVIEW_BYTES / 1024 / 1024)} MiB. A imagem fica privada até a aprovação.</small></label>
           {selectedPreview && <div className="creator-model-file-selection"><span>{selectedPreview.name} · {(selectedPreview.size / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} KB</span><button className="button button-secondary" type="button" disabled={pending} onClick={() => setSelectedPreview(null)}>Remover capa</button></div>}
           {fileError && <p className="auth-notice is-error" role="alert">{fileError}</p>}

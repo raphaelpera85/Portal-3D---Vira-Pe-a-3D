@@ -336,6 +336,12 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .creator-model-file-selection { display: flex; min-width: 0; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--muted-strong); font-size: 12px; }
 .creator-model-file-selection > span { min-width: 0; overflow-wrap: anywhere; }
 .creator-model-file-selection .button { min-height: 34px; padding: 7px 10px; font-size: 11px; }
+.creator-model-file-inspection { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--muted-strong); font-size: 11px; line-height: 1.5; }
+.creator-model-file-inspection > strong { color: var(--ink); }
+.creator-model-file-inspection small { color: var(--muted); font-size: 10px; }
+.creator-model-file-colors { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.creator-model-file-colors li { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; }
+.creator-model-file-colors i { width: 15px; height: 15px; border: 1px solid var(--line-strong); border-radius: 50%; }
 .admin-model-review-list { display: grid; gap: 14px; }
 .admin-model-review-card { display: grid; grid-template-columns: 1fr minmax(220px, .6fr); gap: 22px; }
 .admin-model-review-card h2 { margin: 6px 0; font-size: 20px; }
