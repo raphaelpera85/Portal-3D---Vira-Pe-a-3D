@@ -22,6 +22,10 @@ describe("mapTechnicalCatalog", () => {
     });
     expect(snapmaker?.sources.map((entry) => entry.url)).toContain("https://www.snapmaker.com/en/snapmaker-u1/specs");
     expect(snapmaker?.extruders).toBeNull();
+    expect(printers.filter((printer) => printer.brand === "Snapmaker" && printer.model === "U1")).toHaveLength(1);
+    expect(nozzles.find((nozzle) => nozzle.id === "snapmaker-u1-0.4")).toMatchObject({
+      diameterMm: 0.4, material: "Aço inoxidável", original: true, printerCompatibility: { "snapmaker-u1": "compatible" },
+    });
   });
 
   it("keeps the Snapmaker Artisan build area tied to its active nozzle mode", () => {
@@ -33,6 +37,21 @@ describe("mapTechnicalCatalog", () => {
       { id: "artisan-right-nozzle", label: "Bico direito", dimensionsMm: { x: 400, y: 400, z: 400 } },
       { id: "artisan-dual-nozzle", label: "Dois bicos", dimensionsMm: { x: 350, y: 400, z: 400 } },
     ]);
+    expect(nozzles.filter((nozzle) => nozzle.id.startsWith("snapmaker-artisan-")).map(({ diameterMm, material, original }) => ({ diameterMm, material, original }))).toEqual([
+      { diameterMm: 0.2, material: null, original: false }, { diameterMm: 0.4, material: "Latão", original: true },
+      { diameterMm: 0.6, material: null, original: false }, { diameterMm: 0.8, material: null, original: false },
+    ]);
+  });
+
+  it("does not duplicate the locally seeded Snapmaker nozzles after the database seed is applied", () => {
+    const databaseNozzle = mapTechnicalCatalog([], [], [{
+      id: "snapmaker-db-artisan-04", manufacturer: "Snapmaker", model: "Bico Snapmaker Artisan",
+      diameter_mm: 0.4, body_material: "Latão", max_temperature_c: 300, original: true,
+      catalog_status: "published", source_url: "https://www.snapmaker.com/en/snapmaker-artisan/specs/",
+    }], [], []).nozzles;
+    const catalog = mergeTechnicalCatalogWithFallback({ printers: [], materials: [], nozzles: databaseNozzle }, { printers, materials, nozzles });
+
+    expect(catalog.nozzles.filter((nozzle) => nozzle.brand === "Snapmaker" && nozzle.name === "Bico Snapmaker Artisan" && nozzle.diameterMm === 0.4)).toHaveLength(1);
   });
 
   it("keeps published resin entries and exact exposure data in the local fallback", () => {

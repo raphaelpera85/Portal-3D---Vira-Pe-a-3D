@@ -101,8 +101,9 @@ As notas de migrations abaixo registram o estado no momento em que foram escrita
 - A ELEGOO Neptune 4 Max Ribbon-Cable entrou separada da Type-C, com firmware incompatível entre versões conforme a ELEGOO. O fallback local passa a 106 variantes; a migration foi aplicada ao Supabase.
 - A Neptune 4 Plus Ribbon-Cable ganhou variante própria, sem compartilhar bicos automaticamente com a Type-C. O fallback local passa a 107 variantes; a migration foi aplicada ao Supabase.
 
-- A Snapmaker U1 entrou no fallback local e na migration `20261117130000_seed_snapmaker_u1.sql`. A página oficial confirma volume 270³ mm, quatro cabeçotes independentes, até 500 mm/s, limites de 300 °C no bico e 100 °C na mesa. Compatibilidade de materiais permanece condicionada aos acessórios oficiais; nenhum bico foi vinculado automaticamente. Migration somente no Git.
+- A entrada preexistente da Snapmaker U1 foi alinhada às especificações atuais, com quatro cabeçotes independentes e limites de potência por tensão, pela migration idempotente `20261117130000_seed_snapmaker_u1.sql`. Os bicos do catálogo são vinculados por modelo apenas onde a ficha oficial confirma o diâmetro e o material; não inferimos resistência à abrasão.
 - A Snapmaker Artisan entrou no fallback e na migration `20261117140000_seed_snapmaker_artisan.sql`. A checagem de volume oferece áreas distintas para bico esquerdo, direito ou duplo (375 × 400 × 400, 400 × 400 × 400 e 350 × 400 × 400 mm); a zona externa da mesa é diferenciada da área interna de 110 °C. Migration somente no Git.
+- U1 e Artisan têm bicos catalogados nas migrations `20261117150000_seed_snapmaker_nozzles.sql`; para o Artisan, 0,2/0,6/0,8 mm ficam sem material declarado pela Snapmaker. Migration somente no Git.
 
 ## Próximas entregas
 
