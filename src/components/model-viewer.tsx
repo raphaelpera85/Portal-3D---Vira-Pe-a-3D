@@ -12,7 +12,7 @@ import { createMeterExportCopy } from "@/lib/model-export";
 import { evaluateBuildVolume, evaluateCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter, type CompatibilityCheck } from "@/lib/compatibility";
 import type { SavedSlicerMetrics } from "@/lib/saved-calculation";
 import {
-  formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_PUBLIC_MODEL_FILE_BYTES, type ModelDimensions, type ModelUnit,
+  formatModelDimensions, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, type ModelDimensions, type ModelUnit,
   type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds,
   formatThreeMfFilamentLabel, getModelColorMatchedTriangleIndexes, getModelFormat, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
@@ -297,7 +297,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
     if (modelOriginPositionRef.current) model.position.copy(modelOriginPositionRef.current).multiplyScalar(scale / 100);
   }, [scale]);
 
-  async function loadFiles(files: File[], publicPreview = false, maxFileBytes = MAX_MODEL_FILE_BYTES): Promise<boolean> {
+  async function loadFiles(files: File[], publicPreview = false, maxFileBytes = MAX_MODEL_PREVIEW_FILE_BYTES): Promise<boolean> {
     if (files.length === 0) return false;
     if (exporting) {
       setMessage("Aguarde a exportação terminar antes de trocar o modelo.");
@@ -479,7 +479,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
       if (!response.ok) throw new Error("Prévia indisponível");
       const blob = await response.blob();
       const isPublic3mf = modelName !== undefined;
-      const maxFileBytes = isPublic3mf ? MAX_PUBLIC_MODEL_FILE_BYTES : MAX_MODEL_FILE_BYTES;
+      const maxFileBytes = isPublic3mf ? MAX_MODEL_PREVIEW_FILE_BYTES : MAX_MODEL_FILE_BYTES;
       if (blob.size > maxFileBytes) throw new Error("Arquivo acima do limite");
       const filename = isPublic3mf ? `${modelName}.3mf` : "preview.glb";
       const type = isPublic3mf ? "application/vnd.ms-package.3dmanufacturing-3dmodel+xml" : "model/gltf-binary";
@@ -491,7 +491,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
   }, [previewUrl, readOnly, modelName]);
 
   useEffect(() => {
-    if (readOnly && localPreviewFile) void loadFiles([localPreviewFile], false, MAX_PUBLIC_MODEL_FILE_BYTES);
+    if (readOnly && localPreviewFile) void loadFiles([localPreviewFile], false, MAX_MODEL_PREVIEW_FILE_BYTES);
   }, [localPreviewFile, readOnly]);
 
   function fitView() {
@@ -654,7 +654,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
             onDrop={(event) => { if (!readOnly) { event.preventDefault(); void loadFiles(Array.from(event.dataTransfer.files)); } }}
           >
             <div className="viewer-canvas-label">X <i /> Y <i /> Z</div>
-            {!rawDimensions && !busy && <div className="viewer-empty"><div className="viewer-empty-icon"><Box size={30} /></div><h2>{readOnly ? modelName ? `Visualize ${modelName} em 3D` : "Prévia 3D do produto" : "Veja seu modelo ganhar forma."}</h2><p>{readOnly ? localPreviewFile ? "Carregando o arquivo 3MF selecionado localmente." : modelName ? "Carregando o arquivo 3MF original." : "Carregando a cópia de prévia enviada pelo fabricante." : "Abra ou arraste um arquivo STL, OBJ, 3MF ou GLB para explorar a peça em 3D."}</p>{!readOnly && <span>Até 20 MB no conjunto · processamento no seu dispositivo</span>}</div>}
+            {!rawDimensions && !busy && <div className="viewer-empty"><div className="viewer-empty-icon"><Box size={30} /></div><h2>{readOnly ? modelName ? `Visualize ${modelName} em 3D` : "Prévia 3D do produto" : "Veja seu modelo ganhar forma."}</h2><p>{readOnly ? localPreviewFile ? "Carregando o arquivo 3MF selecionado localmente." : modelName ? "Carregando o arquivo 3MF original." : "Carregando a cópia de prévia enviada pelo fabricante." : "Abra ou arraste um arquivo STL, OBJ, 3MF ou GLB para explorar a peça em 3D."}</p>{!readOnly && <span>Prévia local até 50 MB · biblioteca privada até 20 MB · processamento no seu dispositivo</span>}</div>}
             {busy && <div className="viewer-loading" role="status"><span className="viewer-spinner" />Preparando modelo 3D…</div>}
             {webglError && <div className="viewer-loading" role="alert">Este dispositivo não conseguiu iniciar a visualização 3D (WebGL).</div>}
             {message && <div className={`viewer-message${message.startsWith("Não foi") || message.includes("Escolha") || message.includes("20 MB") || message.includes("50 MB") || message.includes("vazio") || message.includes("Selecione") || message.includes("compatível") ? " is-error" : ""}`} role="status"><span>{message}</span><button type="button" onClick={() => setMessage("")} aria-label="Dispensar mensagem"><X size={14} /></button></div>}
@@ -781,7 +781,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
             </ul>
           </>}
           <div className="inspector-divider" />
-          <div className="file-summary"><span className="file-summary-icon"><Box size={17} /></span><div><strong>{fileName || "Seu arquivo 3D"}</strong><small>{fileKind ? `${fileKind.toUpperCase()} · conjunto de até ${Math.round(MAX_MODEL_FILE_BYTES / 1024 / 1024)} MB` : "STL, OBJ, 3MF, GLB ou GLTF · máximo 20 MB"}</small></div></div>
+          <div className="file-summary"><span className="file-summary-icon"><Box size={17} /></span><div><strong>{fileName || "Seu arquivo 3D"}</strong><small>{fileKind ? `${fileKind.toUpperCase()} · prévia até ${Math.round(MAX_MODEL_PREVIEW_FILE_BYTES / 1024 / 1024)} MB` : "STL, OBJ, 3MF, GLB ou GLTF · prévia até 50 MB"}</small></div></div>
           <label className="viewer-upload-secondary"><Upload size={15} /> {rawDimensions ? "Trocar arquivo" : "Escolher arquivo"}<input type="file" multiple accept=".stl,.obj,.3mf,.glb,.gltf,.mtl,.bin,.png,.jpg,.jpeg,.webp,model/stl,model/obj,model/3mf,model/gltf-binary,model/gltf+json" onChange={(event) => { void loadFiles(Array.from(event.target.files ?? [])); event.currentTarget.value = ""; }} /></label>
           <ModelUploadManager buyerId={buyerId} files={selectedFiles} savedModels={savedModels} savedModelsPage={savedModelsPage} savedModelsPages={savedModelsPages} savedModelsCount={savedModelsCount} orcamento={orcamento} materials={materials} dimensionsMm={dimensionsMm} today={today} onLoad={loadFiles} libraryError={libraryError} />
           <p className="privacy-note">Os arquivos ficam no dispositivo até você salvar o conjunto na biblioteca privada. Para OBJ/GLTF com recursos externos, selecione também os arquivos MTL, BIN e texturas associados.</p>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FileArchive, LoaderCircle } from "lucide-react";
-import { formatThreeMfFilamentLabel, MAX_PUBLIC_MODEL_FILE_BYTES, readThreeMfPackage, type ThreeMfSlicePlate } from "@/lib/model-file";
+import { formatThreeMfFilamentLabel, MAX_MODEL_PREVIEW_FILE_BYTES, readThreeMfPackage, type ThreeMfSlicePlate } from "@/lib/model-file";
 
 export function ThreeMfSlicerImporter({ onApply, onSourceFileChange }: {
   onApply: (plate: ThreeMfSlicePlate, plateNumber: number) => boolean | null; onSourceFileChange?: (file: File | null) => void;
@@ -23,8 +23,8 @@ export function ThreeMfSlicerImporter({ onApply, onSourceFileChange }: {
     setError("");
     setStatus("");
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".3mf") || file.size < 1 || file.size > MAX_PUBLIC_MODEL_FILE_BYTES) {
-      setError(`Selecione um arquivo 3MF válido de até ${Math.round(MAX_PUBLIC_MODEL_FILE_BYTES / 1024 / 1024)} MiB.`);
+    if (!file.name.toLowerCase().endsWith(".3mf") || file.size < 1 || file.size > MAX_MODEL_PREVIEW_FILE_BYTES) {
+      setError(`Selecione um arquivo 3MF válido de até ${Math.round(MAX_MODEL_PREVIEW_FILE_BYTES / 1024 / 1024)} MiB.`);
       return;
     }
     setLoading(true);
@@ -49,7 +49,7 @@ export function ThreeMfSlicerImporter({ onApply, onSourceFileChange }: {
 
   return <section className="price-card slicer-ocr-card" aria-labelledby="three-mf-import-title">
     <div className="price-card-heading"><span className="price-step"><FileArchive size={15} aria-hidden="true" /></span><div><h2 id="three-mf-import-title">Importar dados do 3MF</h2><p>Leia o peso e o tempo gravados pelo fatiador sem enviar o arquivo para um serviço externo.</p></div></div>
-    <label className="price-ocr-file">Arquivo 3MF<input type="file" accept=".3mf,application/vnd.ms-3mfdocument" onChange={(event) => { void importFile(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} /><small>Até {Math.round(MAX_PUBLIC_MODEL_FILE_BYTES / 1024 / 1024)} MiB · leitura local no navegador.</small></label>
+    <label className="price-ocr-file">Arquivo 3MF<input type="file" accept=".3mf,application/vnd.ms-3mfdocument" onChange={(event) => { void importFile(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} /><small>Até {Math.round(MAX_MODEL_PREVIEW_FILE_BYTES / 1024 / 1024)} MiB · leitura local no navegador.</small></label>
     {loading && <p className="price-ocr-note"><LoaderCircle size={13} className="spin" aria-hidden="true" /> Lendo metadados da placa…</p>}
     {error && <p className="auth-notice is-error" role="alert">{error}</p>}
     {status && <p className="auth-notice is-success" role="status">{status}</p>}

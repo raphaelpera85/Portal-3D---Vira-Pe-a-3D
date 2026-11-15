@@ -140,7 +140,7 @@ export function ModelUploadManager({ buyerId, files, savedModels, savedModelsPag
 
   return <section className="model-library" aria-label="Biblioteca privada de modelos">
     <div className="inspector-section-head"><h2>Biblioteca privada</h2><ArchiveRestore size={16} aria-hidden="true" /></div>
-    <p className="model-library-note">Salve o modelo e os arquivos associados na sua conta para abri-los em outro momento. O conjunto inteiro fica privado.</p>
+    <p className="model-library-note">Salve o modelo e os arquivos associados na sua conta para abri-los em outro momento. O conjunto inteiro fica privado e pode ter até 20 MB; modelos maiores ainda podem ser vistos na prévia local, com limite de 50 MB.</p>
     {libraryError ? <p className="model-library-note" role="alert">A biblioteca privada precisa da migração de armazenamento para funcionar.</p> : buyerId ? files.length > 0 ? <button className="button button-primary model-library-save" type="button" onClick={() => void saveCurrentModel()} disabled={pending} aria-busy={pending}>
       <Upload size={15} aria-hidden="true" /> {pending ? message.startsWith("Enviando") ? `Enviando ${progress}%…` : "Preparando envio…" : "Salvar conjunto na conta"}
     </button> : <p className="model-library-note">Abra um modelo para habilitar o salvamento.</p> : <p className="model-library-note"><Link href="/conta">Entre em uma conta de comprador</Link> para salvar modelos privados.</p>}
