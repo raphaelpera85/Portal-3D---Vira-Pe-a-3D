@@ -195,7 +195,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
       <button className="button button-primary" type="submit" disabled={pending}>{pending ? "Enviando…" : "Enviar para revisão"}</button>
     </form>
     {message && <p className="auth-notice" role="status" aria-live="polite">{message}{pending && message.startsWith("Enviando") ? ` ${uploadProgress}%` : ""}</p>}
-    {pending && message.startsWith("Enviando") && <progress className="creator-model-upload-progress" value={uploadProgress} max={100} aria-label="Progresso do envio do modelo" />}
+    {pending && message.startsWith("Enviando") && <progress className="private-upload-progress" value={uploadProgress} max={100} aria-label="Progresso do envio do modelo" />}
     {availableAssets.length > 0 && <details className="maker-model-git-assets"><summary>Usar um arquivo já versionado no portal</summary>
       <form action={submitCreatorModel} className="auth-form">
         <div className="equipment-form-grid">

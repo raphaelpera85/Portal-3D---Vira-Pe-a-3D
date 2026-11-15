@@ -15,6 +15,7 @@ import { MAX_CONSIGNMENT_QUANTITY } from "@/lib/consignment";
 import { SlicerImageImporter } from "@/components/slicer-image-importer";
 import { ThreeMfSlicerImporter } from "@/components/three-mf-slicer-importer";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { uploadSupabaseFile } from "@/lib/supabase/upload-progress";
 import { hasReviewableSlicerOcrData, slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 import { mapThreeMfPlateToSlicerMetrics, type CalculationOrigin, type SavedSlicerMetrics } from "@/lib/saved-calculation";
 import { mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "@/lib/calculator-profile";
@@ -136,6 +137,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const [keepSourceFiles, setKeepSourceFiles] = useState(false);
   const [sourceUploadMessage, setSourceUploadMessage] = useState("");
   const [sourceUploadPending, setSourceUploadPending] = useState(false);
+  const [sourceUploadProgress, setSourceUploadProgress] = useState<number | null>(null);
   const [sourceUploadRetry, setSourceUploadRetry] = useState(false);
   const [sourceUploadRetryCount, setSourceUploadRetryCount] = useState(0);
   const [sourceFilesToRetry, setSourceFilesToRetry] = useState<File[]>([]);
@@ -163,6 +165,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     }
     void (async () => {
       setSourceUploadPending(true);
+      setSourceUploadProgress(0);
       setSourceUploadRetry(false);
       setSourceUploadMessage("Guardando arquivos fonte privados…");
       let uploadedCount = 0;
@@ -170,13 +173,16 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       const failures: string[] = [];
       const retryableFiles: File[] = [];
       try {
-        const { data: auth, error: authError } = await supabase.auth.getUser();
-        if (authError || !auth.user) {
+        const { data: { session }, error: authError } = await supabase.auth.getSession();
+        if (authError || !session) {
           setSourceFilesToRetry(files);
           setSourceUploadRetry(true);
+          setSourceUploadProgress(null);
           setSourceUploadMessage("Cálculo salvo, mas entre novamente para guardar os arquivos fonte.");
           return;
         }
+        const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+        let uploadedBytes = 0;
         for (const file of files) {
           const extension = file.name.toLowerCase().endsWith(".3mf") ? "3mf"
             : file.type === "image/png" ? "png" : file.type === "image/jpeg" ? "jpg" : file.type === "image/webp" ? "webp" : "";
@@ -192,15 +198,18 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
           let metadataCreated = false;
           try {
             const { error: metadataError } = await supabase.from("maker_cost_calculation_attachments").insert({
-              id: attachmentId, store_id: storeId, calculation_id: calculationId, owner_user_id: auth.user.id,
+              id: attachmentId, store_id: storeId, calculation_id: calculationId, owner_user_id: session.user.id,
               storage_path: storagePath, file_name: fileName, content_type: contentType, size_bytes: file.size,
             });
             if (metadataError) throw metadataError;
             metadataCreated = true;
             registeredCount++;
-            const { error: uploadError } = await supabase.storage.from("maker-calculation-sources").upload(storagePath, file, { contentType, upsert: false });
-            if (uploadError) throw uploadError;
+            await uploadSupabaseFile({ bucket: "maker-calculation-sources", path: storagePath, accessToken: session.access_token, file, onProgress: (loaded) => {
+              setSourceUploadProgress(Math.floor(((uploadedBytes + loaded) / totalBytes) * 100));
+            } });
             uploadedCount++;
+            uploadedBytes += file.size;
+            setSourceUploadProgress(Math.floor((uploadedBytes / totalBytes) * 100));
           } catch {
             if (metadataCreated) {
               await supabase.storage.from("maker-calculation-sources").remove([storagePath]);
@@ -224,9 +233,11 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
         setSourceUploadMessage("Cálculo salvo, mas não foi possível guardar os arquivos fonte.");
       } finally {
         setSourceUploadPending(false);
+        setSourceUploadProgress(null);
       }
     })().catch(() => {
       setSourceUploadPending(false);
+      setSourceUploadProgress(null);
       setSourceUploadMessage("Cálculo salvo, mas não foi possível guardar os arquivos fonte.");
     });
   }, [saveState, ocrSourceFiles, threeMfSourceFile, sourceFilesToRetry, sourceUploadRetryCount, storeId, router]);
@@ -740,6 +751,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             <button className="button button-primary" type="submit" disabled={saving || sourceUploadPending || !hasProductionCost || result.errors.length > 0}>{sourceUploadPending ? "Guardando arquivos…" : saving ? "Salvando…" : "Salvar cálculo"}</button>
             {saveState.message && <p className={saveState.success ? "auth-notice is-success" : "auth-notice is-error"} role="status">{saveState.message}</p>}
             {sourceUploadMessage && <p className={`auth-notice ${sourceUploadMessage.startsWith("Arquivos fonte guardados") ? "is-success" : "is-error"}`} role="status">{sourceUploadMessage}</p>}
+            {sourceUploadPending && sourceUploadProgress != null && <progress className="private-upload-progress" value={sourceUploadProgress} max={100} aria-label="Progresso do envio dos arquivos fonte" />}
             {sourceUploadRetry && saveState.calculationId && <button className="button button-secondary" type="button" disabled={sourceUploadPending} onClick={() => { uploadedForCalculations.current.delete(saveState.calculationId!); setSourceUploadRetryCount((count) => count + 1); }}>Tentar guardar novamente</button>}
           </form>
           {sourceAttachmentsError && <p className="auth-notice is-error" role="alert">Os arquivos fonte não puderam ser carregados. Confira a migração de armazenamento privado; o histórico de cálculos continua disponível.</p>}

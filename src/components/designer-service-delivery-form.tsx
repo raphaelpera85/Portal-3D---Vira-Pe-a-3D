@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createDesignerServiceDeliveryUploads, discardDesignerServiceDeliveryUploads, submitDesignerServiceDelivery } from "@/app/painel/designer/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { uploadSupabaseFile } from "@/lib/supabase/upload-progress";
 import { normalizeDesignerServiceDeliveryFiles } from "@/lib/designer-service-delivery";
 
 type PreparedFile = { path: string; name: string; size: number; extension: string; token: string };
@@ -15,6 +16,7 @@ export function DesignerServiceDeliveryForm({ requestId }: { requestId: string }
   const [prepared, setPrepared] = useState<PreparedFile[] | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
+  const [progress, setProgress] = useState(0);
 
   async function submit(files: PreparedFile[]) {
     setPending(true);
@@ -38,6 +40,7 @@ export function DesignerServiceDeliveryForm({ requestId }: { requestId: string }
     if (!valid) { setMessage("Selecione de 1 a 10 arquivos 3D compatíveis, com até 50 MiB cada e 100 MiB no total."); return; }
     setPending(true);
     setMessage("Preparando envio privado…");
+    setProgress(0);
     let batch: PreparedFile[] = [];
     try {
       const result = await createDesignerServiceDeliveryUploads(requestId, files.map(({ name, type, size }) => ({ name, type, size })));
@@ -45,12 +48,17 @@ export function DesignerServiceDeliveryForm({ requestId }: { requestId: string }
       batch = result.uploads;
       const client = createSupabaseBrowserClient();
       if (!client) throw new Error("storage");
+      const { data: { session }, error: sessionError } = await client.auth.getSession();
+      if (sessionError || !session) throw new Error("session");
+      const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+      let uploadedBytes = 0;
       for (let i = 0; i < files.length; i += 1) {
         setMessage(`Enviando arquivo ${i + 1} de ${files.length} para armazenamento privado…`);
-        const { error } = await client.storage.from("designer-service-deliveries").uploadToSignedUrl(
-          batch[i].path, batch[i].token, files[i], { contentType: "application/octet-stream" },
-        );
-        if (error) throw new Error("upload");
+        await uploadSupabaseFile({ bucket: "designer-service-deliveries", path: batch[i].path, signedToken: batch[i].token, accessToken: session.access_token, file: files[i], onProgress: (loaded) => {
+          setProgress(Math.floor(((uploadedBytes + loaded) / totalBytes) * 100));
+        } });
+        uploadedBytes += files[i].size;
+        setProgress(Math.floor((uploadedBytes / totalBytes) * 100));
       }
       setPrepared(batch);
       setPending(false);
@@ -82,8 +90,9 @@ export function DesignerServiceDeliveryForm({ requestId }: { requestId: string }
       <label>Arquivos finais<input ref={inputRef} type="file" accept=".stl,.3mf,.obj,.mtl,.gltf,.glb,.step,.stp,.blend,.zip" multiple disabled={pending} />
         <small>STL, 3MF, OBJ, MTL, GLTF, GLB, STEP, STP, BLEND ou ZIP · até 10 arquivos · 50 MiB por arquivo e 100 MiB no total.</small>
       </label>
-      <button className="button button-secondary" type="button" onClick={() => void prepare()} disabled={pending}>{pending ? "Preparando…" : "Enviar arquivos da modelagem"}</button>
+      <button className="button button-secondary" type="button" onClick={() => void prepare()} disabled={pending}>{pending ? message.startsWith("Enviando arquivo") ? `Enviando ${progress}%…` : "Preparando…" : "Enviar arquivos da modelagem"}</button>
     </>}
+    {pending && message.startsWith("Enviando arquivo") && <progress className="private-upload-progress" value={progress} max={100} aria-label="Progresso do envio da entrega" />}
     {message && <p className="auth-notice" role="status" aria-live="polite">{message}</p>}
   </div>;
 }

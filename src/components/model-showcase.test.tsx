@@ -8,7 +8,8 @@ describe("ModelShowcase", () => {
 
     expect(markup).toContain("https://makerworld.com/en/search/models?keyword=cat%20holder");
     expect(markup).toContain('target="_blank" rel="noopener noreferrer nofollow"');
-    expect(markup).toContain("Arquivos e licenças continuam sob as regras da plataforma de origem.");
+    expect(markup).toContain("O portal não baixa arquivos do MakerWorld.");
+    expect(markup).toContain("Baixe somente um modelo que você tenha permissão para usar");
   });
 
   it("does not show an external search link for an empty query", () => {

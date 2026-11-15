@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition, type FormEvent } from "react";
 import { registerDigitalAssetAction } from "@/app/painel/maker/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { uploadSupabaseFile } from "@/lib/supabase/upload-progress";
 import { MAX_DIGITAL_MODEL_BYTES, MAX_DIGITAL_PREVIEW_BYTES, validateDigitalAsset, validateDigitalPreview } from "@/lib/digital-assets";
 
 export function MakerDigitalAssetManager({ productId, storeId, personalPriceBrl, status, asset }: {
@@ -17,6 +18,7 @@ export function MakerDigitalAssetManager({ productId, storeId, personalPriceBrl,
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const editable = status === "draft";
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -40,21 +42,32 @@ export function MakerDigitalAssetManager({ productId, storeId, personalPriceBrl,
     startTransition(async () => {
       setMessage("Enviando arquivo original e prévia…");
       setSuccess(false);
+      setUploadProgress(0);
       const supabase = createSupabaseBrowserClient();
       if (!supabase) { setMessage("O armazenamento não está configurado."); return; }
-      const { error: uploadError } = await supabase.storage.from("digital-assets").upload(path, file, { contentType: "application/octet-stream", upsert: false });
-      if (uploadError) { setMessage("O upload falhou. Confira a conexão e tente novamente."); return; }
-      if (previewFile && previewPath) {
-        const { error: previewError } = await supabase.storage.from("digital-assets").upload(previewPath, previewFile, { contentType: "model/gltf-binary", upsert: false });
-        if (previewError) {
-          await supabase.storage.from("digital-assets").remove([path]);
-          setMessage("Não foi possível enviar a prévia GLB. O arquivo original não foi registrado.");
-          return;
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) { setUploadProgress(null); setMessage("Entre novamente antes de enviar os arquivos."); return; }
+      const totalBytes = file.size + (previewFile?.size ?? 0);
+      try {
+        await uploadSupabaseFile({ bucket: "digital-assets", path, accessToken: session.access_token, file, onProgress: (loaded) => {
+          setUploadProgress(Math.floor((loaded / totalBytes) * 100));
+        } });
+        if (previewFile && previewPath) {
+          await uploadSupabaseFile({ bucket: "digital-assets", path: previewPath, accessToken: session.access_token, file: previewFile, onProgress: (loaded) => {
+            setUploadProgress(Math.floor(((file.size + loaded) / totalBytes) * 100));
+          } });
         }
+      } catch {
+        await supabase.storage.from("digital-assets").remove([path, ...(previewPath ? [previewPath] : [])]);
+        setUploadProgress(null);
+        setMessage(previewFile ? "Não foi possível enviar o arquivo e a prévia. Confira a conexão e tente novamente." : "O upload falhou. Confira a conexão e tente novamente.");
+        return;
       }
+      setUploadProgress(100);
       const result = await registerDigitalAssetAction(productId, path, file.name, file.size, commercialPrice, rightsAccepted, previewPath);
       if (!result.success) {
         await supabase.storage.from("digital-assets").remove([path, ...(previewPath ? [previewPath] : [])]);
+        setUploadProgress(null);
         setMessage(result.message);
         return;
       }
@@ -62,6 +75,7 @@ export function MakerDigitalAssetManager({ productId, storeId, personalPriceBrl,
       setMessage(result.message);
       if (inputRef.current) inputRef.current.value = "";
       if (previewInputRef.current) previewInputRef.current.value = "";
+      setUploadProgress(null);
     });
   }
 
@@ -74,6 +88,7 @@ export function MakerDigitalAssetManager({ productId, storeId, personalPriceBrl,
       <label>Preço da licença comercial (opcional, R$)<input name="commercialPriceBrl" type="number" min="0.01" max="1000000" step="0.01" defaultValue={asset?.commercial_price_brl ?? ""} placeholder="Deixe em branco para oferecer somente uso pessoal" /></label>
       <label className="quote-consent"><input type="checkbox" name="rightsAccepted" required /><span>Confirmo que possuo os direitos para comercializar este modelo e conceder as licenças informadas.</span></label>
       <button className="button button-secondary" type="submit" disabled={pending}>{pending ? "Enviando…" : asset ? "Salvar arquivo e prévia" : "Enviar arquivo, prévia e registrar licença"}</button>
+      {pending && uploadProgress != null && <progress className="private-upload-progress" value={uploadProgress} max={100} aria-label="Progresso do envio do produto digital" />}
     </form> : <p>O arquivo e as licenças ficam bloqueados enquanto o anúncio está publicado ou arquivado. Para alterações, solicite a reabertura à equipe.</p>}
     {message && <p className={`auth-notice ${success ? "is-success" : "is-error"}`} role="status">{message}</p>}
   </div>;

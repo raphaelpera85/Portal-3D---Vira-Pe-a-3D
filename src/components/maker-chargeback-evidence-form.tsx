@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createChargebackEvidenceUploads, discardChargebackEvidenceUploads, submitChargebackEvidence } from "@/app/painel/maker/financeiro/evidence-actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { uploadSupabaseFile } from "@/lib/supabase/upload-progress";
 import { validateChargebackEvidence } from "@/lib/chargeback-evidence";
 
 type PreparedUpload = { idempotencyKey: string; uploads: { path: string; name: string; type: string; size: number }[] };
@@ -14,6 +15,7 @@ export function MakerChargebackEvidenceForm({ caseId }: { caseId: string }) {
   const [prepared, setPrepared] = useState<PreparedUpload | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
+  const [progress, setProgress] = useState(0);
 
   async function send(uploads: PreparedUpload) {
     setPending(true);
@@ -41,6 +43,7 @@ export function MakerChargebackEvidenceForm({ caseId }: { caseId: string }) {
     if (validation) { setMessage(validation); return; }
     setPending(true);
     setMessage("Preparando envio privado…");
+    setProgress(0);
     let batch: PreparedUpload | null = null;
     try {
       const tokens = await createChargebackEvidenceUploads(caseId, files.map(({ name, type, size }) => ({ name, type, size })));
@@ -49,12 +52,17 @@ export function MakerChargebackEvidenceForm({ caseId }: { caseId: string }) {
       batch = preparedBatch;
       const client = createSupabaseBrowserClient();
       if (!client) throw new Error("storage");
+      const { data: { session }, error: sessionError } = await client.auth.getSession();
+      if (sessionError || !session) throw new Error("session");
+      const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+      let uploadedBytes = 0;
       for (let index = 0; index < files.length; index += 1) {
         setMessage(`Enviando arquivo ${index + 1} de ${files.length} para armazenamento privado…`);
-        const { error } = await client.storage.from("chargeback-evidence").uploadToSignedUrl(
-          tokens.uploads[index].path, tokens.uploads[index].token, files[index], { contentType: files[index].type },
-        );
-        if (error) throw new Error("upload");
+        await uploadSupabaseFile({ bucket: "chargeback-evidence", path: tokens.uploads[index].path, signedToken: tokens.uploads[index].token, accessToken: session.access_token, file: files[index], onProgress: (loaded) => {
+          setProgress(Math.floor(((uploadedBytes + loaded) / totalBytes) * 100));
+        } });
+        uploadedBytes += files[index].size;
+        setProgress(Math.floor((uploadedBytes / totalBytes) * 100));
       }
       setPrepared(preparedBatch);
       setPending(false);
@@ -88,8 +96,9 @@ export function MakerChargebackEvidenceForm({ caseId }: { caseId: string }) {
       <label>Comprovantes da venda<input ref={inputRef} type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" multiple disabled={pending} />
         <small>JPG, PNG ou PDF · até 10 arquivos · até 10 MB no total. O Mercado Pago aceita o envio uma única vez por contestação.</small>
       </label>
-      <button className="button button-secondary" type="button" onClick={() => void prepareAndSend()} disabled={pending}>{pending ? "Preparando…" : "Enviar comprovantes"}</button>
+      <button className="button button-secondary" type="button" onClick={() => void prepareAndSend()} disabled={pending}>{pending ? message.startsWith("Enviando arquivo") ? `Enviando ${progress}%…` : "Preparando…" : "Enviar comprovantes"}</button>
     </>}
+    {pending && message.startsWith("Enviando arquivo") && <progress className="private-upload-progress" value={progress} max={100} aria-label="Progresso do envio dos comprovantes" />}
     {message && <p className="auth-notice" role="status" aria-live="polite">{message}</p>}
   </div>;
 }

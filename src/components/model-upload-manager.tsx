@@ -145,7 +145,7 @@ export function ModelUploadManager({ buyerId, files, savedModels, savedModelsPag
       <Upload size={15} aria-hidden="true" /> {pending ? message.startsWith("Enviando") ? `Enviando ${progress}%…` : "Preparando envio…" : "Salvar conjunto na conta"}
     </button> : <p className="model-library-note">Abra um modelo para habilitar o salvamento.</p> : <p className="model-library-note"><Link href="/conta">Entre em uma conta de comprador</Link> para salvar modelos privados.</p>}
     {message && <p className="model-library-message" role="status" aria-live="polite">{message}</p>}
-    {pending && message.startsWith("Enviando") && <progress className="model-library-upload-progress" value={progress} max={100} aria-label="Progresso do envio dos arquivos" />}
+    {pending && message.startsWith("Enviando") && <progress className="private-upload-progress" value={progress} max={100} aria-label="Progresso do envio dos arquivos" />}
     {savedModels.length > 0 && <ul className="model-library-list">{savedModels.map((model) => <li key={model.id}>
       <div><strong>{model.model_name}</strong><span>{(model.total_bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB · {model.files.length} arquivo(s){model.dimensions_mm ? ` · ${model.dimensions_mm.x} × ${model.dimensions_mm.y} × ${model.dimensions_mm.z} mm` : ""}</span></div>
       <div className="model-library-actions">
