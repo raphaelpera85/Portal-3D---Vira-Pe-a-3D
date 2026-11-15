@@ -54,6 +54,18 @@ describe("getIntegrationHealth", () => {
     expect(result.mercadoPago.status).toBe("configured");
   });
 
+  it("does not require the optional designer WhatsApp template for store notifications", () => {
+    const result = getIntegrationHealth({
+      WHATSAPP_ACCESS_TOKEN: "token",
+      WHATSAPP_PHONE_NUMBER_ID: "123456",
+      WHATSAPP_GRAPH_API_VERSION: "v23.0",
+      WHATSAPP_TEMPLATE_NAME: "virapeca_novo_orcamento",
+    }).find((item) => item.id === "whatsapp");
+
+    expect(result?.status).toBe("configured");
+    expect(result?.missingVariables).not.toContain("WHATSAPP_DESIGNER_TEMPLATE_NAME");
+  });
+
   it("rejects base URLs with paths or query strings that runtime helpers cannot use", () => {
     const result = Object.fromEntries(getIntegrationHealth({
       NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co/rest/v1",
