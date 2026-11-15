@@ -43,6 +43,7 @@ export function ModelRecommendations({ models }: { models: ShowcaseModel[] }) {
 export function ModelShowcase({ models, query, category, page, pages, additionalVisualIndex = [] }: { models: ShowcaseModel[]; query: string; category: string; page: number; pages: number; additionalVisualIndex?: VisualImageCandidate[] }) {
   return <section className="model-showcase shell" id="modelos">
     <div className="account-heading"><p className="eyebrow">ARQUIVOS 3D · COMUNIDADE VIRAPEÇA</p><h1>Modelos para <em>inspirar.</em></h1><p>Prévia visual dos arquivos 3MF, com categorias, tags e criadores para facilitar a descoberta.</p></div>
+    <p><Link className="button button-primary" href="/conta?destino=modelo-3d">Vende modelos 3D? Cadastre o seu</Link></p>
     <div className="model-gallery-controls">
       <nav className="category-list" aria-label="Filtrar modelos por categoria">
         <Link className={`category-chip${!category ? " is-active" : ""}`} aria-current={!category ? "page" : undefined} href={galleryUrl(query, "")}>Todos</Link>
