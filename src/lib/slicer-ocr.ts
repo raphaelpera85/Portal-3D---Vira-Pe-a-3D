@@ -139,6 +139,15 @@ function findFilamentLength(lines: string[], conflicts: string[]) {
   }
   const gcodeTotal = findGcodeFilamentTotal(lines, String.raw`(?:mm|m)`, (value, unit) => unit === "mm" ? value / 1000 : value);
   if (gcodeTotal !== undefined) return gcodeTotal;
+  const summaryHeader = lines.findIndex((line) => /filamento.*modelo.*limpo.*torre.*total/i.test(line));
+  if (summaryHeader >= 0) {
+    const totalRow = lines.slice(summaryHeader + 1).find((line) => /^comprimento\b/i.test(line));
+    const measurements = totalRow ? [...totalRow.matchAll(/(\d[\d.,]*)\s*(mm|m)\b/gi)] : [];
+    if (measurements.length >= 4) {
+      const [value, unit] = [parseNumber(measurements.at(-1)![1]), measurements.at(-1)![2].toLowerCase()];
+      return unit === "mm" ? value / 1000 : value;
+    }
+  }
   return findMeasurement(lines, String.raw`(?:(?:filament\s+)?(?:length|comprimento)(?:\s+(?:of\s+)?filament)?|filament\s+used)`, String.raw`(?:m|meters?|metros?|mm)`, (value, unit) => unit === "mm" ? value / 1000 : value, undefined, "comprimento do filamento", conflicts);
 }
 
@@ -180,13 +189,16 @@ function findPrintHours(lines: string[], conflicts: string[]) {
   if (curaTimes.length) return uniqueScalarValue(curaTimes.map((line) => parseNumber(line.replace(/^;\s*time\s*:\s*/i, "")) / 3600), "tempo de impressão", conflicts);
   const totalEstimated = lines.flatMap((line) => {
     const label = /total\s+estimated\s+time\s*[:=]\s*/i.exec(line);
-    return label ? [`estimated time: ${line.slice(label.index + label[0].length)}`] : [];
+    if (label) return [`estimated time: ${line.slice(label.index + label[0].length)}`];
+    const portugueseTotal = /^\s*tempo total\s*[:=]\s*/i.exec(line);
+    return portugueseTotal ? [`estimated time: ${line.slice(portugueseTotal[0].length)}`] : [];
   });
-  const labels = /(?:estimated\s+(?:printing\s+)?time|build\s+time|print(?:ing)?\s*time|tempo\s+(?:total\s+de\s+)?impress[aã]o|tempo\s+estimado|dura[cç][aã]o|^time)\s*[:=\-]?/i;
+  const labels = /(?:estimated\s+(?:printing\s+)?time|build\s+time|print(?:ing)?\s*time|tempo\s+(?:total\s+de\s+)?impress[aã]o(?:\s+do\s+modelo)?|tempo\s+estimado|dura[cç][aã]o|^time)\s*[:=\-]?/i;
   const values: number[] = [];
   for (const [lineIndex, line] of [...totalEstimated, ...lines].entries()) {
     const nextLine = lineIndex >= totalEstimated.length ? lines[lineIndex - totalEstimated.length + 1] ?? "" : "";
     if (lineIndex >= totalEstimated.length && /model\s+printing\s+time/i.test(line)) continue;
+    if (lineIndex >= totalEstimated.length && totalEstimated.length && /^\s*tempo de impress[aã]o do modelo\b/i.test(line)) continue;
     const label = labels.exec(line);
     if (!label) continue;
     const tail = line.slice(label.index + label[0].length).trim() ? line.slice(label.index + label[0].length) : nextLine;

@@ -148,6 +148,21 @@ Material Cost: $0.72`]);
     });
   });
 
+  it("uses the Total column in Anycubic Slicer Next summaries and ignores zero mass when length is positive", () => {
+    const result = parseSlicerOcrTexts([`Anycubic Slicer Next
+Filamento Modelo Limpo Torre Total
+Comprimento 8,50 m 24,52 m 8,16 m 41,19 m
+Peso 0,00 g 0,00 g 0,00 g 0,00 g
+Quantidade de trocas de filamento: 686
+Tempo de impressão do modelo: 12h44m
+Tempo total: 12h44m`]);
+
+    expect(result).toMatchObject({
+      slicer: "Anycubic Slicer Next", lengthMeters: 41.19, printHours: 12 + 44 / 60,
+      filamentChanges: 686, totalGrams: null, filamentGrams: null,
+    });
+  });
+
   it("recognizes only explicit currency labels for slicer cost", () => {
     expect(parseSlicerOcrTexts(["Estimated cost: R$ 16,79"]).estimatedCost).toBe(16.79);
     expect(parseSlicerOcrTexts(["Estimated cost: R$ 16,79"]).estimatedCostCurrency).toBe("BRL");
