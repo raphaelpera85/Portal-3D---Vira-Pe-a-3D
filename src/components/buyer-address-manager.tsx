@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent } from "react";
 import { deleteBuyerAddress, saveBuyerAddress } from "@/app/conta/actions";
-import { lookupBrazilianPostalCode } from "@/lib/brazilian-postal-code";
+import { PostalCodeAddressAutofill } from "@/components/postal-code-address-autofill";
 
 type Address = {
   id: string; label: string; recipient_name: string; postal_code: string; street: string; number: string;
@@ -10,59 +9,18 @@ type Address = {
 };
 
 function AddressForm({ address, first }: { address?: Address; first?: boolean }) {
-  const lastLookup = useRef("");
-  const lookupRequest = useRef(0);
-  const [postalCodeStatus, setPostalCodeStatus] = useState("");
-
-  async function handlePostalCodeChange(event: ChangeEvent<HTMLInputElement>) {
-    const input = event.currentTarget;
-    const digits = input.value.replace(/\D/g, "");
-    if (digits.length !== 8) {
-      lastLookup.current = "";
-      lookupRequest.current++;
-      setPostalCodeStatus("");
-      return;
-    }
-    if (lastLookup.current === digits) return;
-
-    lastLookup.current = digits;
-    const requestId = ++lookupRequest.current;
-    setPostalCodeStatus("Buscando endereço…");
-    try {
-      const result = await lookupBrazilianPostalCode(digits);
-      if (requestId !== lookupRequest.current || !input.isConnected || digits !== input.value.replace(/\D/g, "")) return;
-      if (!result) {
-        setPostalCodeStatus("CEP não encontrado. Preencha o endereço manualmente.");
-        return;
-      }
-      const form = input.form;
-      if (!form) return;
-      for (const [name, value] of Object.entries({ street: result.street, district: result.district, city: result.city, stateCode: result.stateCode })) {
-        const field = form.elements.namedItem(name);
-        if (field instanceof HTMLInputElement && field.dataset.manual !== "true" && value) field.value = value;
-      }
-      setPostalCodeStatus("Endereço preenchido pelo CEP. Confira os dados e informe o número.");
-    } catch {
-      if (requestId === lookupRequest.current) setPostalCodeStatus("Não foi possível consultar o CEP. Preencha o endereço manualmente.");
-    }
-  }
-
-  function keepManualValue(event: ChangeEvent<HTMLInputElement>) {
-    event.currentTarget.dataset.manual = "true";
-  }
-
   return <form className="auth-form buyer-address-form" action={saveBuyerAddress}>
     {address && <input type="hidden" name="id" value={address.id} />}
     <div className="buyer-address-fields">
       <label>Como identificar<input name="label" minLength={2} maxLength={40} defaultValue={address?.label ?? ""} placeholder="Casa, trabalho…" autoComplete="off" required /></label>
       <label>Nome de quem recebe<input name="recipientName" minLength={2} maxLength={100} defaultValue={address?.recipient_name ?? ""} autoComplete="name" required /></label>
-      <label>CEP<input name="postalCode" inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{5}-?[0-9]{3}" maxLength={9} defaultValue={address?.postal_code ?? ""} placeholder="00000-000" onChange={handlePostalCodeChange} required />{postalCodeStatus && <small role="status" aria-live="polite">{postalCodeStatus}</small>}</label>
-      <label>Rua ou avenida<input name="street" minLength={2} maxLength={120} autoComplete="address-line1" defaultValue={address?.street ?? ""} onChange={keepManualValue} required /></label>
+      <PostalCodeAddressAutofill defaultValue={address?.postal_code ?? ""} names={{ street: "street", district: "district", city: "city", stateCode: "stateCode" }} />
+      <label>Rua ou avenida<input name="street" minLength={2} maxLength={120} autoComplete="address-line1" defaultValue={address?.street ?? ""} required /></label>
       <label>Número<input name="number" maxLength={20} autoComplete="address-line2" defaultValue={address?.number ?? ""} placeholder="Use S/N se não houver" required /></label>
       <label>Complemento (opcional)<input name="complement" maxLength={100} defaultValue={address?.complement ?? ""} /></label>
-      <label>Bairro<input name="district" minLength={2} maxLength={100} autoComplete="address-level3" defaultValue={address?.district ?? ""} onChange={keepManualValue} required /></label>
-      <label>Cidade<input name="city" minLength={2} maxLength={100} autoComplete="address-level2" defaultValue={address?.city ?? ""} onChange={keepManualValue} required /></label>
-      <label>UF<input name="stateCode" minLength={2} maxLength={2} autoComplete="address-level1" defaultValue={address?.state_code ?? ""} placeholder="SP" onChange={keepManualValue} required /></label>
+      <label>Bairro<input name="district" minLength={2} maxLength={100} autoComplete="address-level3" defaultValue={address?.district ?? ""} required /></label>
+      <label>Cidade<input name="city" minLength={2} maxLength={100} autoComplete="address-level2" defaultValue={address?.city ?? ""} required /></label>
+      <label>UF<input name="stateCode" minLength={2} maxLength={2} autoComplete="address-level1" defaultValue={address?.state_code ?? ""} placeholder="SP" required /></label>
       <label>Referência (opcional)<input name="reference" maxLength={200} defaultValue={address?.reference ?? ""} placeholder="Próximo ao…" /></label>
     </div>
     <label className="buyer-address-default"><input type="checkbox" name="isDefault" defaultChecked={address?.is_default ?? first ?? false} /> Usar como endereço principal</label>
