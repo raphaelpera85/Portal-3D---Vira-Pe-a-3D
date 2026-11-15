@@ -74,6 +74,6 @@ export function TriposrGenerator({ spaceId }: { spaceId: string }) {
       {error && <p className="ai-model-error" role="alert">{error}</p>}
       {result && <section className="ai-model-result" aria-label="Modelo gerado"><ModelViewer buyerId={null} today={result.today} previewUrl={result.url} modelName="Rascunho gerado por IA" readOnly /><a className="button button-secondary" href={result.url} download={result.name}>Baixar modelo GLB</a><p>Este arquivo pode ter faces abertas, espessura insuficiente ou partes desconectadas. Ele não é um 3MF pronto para impressão nem entra automaticamente no catálogo.</p></section>}
     </> : <div className="ai-model-setup"><p>O gerador está aguardando a conexão com o Space do Hugging Face.</p><p>O Space precisa ser publicado e configurado como ZeroGPU antes de receber imagens.</p><Link className="button button-secondary" href="/modelos">Explorar modelos do catálogo</Link></div>}
-    <p className="ai-model-limit">Piloto gratuito sujeito à disponibilidade e à cota diária de GPU do Hugging Face. Usuários sem autenticação na plataforma têm uma cota menor. Imagens enviadas vão diretamente do navegador para o Space externo; não use imagens confidenciais.</p>
+    <p className="ai-model-limit">Piloto gratuito sujeito à fila e à cota diária de GPU do Hugging Face. Este portal não autentica o usuário na Hugging Face; para chamadas sem autenticação, a cota publicada atualmente é de 2 minutos de GPU por dia. Imagens enviadas vão diretamente do navegador para o Space externo; não use imagens confidenciais.</p>
   </div>;
 }
