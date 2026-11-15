@@ -2,18 +2,10 @@
 
 import { useState } from "react";
 import { ImageUp, LoaderCircle } from "lucide-react";
-import { MAX_SLICER_OCR_IMAGE_BYTES, MAX_SLICER_OCR_IMAGES, MAX_SLICER_OCR_TOTAL_BYTES } from "@/lib/ocr-image-validation";
+import { validateSlicerOcrFileSelections } from "@/lib/ocr-image-validation";
 import { confirmSlicerOcrCostCurrency, slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 
 type Extraction = ReturnType<typeof parseSlicerOcrTexts>;
-
-function validateFiles(files: File[]) {
-  if (files.length < 1 || files.length > MAX_SLICER_OCR_IMAGES) return `Selecione de 1 a ${MAX_SLICER_OCR_IMAGES} imagens.`;
-  if (files.some((file) => !["image/png", "image/jpeg", "image/webp"].includes(file.type))) return "Use imagens PNG, JPEG ou WebP.";
-  if (files.some((file) => file.size < 1 || file.size > MAX_SLICER_OCR_IMAGE_BYTES)) return "Cada imagem precisa ter até 2 MiB.";
-  if (files.reduce((total, file) => total + file.size, 0) > MAX_SLICER_OCR_TOTAL_BYTES) return "O conjunto de imagens excede 4 MiB.";
-  return null;
-}
 
 function errorMessage(code: string) {
   if (code === "ocr_not_configured") return "O OCR ainda não foi conectado ao Google Cloud Vision.";
@@ -40,7 +32,7 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
   const [status, setStatus] = useState("");
 
   function selectFiles(nextFiles: File[]) {
-    const validation = validateFiles(nextFiles);
+    const validation = validateSlicerOcrFileSelections(nextFiles);
     setFiles(validation ? [] : nextFiles);
     onFilesChange?.(validation ? [] : nextFiles);
     setExtraction(null);
@@ -52,7 +44,7 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
 
   async function readImages() {
     if (!enabled || !configured || !agreed) return;
-    const validation = validateFiles(files);
+    const validation = validateSlicerOcrFileSelections(files);
     if (validation) { onFilesChange?.([]); setError(validation); return; }
     setLoading(true);
     setError("");
@@ -96,7 +88,6 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
       {!configured ? <p className="price-ocr-note" id="ocr-privacy-note">A leitura ainda não está conectada ao Google Cloud Vision. Você pode selecionar imagens e anexá-las ao histórico privado ao salvar o cálculo; para reconhecer os dados, falta configurar a chave do serviço.</p> : <>
       <label className="price-ocr-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> <span id="ocr-privacy-note">Autorizo o envio dessas imagens ao Google Cloud Vision para leitura. Elas só serão guardadas no histórico se eu marcar a opção separada ao salvar o cálculo.</span></label>
       <button className="button button-secondary" type="button" onClick={readImages} disabled={loading || !files.length || !agreed}>{loading ? <><LoaderCircle size={15} className="spin" /> Lendo…</> : "Ler dados das imagens"}</button>
-      {error && <p className="auth-notice is-error" role="alert">{error}</p>}
       {status && <p className="auth-notice is-success" role="status">{status}</p>}
       {extraction && <div className="price-ocr-result" aria-live="polite">
         <div className="price-ocr-result-heading"><strong>{extraction.slicer}</strong>{extraction.materials.length > 0 && <span>{extraction.materials.join(" · ")}</span>}</div>
@@ -129,6 +120,7 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
         <button className="button button-primary" type="button" onClick={apply} disabled={needsCostCurrencyChoice && !costCurrencyChoice}>Revisar e preencher dados</button>
       </div>}
       </>}
+      {error && <p className="auth-notice is-error" role="alert">{error}</p>}
     </>}
   </section>;
 }

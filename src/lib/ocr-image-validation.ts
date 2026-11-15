@@ -2,6 +2,14 @@ export const MAX_SLICER_OCR_IMAGES = 3;
 export const MAX_SLICER_OCR_IMAGE_BYTES = 2 * 1024 * 1024;
 export const MAX_SLICER_OCR_TOTAL_BYTES = 4 * 1024 * 1024;
 
+export function validateSlicerOcrFileSelections(files: Array<Pick<Blob, "size" | "type">>) {
+  if (files.length < 1 || files.length > MAX_SLICER_OCR_IMAGES) return `Selecione de 1 a ${MAX_SLICER_OCR_IMAGES} imagens.`;
+  if (files.some((file) => !["image/png", "image/jpeg", "image/webp"].includes(file.type))) return "Use imagens PNG, JPEG ou WebP.";
+  if (files.some((file) => file.size < 1 || file.size > MAX_SLICER_OCR_IMAGE_BYTES)) return "Cada imagem precisa ter até 2 MiB.";
+  if (files.reduce((total, file) => total + file.size, 0) > MAX_SLICER_OCR_TOTAL_BYTES) return "O conjunto de imagens excede 4 MiB.";
+  return null;
+}
+
 export type OcrImageInput = { type: string; size: number; bytes: Uint8Array };
 
 function hasSignature(image: OcrImageInput) {
