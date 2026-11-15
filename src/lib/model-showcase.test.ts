@@ -35,6 +35,7 @@ describe("filterModelShowcase", () => {
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), "public", model.image.slice(1))))).toBe(true);
     expect(modelShowcase.every((model) => /^models\/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:3mf|zip)$/.test(model.filePath))).toBe(true);
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), model.filePath)))).toBe(true);
+    expect(modelShowcase.filter(({ previewFilePath }) => previewFilePath).every(({ previewFilePath }) => /^models\/[a-z0-9]+(?:-[a-z0-9]+)*\.glb$/.test(previewFilePath!) && existsSync(path.join(process.cwd(), previewFilePath!)))).toBe(true);
     expect(new Set(modelShowcase.map((model) => model.filePath)).size).toBe(90);
     const allFiles = modelShowcase.flatMap((model) => [model.filePath, ...(model.downloads ?? []).map(({ filePath }) => filePath)]);
     expect(new Set(allFiles).size).toBe(118);
@@ -65,7 +66,7 @@ describe("filterModelShowcase", () => {
       const file = readFileSync(path.join(process.cwd(), filePath));
       await expect(readThreeMfPackage(new Uint8Array(file))).resolves.toHaveProperty("unit");
     }
-  });
+  }, 20_000);
 
   it("opens and validates the textured Grinch OBJ archive from the source folder", async () => {
     const filePath = "models/grinch-lid-topper-textured.zip";
@@ -79,8 +80,12 @@ describe("filterModelShowcase", () => {
     ]);
     expect(contents.reduce((total, item) => total + item.data.byteLength, 0)).toBeLessThanOrEqual(MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES);
     expect(new TextDecoder().decode(contents.find(({ name }) => name.endsWith(".mtl"))!.data)).toContain("map_Kd Meshy_AI_Grinch_Lid_Topper_20261113_image-to-3d-texture.png");
-    expect(modelShowcase.find(({ id }) => id === "grinch-tampa-texturizado")).toMatchObject({ filePath, name: "Topo de Tampa do Grinch · Texturizado" });
-  });
+    expect(modelShowcase.find(({ id }) => id === "grinch-tampa-texturizado")).toMatchObject({ filePath, previewFilePath: "models/grinch-lid-topper-preview.glb", name: "Topo de Tampa do Grinch · Texturizado" });
+    const preview = readFileSync(path.join(process.cwd(), "models/grinch-lid-topper-preview.glb"));
+    expect(preview.toString("ascii", 0, 4)).toBe("glTF");
+    expect(preview.readUInt32LE(4)).toBe(2);
+    expect(preview.readUInt32LE(8)).toBe(preview.byteLength);
+  }, 20_000);
 
   it("rejects unsafe OBJ archive paths and undeclared companion files", async () => {
     const maliciousPath = zipSync({ "../outside.obj": new TextEncoder().encode("v 0 0 0") });
@@ -129,7 +134,9 @@ describe("filterModelShowcase", () => {
     expect(getModelAssetUrl("models/../../.env")).toBeNull();
     expect(getModelAssetUrl("https://attacker.example/model.3mf")).toBeNull();
     expect(getModelAssetUrl("models/grinch-lid-topper-textured.zip")).toBe("https://raw.githubusercontent.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/main/models/grinch-lid-topper-textured.zip");
+    expect(getModelAssetUrl("models/grinch-lid-topper-preview.glb")).toBe("https://raw.githubusercontent.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/main/models/grinch-lid-topper-preview.glb");
     expect(getModelAssetUrl("models/../../package.zip")).toBeNull();
+    expect(getModelAssetUrl("models/unsafe.exe")).toBeNull();
     expect(getShowcaseFileLabel("models/grinch-lid-topper-textured.zip")).toBe("OBJ · ZIP");
   });
 

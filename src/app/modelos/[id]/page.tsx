@@ -49,14 +49,15 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   const model = getShowcaseModel(id) ?? await loadPublishedCreatorModel(id);
   if (!model) notFound();
   if (model.id !== id) redirect(`/modelos/${encodeURIComponent(model.id)}`);
-  const previewUrl = model.assetUrl ?? getModelAssetUrl(model.filePath);
-  const downloadUrl = model.downloadUrl ?? previewUrl;
+  const previewFilePath = model.previewFilePath ?? model.filePath;
+  const previewUrl = model.previewFilePath ? getModelAssetUrl(model.previewFilePath) : model.assetUrl ?? getModelAssetUrl(model.filePath);
+  const downloadUrl = model.downloadUrl ?? getModelAssetUrl(model.filePath) ?? model.assetUrl ?? previewUrl;
   const downloadVariants = (model.downloads ?? []).flatMap(({ label, filePath }) => {
     const url = getModelAssetUrl(filePath);
     return url ? [{ label, filePath, url }] : [];
   });
   const previewVersions = [
-    ...(downloadUrl ? [{ label: "Arquivo principal", url: downloadUrl, filePath: model.filePath }] : []),
+    ...(previewUrl ? [{ label: model.previewFilePath ? "Prévia otimizada" : "Arquivo principal", url: previewUrl, filePath: previewFilePath }] : []),
     ...downloadVariants.map(({ label, filePath, url }) => ({ label, filePath, url })),
   ];
   const siteUrl = getSiteUrl();

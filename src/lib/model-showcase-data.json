@@ -1325,6 +1325,7 @@
     "categorySlug": "natal",
     "image": "/modelos/grinch-tampa-texturizado.png",
     "filePath": "models/grinch-lid-topper-textured.zip",
+    "previewFilePath": "models/grinch-lid-topper-preview.glb",
     "tags": [
       "grinch",
       "natal",

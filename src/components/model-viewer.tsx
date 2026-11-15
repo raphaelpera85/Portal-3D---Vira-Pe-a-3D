@@ -488,7 +488,8 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
         return;
       }
       const isPublic3mf = isPublicPreview && filename.toLowerCase().endsWith(".3mf");
-      const maxFileBytes = isPublic3mf ? MAX_MODEL_PREVIEW_FILE_BYTES : MAX_MODEL_FILE_BYTES;
+      const isPublicGlb = isPublicPreview && filename.toLowerCase().endsWith(".glb");
+      const maxFileBytes = isPublic3mf || isPublicGlb ? MAX_MODEL_PREVIEW_FILE_BYTES : MAX_MODEL_FILE_BYTES;
       if (blob.size > maxFileBytes) throw new Error("Arquivo acima do limite");
       const type = isPublic3mf ? "application/vnd.ms-package.3dmanufacturing-3dmodel+xml" : "model/gltf-binary";
       await loadFiles([new File([blob], filename, { type })], true, maxFileBytes);
