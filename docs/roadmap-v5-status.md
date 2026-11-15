@@ -101,6 +101,8 @@ As notas de migrations abaixo registram o estado no momento em que foram escrita
 - A ELEGOO Neptune 4 Max Ribbon-Cable entrou separada da Type-C, com firmware incompatível entre versões conforme a ELEGOO. O fallback local passa a 106 variantes; a migration foi aplicada ao Supabase.
 - A Neptune 4 Plus Ribbon-Cable ganhou variante própria, sem compartilhar bicos automaticamente com a Type-C. O fallback local passa a 107 variantes; a migration foi aplicada ao Supabase.
 
+- A Snapmaker U1 entrou no fallback local e na migration `20261117130000_seed_snapmaker_u1.sql`. A página oficial confirma volume 270³ mm, quatro cabeçotes independentes, até 500 mm/s, limites de 300 °C no bico e 100 °C na mesa. Compatibilidade de materiais permanece condicionada aos acessórios oficiais; nenhum bico foi vinculado automaticamente. Migration somente no Git.
+
 ## Próximas entregas
 
 - A checagem das variáveis de Production na Vercel em 14/11 encontrou Supabase, URL pública e cron configurados; Google Cloud Vision, Search Console, Resend, WhatsApp Business, Mercado Pago e Melhor Envio ainda não aparecem no ambiente. Os valores secretos não foram lidos. Os fluxos desses provedores continuam sem validação operacional até a configuração das respectivas credenciais e, quando necessário, templates ou contas sandbox.

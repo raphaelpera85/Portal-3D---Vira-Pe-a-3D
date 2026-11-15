@@ -12,6 +12,18 @@ const profileHash = (profiles: unknown) => {
 };
 
 describe("mapTechnicalCatalog", () => {
+  it("includes the Snapmaker U1 in the local catalog with only sourced specifications", () => {
+    const snapmaker = printers.find((printer) => printer.id === "snapmaker-u1");
+
+    expect(snapmaker).toMatchObject({
+      brand: "Snapmaker", model: "U1", buildVolumeMm: { x: 270, y: 270, z: 270 }, filamentDiameterMm: 1.75,
+      maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, maximumSpeedMmPerSecond: 500,
+      multicolorSlots: 4, technicalProperties: { independentToolheads: 4 },
+    });
+    expect(snapmaker?.sources.map((entry) => entry.url)).toContain("https://www.snapmaker.com/en/snapmaker-u1/specs");
+    expect(snapmaker?.extruders).toBeNull();
+  });
+
   it("keeps published resin entries and exact exposure data in the local fallback", () => {
     const standard = materials.find((material) => material.id === "anycubic-standard-resin-v2");
     const waterWash = materials.find((material) => material.id === "anycubic-water-wash-resin-2-0");
