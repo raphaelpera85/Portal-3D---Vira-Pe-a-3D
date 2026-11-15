@@ -20,6 +20,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [inspectedFile, setInspectedFile] = useState<File | null>(null);
   const [fileInspection, setFileInspection] = useState<Awaited<ReturnType<typeof readThreeMfPackage>> | null>(null);
   const [fileInspectionPending, setFileInspectionPending] = useState(false);
   const [fileInspectionError, setFileInspectionError] = useState(false);
@@ -28,15 +29,15 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
   const [draggingFile, setDraggingFile] = useState(false);
 
   useEffect(() => {
-    if (!selectedFile) { setFileInspection(null); setFileInspectionError(false); setFileInspectionPending(false); return; }
+    if (!selectedFile) { setInspectedFile(null); setFileInspection(null); setFileInspectionError(false); setFileInspectionPending(false); return; }
     let current = true;
     setFileInspection(null);
     setFileInspectionError(false);
     setFileInspectionPending(true);
     void selectedFile.arrayBuffer().then((buffer) => readThreeMfPackage(new Uint8Array(buffer))).then((result) => {
-      if (current) setFileInspection(result);
+      if (current) { setFileInspection(result); setInspectedFile(selectedFile); }
     }).catch(() => {
-      if (current) setFileInspectionError(true);
+      if (current) { setFileInspectionError(true); setInspectedFile(selectedFile); }
     }).finally(() => {
       if (current) setFileInspectionPending(false);
     });
@@ -59,6 +60,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
       setFileError("Escolha um arquivo 3MF válido de até 50 MiB.");
       return;
     }
+    setInspectedFile(null);
     setSelectedFile(file);
     setFileError("");
   }
@@ -184,7 +186,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
         <label>Tags separadas por vírgula<input name="tags" maxLength={400} placeholder="ex.: dragão, articulado, brinquedo" required disabled={pending} /></label>
         <label>Link da fonte (opcional)<input name="sourceUrl" type="url" maxLength={2048} placeholder="https://..." disabled={pending} /></label>
       </div>
-      {selectedFile && <div className="creator-model-preview"><LocalModelPreview buyerId={null} today={new Date().toISOString().slice(0, 10)} localPreviewFile={selectedFile} modelName={selectedFile.name.replace(/\.3mf$/i, "")} previewLabel="PRÉVIA LOCAL · 3MF" readOnly /></div>}
+      {selectedFile && inspectedFile === selectedFile && <div className="creator-model-preview"><LocalModelPreview buyerId={null} today={new Date().toISOString().slice(0, 10)} localPreviewFile={selectedFile} modelName={selectedFile.name.replace(/\.3mf$/i, "")} previewLabel="PRÉVIA LOCAL · 3MF" readOnly /></div>}
       <label className="creator-model-rights"><input type="checkbox" name="rightsConfirmed" required disabled={pending} /> Confirmo que tenho os direitos ou autorização para publicar este arquivo e os dados informados.</label>
       <button className="button button-primary" type="submit" disabled={pending}>{pending ? "Enviando…" : "Enviar para revisão"}</button>
     </form>
