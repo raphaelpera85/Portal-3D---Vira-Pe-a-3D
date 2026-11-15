@@ -34,6 +34,9 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const isDesigner = roles.some((item) => item.role === "designer");
   const isAdmin = roles.some((item) => item.role === "admin");
   const application = applicationResult?.data ?? null;
+  const makerApplicationPending = application?.status === "pending";
+  const designerProfilePending = designerResult?.data?.status === "pending";
+  const creatorAccessPending = makerApplicationPending || designerProfilePending;
   const buyerData = isBuyer && supabase && user ? await Promise.all([
     fetchAllPages((from, to) => supabase.from("buyer_addresses").select("id, label, recipient_name, postal_code, street, number, complement, district, city, state_code, reference, is_default")
       .eq("buyer_id", user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to)),
@@ -50,7 +53,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <Link className="viewer-back-link" href="/">← Voltar para o início</Link>
         <div className="account-heading"><p className="eyebrow">VIRAPEÇA 3D · SUA CONTA</p><h1>{user ? `Olá, ${displayName ?? "criador(a)"}.` : <>Sua próxima ideia<br /><em>começa por aqui.</em></>}</h1><p>Salve suas escolhas e prepare seu espaço para comprar, fabricar e criar.</p></div>
         {confirmacao === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível confirmar o e-mail. Solicite um novo link de confirmação.</p>}
-        {user && acesso === "calculadora" && <section className="account-card" aria-labelledby="calculator-access-title"><span className="account-kicker">FERRAMENTAS DE CRIAÇÃO</span><h2 id="calculator-access-title">{application?.status === "pending" ? "Sua solicitação de loja está em análise" : "A calculadora é para makers e designers aprovados"}</h2><p>{application?.status === "pending" ? "A calculadora e o envio de imagens do fatiador ficam disponíveis depois que sua loja maker for aprovada." : "A calculadora e o envio de imagens do fatiador aparecem para contas com loja maker ou perfil de designer aprovado."}</p><div className="account-links">{!isMaker && <Link className="button button-secondary" href="#solicitar-loja">{application?.status === "pending" ? "Acompanhar solicitação" : "Solicitar uma loja"}</Link>}{isBuyer && <Link className="button button-secondary" href="#perfil-criador">Apresentar perfil de criador</Link>}</div></section>}
+        {user && acesso === "calculadora" && <section className="account-card" aria-labelledby="calculator-access-title"><span className="account-kicker">FERRAMENTAS DE CRIAÇÃO</span><h2 id="calculator-access-title">{creatorAccessPending ? "Sua solicitação de criador está em análise" : "A calculadora é para makers e designers aprovados"}</h2><p>{creatorAccessPending ? "A calculadora e o envio de imagens do fatiador ficam disponíveis depois que seu perfil de criador for aprovado." : "A calculadora e o envio de imagens do fatiador aparecem para contas com loja maker ou perfil de designer aprovado."}</p><div className="account-links">{!isMaker && <Link className="button button-secondary" href="#solicitar-loja">{makerApplicationPending ? "Acompanhar solicitação" : "Solicitar uma loja"}</Link>}{isBuyer && <Link className="button button-secondary" href="#perfil-criador">{designerProfilePending ? "Acompanhar perfil" : "Apresentar perfil de criador"}</Link>}</div></section>}
         {!user ? <AuthForms /> : (
           <>
             <section className="account-card" aria-label="Conta conectada">
