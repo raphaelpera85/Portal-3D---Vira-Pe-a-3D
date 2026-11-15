@@ -15,6 +15,32 @@ const LocalModelPreview = dynamic(() => import("@/components/model-viewer").then
   loading: () => <p className="auth-notice" role="status">Preparando visualizador 3D…</p>,
 });
 
+export function uploadCreatorModelFile(path: string, token: string, accessToken: string, file: File, onProgress: (loaded: number) => void) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!supabaseUrl || !supabaseKey) return Promise.reject(new Error("storage_not_configured"));
+
+  const url = new URL(`/storage/v1/object/upload/sign/creator-model-uploads/${path.split("/").map(encodeURIComponent).join("/")}`, supabaseUrl);
+  url.searchParams.set("token", token);
+  return new Promise<void>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("PUT", url.toString());
+    request.setRequestHeader("apikey", supabaseKey);
+    request.setRequestHeader("authorization", `Bearer ${accessToken}`);
+    request.setRequestHeader("x-upsert", "false");
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(Math.min(event.loaded, file.size));
+    };
+    request.onload = () => request.status >= 200 && request.status < 300 ? resolve() : reject(new Error("storage_upload_failed"));
+    request.onerror = () => reject(new Error("storage_upload_failed"));
+    request.onabort = () => reject(new Error("storage_upload_aborted"));
+    const body = new FormData();
+    body.append("cacheControl", "3600");
+    body.append("", file);
+    request.send(body);
+  });
+}
+
 export function MakerModelRegistrationForm({ availableAssets }: { availableAssets: string[] }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -27,6 +53,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
   const [selectedPreview, setSelectedPreview] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const [draggingFile, setDraggingFile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     if (!selectedFile) { setInspectedFile(null); setFileInspection(null); setFileInspectionError(false); setFileInspectionPending(false); return; }
@@ -112,6 +139,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
       return;
     }
     setPending(true);
+    setUploadProgress(0);
     setMessage("Preparando envio privado…");
     let upload: Extract<CreatorModelUploadPreparation, { success: true }>["upload"] | null = null;
     try {
@@ -121,19 +149,20 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
       if (!prepared.success) { setMessage(prepared.message); return; }
       upload = prepared.upload;
       const client = createSupabaseBrowserClient();
-      if (!client) throw new Error("storage");
+      const { data: { session }, error: sessionError } = await client?.auth.getSession() ?? { data: { session: null }, error: new Error("storage_not_configured") };
+      if (sessionError || !session) throw new Error("storage_session_unavailable");
       setMessage("Enviando o arquivo para armazenamento privado…");
-      const { error } = await client.storage.from("creator-model-uploads").uploadToSignedUrl(
-        upload.path, upload.token, file, { contentType: "application/octet-stream" },
-      );
-      if (error) throw new Error("upload");
+      const totalBytes = file.size + (previewFile?.size ?? 0);
+      await uploadCreatorModelFile(upload.path, upload.token, session.access_token, file, (loaded) => {
+        setUploadProgress(Math.floor((loaded / totalBytes) * 100));
+      });
       if (previewFile && !upload.preview) throw new Error("preview_upload");
       if (previewFile && upload.preview) {
-        const { error: previewError } = await client.storage.from("creator-model-uploads").uploadToSignedUrl(
-          upload.preview.path, upload.preview.token, previewFile, { contentType: upload.preview.contentType },
-        );
-        if (previewError) throw new Error("preview_upload");
+        await uploadCreatorModelFile(upload.preview.path, upload.preview.token, session.access_token, previewFile, (loaded) => {
+          setUploadProgress(Math.floor(((file.size + loaded) / totalBytes) * 100));
+        });
       }
+      setUploadProgress(100);
       const result = await finalizeCreatorModelUpload(upload.id);
       if (!result.success) {
         await discardCreatorModelUpload(upload.id);
@@ -190,7 +219,8 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
       <label className="creator-model-rights"><input type="checkbox" name="rightsConfirmed" required disabled={pending} /> Confirmo que tenho os direitos ou autorização para publicar este arquivo e os dados informados.</label>
       <button className="button button-primary" type="submit" disabled={pending}>{pending ? "Enviando…" : "Enviar para revisão"}</button>
     </form>
-    {message && <p className="auth-notice" role="status" aria-live="polite">{message}</p>}
+    {message && <p className="auth-notice" role="status" aria-live="polite">{message}{pending && message.startsWith("Enviando") ? ` ${uploadProgress}%` : ""}</p>}
+    {pending && message.startsWith("Enviando") && <progress className="creator-model-upload-progress" value={uploadProgress} max={100} aria-label="Progresso do envio do modelo" />}
     {availableAssets.length > 0 && <details className="maker-model-git-assets"><summary>Usar um arquivo já versionado no portal</summary>
       <form action={submitCreatorModel} className="auth-form">
         <div className="equipment-form-grid">
