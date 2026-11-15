@@ -19,6 +19,16 @@ const decimal = (value: unknown): number | null | undefined => {
   return Number.isFinite(number) ? number : undefined;
 };
 const nullableMetric = (value: unknown): value is number | null => value === null || typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
+function exceedsFilamentMassTotal(masses: Array<number | null>, total: number | null) {
+  if (total === null) return false;
+  const measured = masses.filter((mass): mass is number => mass !== null);
+  const values = [...measured, total];
+  // Slicers round each displayed filament and the displayed total independently.
+  const tolerance = values.every((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6)
+    ? values.length * 0.005 + 0.001
+    : 0.001;
+  return measured.reduce((sum, mass) => sum + mass, 0) > total + tolerance;
+}
 const manualColorPattern = String.raw`(?:#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})|preto|branco|vermelho|azul|verde|amarelo|laranja|roxo|rosa|cinza|marrom|black|white|red|blue|green|yellow|orange|purple|pink|gray|grey|brown)`;
 
 export function mapSlicerOcrMetricsToModelProfile(extraction: ReturnType<typeof parseSlicerOcrTexts>, slicer: ModelPrintProfileInput["slicer"]): SavedSlicerMetrics | null {
@@ -80,8 +90,9 @@ function validateImportedMetrics(value: unknown): SavedSlicerMetrics | null {
     || !(item.color === null || typeof item.color === "string" && slicerColorPresentation(item.color)?.cssColor != null))) return null;
   if (metrics.estimatedCost !== null || metrics.estimatedCostCurrency != null || metrics.filamentChanges !== null && !Number.isSafeInteger(metrics.filamentChanges)) return null;
   const colors = filaments.map((item) => typeof item.color === "string" ? item.color.toUpperCase() : null).filter((item): item is string => item !== null);
-  const colorGrams = filaments.reduce((sum, item) => sum + (typeof item.grams === "number" ? item.grams : 0), 0);
-  if (new Set(colors).size !== colors.length || metrics.filamentGrams !== null && colorGrams > (metrics.filamentGrams as number) + 0.001) return null;
+  if (new Set(colors).size !== colors.length || exceedsFilamentMassTotal(
+    filaments.map((item) => typeof item.grams === "number" ? item.grams : null), metrics.filamentGrams as number | null,
+  )) return null;
   return parsed as SavedSlicerMetrics;
 }
 
@@ -136,8 +147,7 @@ export function validateModelPrintProfile(values: Record<string, unknown>): Mode
     const filaments = manualFilaments ?? parsed.filaments;
     const hasFilamentGramsOverride = manualFields.has("filamentGrams");
     const filamentGrams = hasFilamentGramsOverride ? overrides.filamentGrams ?? null : parsed.filamentGrams;
-    const colorGrams = filaments.reduce((sum, item) => sum + (item.grams ?? 0), 0);
-    if (filamentGrams !== null && colorGrams > filamentGrams + 0.001) return null;
+    if (exceedsFilamentMassTotal(filaments.map((item) => item.grams), filamentGrams)) return null;
     metrics = {
       ...parsed, ...overrides, filaments,
       ...(manualFilaments ? { materials: [...new Set(manualFilaments.map((item) => item.material).filter((item): item is string => item !== null))].slice(0, 20) } : {}),
@@ -152,7 +162,7 @@ export function validateModelPrintProfile(values: Record<string, unknown>): Mode
     if (manualFilaments === undefined) return null;
     const validFilaments = manualFilaments ?? [];
     const colorGrams = validFilaments.reduce((sum, item) => sum + (item.grams ?? 0), 0);
-    if (valuesByField.filamentGrams != null && colorGrams > valuesByField.filamentGrams + 0.001) return null;
+    if (exceedsFilamentMassTotal(validFilaments.map((item) => item.grams), valuesByField.filamentGrams ?? null)) return null;
     const derivedMass = valuesByField.filamentGrams === null && validFilaments.length > 0 && validFilaments.every((item) => item.grams !== null);
     const filamentGrams = valuesByField.filamentGrams ?? (derivedMass ? colorGrams : null);
     metrics = {

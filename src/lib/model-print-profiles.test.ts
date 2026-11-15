@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { mapSlicerOcrMetricsToModelProfile, validateModelPrintProfile } from "./model-print-profiles";
 import { parseSlicerOcrTexts } from "./slicer-ocr";
+import { mergeSlicerFilamentColors } from "./slicer-swatch-colors";
 
 const input = {
   modelSlug: "70bda315e46e",
@@ -76,9 +78,33 @@ Filament 1: PLA red 12 g`]);
     expect(mapSlicerOcrMetricsToModelProfile(parseSlicerOcrTexts(["Cost: R$ 2,00"]), "Manual")).toBeNull();
   });
 
+  it("preserves colors sampled from the Anycubic screenshot in the reusable profile metrics", () => {
+    const text = readFileSync(new URL("./fixtures/anycubic-slicer-next-filament-panel.txt", import.meta.url), "utf8");
+    const extraction = parseSlicerOcrTexts([text]);
+    const reviewed = {
+      ...extraction,
+      filaments: mergeSlicerFilamentColors(extraction.filaments, [
+        { index: 1, color: "#e4bd68" }, { index: 2, color: "#47a2fc" }, { index: 3, color: "#c12e1f" },
+        { index: 4, color: "#6f5034" }, { index: 5, color: "#d4b996" },
+      ]),
+    };
+    const metrics = mapSlicerOcrMetricsToModelProfile(reviewed, "Anycubic Slicer Next");
+
+    expect(metrics?.filaments.map(({ index, color }) => [index, color])).toEqual([
+      [1, "#e4bd68"], [2, "#47a2fc"], [3, "#c12e1f"], [4, "#6f5034"], [5, "#d4b996"],
+    ]);
+    expect(validateModelPrintProfile({
+      ...input, slicer: "Anycubic Slicer Next", importedMetrics: JSON.stringify(metrics), manualOverrideFields: "",
+    })?.metrics.filaments.map(({ index, color }) => [index, color])).toEqual([
+      [1, "#e4bd68"], [2, "#47a2fc"], [3, "#c12e1f"], [4, "#6f5034"], [5, "#d4b996"],
+    ]);
+  });
+
   it("rejects duplicate colors and color totals above total filament use", () => {
     expect(validateModelPrintProfile({ ...input, filamentLines: "#336699; PLA; 10; 2\n#336699; PETG; 10; 2" })).toBeNull();
     expect(validateModelPrintProfile({ ...input, totalGrams: "10", filamentGrams: "10", filamentLines: "#336699; PLA; 11; 2" })).toBeNull();
+    expect(validateModelPrintProfile({ ...input, filamentGrams: "10", filamentLines: "#336699; PLA; 10,02; 2" })).toBeNull();
+    expect(validateModelPrintProfile({ ...input, filamentGrams: "10", filamentLines: "#336699; PLA; 10,002; 2" })).toBeNull();
   });
 
   it("accepts up to 32 filament entries in manual profiles", () => {

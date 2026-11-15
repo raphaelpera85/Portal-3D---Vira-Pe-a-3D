@@ -6,6 +6,8 @@ O painel do fabricante permite salvar perfis privados vinculados aos produtos da
 
 O tempo e o material são valores do lote informado; o portal não multiplica automaticamente esses valores pela quantidade. A soma das gramas por cor não pode superar a massa total informada. O comprimento por cor é preservado no perfil publicado e na calculadora; ele não é convertido em massa.
 
+Quando o fatiador arredonda cada filamento e o total separadamente para centésimos de grama, o salvamento considera o erro acumulado possível desse arredondamento. Divergências maiores continuam sendo recusadas.
+
 Perfis privados aparecem somente no painel da loja. O fabricante pode enviar um perfil à comunidade; enquanto aguarda revisão, pode editá-lo e reenviá-lo ou retirar a submissão. Na área administrativa `/admin/fabricantes`, a equipe pode aprovar como comunitário, aprovar como oficial ou recusar com uma nota. Somente perfis publicados ligados a produtos e lojas publicados aparecem na página pública do produto.
 
 Perfis aprovados ficam somente para leitura pelo fabricante. Um perfil recusado pode ser corrigido e enviado novamente. A seleção na página do produto apresenta o lote e os valores informados sem tratá-los como previsão universal ou consumo geométrico.
