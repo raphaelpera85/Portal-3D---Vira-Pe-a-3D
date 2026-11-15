@@ -22,6 +22,17 @@ describe("mapTechnicalCatalog", () => {
     expect(form4L?.sources.map((source) => source.url)).toContain("https://formlabs.com/products/form-4l-basic-package/");
   });
 
+  it("includes the Phrozen Revo 16K official wavelength without inferring resin exposure", () => {
+    const phrozen = printers.find((printer) => printer.id === "phrozen-sonic-mighty-revo-16k");
+
+    expect(phrozen).toMatchObject({
+      technology: "MSLA", buildVolumeMm: { x: 211.68, y: 118.37, z: 235 },
+      technicalProperties: { resolution: "16K", pixelSizeMicrons: "14 × 19", wavelengthNm: 405 },
+    });
+    expect(phrozen?.sources.map((source) => source.url)).toContain("https://us.phrozen3d.com/products/sonic-mighty-16k-printer");
+    expect(phrozen?.supportedMaterials).toEqual({});
+  });
+
   it("includes the Snapmaker U1 in the local catalog with only sourced specifications", () => {
     const snapmaker = printers.find((printer) => printer.id === "snapmaker-u1");
 
