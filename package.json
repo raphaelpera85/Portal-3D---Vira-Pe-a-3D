@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "test:slicer-ocr": "vitest run src/lib/slicer-ocr.test.ts src/app/api/ocr/slicer/route.test.ts",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "generate:model-image-index": "node scripts/generate-model-image-index.mjs",
