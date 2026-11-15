@@ -20,6 +20,13 @@ function request(consent?: string) {
   return new Request("https://virapeca3d.example/api/ocr/slicer", { method: "POST", body: form });
 }
 
+function requestWithImageCount(count: number) {
+  const form = new FormData();
+  for (let index = 0; index < count; index++) form.append("images", new File([pngSignature], `slicer-${index + 1}.png`, { type: "image/png" }));
+  form.set("consent", "yes");
+  return new Request("https://virapeca3d.example/api/ocr/slicer", { method: "POST", body: form });
+}
+
 describe("slicer OCR upload limit", () => {
   beforeEach(() => {
     vi.stubEnv("GOOGLE_CLOUD_VISION_API_KEY", "test-key");
@@ -50,5 +57,22 @@ describe("slicer OCR upload limit", () => {
     expect(await response.json()).toEqual({ error: "images_too_large" });
     expect(mocks.consumeQuota).not.toHaveBeenCalled();
     expect(mocks.recognizeSlicerImages).not.toHaveBeenCalled();
+  });
+
+  it("reads multiple slicer images together and charges quota by image count", async () => {
+    mocks.recognizeSlicerImages.mockResolvedValue([
+      "Anycubic Slicer Next\nModel\n211,63 g",
+      "Anycubic Slicer Next\nSupports\n12,17 g",
+    ]);
+
+    const response = await POST(requestWithImageCount(2));
+
+    expect(response.status).toBe(200);
+    expect(mocks.consumeQuota).toHaveBeenCalledWith("consume_maker_slicer_ocr_quota", { p_image_count: 2 });
+    expect(mocks.recognizeSlicerImages).toHaveBeenCalledWith([
+      { content: pngSignature, mimeType: "image/png" },
+      { content: pngSignature, mimeType: "image/png" },
+    ], "test-key");
+    expect((await response.json()).extraction).toMatchObject({ slicer: "Anycubic Slicer Next", modelGrams: 211.63, supportGrams: 12.17 });
   });
 });

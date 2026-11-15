@@ -9,6 +9,7 @@ describe("SlicerImageImporter", () => {
     expect(markup).toContain("Escolher imagens");
     expect(markup).toContain('class="price-ocr-file-picker"');
     expect(markup).toContain('accept="image/png,image/jpeg,image/webp"');
+    expect(markup).toContain("multiple=");
     expect(markup).toContain("Google Cloud Vision");
     expect(markup).toContain("ainda não está conectada");
   });
