@@ -34,7 +34,7 @@ No modo de margem, o preço por canal é o menor valor em centavos em que o lucr
 - Os componentes podem ter materiais do catálogo ou descrições manuais, impressoras diferentes e preços de compra próprios; esses dados são preservados nos snapshots do histórico. Ainda não há associação desses componentes com arquivos 3D enviados, perfis ou bicos. O registro de consignação aceita comissão percentual e taxa fixa por unidade vendida; o vínculo criado pela calculadora não lança vendas automaticamente.
 - O resultado é uma estimativa baseada nos dados informados e não substitui a validação de custos reais do fabricante.
 - Cálculos salvos antigos sem `pricingMode` continuam sendo lidos como margem sobre o preço. Novos snapshots registram o modo e o percentual de markup quando esse método é escolhido.
-- Para aplicar preço calculado às variações, aplique a migration `20261113230000_calculator_variant_price_rpc.sql` ao Supabase. O deploy da aplicação no Vercel não aplica essa migration automaticamente.
+- A RPC que aplica preços calculados às variações está ativa no Supabase; valida a titularidade do anúncio e da loja, o preço esperado, reservas em pagamentos pendentes e atualiza atomicamente o preço mínimo do anúncio. O deploy da aplicação no Vercel não aplica migrations automaticamente.
 - Para anexar fontes aos cálculos, aplique `20261115190000_maker_calculation_sources.sql` ao Supabase. O bucket é privado; o deploy no Vercel não cria o bucket nem as políticas automaticamente.
 
 As fórmulas e os limites do cálculo são exercitados por `src/lib/pricing.test.ts`.

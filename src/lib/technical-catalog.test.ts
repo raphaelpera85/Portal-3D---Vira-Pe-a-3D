@@ -4,7 +4,7 @@ import { evaluateCompatibility } from "./compatibility";
 import { mapTechnicalCatalog } from "./technical-catalog-data";
 import { materials, nozzles, printers } from "./technical-catalog";
 
-const k2ProMigration = readFileSync(new URL("../../supabase/migrations/20261113223000_seed_creality_k2_pro.sql", import.meta.url), "utf8");
+const k2ProMigration = readFileSync(new URL("../../supabase/migrations/20261115002516_seed_creality_k2_pro.sql", import.meta.url), "utf8");
 const centauri2Migration = readFileSync(new URL("../../supabase/migrations/20261114000000_seed_elegoo_centauri_2.sql", import.meta.url), "utf8");
 const ender3V4Migration = readFileSync(new URL("../../supabase/migrations/20261114010000_seed_creality_ender_3_v4_combo.sql", import.meta.url), "utf8");
 const ender5MaxMigration = readFileSync(new URL("../../supabase/migrations/20261114020000_seed_creality_ender_5_max.sql", import.meta.url), "utf8");
