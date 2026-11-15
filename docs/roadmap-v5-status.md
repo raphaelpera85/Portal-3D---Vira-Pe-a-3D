@@ -4,6 +4,8 @@ Revisão em 15 de novembro de 2026. Esta página compara os requisitos de produt
 
 Atualização operacional em 15/11: a produção automática da Vercel está `READY` no commit `91d63eb` e o domínio `virapeca3d.vercel.app` responde HTTP 200. O painel do Anycubic extrai do resumo os totais de modelo, suportes, purga (`Limpo`), torre e consumo, além dos cinco filamentos. A captura real versionada agora também passa pela rota de OCR em um teste com resposta do Vision simulada; isso cobre validação do upload e parser, mas não o reconhecimento visual pelo provedor. `GOOGLE_CLOUD_VISION_API_KEY` ainda não está configurada.
 
+Atualização operacional em 15/11: a migration `20261115162634_guard_stock_validator_trigger_row_fields` foi aplicada ao Supabase. Um teste transacional com dois vendedores confirmou criação dos pedidos, rateio de cupom em centavos, fila de dois e-mails e WhatsApp somente para loja com opt-in; a transação foi revertida sem deixar dados de teste. A correção elimina uma falha em que o trigger de estoque acessava `NEW.request_type` ao inserir itens do carrinho. O commit Git `26c0f39` inclui a migration e o teste; o frontend de produção continua no `91d63eb`, pois a Vercel recusou builds seguintes por `build-rate-limit`.
+
 ## Estado por fase
 
 | Fase | Estado | Evidência e pendências principais |
