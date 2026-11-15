@@ -95,7 +95,7 @@ export default async function PrinterCatalogAdminPage({ searchParams }: { search
       {resultado && notices[resultado] && <p className={`auth-notice ${resultado === "erro" ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
       <section className="account-card admin-banner-create"><div className="admin-section-title"><span className="account-kicker">NOVO REGISTRO</span><h2>Adicionar impressora</h2></div><PrinterModelForm /></section>
       <section className="admin-review-section"><div className="admin-section-title"><span className="account-kicker">CURADORIA DA COMUNIDADE</span><h2>Sugestões de fabricantes</h2></div>
-        {suggestions.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar sugestões. Confira a migração 022.</p> : !suggestions.data?.length ? <p className="admin-empty">Nenhuma sugestão aguarda revisão.</p> : suggestions.data.map((suggestion) => <article className="admin-review-card" key={suggestion.id}>
+        {suggestions.error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar sugestões agora. Tente atualizar a página.</p> : !suggestions.data?.length ? <p className="admin-empty">Nenhuma sugestão aguarda revisão.</p> : suggestions.data.map((suggestion) => <article className="admin-review-card" key={suggestion.id}>
           <div><span className="account-kicker">{suggestion.technology} · SUGERIDA EM {new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(suggestion.created_at))}</span>
             <h3>{suggestion.manufacturer} {suggestion.model} · {suggestion.variant}</h3>
             <p>Autor: {suggestion.suggested_by}</p>
