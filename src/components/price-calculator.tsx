@@ -18,7 +18,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { uploadSupabaseFile } from "@/lib/supabase/upload-progress";
 import { hasReviewableSlicerOcrData, slicerColorPresentation, type parseSlicerOcrTexts } from "@/lib/slicer-ocr";
 import { mapThreeMfPlateToSlicerMetrics, type CalculationOrigin, type SavedSlicerMetrics } from "@/lib/saved-calculation";
-import { mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "@/lib/calculator-profile";
+import { getPrintProfileExecutionPlan, mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "@/lib/calculator-profile";
 import type { ThreeMfSlicePlate } from "@/lib/model-file";
 
 type FormFields = Record<keyof Omit<PrintCostInput, "additionalCosts" | "productionComponents" | "filamentCosts" | "pricingMode">, string>;
@@ -388,10 +388,12 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     const profile = profiles.find((item) => item.id === selectedProfileId);
     if (!profile) return;
     if ((fields.material.trim() !== "" || fields.filamentGrams !== "" || fields.printHours !== "" || slicerMetrics?.filaments.length) && !window.confirm("Aplicar este perfil substituirá o material, o peso, o tempo e a composição por cor informados. Os preços por kg das cores correspondentes serão mantidos. Continuar?")) return;
+    const requestedQuantity = numberValue(fields.batchQuantity);
+    const executionPlan = getPrintProfileExecutionPlan(profile.quantity, requestedQuantity);
     const values = profile.kind === "model" && profile.modelMetrics
-      ? mapModelPrintProfileToCalculator({ name: profile.name, materialName: profile.materialName, quantity: profile.quantity, metrics: profile.modelMetrics }, numberValue(fields.batchQuantity), slicerMetrics?.filaments)
-      : mapPrintProfileToCalculator(profile, numberValue(fields.batchQuantity), slicerMetrics?.filaments);
-    if (!values) {
+      ? mapModelPrintProfileToCalculator({ name: profile.name, materialName: profile.materialName, quantity: profile.quantity, metrics: profile.modelMetrics }, requestedQuantity, slicerMetrics?.filaments)
+      : mapPrintProfileToCalculator(profile, requestedQuantity, slicerMetrics?.filaments);
+    if (!values || !executionPlan) {
       setProfileApplyNotice("A quantidade do lote ou o consumo escalado deste perfil excede os limites aceitos pela calculadora.");
       return;
     }
@@ -406,7 +408,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     setAppliedProfileId(selectedProfileId);
     if (profile.productId) setSelectedProductId(profile.productId);
     if (profile.equipmentId && equipment.some((item) => item.id === profile.equipmentId)) selectEquipment(profile.equipmentId);
-    setProfileApplyNotice(`Consumo de “${profile.name}” aplicado para ${Math.max(1, Math.ceil(numberValue(fields.batchQuantity) / profile.quantity))} execução(ões). Confira os preços por kg antes de calcular.`);
+    setProfileApplyNotice(`Consumo de “${profile.name}” aplicado: ${executionPlan.runs} execução(ões) imprimem ${executionPlan.producedQuantity} peça(s) para o lote solicitado de ${requestedQuantity}. O custo considera todas as peças impressas, incluindo eventual excedente. Confira os preços por kg antes de calcular.`);
   }
 
   const selectedModelProfile = profiles.find((profile) => profile.id === appliedProfileId && profile.kind === "model");

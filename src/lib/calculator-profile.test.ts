@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "./calculator-profile";
+import { getPrintProfileExecutionPlan, mapModelPrintProfileToCalculator, mapPrintProfileToCalculator } from "./calculator-profile";
 
 const profile = {
   name: "PLA bicolor",
@@ -11,6 +11,13 @@ const profile = {
 };
 
 describe("mapPrintProfileToCalculator", () => {
+  it("reports whole profile runs and their actual output quantity", () => {
+    expect(getPrintProfileExecutionPlan(2, 1)).toEqual({ runs: 1, producedQuantity: 2 });
+    expect(getPrintProfileExecutionPlan(2, 3)).toEqual({ runs: 2, producedQuantity: 4 });
+    expect(getPrintProfileExecutionPlan(2, 4)).toEqual({ runs: 2, producedQuantity: 4 });
+    expect(getPrintProfileExecutionPlan(0, 1)).toBeNull();
+  });
+
   it("scales saved model slicer metrics and per-color lengths into the calculator", () => {
     expect(mapModelPrintProfileToCalculator({ name: "PLA detalhado", materialName: "PLA Basic", quantity: 2, metrics: {
       slicer: "OrcaSlicer", modelGrams: 10, supportGrams: 2, totalGrams: 16, purgeGrams: 3, wipeTowerGrams: 1,

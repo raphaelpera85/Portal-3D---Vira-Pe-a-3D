@@ -1,5 +1,12 @@
 import type { SavedSlicerMetrics } from "./saved-calculation";
 
+export function getPrintProfileExecutionPlan(profileQuantity: number, batchQuantity: number) {
+  if (!Number.isSafeInteger(profileQuantity) || profileQuantity < 1 || profileQuantity > 1_000_000
+    || !Number.isSafeInteger(batchQuantity) || batchQuantity < 1 || batchQuantity > 1_000_000) return null;
+  const runs = Math.ceil(batchQuantity / profileQuantity);
+  return { runs, producedQuantity: runs * profileQuantity };
+}
+
 export type CalculatorProfileSource = {
   name: string;
   materialName: string;
@@ -10,8 +17,9 @@ export type CalculatorProfileSource = {
 };
 
 export function mapModelPrintProfileToCalculator(profile: { name: string; materialName: string; quantity: number; metrics: SavedSlicerMetrics }, batchQuantity: number, existingFilaments: SavedSlicerMetrics["filaments"] = []) {
-  if (!Number.isSafeInteger(profile.quantity) || profile.quantity < 1 || !Number.isSafeInteger(batchQuantity) || batchQuantity < 1 || batchQuantity > 1_000_000) return null;
-  const runs = Math.ceil(batchQuantity / profile.quantity);
+  const plan = getPrintProfileExecutionPlan(profile.quantity, batchQuantity);
+  if (!plan) return null;
+  const { runs } = plan;
   const filamentGrams = profile.metrics.filamentGrams ?? (profile.metrics.filaments.length > 0 && profile.metrics.filaments.every((item) => item.grams !== null)
     ? profile.metrics.filaments.reduce((total, item) => total + item.grams!, 0)
     : null);
@@ -39,8 +47,9 @@ export function mapPrintProfileToCalculator(
   batchQuantity: number,
   existingFilaments: SavedSlicerMetrics["filaments"] = [],
 ) {
-  if (!Number.isSafeInteger(profile.quantity) || profile.quantity < 1 || !Number.isSafeInteger(batchQuantity) || batchQuantity < 1 || batchQuantity > 1_000_000) return null;
-  const runs = Math.ceil(batchQuantity / profile.quantity);
+  const plan = getPrintProfileExecutionPlan(profile.quantity, batchQuantity);
+  if (!plan) return null;
+  const { runs } = plan;
   const colorTotal = profile.materialByColor.reduce((sum, item) => sum + (item.grams ?? 0), 0);
   const hasCompleteColorMass = profile.materialByColor.length > 0 && profile.materialByColor.every((item) => item.grams !== null);
   const sourceGrams = profile.materialGrams ?? (hasCompleteColorMass ? colorTotal : null);
