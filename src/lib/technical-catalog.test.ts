@@ -43,7 +43,7 @@ const elegooSaturn4Migration = readFileSync(new URL("../../supabase/migrations/2
 const elegooNeptune4MaxRibbonMigration = readFileSync(new URL("../../supabase/migrations/20261115015616_seed_elegoo_neptune_4_max_ribbon_cable.sql", import.meta.url), "utf8");
 const elegooNeptune4PlusRibbonMigration = readFileSync(new URL("../../supabase/migrations/20261115015618_seed_elegoo_neptune_4_plus_ribbon_cable.sql", import.meta.url), "utf8");
 const artilleryX4PlusMigration = readFileSync(new URL("../../supabase/migrations/20261115015622_seed_artillery_sidewinder_x4_plus.sql", import.meta.url), "utf8");
-const ultimakerS7Migration = readFileSync(new URL("../../supabase/migrations/20261115120000_seed_ultimaker_s7_print_cores.sql", import.meta.url), "utf8");
+const ultimakerS7Migration = readFileSync(new URL("../../supabase/migrations/20261115185914_seed_ultimaker_s7_print_cores.sql", import.meta.url), "utf8");
 
 describe("verified technical catalog records", () => {
   it("includes official Hyper PLA temperatures, settings, and named colors without guessed hex values", () => {
