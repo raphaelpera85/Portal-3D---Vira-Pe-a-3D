@@ -48,6 +48,7 @@ export function ModelShowcase({ models, query, category, page, pages }: { models
         {modelShowcaseCategories.map((item) => <Link className={`category-chip${category === item.slug ? " is-active" : ""}`} aria-current={category === item.slug ? "page" : undefined} href={galleryUrl(query, item.slug)} key={item.slug}>{item.name}</Link>)}
       </nav>
       <form className="search-field" action="/modelos" method="get"><label className="sr-only" htmlFor="model-gallery-search">Buscar modelos por nome ou tag</label><input id="model-gallery-search" type="search" name="q" maxLength={100} defaultValue={query} placeholder="Nome, animal, tema ou tag" />{category && <input type="hidden" name="categoria" value={category} />}<button type="submit">Buscar</button></form>
+      {query && <p className="makerworld-search-link">Não encontrou no catálogo? <a href={`https://makerworld.com/en/search/models?keyword=${encodeURIComponent(query)}`} target="_blank" rel="noopener noreferrer nofollow">Buscar “{query}” no MakerWorld ↗</a><small>A busca abre o site do MakerWorld. Arquivos e licenças continuam sob as regras da plataforma de origem.</small></p>}
       <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={category} redirectPath="/modelos" visualIndex={visualIndex} />
     </div>
     <p className="catalog-disclaimer">Abra um modelo para girar a prévia 3D e baixar o arquivo 3MF original.</p>

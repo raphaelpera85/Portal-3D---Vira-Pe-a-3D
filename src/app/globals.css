@@ -302,6 +302,9 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .model-gallery-controls > .search-field { box-sizing: border-box; width: min(100%, 560px); min-width: 0; min-height: 48px; padding: 6px 7px 6px 14px; border-radius: 8px; background: var(--paper); }
 .model-gallery-controls > .search-field input { min-width: 0; flex: 1 1 auto; }
 .model-gallery-controls > .search-field button { flex: 0 0 auto; min-height: 34px; padding-inline: 15px; border-radius: 6px; }
+.makerworld-search-link { display: grid; justify-items: start; gap: 5px; margin: -5px 0 0; color: var(--muted); font-size: 11px; }
+.makerworld-search-link a { color: var(--brand); font-weight: 700; }
+.makerworld-search-link small { font-size: 9px; line-height: 1.5; }
 .model-gallery-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
   .model-gallery-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); transition: border-color .16s, box-shadow .16s, transform .16s; }
   .model-gallery-card:hover { border-color: color-mix(in srgb, var(--brand) 45%, var(--line)); box-shadow: 0 9px 24px var(--shadow-wash); transform: translateY(-2px); }
