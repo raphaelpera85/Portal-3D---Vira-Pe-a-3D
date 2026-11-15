@@ -72,7 +72,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             </section>
             {isBuyer && addressesResult && <BuyerAddressManager addresses={addressesResult.data ?? []} error={Boolean(addressesResult.error)} result={endereco} />}
             {!isMaker && (rolesResult?.error || applicationResult?.error) ? (
-              <section id="solicitar-loja" className="account-card"><span className="account-kicker">ÁREA DE FABRICANTES</span><h2>Preparando o cadastro de lojas</h2><p>A migração do fluxo de fabricantes ainda não foi aplicada neste backend.</p></section>
+              <section id="solicitar-loja" className="account-card"><span className="account-kicker">ÁREA DE FABRICANTES</span><h2>Cadastro de lojas indisponível</h2><p>Não foi possível carregar o status da sua solicitação. Atualize a página; se o problema persistir, acione o suporte.</p></section>
             ) : !isMaker && application?.status === "pending" ? (
               <section id="solicitar-loja" className="account-card"><span className="account-kicker">SOLICITAÇÃO EM ANÁLISE</span><h2>Recebemos seu pedido</h2><p>A equipe está analisando os dados da sua oficina. Você poderá acompanhar o resultado nesta página.</p></section>
             ) : !isMaker ? (
@@ -82,7 +82,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               </>
             ) : null}
             {isBuyer && (designerResult?.error ? (
-              <section className="account-card"><span className="account-kicker">PORTFÓLIO CRIATIVO</span><h2>Cadastro de designers indisponível</h2><p>A estrutura ainda não foi aplicada ao banco do portal.</p></section>
+              <section className="account-card"><span className="account-kicker">PORTFÓLIO CRIATIVO</span><h2>Perfil de designer indisponível</h2><p>Não foi possível carregar seu perfil. Atualize a página; se o problema persistir, acione o suporte.</p></section>
             ) : <DesignerProfileForm profile={designerResult?.data ?? null} />)}
           </>
         )}
