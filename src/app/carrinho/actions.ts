@@ -16,6 +16,10 @@ function cartResultUrl(result: string, couponCode: string | null) {
   if (couponCode) params.set("cupom", couponCode);
   return `/carrinho?${params.toString()}`;
 }
+function isStockAvailabilityError(message: string | undefined) {
+  const normalized = message?.toLowerCase() ?? "";
+  return normalized.includes("stock") || normalized.includes("variant is unavailable");
+}
 
 export async function addProductToCart(formData: FormData): Promise<void> {
   const slug = formData.get("slug");
@@ -34,7 +38,7 @@ export async function addProductToCart(formData: FormData): Promise<void> {
     p_product_id: product.id, p_quantity: quantity.quantity, p_variant_options: variantOptions,
     p_variant_id: rawVariantId || null,
   });
-  if (error) redirect(`/produtos/${encodeURIComponent(slug)}?carrinho=erro`);
+  if (error) redirect(`/produtos/${encodeURIComponent(slug)}?carrinho=${isStockAvailabilityError(error.message) ? "estoque-alterado" : "erro"}`);
   revalidatePath("/carrinho");
   redirect("/carrinho?resultado=adicionado");
 }
@@ -49,7 +53,7 @@ export async function setCartItemQuantity(formData: FormData): Promise<void> {
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { error } = await actor.supabase.rpc("set_cart_item_quantity", { p_item_id: itemId, p_quantity: quantity.quantity });
   revalidatePath("/carrinho");
-  if (error) redirect(cartResultUrl("erro", couponCode));
+  if (error) redirect(cartResultUrl(isStockAvailabilityError(error.message) ? "estoque-alterado" : "erro", couponCode));
   if (rawCouponCode && !couponCode) redirect(cartResultUrl("cupom-invalido", null));
   if (couponCode) {
     const { error: couponError } = await actor.supabase.rpc("preview_marketplace_coupon", { p_code: couponCode });
@@ -106,6 +110,7 @@ export async function checkoutCart(formData: FormData): Promise<void> {
   revalidatePath("/orcamentos");
   revalidatePath("/painel/maker");
   if (error?.message.includes("Coupon")) redirect(cartResultUrl("cupom-invalido", couponCode));
+  if (error && isStockAvailabilityError(error.message)) redirect(cartResultUrl("estoque-alterado", couponCode));
   if (error) redirect(cartResultUrl("indisponivel", couponCode));
   after(dispatchNotificationQueue);
   redirect("/orcamentos?resultado=pedido-enviado");

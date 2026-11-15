@@ -43,6 +43,13 @@ describe("cart item actions with coupons", () => {
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/carrinho");
   });
 
+  it("explains when a quantity change exceeds current stock", async () => {
+    mocks.rpc.mockResolvedValueOnce({ error: { message: "Requested quantity exceeds available variant stock" } });
+
+    await expect(setCartItemQuantity(form("save_10"))).rejects.toThrow("redirect:/carrinho?resultado=estoque-alterado&cupom=SAVE_10");
+    expect(mocks.rpc).toHaveBeenCalledOnce();
+  });
+
   it("keeps the coupon visible when removal makes it invalid", async () => {
     mocks.rpc.mockImplementation(async (name: string) => ({ error: name === "preview_marketplace_coupon" ? { code: "22023", message: "minimum not met" } : null }));
 
@@ -87,6 +94,16 @@ describe("cart item actions with coupons", () => {
     data.set("couponCode", "SAVE_10");
 
     await expect(checkoutCart(data)).rejects.toThrow("redirect:/carrinho?resultado=indisponivel&cupom=SAVE_10");
+  });
+
+  it("explains when stock changes before checkout completes", async () => {
+    mocks.rpc.mockResolvedValue({ error: { message: "Cart exceeds available variant stock" } });
+    const data = new FormData();
+    data.set("addressId", itemId);
+    data.set("couponCode", "SAVE_10");
+
+    await expect(checkoutCart(data)).rejects.toThrow("redirect:/carrinho?resultado=estoque-alterado&cupom=SAVE_10");
+    expect(mocks.after).not.toHaveBeenCalled();
   });
 
   it("dispatches seller notifications only after the order transaction succeeds", async () => {

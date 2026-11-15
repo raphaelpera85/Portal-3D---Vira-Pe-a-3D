@@ -14,6 +14,7 @@ export function ProductCartForm({ slug, authorized, result, purchaseResult, stoc
   return <div className="product-detail-note quote-request-card" id="comprar">
     <strong>Adicionar ao carrinho</strong>
     {purchaseResult === "usar-carrinho" && <p className="quote-small-note" role="status">Para comprar este produto físico, adicione-o ao carrinho. A loja aceitará o pedido e enviará uma proposta de entrega ou retirada antes do pagamento.</p>}
+    {result === "estoque-alterado" && <p className="quote-inline-error" role="alert">O estoque mudou enquanto você selecionava este produto. Confira a quantidade disponível e tente novamente.</p>}
     {soldOut && <p className="quote-inline-error" role="status">Esta combinação está sem unidades disponíveis.</p>}
     {result === "erro" && <p className="quote-inline-error" role="alert">Não foi possível adicionar este produto. Tente novamente.</p>}
     {result === "indisponivel" && <p className="quote-inline-error" role="alert">Este produto não está disponível para compra no momento.</p>}

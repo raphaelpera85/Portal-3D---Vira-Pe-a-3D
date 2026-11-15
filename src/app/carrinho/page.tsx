@@ -15,6 +15,7 @@ export const metadata: Metadata = { title: "Carrinho | ViraPeça 3D", robots: { 
 
 const notices: Record<string, string> = {
   adicionado: "Produto adicionado ao carrinho.", atualizado: "Carrinho atualizado.",
+  "estoque-alterado": "O estoque mudou depois que o item foi adicionado. Ajuste a quantidade ou remova o item antes de tentar novamente.",
   indisponivel: "O carrinho não pôde ser fechado. Um produto pode ter mudado de preço ou disponibilidade; confira os itens e tente novamente.",
   "endereco-invalido": "Escolha um endereço de entrega salvo na sua conta antes de enviar os pedidos.",
   "cupom-aplicado": "Cupom aplicado. O desconto será dividido entre as lojas do pedido.",
@@ -57,7 +58,7 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
     <main id="main-content" tabIndex={-1} className="account-page shell quote-page">
       <Link className="viewer-back-link" href="/#produtos">← Continuar explorando</Link>
       <div className="account-heading"><p className="eyebrow">ÁREA DO COMPRADOR</p><h1>Seu carrinho</h1><p>Itens de cada loja serão enviados em pedidos separados.</p></div>
-      {resultado && notices[resultado] && !(resultado === "cupom-invalido" && needsCouponReview) && <p className={`auth-notice ${["erro", "indisponivel", "cupom-invalido"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
+      {resultado && notices[resultado] && !(resultado === "cupom-invalido" && needsCouponReview) && <p className={`auth-notice ${["erro", "indisponivel", "estoque-alterado", "cupom-invalido"].includes(resultado) ? "is-error" : "is-success"}`} role="status">{notices[resultado]}</p>}
       {needsCouponReview && <p className="auth-notice is-error" role="alert">O cupom {couponCode} não foi validado e não será aplicado. Reaplique o cupom ou remova-o antes de enviar os pedidos.</p>}
       {error ? <p className="auth-notice is-error" role="alert">Não foi possível carregar o carrinho. Confira as migrações do marketplace.</p> : grouped.length === 0 ? <section className="account-card"><h2>Seu carrinho está vazio</h2><p>Encontre produtos publicados com preço fixo para começar.</p>{couponCode && <form action={removeCartCoupon}><button className="button button-secondary" type="submit">Remover cupom {couponCode}</button></form>}<Link className="button button-primary" href="/#produtos">Explorar produtos</Link></section> : <>
         <div className="quote-list" aria-label="Produtos do carrinho">
