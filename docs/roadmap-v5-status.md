@@ -2,6 +2,8 @@
 
 Revisão em 15 de novembro de 2026. Esta página compara os requisitos de produto do Prompt Master V5.0 enviado pelo proprietário com o estado atual do repositório e da produção. “Implementado” significa que o fluxo existe no código; integrações externas ainda dependem de credenciais e testes operacionais.
 
+Atualização operacional em 15/11: o commit `ebdd75b` está `READY` na produção e lê do resumo do Anycubic os totais de modelo, suportes, purga (`Limpo`), torre e consumo, além dos cinco filamentos. O commit `6c1d348` está no GitHub, mas o check da Vercel falhou com `build-rate-limit`; não há deployment para esse SHA, portanto a produção continua no commit anterior. Os testes usam a transcrição do print e não chamam o Google Cloud Vision: `GOOGLE_CLOUD_VISION_API_KEY` ainda não está configurada.
+
 ## Estado por fase
 
 | Fase | Estado | Evidência e pendências principais |
