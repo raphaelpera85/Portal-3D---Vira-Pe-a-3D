@@ -25,6 +25,8 @@ npm run test:e2e
 
 Os testes de ponta a ponta iniciam o Next.js localmente em `127.0.0.1:3100` e validam navegação, busca visual local, abertura de modelos, o catálogo técnico da AD5X e a largura do visualizador em celular.
 
+Para validar a leitura do painel do Anycubic usando a captura versionada, sem iniciar o Next.js nem chamar o Google Vision, rode `npm run test -- src/lib/slicer-ocr.test.ts src/app/api/ocr/slicer/route.test.ts`. O teste da rota usa uma resposta Vision simulada; o teste do parser verifica os valores transcritos da imagem.
+
 ## Estrutura
 
 - `src/app/`: App Router, metadados e estilos globais.
