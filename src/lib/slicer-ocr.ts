@@ -71,7 +71,7 @@ function findAnycubicSummaryTotalGrams(lines: string[]) {
   return values?.at(-1) ?? null;
 }
 
-function findAnycubicSummaryFilamentReadings(lines: string[]) {
+function findAnycubicSummaryFilamentReadings(lines: string[], conflicts: string[]) {
   const table = findAnycubicSummaryTable(lines);
   if (!table) return [];
   const readings: Array<{ index: number; grams: number | null; lengthMeters: number | null; material: string | null; color: string | null }> = [];
@@ -88,6 +88,7 @@ function findAnycubicSummaryFilamentReadings(lines: string[]) {
     }
     const lengthMeters = lengths.at(-1) ?? null;
     const rowGrams = grams.at(-1) ?? null;
+    if (rowGrams === 0 && lengthMeters !== null && lengthMeters > 0) conflicts.push(`peso do filamento ${row[1]} incompatível com comprimento`);
     readings.push({ index: Number(row[1]), lengthMeters, grams: rowGrams === 0 && lengthMeters !== null && lengthMeters > 0 ? null : rowGrams, material: null, color: null });
   }
   return readings;
@@ -335,6 +336,7 @@ function parseOne(text: string) {
   const length = findFilamentLength(lines, conflicts);
   const gcodeTotalGrams = findGcodeFilamentTotal(lines, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams);
   const anycubicSummaryTotalGrams = slicer === "Anycubic Slicer Next" ? findAnycubicSummaryTotalGrams(lines) : null;
+  if (anycubicSummaryTotalGrams === 0 && length !== null && length > 0) conflicts.push("peso total incompatível com comprimento");
   const cost = findCost(lines, conflicts);
   const materials = [...new Set(lines.flatMap((line) => {
     const match = new RegExp(`(?<![a-z0-9])${materialPattern}(?![a-z0-9])`, "i").exec(line);
@@ -373,7 +375,7 @@ function parseOne(text: string) {
     estimatedCost: cost,
     estimatedCostCurrency: findCostCurrency(lines, conflicts),
     materials,
-    filamentReadings: [...filamentReadings, ...findAnycubicSummaryFilamentReadings(lines), ...findStackedFilamentReadings(lines), ...findGcodeFilamentReadings(lines)],
+    filamentReadings: [...filamentReadings, ...findAnycubicSummaryFilamentReadings(lines, conflicts), ...findStackedFilamentReadings(lines), ...findGcodeFilamentReadings(lines)],
     conflicts,
   };
 }

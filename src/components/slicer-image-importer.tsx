@@ -124,7 +124,7 @@ export function SlicerImageImporter({ enabled, configured, onApply, onFilesChang
         })}</ul></div>}
         {extraction.derivedMass && <p className="price-ocr-note">O total foi somado do peso do modelo e dos suportes. Purga e torre aparecem separadas e não são somadas automaticamente.</p>}
         {(extraction.purgeGrams != null || extraction.wipeTowerGrams != null) && <p className="price-ocr-note">Confira se purga e torre já estão incluídas no peso total do fatiador antes de usar o consumo no cálculo; o portal não as soma novamente.</p>}
-        {extraction.conflicts.length > 0 && <p className="price-ocr-conflict" role="alert">Valores divergentes entre imagens: {extraction.conflicts.join(", ")}. Eles foram deixados sem preenchimento.</p>}
+        {extraction.conflicts.length > 0 && <p className="price-ocr-conflict" role="alert">Dados ambíguos ou incompatíveis: {extraction.conflicts.join(", ")}. Confira os valores antes de aplicar.</p>}
         {extraction.text && <details className="price-ocr-text"><summary>Conferir texto reconhecido</summary><pre>{extraction.text}</pre></details>}
         <button className="button button-primary" type="button" onClick={apply} disabled={needsCostCurrencyChoice && !costCurrencyChoice}>Revisar e preencher dados</button>
       </div>}

@@ -233,6 +233,10 @@ Total 0,10 m 0,10 m 0,10 m 0,10 m 0,40 m
       lengthMeters: 0.4, totalGrams: null, filamentGrams: null, derivedMass: false,
       filaments: [{ index: 1, lengthMeters: 0.4, grams: null }],
     });
+    expect(result.conflicts).toEqual(expect.arrayContaining([
+      "peso do filamento 1 incompatível com comprimento",
+      "peso total incompatível com comprimento",
+    ]));
   });
 
   it("recognizes only explicit currency labels for slicer cost", () => {
