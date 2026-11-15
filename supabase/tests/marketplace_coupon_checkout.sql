@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(12);
 
 insert into auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -22,6 +22,12 @@ insert into public.store_notification_contacts (store_id, email, whatsapp, whats
   ('20000000-0000-4000-8000-000000000011', 'checkout-seller-b@example.com', null, false, null)
 on conflict (store_id) do update set email = excluded.email, whatsapp = excluded.whatsapp,
   whatsapp_opt_in = excluded.whatsapp_opt_in, whatsapp_opt_in_at = excluded.whatsapp_opt_in_at;
+
+insert into public.store_payment_connections (store_id, provider, provider_user_id, access_token_ciphertext,
+  refresh_token_ciphertext, token_expires_at, scopes)
+values
+  ('20000000-0000-4000-8000-000000000010', 'mercado_pago', 'codex-checkout-a', 'test-ciphertext', 'test-ciphertext', now() + interval '1 day', 'read write'),
+  ('20000000-0000-4000-8000-000000000011', 'mercado_pago', 'codex-checkout-b', 'test-ciphertext', 'test-ciphertext', now() + interval '1 day', 'read write');
 
 insert into public.marketplace_products (id, store_id, category_id, name, slug, listing_type, fulfillment_mode,
   price_mode, price_brl, catalog_status, published_at, created_by) values
@@ -63,6 +69,25 @@ select is((select coupon_discount_cents from public.seller_purchase_orders where
 select is((select count(*) from public.store_notification_deliveries where order_id in (select id from public.seller_purchase_orders where buyer_id = '10000000-0000-4000-8000-000000000010') and channel = 'email'), 2::bigint, 'queues an email for each seller');
 select is((select count(*) from public.store_notification_deliveries where order_id in (select id from public.seller_purchase_orders where buyer_id = '10000000-0000-4000-8000-000000000010') and channel = 'whatsapp'), 1::bigint, 'queues WhatsApp only for the opted-in seller');
 select is((select count(*) from public.buyer_cart_items where cart_id = '40000000-0000-4000-8000-000000000010'), 0::bigint, 'empties the buyer cart after order creation');
+
+update public.seller_purchase_orders set status = 'accepted', shipping_quote_status = 'accepted',
+  shipping_carrier = 'correios', shipping_service = 'Teste', shipping_cost_cents = 1000, shipping_delivery_days = 5
+where buyer_id = '10000000-0000-4000-8000-000000000010';
+set local request.jwt.claim.role = 'service_role';
+set local role service_role;
+select * from public.create_seller_order_payment(
+  (select id from public.seller_purchase_orders where store_id = '20000000-0000-4000-8000-000000000010'),
+  '10000000-0000-4000-8000-000000000010', 449
+);
+select * from public.create_seller_order_payment(
+  (select id from public.seller_purchase_orders where store_id = '20000000-0000-4000-8000-000000000011'),
+  '10000000-0000-4000-8000-000000000010', 450
+);
+reset role;
+select is((select total_cents from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000010'), 5499::bigint, 'adds shipping after seller-funded discount for seller A');
+select is((select marketplace_fee_cents from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000010'), 449::bigint, 'records commission on seller A discounted subtotal');
+select is((select total_cents from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000011'), 5500::bigint, 'adds shipping after seller-funded discount for seller B');
+select is((select marketplace_fee_cents from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000011'), 450::bigint, 'records commission on seller B discounted subtotal');
 
 select * from finish();
 rollback;
