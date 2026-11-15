@@ -4,6 +4,7 @@ emoji: 🧊
 colorFrom: blue
 colorTo: indigo
 sdk: gradio
+sdk_version: 5.49.1
 python_version: 3.10.13
 app_file: app.py
 ---
@@ -11,6 +12,8 @@ app_file: app.py
 # ViraPeça 3D · geração de rascunho 3D
 
 Space Gradio usado pela página `/gerar-modelo`. O código do TripoSR e os pesos são licenciados sob MIT por Stability AI e Tripo AI; consulte o [repositório](https://github.com/VAST-AI-Research/TripoSR) e o [model card](https://huggingface.co/stabilityai/TripoSR).
+
+Space público do piloto: [raphaelpera85/virapeca-triposr](https://huggingface.co/spaces/raphaelpera85/virapeca-triposr). Está configurado como ZeroGPU e o endpoint `/generate` foi validado com uma imagem de teste.
 
 ## Publicar
 

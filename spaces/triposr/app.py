@@ -59,13 +59,13 @@ def fill_background(image):
     return Image.fromarray((pixels[:, :, :3] * 255).astype(np.uint8))
 
 
-@spaces.GPU(duration=120)
+@spaces.GPU(duration=60)
 def generate(image_path):
     image = validate_image(image_path)
     image = resize_foreground(remove_background(image, rembg_session), 0.85)
     image = fill_background(image)
     scene_codes = model(image, device=device)
-    mesh = model.extract_mesh(scene_codes, resolution=192)[0]
+    mesh = model.extract_mesh(scene_codes, True, resolution=192)[0]
     mesh_path = tempfile.NamedTemporaryFile(suffix=".glb", delete=False).name
     mesh.export(mesh_path)
     return mesh_path, mesh_path

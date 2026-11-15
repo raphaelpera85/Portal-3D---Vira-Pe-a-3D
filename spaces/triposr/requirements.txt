@@ -5,9 +5,9 @@ transformers==4.39.0
 trimesh==4.0.5
 rembg
 onnxruntime
-huggingface-hub==0.25.0
+numpy<2
+huggingface-hub==0.36.0
 scikit-build-core>=1.0
 pybind11>=2.10
 cmake
 ninja
-spaces
