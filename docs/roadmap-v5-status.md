@@ -2,7 +2,7 @@
 
 Revisão em 15 de novembro de 2026. Esta página compara os requisitos de produto do Prompt Master V5.0 enviado pelo proprietário com o estado atual do repositório e da produção. “Implementado” significa que o fluxo existe no código; integrações externas ainda dependem de credenciais e testes operacionais.
 
-Atualização operacional em 15/11: o commit `ebdd75b` está `READY` na produção e lê do resumo do Anycubic os totais de modelo, suportes, purga (`Limpo`), torre e consumo, além dos cinco filamentos. O commit `6c1d348` está no GitHub, mas o check da Vercel falhou com `build-rate-limit`; não há deployment para esse SHA, portanto a produção continua no commit anterior. Os testes usam a transcrição do print e não chamam o Google Cloud Vision: `GOOGLE_CLOUD_VISION_API_KEY` ainda não está configurada.
+Atualização operacional em 15/11: a produção automática da Vercel está `READY` no commit `91d63eb` e o domínio `virapeca3d.vercel.app` responde HTTP 200. O painel do Anycubic extrai do resumo os totais de modelo, suportes, purga (`Limpo`), torre e consumo, além dos cinco filamentos. A captura real versionada agora também passa pela rota de OCR em um teste com resposta do Vision simulada; isso cobre validação do upload e parser, mas não o reconhecimento visual pelo provedor. `GOOGLE_CLOUD_VISION_API_KEY` ainda não está configurada.
 
 ## Estado por fase
 
@@ -127,7 +127,7 @@ Atualização em 15/11: a suíte E2E passou com 17 testes. O teste visual de mal
 
 1. Configurar Google Vision, Resend e WhatsApp na Vercel e validar reconhecimento semântico de imagem, OCR e notificações externas sem expor segredos no Git.
 2. Configurar e testar o OAuth, compra de etiquetas e webhook Melhor Envio em sandbox; depois validar o fluxo de produção com vendedores reconectados.
-3. Validar com imagens e fatiamentos reais o consumo editável por cor e a extração de campos OCR dos slicers; a cobertura sintética existe, mas ainda não há um corpus versionado de capturas reais.
+3. Validar com imagens e fatiamentos reais o consumo editável por cor e o OCR dos slicers. Há uma captura real versionada do Anycubic Slicer Next, exercitada com resposta Vision simulada; faltam a validação do reconhecimento visual real e capturas de outros fatiadores/versões.
 4. As migrations da fila de descoberta, incluindo `20261115200000_expand_catalog_discovery_source_urls.sql` e `20261115220000_catalog_discovery_cursors.sql`, estão aplicadas. Em 15/11, os três feeds oficiais responderam HTTP 200 com JSON; o parser reconheceu 17 candidatos Anycubic, 54 ELEGOO e 24 Creality na janela consultada (sem inserir dados no Supabase). Os 15 testes de descoberta passaram, incluindo continuidade após falha de uma fonte, retenção do cursor quando uma página falha e avanço/wrap da janela paginada. Ainda falta testar compra e pós-venda ponta a ponta com contas sandbox. A migration de fingerprints e as migrations de segurança de notificações/gatilhos também constam no histórico remoto.
 
 Os detalhes de instalação, banco, segurança, operação e integrações continuam nos documentos vinculados pelo [README](../README.md).

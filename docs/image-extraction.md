@@ -47,7 +47,7 @@ O OCR não inicia cálculos nem salva resultados por conta própria. O fabricant
 
 - O Cloud Vision extrai texto, mas não entende a semântica de cada painel de fatiador. Layouts, idiomas, rótulos, unidades e versões diferentes podem deixar campos vazios ou produzir leituras incorretas.
 - Não há confirmação automática de moeda, perfil, impressora, escala, temperatura ou custo por cor. O custo extraído não substitui o motor de precificação.
-- Há uma captura real versionada do Anycubic Slicer Next, mas ela ainda não é processada por OCR nos testes automatizados. Não há capturas versionadas de todos os fatiadores e versões; a cobertura precisa crescer antes de considerar qualquer layout garantido.
+- A captura real versionada do Anycubic Slicer Next é enviada à rota no teste automatizado, que simula a resposta textual do Vision e verifica a extração. O provedor não reconhece a imagem durante o teste; validar o OCR visual real exige credencial e chamada externa. Não há capturas versionadas de todos os fatiadores e versões; a cobertura precisa crescer antes de considerar qualquer layout garantido.
 - Sem `GOOGLE_CLOUD_VISION_API_KEY` na Production, a interface informa que o serviço não está configurado e mantém o cálculo manual disponível.
 
 Os limites de implementação estão descritos junto à [calculadora](pricing-engine.md#limites-atuais), e a preparação da chave e do projeto Google Cloud está em [integrações](integrations.md#ocr-de-imagens-de-fatiadores).
