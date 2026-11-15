@@ -62,12 +62,12 @@ function PrinterIllustration() {
 export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; categoria?: string; pagina?: string; ordem?: string }> }) {
   const params = await searchParams;
   const sort = params.ordem === "popular" ? "popular" : "newest";
-  const [catalog, buyer, featuredStores, creatorModels] = await Promise.all([loadMarketplaceCatalog({
+  const [catalog, buyer, creator, featuredStores, creatorModels] = await Promise.all([loadMarketplaceCatalog({
     query: typeof params.q === "string" ? params.q : "",
     category: typeof params.categoria === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(params.categoria) ? params.categoria : "",
     page: typeof params.pagina === "string" && /^\d+$/.test(params.pagina) ? Number(params.pagina) : 1,
     sort,
-  }), getUserWithRole("buyer"), loadRecommendedStores(), loadPublishedCreatorModels()]);
+  }), getUserWithRole("buyer"), getUserWithRole(["maker", "designer"]), loadRecommendedStores(), loadPublishedCreatorModels()]);
   const modelPreviews = filterHomepageModelShowcase([...modelShowcase, ...creatorModels], typeof params.q === "string" ? params.q : "", typeof params.categoria === "string" ? params.categoria : "").slice(0, 6);
   const [favoritesResult, bannersResult] = await Promise.all([
     buyer.supabase && buyer.user && buyer.authorized && catalog.products.length > 0
@@ -101,7 +101,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
             <div className="hero-actions">
               <a className="button button-primary" href="#produtos">Explorar produtos <span aria-hidden="true">↗</span></a>
               <a className="button button-secondary" href="/visualizador">Visualizar meu modelo 3D <span aria-hidden="true">→</span></a>
-              <a className="button button-secondary" href="/calculadora">Calcular custos de impressão <span aria-hidden="true">→</span></a>
+              {creator.authorized && <Link className="button button-secondary" href="/calculadora">Calcular custos de impressão <span aria-hidden="true">→</span></Link>}
             </div>
             <div className="hero-note"><span className="note-rule" /> Explore arquivos STL, OBJ, 3MF e glTF diretamente no navegador.</div>
           </div>
