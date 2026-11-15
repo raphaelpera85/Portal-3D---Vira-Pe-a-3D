@@ -62,7 +62,7 @@ Envios de modelos 3D por vendedores passam pelo bucket privado `creator-model-up
 
 ## Estado da auditoria do Supabase — 15/11/2026
 
-O advisor lista 79 funções `SECURITY DEFINER` executáveis por `authenticated`; as funções consultadas não são executáveis por `anon`. As operações administrativas revisadas verificam o papel `admin` dentro da função. Os três wrappers revisados sem consulta direta a `auth.uid()` delegam a operações que verificam sessão, papel e propriedade. Esse aviso continua sendo um inventário de superfície RPC: a autorização de todas as funções deve ser revisada quando elas forem alteradas.
+O advisor lista 79 funções `SECURITY DEFINER` executáveis por `authenticated`; as funções consultadas não são executáveis por `anon`. As operações administrativas revisadas verificam o papel `admin` dentro da função. Em uma transação revertida, uma sessão `authenticated` sem papel foi negada por `get_admin_support_response_metrics`, pelas RPCs de revisão de fabricante, avaliação, designer, denúncia digital e impressora, `set_support_ticket_status` e `get_maker_payment_period_metrics`. Os três wrappers revisados sem consulta direta a `auth.uid()` delegam a operações que verificam sessão, papel e propriedade. Esse aviso continua sendo um inventário de superfície RPC: o teste cobre funções administrativas selecionadas; a autorização de todas as funções ainda precisa ser revisada quando elas forem alteradas.
 
 O advisor também lista 11 tabelas internas com RLS habilitado e sem políticas. No projeto atual, `anon` e `authenticated` não têm permissões `SELECT` ou `INSERT` nessas tabelas; mantenha o acesso reservado ao servidor.
 
