@@ -12,6 +12,16 @@ const profileHash = (profiles: unknown) => {
 };
 
 describe("mapTechnicalCatalog", () => {
+  it("includes Formlabs Form 4L with its official resin build volume and resolution data", () => {
+    const form4L = printers.find((printer) => printer.id === "formlabs-form-4l");
+
+    expect(form4L).toMatchObject({
+      brand: "Formlabs", technology: "MSLA", buildVolumeMm: { x: 353, y: 196, z: 350 },
+      technicalProperties: { openMaterialMode: true, layerThicknessRangeMicrons: { min: 25, max: 200 } },
+    });
+    expect(form4L?.sources.map((source) => source.url)).toContain("https://formlabs.com/products/form-4l-basic-package/");
+  });
+
   it("includes the Snapmaker U1 in the local catalog with only sourced specifications", () => {
     const snapmaker = printers.find((printer) => printer.id === "snapmaker-u1");
 

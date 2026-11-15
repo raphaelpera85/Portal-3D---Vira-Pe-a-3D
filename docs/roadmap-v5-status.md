@@ -104,6 +104,7 @@ As notas de migrations abaixo registram o estado no momento em que foram escrita
 - A entrada preexistente da Snapmaker U1 foi alinhada às especificações atuais, com quatro cabeçotes independentes e limites de potência por tensão, pela migration idempotente `20261117130000_seed_snapmaker_u1.sql`. Os bicos do catálogo são vinculados por modelo apenas onde a ficha oficial confirma o diâmetro e o material; não inferimos resistência à abrasão.
 - A Snapmaker Artisan entrou no fallback e na migration `20261117140000_seed_snapmaker_artisan.sql`. A checagem de volume oferece áreas distintas para bico esquerdo, direito ou duplo (375 × 400 × 400, 400 × 400 × 400 e 350 × 400 × 400 mm); a zona externa da mesa é diferenciada da área interna de 110 °C. Migration somente no Git.
 - U1 e Artisan têm bicos catalogados nas migrations `20261117150000_seed_snapmaker_nozzles.sql`; para o Artisan, 0,2/0,6/0,8 mm ficam sem material declarado pela Snapmaker. Migration somente no Git.
+- Formlabs Form 4L foi acrescentada no fallback e na migration `20261117160000_seed_formlabs_form4l.sql`, com volume útil 353 × 196 × 350 mm, motor MSLA LFD, Open Material Mode e camadas de 25–200 μm conforme as [especificações oficiais](https://formlabs.com/products/form-4l-basic-package/). Não associei resinas específicas nem exposição sem perfil confirmado. Migration somente no Git.
 
 ## Próximas entregas
 
