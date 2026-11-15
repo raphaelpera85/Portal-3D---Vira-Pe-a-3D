@@ -1,16 +1,18 @@
 begin;
-select plan(14);
+select plan(15);
 
 insert into auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
   ('10000000-0000-4000-8000-000000000010', 'authenticated', 'authenticated', 'virapeca-checkout-buyer@example.com', '{"provider":"email","providers":["email"]}', '{}', now(), now()),
   ('10000000-0000-4000-8000-000000000011', 'authenticated', 'authenticated', 'virapeca-checkout-seller-a@example.com', '{"provider":"email","providers":["email"]}', '{}', now(), now()),
-  ('10000000-0000-4000-8000-000000000012', 'authenticated', 'authenticated', 'virapeca-checkout-seller-b@example.com', '{"provider":"email","providers":["email"]}', '{}', now(), now());
+  ('10000000-0000-4000-8000-000000000012', 'authenticated', 'authenticated', 'virapeca-checkout-seller-b@example.com', '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('10000000-0000-4000-8000-000000000013', 'authenticated', 'authenticated', 'virapeca-checkout-other-buyer@example.com', '{"provider":"email","providers":["email"]}', '{}', now(), now());
 
 insert into public.user_roles (user_id, role) values
   ('10000000-0000-4000-8000-000000000010', 'buyer'),
   ('10000000-0000-4000-8000-000000000011', 'maker'),
-  ('10000000-0000-4000-8000-000000000012', 'maker')
+  ('10000000-0000-4000-8000-000000000012', 'maker'),
+  ('10000000-0000-4000-8000-000000000013', 'buyer')
 on conflict (user_id, role) do nothing;
 
 insert into public.stores (id, owner_user_id, name, slug, status) values
@@ -43,6 +45,8 @@ insert into public.buyer_addresses (id, buyer_id, label, recipient_name, postal_
 values ('50000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000010', 'Test', 'Test buyer', '11000000', 'Rua Teste', '1', '', 'Centro', 'Santos', 'SP', '');
 insert into public.buyer_carts (id, buyer_id)
 values ('40000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000010');
+insert into public.buyer_carts (id, buyer_id)
+values ('40000000-0000-4000-8000-000000000011', '10000000-0000-4000-8000-000000000013');
 insert into public.buyer_cart_items (cart_id, product_id, store_id, store_name, product_name, price_brl, quantity)
 select '40000000-0000-4000-8000-000000000010', p.id, p.store_id, s.name, p.name, p.price_brl, 1
 from public.marketplace_products p join public.stores s on s.id = p.store_id
@@ -59,6 +63,12 @@ select is(
   (select sum(value::bigint) from jsonb_each_text((select store_discounts from public.get_marketplace_coupon_quote('40000000-0000-4000-8000-000000000010', 'CODXQA20261115')))),
   1001::bigint,
   'allocates the entire discount across the seller orders'
+);
+select throws_ok(
+  $$select * from public.get_marketplace_coupon_quote('40000000-0000-4000-8000-000000000011', 'CODXQA20261115')$$,
+  '42501',
+  'Cart is unavailable',
+  'rejects quoting another buyer''s cart'
 );
 select count(*) from public.create_orders_from_cart('50000000-0000-4000-8000-000000000010', 'CODXQA20261115');
 

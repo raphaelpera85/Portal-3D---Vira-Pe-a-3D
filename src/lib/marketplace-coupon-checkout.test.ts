@@ -27,6 +27,7 @@ describe("marketplace coupon checkout", () => {
 
   it("limits order creation to the buyer's own address and cart", () => {
     expect(couponMigration).toContain("r.role = 'buyer'::public.app_role");
+    expect(couponMigration).toContain("cart_owner is distinct from buyer_id");
     expect(couponMigration).toContain("a.buyer_id = (select auth.uid()) for share");
     expect(couponMigration).toContain("c.buyer_id = (select auth.uid()) for update");
   });
