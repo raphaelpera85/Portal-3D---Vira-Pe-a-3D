@@ -123,63 +123,7 @@ test("viewer shows exact resin profiles and keeps unknown exposure unverified", 
   await expect(check("Perfil de exposição")).toHaveClass(/status-unverified/);
 });
 
-test("technical catalog shows Flashforge AD5X conditions after selecting it", async ({ page }) => {
+test("technical catalog asks visitors to sign in", async ({ page }) => {
   await page.goto("/catalogos");
-
-  const printer = page.getByLabel("Fabricante, modelo e variante");
-  await printer.selectOption({ label: "Bambu Lab · A1 · standard" });
-  await expect(page.locator(".technical-facts").first()).toContainText("256 × 256 × 256 mm");
-  await expect(page.locator(".technical-facts").first()).toContainText("deslocamento do cabeçote");
-
-  await printer.selectOption({ label: "Bambu Lab · A1 · Combo" });
-  await expect(page.locator(".technical-facts").first()).toContainText("AMS lite · até 4 filamentos");
-
-  await printer.selectOption({ label: "Bambu Lab · A1 mini · standard" });
-  await expect(page.locator(".technical-facts").first()).toContainText("180 × 180 × 180 mm");
-
-  await printer.selectOption({ label: "Anycubic · Photon Mono M7 · standard" });
-  await expect(page.locator(".technical-panel").nth(2)).toContainText("Processo de cura");
-
-  await printer.selectOption({ label: "Flashforge · AD5X · standard" });
-  await expect(page.locator(".technical-panel").nth(2)).toContainText("Diâmetros cadastrados");
-  await expect(page.locator(".technical-panel").first()).toContainText("Filamentos citados pelo fabricante:");
-  await expect(page.locator(".technical-panel").first()).toContainText("TPU 95A: 0,4/0,6/0,8 mm; não compatível com IFS");
-  await expect(page.locator(".technical-panel").first()).toContainText("A Flashforge informa que o TPU 95A deve ser impresso em modo de cor única");
-
-  await page.getByRole("button", { name: "0,6 mm" }).click();
-  await expect(page.locator(".technical-panel").nth(2)).toContainText("Aço endurecido indicado para filamentos abrasivos");
-
-  await printer.selectOption({ label: "QIDI Tech · Max4 · standard" });
-  await expect(page.locator(".technical-facts").first()).toContainText("390 × 390 × 340 mm");
-  await expect(page.locator(".technical-facts").first()).toContainText("Câmara ativa máxima");
-  await expect(page.locator(".technical-facts").first()).toContainText("65 °C");
-  await expect(page.locator(".technical-facts").first()).toContainText("800 mm/s de deslocamento do cabeçote");
-
-  await printer.selectOption({ label: "QIDI Tech · Q2 · standard" });
-  await expect(page.locator(".technical-facts").first()).toContainText("270 × 270 × 256 mm");
-  await expect(page.locator(".technical-facts").first()).toContainText("600 mm/s de deslocamento do cabeçote");
-  await expect(page.locator(".technical-facts").first()).toContainText("Até 16 filamentos com caixas adicionais");
-  await printer.selectOption({ label: "QIDI Tech · Q2 · QIDI Box Combo" });
-  await expect(page.locator(".technical-facts").first()).toContainText("QIDI Box · até 4 filamentos");
-
-  await printer.selectOption({ label: "QIDI Tech · Q2C · standard" });
-  await expect(page.locator(".technical-facts").first()).toContainText("Aquecimento ativo da câmara");
-  await expect(page.locator(".technical-facts").first()).toContainText("Câmera");
-  await expect(page.locator(".technical-facts").first()).toContainText("Filtro de ar");
-  await expect(page.locator(".technical-facts").first()).toContainText("Potência nominal");
-  await expect(page.locator(".technical-facts").first()).toContainText("350 W");
-  await printer.selectOption({ label: "QIDI Tech · Q2C · QIDI Box Combo" });
-  await expect(page.locator(".technical-facts").first()).toContainText("QIDI Box · até 4 filamentos");
-
-  await printer.selectOption({ label: "Bambu Lab · H2S · standard" });
-  await expect(page.locator(".technical-facts").first()).toContainText("Câmara ativa máxima");
-  await expect(page.locator(".technical-facts").first()).toContainText("65 °C");
-
-  await printer.selectOption({ label: "Bambu Lab · H2D · AMS 2 Pro Combo" });
-  await expect(page.locator(".technical-facts").first()).toContainText("Volume útil · 1 bico");
-  await expect(page.locator(".technical-facts").first()).toContainText("325 × 320 × 325 mm");
-  await expect(page.locator(".technical-facts").first()).toContainText("Volume útil · 2 bicos");
-  await expect(page.locator(".technical-facts").first()).toContainText("300 × 320 × 325 mm");
-  await expect(page.locator(".technical-facts").first()).toContainText("Volume útil combinado");
-  await expect(page.locator(".technical-facts").first()).toContainText("350 × 320 × 325 mm");
+  await expect(page).toHaveURL(/\/conta(?:\?|$)/);
 });

@@ -13,10 +13,10 @@ export function validateCredentials(emailValue: unknown, passwordValue: unknown)
   return { email, password: passwordValue };
 }
 
-export function validateRegistration(nameValue: unknown, emailValue: unknown, passwordValue: unknown): Registration | null {
+export function validateRegistration(nameValue: unknown, emailValue: unknown, passwordValue: unknown, confirmationValue: unknown): Registration | null {
   const credentials = validateCredentials(emailValue, passwordValue);
   if (typeof nameValue !== "string") return null;
   const displayName = nameValue.trim();
-  if (!credentials || displayName.length < 2 || displayName.length > 80) return null;
+  if (!credentials || credentials.password !== confirmationValue || displayName.length < 2 || displayName.length > 80) return null;
   return { ...credentials, displayName };
 }

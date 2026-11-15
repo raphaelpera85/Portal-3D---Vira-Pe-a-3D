@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Box, Menu, Moon, ShoppingCart, Sun, X } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function SiteHeader() {
   const [dark, setDark] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [canUseCreatorTools, setCanUseCreatorTools] = useState(false);
   const firstMenuLinkRef = useRef<HTMLAnchorElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -15,6 +17,32 @@ export function SiteHeader() {
     const isDark = saved === "dark";
     document.documentElement.dataset.theme = isDark ? "dark" : "light";
     setDark(isDark);
+  }, []);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) return;
+
+    let requestId = 0;
+    const syncCreatorRole = async (userId: string | null) => {
+      const currentRequestId = ++requestId;
+      if (!userId) {
+        setCanUseCreatorTools(false);
+        return;
+      }
+      const { data, error } = await supabase.from("user_roles").select("role")
+        .eq("user_id", userId).in("role", ["maker", "designer"]);
+      if (currentRequestId === requestId) setCanUseCreatorTools(!error && Boolean(data?.length));
+    };
+
+    void supabase.auth.getUser().then(({ data }) => syncCreatorRole(data.user?.id ?? null)).catch(() => syncCreatorRole(null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      void syncCreatorRole(session?.user.id ?? null);
+    });
+    return () => {
+      requestId++;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -55,11 +83,11 @@ export function SiteHeader() {
           <Link ref={firstMenuLinkRef} href="/#produtos" onClick={closeMenu}>Explorar</Link>
           <Link href="/modelos" onClick={closeMenu}>Modelos 3D</Link>
           <Link href="/visualizador" onClick={closeMenu}>Visualizador 3D</Link>
-          <Link href="/catalogos" onClick={closeMenu}>Catálogos</Link>
+          {canUseCreatorTools && <Link href="/catalogos" onClick={closeMenu}>Catálogos</Link>}
           <Link href="/lojas" onClick={closeMenu}>Lojas</Link>
           <Link href="/designers" onClick={closeMenu}>Designers</Link>
           <Link href="/favoritos" onClick={closeMenu}>Favoritos</Link>
-          <Link href="/calculadora" onClick={closeMenu}>Calculadora</Link>
+          {canUseCreatorTools && <Link href="/calculadora" onClick={closeMenu}>Calculadora</Link>}
           <Link href="/#como-funciona" onClick={closeMenu}>Como funciona</Link>
           <Link href="/#fabricantes" onClick={closeMenu}>Para makers</Link>
         </nav>

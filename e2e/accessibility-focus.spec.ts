@@ -1,14 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("calculator keeps visible focus indicators on editable labels", async ({ page }) => {
-  await page.goto("/calculadora");
-  await page.getByRole("button", { name: "Adicionar item" }).click();
+test("account forms keep visible focus indicators on editable labels", async ({ page }) => {
+  await page.goto("/conta");
 
-  const componentName = page.getByPlaceholder("Ex.: ímãs");
-  await componentName.focus();
-  await expect.poll(() => componentName.evaluate((input) => getComputedStyle(input.parentElement!).outlineStyle)).toBe("solid");
+  const loginEmail = page.getByLabel("E-mail").first();
+  await loginEmail.focus();
+  await expect.poll(() => loginEmail.evaluate((input) => getComputedStyle(input).outlineStyle)).toBe("solid");
 
-  const channelName = page.locator(".price-channel-row > label > input").first();
-  await channelName.focus();
-  await expect.poll(() => channelName.evaluate((input) => getComputedStyle(input.parentElement!).outlineStyle)).toBe("solid");
+  const confirmation = page.getByLabel("Confirme sua senha");
+  await confirmation.focus();
+  await expect.poll(() => confirmation.evaluate((input) => getComputedStyle(input).outlineStyle)).toBe("solid");
 });

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { applySessionCookiePolicy, SESSION_REMEMBER_COOKIE, shouldRememberSession } from "@/lib/supabase/session-cookie-policy";
 
 export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -8,6 +9,7 @@ export async function proxy(request: NextRequest) {
   if (!url || !key) return NextResponse.next({ request });
 
   const pendingCookies = new Map<string, { name: string; value: string; options: Record<string, unknown> }>();
+  const rememberSession = shouldRememberSession(request.cookies.get(SESSION_REMEMBER_COOKIE)?.value);
   const responseHeaders = new Headers();
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -15,7 +17,8 @@ export async function proxy(request: NextRequest) {
       setAll(cookiesToSet, headers) {
         cookiesToSet.forEach((cookie) => {
           request.cookies.set(cookie.name, cookie.value);
-          pendingCookies.set(JSON.stringify([cookie.name, cookie.options.path, cookie.options.domain]), cookie);
+          const options = applySessionCookiePolicy(cookie.options, rememberSession);
+          pendingCookies.set(JSON.stringify([cookie.name, options.path, options.domain]), { ...cookie, options });
         });
         Object.entries(headers).forEach(([name, value]) => responseHeaders.set(name, value));
       },

@@ -1,12 +1,13 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { validateCredentials, validateEmailAddress, validateRegistration } from "@/lib/auth-validation";
 import { validateBuyerAddress } from "@/lib/buyer-address";
+import { REMEMBERED_SESSION_MAX_AGE, SESSION_REMEMBER_COOKIE } from "@/lib/supabase/session-cookie-policy";
 
 export type AuthActionState = { message: string; success: boolean };
 const invalidMessage = "Não foi possível concluir. Confira os dados informados e tente novamente.";
@@ -43,16 +44,22 @@ export async function signInAction(_previous: AuthActionState, formData: FormDat
   const credentials = validateCredentials(formData.get("email"), formData.get("password"));
   if (!credentials) return { message: invalidMessage, success: false };
 
-  const supabase = await createSupabaseServerClient();
+  const rememberMe = formData.get("rememberMe") === "on";
+  const supabase = await createSupabaseServerClient({ rememberMe });
   if (!supabase) return { message: "O acesso ainda não está conectado. Configure o Supabase para habilitar contas.", success: false };
 
   const { error } = await supabase.auth.signInWithPassword(credentials);
   if (error) return { message: "E-mail ou senha incorretos. Confira os dados e tente novamente.", success: false };
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_REMEMBER_COOKIE, rememberMe ? "1" : "0", {
+    path: "/", sameSite: "lax", secure: process.env.NODE_ENV === "production",
+    ...(rememberMe ? { maxAge: REMEMBERED_SESSION_MAX_AGE } : {}),
+  });
   redirect("/conta");
 }
 
 export async function signUpAction(_previous: AuthActionState, formData: FormData): Promise<AuthActionState> {
-  const registration = validateRegistration(formData.get("displayName"), formData.get("email"), formData.get("password"));
+  const registration = validateRegistration(formData.get("displayName"), formData.get("email"), formData.get("password"), formData.get("passwordConfirmation"));
   if (!registration) return { message: invalidMessage, success: false };
 
   const supabase = await createSupabaseServerClient();
@@ -102,5 +109,7 @@ export async function updatePasswordAction(_previous: AuthActionState, formData:
 export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
   if (supabase) await supabase.auth.signOut();
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_REMEMBER_COOKIE);
   redirect("/conta");
 }

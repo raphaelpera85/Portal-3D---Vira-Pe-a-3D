@@ -13,6 +13,8 @@
 .auth-form { display: grid; gap: 17px; }
 .auth-form label { display: grid; gap: 7px; color: var(--muted-strong); font-size: 12px; font-weight: 700; }
 .auth-form input, .auth-form select, .auth-form textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--paper); color: var(--ink); }
+.auth-form .auth-remember { display: flex; align-items: center; gap: 9px; width: fit-content; color: var(--muted-strong); font-size: 13px; font-weight: 600; }
+.auth-form .auth-remember input { width: 16px; min-height: 16px; margin: 0; padding: 0; accent-color: var(--brand); }
 .auth-form textarea { resize: vertical; }
 .auth-form label small { color: var(--muted); font-size: 11px; font-weight: 400; }
 .auth-form .button { min-height: 46px; cursor: pointer; }

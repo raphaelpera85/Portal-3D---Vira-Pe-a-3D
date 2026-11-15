@@ -4,6 +4,8 @@ import { SiteHeader } from "@/components/site-header";
 import { TechnicalCatalog } from "@/components/technical-catalog";
 import { loadTechnicalCatalog } from "@/lib/technical-catalog.server";
 import { getSiteUrl } from "@/lib/site-url";
+import { getUserWithRole } from "@/lib/auth-role.server";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Catálogos técnicos | ViraPeça 3D",
@@ -14,6 +16,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function CatalogPage() {
+  const actor = await getUserWithRole(["maker", "designer"]);
+  if (!actor.user || !actor.authorized) redirect("/conta");
+
   const catalog = await loadTechnicalCatalog();
   return (
     <>

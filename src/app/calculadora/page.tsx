@@ -11,6 +11,7 @@ import { getShowcaseModel } from "@/lib/model-showcase";
 import { getCalculatorProductPrefill } from "@/lib/calculator-price-target";
 import { fetchInChunks } from "@/lib/fetch-in-chunks";
 import { fetchAllPages } from "@/lib/pagination";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Calculadora de impressão 3D | ViraPeça 3D",
@@ -21,9 +22,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function CalculatorPage({ searchParams }: { searchParams: Promise<{ produto?: string | string[] }> }) {
-  const { produto } = await searchParams;
-  const [actor, catalog] = await Promise.all([getUserWithRole("maker"), loadTechnicalCatalog()]);
-  const canUseOcr = Boolean(actor.supabase && actor.user && actor.authorized);
+  const actor = await getUserWithRole(["maker", "designer"]);
+  if (!actor.user || !actor.authorized) redirect("/conta");
+
+  const [{ produto }, catalog] = await Promise.all([searchParams, loadTechnicalCatalog()]);
+  const canUseOcr = Boolean(actor.supabase && actor.user && actor.roles.includes("maker"));
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
   let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string; catalogPrinterId: string | null }> = [];
   let products: CalculatorProduct[] = [];
@@ -36,7 +39,7 @@ export default async function CalculatorPage({ searchParams }: { searchParams: P
   let sourceAttachmentsError = false;
   let savedCalculations: Array<{ id: string; title: string; createdAt: string; totalCostCents: number; unitCostCents: number; batchQuantity: number; productId: string | null; productName: string | null; productUrl: string | null; priceTargetId: string | null; priceTargetName: string | null; compatibilityNozzleLabels: string[]; printerId: string | null; printerName: string | null; profileId: string | null; profileName: string | null; slicer: SavedSlicerMetrics | null; origin: CalculationOrigin; snapshot: string; attachments: { name: string; url: string; sizeBytes: number }[] }> = [];
   let savedCalculationsError = false;
-  if (actor.supabase && actor.user && actor.authorized) {
+  if (actor.supabase && actor.user && actor.roles.includes("maker")) {
     const { data: store } = await actor.supabase.from("stores").select("id").eq("owner_user_id", actor.user.id).maybeSingle();
     if (store) {
       calculationStoreId = store.id;

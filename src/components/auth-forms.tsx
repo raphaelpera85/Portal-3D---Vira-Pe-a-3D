@@ -17,6 +17,7 @@ export function AuthForms() {
         <form className="auth-form" action={signIn}>
           <label>E-mail<input type="email" name="email" autoComplete="email" maxLength={254} required /></label>
           <label>Senha<input type="password" name="password" autoComplete="current-password" minLength={8} maxLength={128} required /></label>
+          <label className="auth-remember"><input type="checkbox" name="rememberMe" defaultChecked /> Lembrar de mim neste dispositivo</label>
           <Link className="account-recovery-link" href="/conta/recuperar-senha">Esqueceu a senha?</Link>
           <button className="button button-primary" type="submit" disabled={signingIn}>{signingIn ? "Entrando…" : "Entrar"}</button>
           <p className={`auth-notice${signInState.message ? " is-error" : ""}`} aria-live="polite">{signInState.message}</p>
@@ -28,6 +29,7 @@ export function AuthForms() {
           <label>Como podemos chamar você?<input type="text" name="displayName" autoComplete="name" minLength={2} maxLength={80} required /></label>
           <label>E-mail<input type="email" name="email" autoComplete="email" maxLength={254} required /></label>
           <label>Crie uma senha<input type="password" name="password" autoComplete="new-password" minLength={8} maxLength={128} required /><small>Use pelo menos 8 caracteres.</small></label>
+          <label>Confirme sua senha<input type="password" name="passwordConfirmation" autoComplete="new-password" minLength={8} maxLength={128} required /></label>
           <p className="auth-legal-note">Antes de criar sua conta, consulte <Link href="/termos">Termos de uso</Link> e <Link href="/privacidade">Política de Privacidade</Link>.</p>
           <button className="button button-primary" type="submit" disabled={signingUp}>{signingUp ? "Criando conta…" : "Criar conta"}</button>
           <p className={`auth-notice${signUpState.message ? (signUpState.success ? " is-success" : " is-error") : ""}`} aria-live="polite">{signUpState.message}</p>
