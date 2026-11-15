@@ -23,4 +23,9 @@ describe("digital asset purchase migration", () => {
     expect(migration).toMatch(/if request_row\.license_type is null then[\s\S]*?reserve_seller_order_product_stock[\s\S]*?end if;/);
     expect(migration).toContain("request_row.license_type in ('personal', 'commercial')");
   });
+
+  it("keeps payment creation server-only and tied to the original buyer", () => {
+    expect(migration).toContain("coalesce(auth.role(), '') <> 'service_role'");
+    expect(migration).toContain("where q.id = p_request_id and q.buyer_id = p_buyer_id");
+  });
 });

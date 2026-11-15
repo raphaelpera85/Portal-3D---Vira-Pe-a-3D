@@ -1,5 +1,11 @@
 begin;
-select plan(11);
+select plan(13);
+
+select is(
+  has_function_privilege('authenticated', 'public.create_product_purchase_payment(uuid,uuid,bigint)', 'EXECUTE'),
+  false,
+  'keeps payment creation inaccessible to the browser role'
+);
 
 insert into auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -110,6 +116,15 @@ select is(
   (select count(*)::integer from public.seller_order_payment_stock_reservations),
   0,
   'does not reserve physical stock for a digital purchase'
+);
+select throws_ok(
+  $$select * from public.create_product_purchase_payment(
+    (select id from public.product_quote_requests where buyer_id = '12000000-0000-4000-8000-000000000001'
+      and product_id = '22000000-0000-4000-8000-000000000003' and request_type = 'purchase' and license_type = 'personal'),
+    '12000000-0000-4000-8000-000000000099', 249)$$,
+  '22023',
+  'Accepted product purchase not found',
+  'rejects creating the payment for a different buyer'
 );
 select is(
   (select payment_id from public.create_product_purchase_payment(
