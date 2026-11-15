@@ -7,7 +7,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { filterHomepageModelShowcase, modelShowcase } from "@/lib/model-showcase";
 import { FeaturedModelShowcase } from "@/components/model-showcase";
-import { loadPublishedCreatorModels } from "@/lib/creator-models.server";
+import { addPublishedCreatorPreviews, loadPublishedCreatorModels } from "@/lib/creator-models.server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { ...(getSiteUrl() ? { alternates: { canonical: "/" }, openGraph: { url: "/" } } : {}) };
@@ -68,7 +68,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
     page: typeof params.pagina === "string" && /^\d+$/.test(params.pagina) ? Number(params.pagina) : 1,
     sort,
   }), getUserWithRole("buyer"), getUserWithRole(["maker", "designer"]), loadRecommendedStores(), loadPublishedCreatorModels()]);
-  const modelPreviews = filterHomepageModelShowcase([...modelShowcase, ...creatorModels], typeof params.q === "string" ? params.q : "", typeof params.categoria === "string" ? params.categoria : "").slice(0, 6);
+  const modelPreviews = await addPublishedCreatorPreviews(filterHomepageModelShowcase([...modelShowcase, ...creatorModels], typeof params.q === "string" ? params.q : "", typeof params.categoria === "string" ? params.categoria : "").slice(0, 6));
   const [favoritesResult, bannersResult] = await Promise.all([
     buyer.supabase && buyer.user && buyer.authorized && catalog.products.length > 0
       ? buyer.supabase.from("buyer_product_favorites").select("product_id").eq("buyer_id", buyer.user.id).in("product_id", catalog.products.map((product) => product.id))

@@ -4,10 +4,10 @@ import { modelShowcaseCategories } from "./model-showcase";
 import { createSupabaseServerClient } from "./supabase/server";
 import { createSupabaseAdminClient } from "./supabase/admin";
 import { fetchAllPages } from "./pagination";
-import { isCreatorModelUploadPath } from "./creator-model-upload";
+import { isCreatorModelPreviewPathForId, isCreatorModelUploadPath } from "./creator-model-upload";
 
 type CreatorModelRow = {
-  id: string; name: string; category_slug: string; asset_path: string | null; tags: string[];
+  id: string; name: string; category_slug: string; asset_path: string | null; preview_path: string | null; tags: string[];
   creator_name: string; source_url: string | null; created_at: string;
 };
 
@@ -26,12 +26,31 @@ export async function loadPublishedCreatorModels(): Promise<ShowcaseModel[]> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await fetchAllPages((from, to) => supabase.from("creator_model_submissions")
-    .select("id, name, category_slug, asset_path, tags, creator_name, source_url, created_at")
+    .select("id, name, category_slug, asset_path, preview_path, tags, creator_name, source_url, created_at")
     .eq("review_status", "published").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to));
-  return error ? [] : (data ?? []).flatMap((row) => {
+  if (error) return [];
+  return (data ?? []).flatMap((row) => {
     const model = toShowcaseModel(row as CreatorModelRow);
     return model ? [model] : [];
   });
+}
+
+export async function addPublishedCreatorPreviews(models: ShowcaseModel[]): Promise<ShowcaseModel[]> {
+  const ids = models.map(({ id }) => id).filter((id) => /^[a-f0-9]{12}$/.test(id));
+  if (!ids.length) return models;
+  const supabase = await createSupabaseServerClient();
+  const admin = createSupabaseAdminClient();
+  if (!supabase || !admin) return models;
+  const { data, error } = await supabase.from("creator_model_submissions").select("id, preview_path")
+    .in("id", ids).eq("review_status", "published");
+  if (error || !data?.length) return models;
+  const paths = new Map(data.flatMap((row) => row.preview_path && isCreatorModelPreviewPathForId(row.preview_path, row.id) ? [[row.id, row.preview_path] as const] : []));
+  return Promise.all(models.map(async (model) => {
+    const previewPath = paths.get(model.id);
+    if (!previewPath) return model;
+    const { data: preview, error: previewError } = await admin.storage.from("creator-model-uploads").createSignedUrl(previewPath, 3600);
+    return previewError || !preview?.signedUrl ? model : { ...model, image: preview.signedUrl };
+  }));
 }
 
 export async function loadPublishedCreatorModel(id: string): Promise<ShowcaseModel | null> {
@@ -39,13 +58,18 @@ export async function loadPublishedCreatorModel(id: string): Promise<ShowcaseMod
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const { data, error } = await supabase.from("creator_model_submissions")
-    .select("id, name, category_slug, asset_path, tags, creator_name, source_url, created_at")
+    .select("id, name, category_slug, asset_path, preview_path, tags, creator_name, source_url, created_at")
     .eq("id", id).eq("review_status", "published").maybeSingle();
   if (error || !data) return null;
   const model = toShowcaseModel(data as CreatorModelRow);
-  if (!model || data.asset_path !== null) return model;
+  if (!model) return null;
   const admin = createSupabaseAdminClient();
   if (!admin) return model;
+  const previewImage = data.preview_path && isCreatorModelPreviewPathForId(data.preview_path, data.id)
+    ? await admin.storage.from("creator-model-uploads").createSignedUrl(data.preview_path, 3600) : null;
+  const withPreview = previewImage && !previewImage.error && previewImage.data?.signedUrl
+    ? { ...model, image: previewImage.data.signedUrl } : model;
+  if (data.asset_path !== null) return withPreview;
   const { data: upload, error: uploadError } = await admin.from("creator_model_submissions")
     .select("storage_path, file_name, submitted_by").eq("id", data.id).eq("review_status", "published").maybeSingle();
   if (uploadError || !upload?.storage_path || typeof upload.file_name !== "string"
@@ -55,7 +79,7 @@ export async function loadPublishedCreatorModel(id: string): Promise<ShowcaseMod
     admin.storage.from("creator-model-uploads").createSignedUrl(upload.storage_path, 3600, { download: upload.file_name }),
   ]);
   return {
-    ...model,
+    ...withPreview,
     ...(preview.error || !preview.data?.signedUrl ? {} : { assetUrl: preview.data.signedUrl }),
     ...(download.error || !download.data?.signedUrl ? {} : { downloadUrl: download.data.signedUrl }),
   };

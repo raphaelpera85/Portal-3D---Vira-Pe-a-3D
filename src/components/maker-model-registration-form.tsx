@@ -3,7 +3,7 @@
 import { useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { CREATOR_MODEL_MAX_UPLOAD_BYTES, normalizeCreatorModelUpload } from "@/lib/creator-model-upload";
+import { CREATOR_MODEL_MAX_PREVIEW_BYTES, CREATOR_MODEL_MAX_UPLOAD_BYTES, normalizeCreatorModelPreview, normalizeCreatorModelUpload } from "@/lib/creator-model-upload";
 import { discardCreatorModelUpload, finalizeCreatorModelUpload, prepareCreatorModelUpload, submitCreatorModel, type CreatorModelUploadPreparation } from "@/app/painel/maker/model-actions";
 import { modelShowcaseCategories } from "@/lib/model-showcase";
 
@@ -12,6 +12,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedPreview, setSelectedPreview] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const [draggingFile, setDraggingFile] = useState(false);
 
@@ -23,6 +24,17 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
       return;
     }
     setSelectedFile(file);
+    setFileError("");
+  }
+
+  function selectPreview(file: File | undefined) {
+    if (!file) return;
+    if (!normalizeCreatorModelPreview(file)) {
+      setSelectedPreview(null);
+      setFileError("Escolha uma capa PNG, JPEG ou WebP de até 5 MiB.");
+      return;
+    }
+    setSelectedPreview(file);
     setFileError("");
   }
 
@@ -43,6 +55,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
     if (pending) return;
     const form = event.currentTarget;
     const file = selectedFile;
+    const previewFile = selectedPreview;
     if (!file || !normalizeCreatorModelUpload(file)) {
       setFileError("Escolha um arquivo 3MF válido de até 50 MiB.");
       return;
@@ -51,8 +64,8 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
     setMessage("Preparando envio privado…");
     let upload: Extract<CreatorModelUploadPreparation, { success: true }>["upload"] | null = null;
     try {
-      const values = Object.fromEntries([...new FormData(form).entries()].filter(([key]) => key !== "modelFile")) as Record<string, string>;
-      const prepared = await prepareCreatorModelUpload(values, { name: file.name, size: file.size, type: file.type });
+      const values = Object.fromEntries([...new FormData(form).entries()].filter(([key]) => key !== "modelFile" && key !== "previewFile")) as Record<string, string>;
+      const prepared = await prepareCreatorModelUpload(values, { name: file.name, size: file.size, type: file.type }, previewFile ? { name: previewFile.name, size: previewFile.size, type: previewFile.type } : null);
       if (!prepared.success) { setMessage(prepared.message); return; }
       upload = prepared.upload;
       const client = createSupabaseBrowserClient();
@@ -62,6 +75,13 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
         upload.path, upload.token, file, { contentType: "application/octet-stream" },
       );
       if (error) throw new Error("upload");
+      if (previewFile && !upload.preview) throw new Error("preview_upload");
+      if (previewFile && upload.preview) {
+        const { error: previewError } = await client.storage.from("creator-model-uploads").uploadToSignedUrl(
+          upload.preview.path, upload.preview.token, previewFile, { contentType: upload.preview.contentType },
+        );
+        if (previewError) throw new Error("preview_upload");
+      }
       const result = await finalizeCreatorModelUpload(upload.id);
       if (!result.success) {
         await discardCreatorModelUpload(upload.id);
@@ -70,6 +90,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
       }
       form.reset();
       setSelectedFile(null);
+      setSelectedPreview(null);
       setMessage(result.message);
       router.refresh();
     } catch {
@@ -93,6 +114,8 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
             <small>{draggingFile ? "Solte o arquivo para selecioná-lo" : `Arraste um 3MF até aqui ou escolha no dispositivo · máximo ${Math.round(CREATOR_MODEL_MAX_UPLOAD_BYTES / 1024 / 1024)} MiB`}</small>
           </label>
           {selectedFile && <div className="creator-model-file-selection"><span>{selectedFile.name} · {(selectedFile.size / (1024 * 1024)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MiB</span><button className="button button-secondary" type="button" disabled={pending} onClick={() => setSelectedFile(null)}>Remover arquivo</button></div>}
+          <label className="creator-model-preview-file">Capa do modelo (opcional)<input type="file" accept="image/png,image/jpeg,image/webp" disabled={pending} onChange={(event) => { selectPreview(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} /><small>PNG, JPEG ou WebP · até {Math.round(CREATOR_MODEL_MAX_PREVIEW_BYTES / 1024 / 1024)} MiB. A imagem fica privada até a aprovação.</small></label>
+          {selectedPreview && <div className="creator-model-file-selection"><span>{selectedPreview.name} · {(selectedPreview.size / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} KB</span><button className="button button-secondary" type="button" disabled={pending} onClick={() => setSelectedPreview(null)}>Remover capa</button></div>}
           {fileError && <p className="auth-notice is-error" role="alert">{fileError}</p>}
           <small>O arquivo fica privado enquanto aguarda revisão.</small>
         </div>

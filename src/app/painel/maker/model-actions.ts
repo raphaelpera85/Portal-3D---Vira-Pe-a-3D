@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUnregisteredGitModelAssets } from "@/lib/creator-model-assets";
 import { validateCreatorModelDetails, validateCreatorModelSubmission } from "@/lib/creator-model-input";
-import { isCreatorModelUploadPath, normalizeCreatorModelUpload } from "@/lib/creator-model-upload";
+import { isCreatorModelPreviewPath, isCreatorModelUploadPath, normalizeCreatorModelPreview, normalizeCreatorModelUpload } from "@/lib/creator-model-upload";
 import { modelShowcase } from "@/lib/model-showcase";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -13,7 +13,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 const creatorModelBucket = "creator-model-uploads";
 
 export type CreatorModelUploadResult = { success: true; message: string } | { success: false; message: string };
-export type CreatorModelUploadPreparation = { success: true; upload: { id: string; path: string; name: string; size: number; token: string } } | { success: false; message: string };
+export type CreatorModelUploadPreparation = { success: true; upload: { id: string; path: string; name: string; size: number; token: string; preview: { path: string; token: string; contentType: string } | null } } | { success: false; message: string };
 
 async function getCreatorModelSubmissionActor() {
   const actor = await getUserWithRole("maker");
@@ -23,30 +23,37 @@ async function getCreatorModelSubmissionActor() {
   return store?.status === "published" ? { actor, store } : null;
 }
 
-export async function prepareCreatorModelUpload(values: Record<string, string>, rawFile: { name: string; size: number; type?: string }): Promise<CreatorModelUploadPreparation> {
+export async function prepareCreatorModelUpload(values: Record<string, string>, rawFile: { name: string; size: number; type?: string }, rawPreviewFile: { name: string; size: number; type?: string } | null = null): Promise<CreatorModelUploadPreparation> {
   if (!values || typeof values !== "object" || Array.isArray(values)) return { success: false, message: "Confira os dados e selecione um arquivo 3MF válido de até 50 MiB." };
   const details = validateCreatorModelDetails({ ...values, rightsConfirmed: values.rightsConfirmed === "true" ? "on" : values.rightsConfirmed });
   const file = normalizeCreatorModelUpload(rawFile);
-  if (!details || !file) return { success: false, message: "Confira os dados e selecione um arquivo 3MF válido de até 50 MiB." };
+  const preview = rawPreviewFile ? normalizeCreatorModelPreview(rawPreviewFile) : null;
+  if (!details || !file || (rawPreviewFile && !preview)) return { success: false, message: "Confira os dados, o arquivo 3MF e a capa opcional." };
   const authorized = await getCreatorModelSubmissionActor();
   const admin = createSupabaseAdminClient();
   if (!authorized || !admin) return { success: false, message: "Entre em uma conta de vendedor com loja publicada para enviar modelos." };
 
   const id = randomBytes(6).toString("hex");
   const path = `${authorized.actor.user!.id}/${id}.3mf`;
+  const previewPath = preview ? `${authorized.actor.user!.id}/${id}-preview.${preview.extension}` : null;
   const { error: insertError } = await admin.from("creator_model_submissions").insert({
     id, store_id: authorized.store.id, submitted_by: authorized.actor.user!.id, ...details,
     asset_path: null, storage_path: path, file_name: file.name, file_size_bytes: file.size,
+    preview_path: previewPath, preview_size_bytes: preview?.size ?? null, preview_content_type: preview?.contentType ?? null,
     rights_confirmed_at: new Date().toISOString(), review_status: "uploading",
   });
   if (insertError) return { success: false, message: insertError.code === "23505" ? "Este arquivo já foi enviado." : "Não foi possível preparar o cadastro do modelo." };
 
-  const { data, error } = await admin.storage.from(creatorModelBucket).createSignedUploadUrl(path, { upsert: false });
-  if (error || !data?.token) {
+  const [{ data, error }, previewUpload] = await Promise.all([
+    admin.storage.from(creatorModelBucket).createSignedUploadUrl(path, { upsert: false }),
+    previewPath ? admin.storage.from(creatorModelBucket).createSignedUploadUrl(previewPath, { upsert: false }) : Promise.resolve({ data: null, error: null }),
+  ]);
+  if (error || !data?.token || (previewPath && (previewUpload.error || !previewUpload.data?.token))) {
     await admin.from("creator_model_submissions").delete().eq("id", id).eq("submitted_by", authorized.actor.user!.id);
     return { success: false, message: "Não foi possível preparar o envio privado do arquivo." };
   }
-  return { success: true, upload: { id, path, name: file.name, size: file.size, token: data.token } };
+  return { success: true, upload: { id, path, name: file.name, size: file.size, token: data.token,
+    preview: previewPath && preview && previewUpload.data?.token ? { path: previewPath, token: previewUpload.data.token, contentType: preview.contentType } : null } };
 }
 
 export async function finalizeCreatorModelUpload(id: string): Promise<CreatorModelUploadResult> {
@@ -55,14 +62,20 @@ export async function finalizeCreatorModelUpload(id: string): Promise<CreatorMod
   const admin = createSupabaseAdminClient();
   if (!authorized || !admin) return { success: false, message: "Sua loja não está autorizada a concluir este envio." };
   const { data: row, error: rowError } = await admin.from("creator_model_submissions")
-    .select("storage_path, file_name, file_size_bytes, review_status").eq("id", id)
+    .select("storage_path, file_name, file_size_bytes, review_status, preview_path, preview_size_bytes, preview_content_type, submitted_by").eq("id", id)
     .eq("submitted_by", authorized.actor.user!.id).maybeSingle();
   if (rowError || !row || row.review_status !== "uploading" || !row.storage_path
     || !isCreatorModelUploadPath(authorized.actor.user!.id, row.storage_path, id)) {
     return { success: false, message: "Este envio não está disponível para finalizar." };
   }
-  const { data: info, error: infoError } = await admin.storage.from(creatorModelBucket).info(row.storage_path);
-  if (infoError || !info || Number(info.size) !== Number(row.file_size_bytes)) {
+  const [modelInfo, previewInfo] = await Promise.all([
+    admin.storage.from(creatorModelBucket).info(row.storage_path),
+    row.preview_path && isCreatorModelPreviewPath(authorized.actor.user!.id, row.preview_path, id)
+      ? admin.storage.from(creatorModelBucket).info(row.preview_path) : Promise.resolve(null),
+  ]);
+  if (modelInfo.error || !modelInfo.data || Number(modelInfo.data.size) !== Number(row.file_size_bytes)
+    || (row.preview_path && (!previewInfo || previewInfo.error || !previewInfo.data || Number(previewInfo.data.size) !== Number(row.preview_size_bytes)))
+    || (!row.preview_path && (row.preview_size_bytes != null || row.preview_content_type != null))) {
     return { success: false, message: "O arquivo não chegou completo ao armazenamento. Tente enviá-lo novamente." };
   }
   const { data, error } = await admin.from("creator_model_submissions").update({ review_status: "pending" })
@@ -78,10 +91,11 @@ export async function discardCreatorModelUpload(id: string) {
   const actor = await getUserWithRole("maker");
   const admin = createSupabaseAdminClient();
   if (!actor.supabase || !actor.user || !actor.authorized || !admin) return;
-  const { data: row } = await admin.from("creator_model_submissions").select("storage_path, review_status")
+  const { data: row } = await admin.from("creator_model_submissions").select("storage_path, preview_path, review_status")
     .eq("id", id).eq("submitted_by", actor.user.id).maybeSingle();
-  if (!row || row.review_status !== "uploading" || !row.storage_path || !isCreatorModelUploadPath(actor.user.id, row.storage_path, id)) return;
-  const { error } = await admin.storage.from(creatorModelBucket).remove([row.storage_path]);
+  if (!row || row.review_status !== "uploading" || !row.storage_path || !isCreatorModelUploadPath(actor.user.id, row.storage_path, id)
+    || (row.preview_path && !isCreatorModelPreviewPath(actor.user.id, row.preview_path, id))) return;
+  const { error } = await admin.storage.from(creatorModelBucket).remove([row.storage_path, ...(row.preview_path ? [row.preview_path] : [])]);
   if (error) return;
   await admin.from("creator_model_submissions").delete().eq("id", id).eq("submitted_by", actor.user.id).eq("review_status", "uploading");
 }
