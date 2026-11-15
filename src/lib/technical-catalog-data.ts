@@ -7,6 +7,9 @@ export function getBuildVolumeModes(properties: Record<string, unknown>): BuildV
   const namedModes: Record<string, string> = {
     "fixed toolhead or right-side toolhead switching": "Ferramenta fixa ou troca lateral",
     "seven-toolhead printing": "Sete ferramentas",
+    "artisan-left-nozzle": "Bico esquerdo",
+    "artisan-right-nozzle": "Bico direito",
+    "artisan-dual-nozzle": "Dois bicos",
     copy: "Cópia (2 peças)",
     mirror: "Espelho (2 peças)",
   };

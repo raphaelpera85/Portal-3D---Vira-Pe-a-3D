@@ -24,6 +24,17 @@ describe("mapTechnicalCatalog", () => {
     expect(snapmaker?.extruders).toBeNull();
   });
 
+  it("keeps the Snapmaker Artisan build area tied to its active nozzle mode", () => {
+    const artisan = printers.find((printer) => printer.id === "snapmaker-artisan")!;
+
+    expect(artisan.buildVolumeMm).toBeNull();
+    expect(getBuildVolumeModes(artisan.technicalProperties ?? {})).toEqual([
+      { id: "artisan-left-nozzle", label: "Bico esquerdo", dimensionsMm: { x: 375, y: 400, z: 400 } },
+      { id: "artisan-right-nozzle", label: "Bico direito", dimensionsMm: { x: 400, y: 400, z: 400 } },
+      { id: "artisan-dual-nozzle", label: "Dois bicos", dimensionsMm: { x: 350, y: 400, z: 400 } },
+    ]);
+  });
+
   it("keeps published resin entries and exact exposure data in the local fallback", () => {
     const standard = materials.find((material) => material.id === "anycubic-standard-resin-v2");
     const waterWash = materials.find((material) => material.id === "anycubic-water-wash-resin-2-0");
