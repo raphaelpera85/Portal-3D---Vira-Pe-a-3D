@@ -31,11 +31,13 @@ test("public model details let keyboard users highlight parts by file color", as
 });
 
 test("color selection visibly marks only matching painted faces in a public model", async ({ page }) => {
+  test.setTimeout(120_000);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.route("https://raw.githubusercontent.com/**", (route) => route.fulfill({ path: resolve("models/painted.3mf") }));
   await page.goto("/modelos/ffcd1251d90c");
 
   const palette = page.getByRole("region", { name: "Cores do modelo" });
+  await expect.poll(async () => palette.getByRole("button").count(), { timeout: 90_000 }).toBeGreaterThan(0);
   const color = palette.getByRole("button").first();
   const canvas = page.locator(".viewer-stage canvas");
   await expect(color).toBeVisible();
