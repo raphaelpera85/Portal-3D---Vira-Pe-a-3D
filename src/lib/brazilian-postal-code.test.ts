@@ -13,7 +13,7 @@ describe("lookupBrazilianPostalCode", () => {
     await expect(lookupBrazilianPostalCode("01001-000")).resolves.toEqual({
       street: "Praça da Sé", district: "Sé", city: "São Paulo", stateCode: "SP",
     });
-    expect(fetchMock).toHaveBeenCalledWith("https://viacep.com.br/ws/01001000/json/");
+    expect(fetchMock).toHaveBeenCalledWith("https://viacep.com.br/ws/01001000/json/", { signal: expect.any(AbortSignal) });
   });
 
   it("does not query for an invalid CEP", async () => {

@@ -9,7 +9,7 @@ export async function lookupBrazilianPostalCode(postalCode: string): Promise<Bra
   const digits = postalCode.replace(/\D/g, "");
   if (!/^\d{8}$/.test(digits)) return null;
 
-  const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+  const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`, { signal: AbortSignal.timeout(8_000) });
   if (!response.ok) throw new Error("postal code lookup failed");
 
   const data: unknown = await response.json();
