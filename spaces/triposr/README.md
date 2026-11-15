@@ -19,7 +19,7 @@ Space público do piloto: [raphaelpera85/virapeca-triposr](https://huggingface.c
 
 1. Crie um Space público com SDK **Gradio** na sua conta Hugging Face e selecione o hardware **ZeroGPU**.
 2. Crie um token Hugging Face com permissão de escrita somente nesse Space e salve-o como segredo `HF_TOKEN` em **GitHub → repositório → Settings → Secrets and variables → Actions**. O token não deve ser salvo em arquivo nem como variável pública.
-3. No GitHub, abra **Actions → Publish TripoSR Space → Run workflow** para publicar `spaces/triposr/` no Space. Sem o segredo `HF_TOKEN`, o workflow informa que a publicação foi ignorada.
+3. No GitHub, abra **Actions → Publish TripoSR Space → Run workflow** para publicar `spaces/triposr/` no Space. Se `HF_TOKEN` estiver ausente, o workflow falha explicitamente e não publica.
 4. Aguarde o Space ficar `Running` e defina o identificador `conta/nome-do-space` em `TRIPOSR_SPACE_ID` no `.env.local` e no ambiente Production da Vercel. Não é necessário token HF no portal.
 
 Para hospedar ZeroGPU em conta pessoal gratuita, a Hugging Face exige conta em situação regular, e-mail verificado e mais de 30 dias de existência; a conta pode hospedar até dois Spaces ZeroGPU. O portal chama o Space sem autenticação Hugging Face: a documentação informa atualmente uma cota de 2 minutos de GPU por dia para chamadas sem autenticação. A cota reinicia 24 horas após o primeiro uso; fila, disponibilidade e limites podem mudar. Consulte [Spaces ZeroGPU](https://huggingface.co/docs/hub/spaces-zerogpu).

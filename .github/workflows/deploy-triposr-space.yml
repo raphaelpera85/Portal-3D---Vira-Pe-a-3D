@@ -18,8 +18,8 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
-            echo "::notice::Set the HF_TOKEN repository secret to publish the TripoSR Space."
-            exit 0
+            echo "::error::Set the HF_TOKEN repository secret to publish the TripoSR Space."
+            exit 1
           fi
           python - <<'PY'
           import os
