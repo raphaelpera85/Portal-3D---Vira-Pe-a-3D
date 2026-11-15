@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 
 const mocks = vi.hoisted(() => ({
   getUserWithRole: vi.fn(),
@@ -19,6 +20,16 @@ function request(consent?: string) {
   if (consent) form.set("consent", consent);
   return new Request("https://virapeca3d.example/api/ocr/slicer", { method: "POST", body: form });
 }
+
+function requestWithScreenshotFixture() {
+  const screenshot = readFileSync(new URL("../../../../lib/fixtures/anycubic-slicer-next-filament-panel.png", import.meta.url));
+  const form = new FormData();
+  form.set("images", new File([new Uint8Array(screenshot)], "anycubic-panel.png", { type: "image/png" }));
+  form.set("consent", "yes");
+  return { request: new Request("https://virapeca3d.example/api/ocr/slicer", { method: "POST", body: form }), screenshot };
+}
+
+const anycubicOcrText = readFileSync(new URL("../../../../lib/fixtures/anycubic-slicer-next-filament-panel.txt", import.meta.url), "utf8");
 
 function requestWithImageCount(count: number) {
   const form = new FormData();
@@ -74,5 +85,25 @@ describe("slicer OCR upload limit", () => {
       { content: pngSignature, mimeType: "image/png" },
     ], "test-key");
     expect((await response.json()).extraction).toMatchObject({ slicer: "Anycubic Slicer Next", modelGrams: 211.63, supportGrams: 12.17 });
+  });
+
+  it("accepts the real Anycubic screenshot fixture and parses its OCR response", async () => {
+    mocks.recognizeSlicerImages.mockResolvedValue([anycubicOcrText]);
+    const { request: screenshotRequest, screenshot } = requestWithScreenshotFixture();
+
+    const response = await POST(screenshotRequest);
+    const result = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocks.recognizeSlicerImages).toHaveBeenCalledWith([
+      { content: expect.any(Uint8Array), mimeType: "image/png" },
+    ], "test-key");
+    expect(mocks.recognizeSlicerImages.mock.calls[0][0][0].content).toEqual(new Uint8Array(screenshot));
+    expect(result.extraction).toMatchObject({
+      slicer: "Anycubic Slicer Next", totalGrams: 359.88, modelGrams: 61.36, supportGrams: 40.35,
+      purgeGrams: 216.33, wipeTowerGrams: 41.84, lengthMeters: 121.64, printHours: 21 + 54 / 60,
+      filamentChanges: 1018,
+    });
+    expect(result.extraction.filaments).toContainEqual(expect.objectContaining({ index: 5, grams: 42.82, lengthMeters: 14.47 }));
   });
 });
