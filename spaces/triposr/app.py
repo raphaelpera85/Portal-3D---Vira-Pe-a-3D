@@ -3,10 +3,10 @@ import subprocess
 import sys
 import tempfile
 
+import spaces
 import gradio as gr
 import numpy as np
 import rembg
-import spaces
 import torch
 from PIL import Image
 from PIL import UnidentifiedImageError
@@ -31,7 +31,7 @@ subprocess.run(
 from tsr.system import TSR
 from tsr.utils import remove_background, resize_foreground
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 model = TSR.from_pretrained("stabilityai/TripoSR", config_name="config.yaml", weight_name="model.ckpt")
 model.renderer.set_chunk_size(131072)
 model.to(device)
