@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- src public models package.json package-lock.json postcss.config.mjs tsconfig.json vercel.json .gitignore scripts ':(exclude)src/**/*.test.*' ':(exclude)src/**/*.spec.*' ':(exclude)src/**/__tests__/**' ':(exclude)src/**/fixtures/**'",
+  "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
   "crons": [
     {
       "path": "/api/notifications/dispatch",
