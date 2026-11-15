@@ -315,6 +315,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
     setMessage("Preparando a visualização…");
     setModelColors([]);
     setUseMulticolor(false);
+    setFileKind(null);
     setSlicePlates([]);
     onSlicePlatesChange?.([]);
     resourceUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -672,6 +673,10 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
             <div className="inspector-section-head"><h2>Cores do arquivo</h2><span className="component-count">{modelColors.length}</span></div>
             <ul>{modelColors.map((color) => <li key={color}><button type="button" className={`viewer-readonly-color${selectedColor === color ? " is-selected" : ""}`} aria-label={`Destacar componentes da cor #${color}`} aria-pressed={selectedColor === color} onClick={() => setSelectedColor(selectedColor === color ? null : color)}><i style={{ backgroundColor: `#${color}` }} aria-hidden="true" /><span>#{color.toUpperCase()}</span></button></li>)}</ul>
             {selectedColor && <p className="viewer-color-feedback" role="status">{getModelColorMatchedComponentIds(components, selectedColor).length > 0 ? `Componentes da cor #${selectedColor} destacados. Selecione novamente para limpar.` : `#${selectedColor} consta no arquivo, mas não está associada a um componente visível.`}</p>}
+          </section>}
+          {!busy && fileKind === "3mf" && slicePlates.length === 0 && <section className="slice-info-panel" aria-label="Dados de fatiamento">
+            <h2>Sem dados de fatiamento</h2>
+            <p>Este arquivo não registra consumo ou tempo. Fatie e salve o projeto no fatiador para incluir esses dados, quando o programa os gravar no 3MF.</p>
           </section>}
           {slicePlates.length > 0 && <section className="slice-info-panel" aria-label="Resultados registrados pelo fatiador">
             <h2>Consumo registrado pelo fatiador</h2>
