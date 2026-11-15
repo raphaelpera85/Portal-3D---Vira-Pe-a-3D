@@ -176,12 +176,12 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
     [...(consignmentMovementsByItem.get(movement.item_id) ?? []), movement]);
   const products = productResult.data ?? [];
   const creatorModelsResult = store ? await actor.supabase.from("creator_model_submissions")
-    .select("id, name, asset_path, review_status, review_note, created_at").eq("submitted_by", actor.user.id)
+    .select("id, name, asset_path, file_name, review_status, review_note, created_at").eq("submitted_by", actor.user.id)
     .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(50) : { data: [], error: null };
   const staticModelAssets = modelShowcase.flatMap((model) => [model.filePath, ...(model.downloads ?? []).map(({ filePath }) => filePath)]);
   const availableModelAssets = getUnregisteredGitModelAssets([
     ...staticModelAssets,
-    ...(creatorModelsResult.data ?? []).map((model) => model.asset_path),
+    ...(creatorModelsResult.data ?? []).flatMap((model) => model.asset_path ? [model.asset_path] : []),
   ]);
   const unreadQuotes = quoteResult.data?.filter((request) => !request.maker_read_at) ?? [];
   const unreadCustomPrints = customPrintTargets.filter((target) => !target.maker_read_at);
@@ -294,7 +294,7 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
             {creatorModelsResult.error ? <p className="auth-notice is-error" role="alert">O cadastro de modelos depende da migração do catálogo comunitário.</p> : <>
               {store.status === "published" && <MakerModelRegistrationForm availableAssets={availableModelAssets} />}
               {store.status !== "published" && <p className="account-next-step">O cadastro de modelos ficará disponível quando sua loja for publicada.</p>}
-              {creatorModelsResult.data?.length ? <section className="account-card maker-products-card"><span className="account-kicker">SEUS MODELOS</span><h2>Modelos enviados</h2><ul className="maker-product-list">{creatorModelsResult.data.map((model) => <li key={model.id}><div><strong>{model.name}</strong><span>{model.review_status === "pending" ? "Aguardando revisão" : model.review_status === "published" ? "Publicado no catálogo" : model.review_status === "rejected" ? "Não aprovado" : "Arquivado"} · {model.asset_path}</span>{model.review_note && <span>Retorno: {model.review_note}</span>}</div></li>)}</ul></section> : null}
+              {creatorModelsResult.data?.length ? <section className="account-card maker-products-card"><span className="account-kicker">SEUS MODELOS</span><h2>Modelos enviados</h2><ul className="maker-product-list">{creatorModelsResult.data.map((model) => <li key={model.id}><div><strong>{model.name}</strong><span>{model.review_status === "uploading" ? "Envio em andamento" : model.review_status === "pending" ? "Aguardando revisão" : model.review_status === "published" ? "Publicado no catálogo" : model.review_status === "rejected" ? "Não aprovado" : "Arquivado"} · {model.asset_path ?? model.file_name}</span>{model.review_note && <span>Retorno: {model.review_note}</span>}</div></li>)}</ul></section> : null}
             </>}
             {productResult.error && <p className="auth-notice is-error" role="alert">Não foi possível carregar os anúncios.</p>}
             <section className="account-card maker-products-card" id="produtos"><span className="account-kicker">SEUS ANÚNCIOS</span><h2>Produtos cadastrados</h2>

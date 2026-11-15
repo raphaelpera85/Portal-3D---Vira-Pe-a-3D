@@ -1,6 +1,6 @@
 # Banco de dados inicial
 
-Estado verificado em 14/11/2026: 205 registros de migrations estão aplicados ao Supabase `drblsfcahfniwusfblfw`; todos os 204 arquivos SQL locais correspondem a migrations aplicadas. Os apontamentos de pendência em notas históricas abaixo foram superados. Novas migrations ainda precisam ser aplicadas separadamente do deploy Vercel.
+Estado verificado em 14/11/2026: 207 registros de migrations estão aplicados ao Supabase `drblsfcahfniwusfblfw`; todos os 206 arquivos SQL locais correspondem a migrations aplicadas. Os apontamentos de pendência em notas históricas abaixo foram superados. Novas migrations ainda precisam ser aplicadas separadamente do deploy Vercel.
 
 A migração `supabase/migrations/20261112035854_foundation.sql` cria `profiles` e `user_roles` vinculados a `auth.users`.
 
@@ -77,6 +77,8 @@ Perfis de impressão por modelo são criados por `20261112200519_model_print_pro
 O histórico de manutenção de impressoras aceita substituição de componentes como tipo próprio desde `20261113170000_printer_component_replacement_type.sql`; custos e próximos prazos por data/horímetro continuam informados pelo fabricante, sem apresentar intervalos presumidos como recomendação oficial.
 
 Endereços de compradores estão em `supabase/migrations/20261112040116_buyer_addresses.sql`. RLS permite leitura somente pelo próprio comprador; inclusões, edições, troca do principal e exclusões usam funções transacionais que validam o papel, mantêm no máximo um endereço principal por conta e promovem outro endereço quando o principal é removido. O comprador escolhe um endereço salvo ao fechar o carrinho. A migração 019 grava uma cópia dos dados de entrega em cada pedido por loja; comprador e fabricante daquele pedido podem consultar a cópia, que não muda quando o endereço da conta é editado. O endereço é validado novamente no banco contra o comprador autenticado.
+
+Envios de novos modelos comunitários usam `supabase/migrations/20261117100000_creator_model_file_uploads.sql`. O bucket `creator-model-uploads` é privado e limita cada 3MF a 50 MiB. Uma linha de staging é criada no servidor antes de gerar o token de envio assinado; somente depois de conferir o tamanho real do objeto o sistema o coloca na fila de revisão. Arquivos continuam privados até a publicação, quando páginas de modelo emitem links assinados de uma hora. A rotina cron diária remove até 100 envios incompletos com mais de 26 horas e mantém o staging se a exclusão do objeto falhar.
 
 Banners da página inicial estão em `supabase/migrations/20261112040123_homepage_banners.sql`. Visitantes leem apenas banners ativos; administradores gerenciam conteúdo, ordem e publicação em `/admin/banners`. O formulário exige destino local, URL de imagem HTTPS e texto alternativo quando houver imagem. A homepage exibe os seis primeiros banners ativos pela ordem definida; os demais podem ficar em fila e ser pausados no painel.
 

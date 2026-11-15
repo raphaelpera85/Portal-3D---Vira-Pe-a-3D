@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateCreatorModelSubmission } from "./creator-model-input";
+import { validateCreatorModelDetails, validateCreatorModelSubmission } from "./creator-model-input";
 
 const valid = {
   name: "Dragão articulado",
@@ -12,6 +12,14 @@ const valid = {
 };
 
 describe("validateCreatorModelSubmission", () => {
+  it("validates upload metadata without requiring a Git asset path", () => {
+    expect(validateCreatorModelDetails(valid)).toEqual({
+      name: "Dragão articulado", categorySlug: "infantil", tags: ["dragão", "articulado", "brinquedo"],
+      creatorName: "Raphael", sourceUrl: valid.sourceUrl,
+    });
+    expect(validateCreatorModelDetails({ ...valid, rightsConfirmed: "" })).toBeNull();
+  });
+
   it("normalizes a valid submission against available Git assets", () => {
     expect(validateCreatorModelSubmission(valid, [valid.assetPath])).toEqual({
       name: "Dragão articulado", categorySlug: "infantil", assetPath: valid.assetPath,

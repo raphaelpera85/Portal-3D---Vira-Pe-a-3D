@@ -5,6 +5,8 @@ import { SiteHeader } from "@/components/site-header";
 import { reviewCreatorModel } from "./actions";
 import { getUserWithRole } from "@/lib/auth-role.server";
 import { getModelAssetUrl, modelShowcaseCategories } from "@/lib/model-showcase";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isCreatorModelUploadPath } from "@/lib/creator-model-upload";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Revisão de modelos | Administração | ViraPeça 3D", robots: { index: false, follow: false } };
@@ -14,8 +16,15 @@ export default async function AdminCreatorModelsPage({ searchParams }: { searchP
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
   const { resultado } = await searchParams;
   const { data, error } = await actor.supabase.from("creator_model_submissions")
-    .select("id, name, category_slug, asset_path, tags, creator_name, source_url, created_at, store:stores!inner(name, slug)")
+    .select("id, name, category_slug, asset_path, storage_path, file_name, submitted_by, tags, creator_name, source_url, created_at, store:stores!inner(name, slug)")
     .eq("review_status", "pending").order("created_at", { ascending: true }).order("id", { ascending: true }).limit(100);
+  const admin = createSupabaseAdminClient();
+  const reviewRows = await Promise.all((data ?? []).map(async (row) => {
+    const gitUrl = row.asset_path ? getModelAssetUrl(row.asset_path) : null;
+    if (gitUrl || !admin || !row.storage_path || !isCreatorModelUploadPath(row.submitted_by, row.storage_path, row.id)) return { row, assetUrl: gitUrl };
+    const result = await admin.storage.from("creator-model-uploads").createSignedUrl(row.storage_path, 600);
+    return { row, assetUrl: result.error ? null : result.data?.signedUrl ?? null };
+  }));
   return <><SiteHeader /><main id="main-content" tabIndex={-1} className="admin-dashboard shell">
     <Link className="viewer-back-link" href="/admin">← Painel administrativo</Link>
     <div className="account-heading maker-dashboard-heading"><p className="eyebrow">MODERAÇÃO DO CATÁLOGO</p><h1>Modelos 3D enviados</h1><p>Confira o arquivo e os dados de autoria antes de publicar.</p></div>
@@ -23,12 +32,11 @@ export default async function AdminCreatorModelsPage({ searchParams }: { searchP
     {resultado === "rejeitado" && <p className="auth-notice is-success" role="status">Envio rejeitado.</p>}
     {resultado === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível revisar esse envio. Talvez ele já tenha sido analisado.</p>}
     {error ? <p className="auth-notice is-error" role="alert">Fila indisponível. Confira se a migração do catálogo comunitário foi aplicada.</p> : !data?.length ? <section className="account-card"><h2>Nenhum envio pendente</h2><p>Novos modelos enviados por vendedores aparecerão aqui.</p></section> : <div className="admin-model-review-list">
-      {data.map((row) => {
+      {reviewRows.map(({ row, assetUrl }) => {
         const store = Array.isArray(row.store) ? row.store[0] : row.store;
         const category = modelShowcaseCategories.find(({ slug }) => slug === row.category_slug)?.name ?? row.category_slug;
-        const assetUrl = getModelAssetUrl(row.asset_path);
         return <article className="account-card admin-model-review-card" key={row.id}>
-          <div><span className="account-kicker">{category} · {store?.name ?? "Loja"}</span><h2>{row.name}</h2><p>Criador informado: {row.creator_name} · arquivo: <code>{row.asset_path}</code></p>
+          <div><span className="account-kicker">{category} · {store?.name ?? "Loja"}</span><h2>{row.name}</h2><p>Criador informado: {row.creator_name} · arquivo: <code>{row.asset_path ?? row.file_name}</code></p>
             <ul className="product-tags">{(row.tags as string[]).map((tag: string) => <li key={tag}>{tag}</li>)}</ul>
             {row.source_url && <p><a href={row.source_url} target="_blank" rel="noreferrer">Abrir fonte informada ↗</a></p>}
             {assetUrl && <p><a href={assetUrl} target="_blank" rel="noreferrer">Conferir 3MF ↗</a></p>}

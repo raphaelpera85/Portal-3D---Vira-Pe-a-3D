@@ -8,13 +8,13 @@ export type CreatorModelSubmissionInput = {
   creatorName: string;
   sourceUrl: string | null;
 };
+export type CreatorModelDetailsInput = Omit<CreatorModelSubmissionInput, "assetPath">;
 
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
 
-export function validateCreatorModelSubmission(values: Record<string, unknown>, availableAssets: string[]): CreatorModelSubmissionInput | null {
+export function validateCreatorModelDetails(values: Record<string, unknown>): CreatorModelDetailsInput | null {
   const name = text(values.name);
   const categorySlug = text(values.categorySlug);
-  const assetPath = text(values.assetPath);
   const tags = text(values.tags).split(",").map((tag) => tag.trim()).filter(Boolean);
   const creatorName = text(values.creatorName);
   const rawSourceUrl = text(values.sourceUrl);
@@ -30,9 +30,15 @@ export function validateCreatorModelSubmission(values: Record<string, unknown>, 
   }
   const normalizedTags = tags.map((tag) => tag.toLocaleLowerCase("pt-BR"));
   if (name.length < 2 || name.length > 120 || !modelShowcaseCategories.some((item) => item.slug === categorySlug)
-    || !availableAssets.includes(assetPath) || creatorName.length < 2 || creatorName.length > 100
+    || creatorName.length < 2 || creatorName.length > 100
     || values.rightsConfirmed !== "on" || tags.length < 1 || tags.length > 12
     || tags.some((tag) => tag.length > 32 || /[\u0000-\u001f\u007f]/.test(tag))
     || new Set(normalizedTags).size !== normalizedTags.length) return null;
-  return { name, categorySlug, assetPath, tags, creatorName, sourceUrl };
+  return { name, categorySlug, tags, creatorName, sourceUrl };
+}
+
+export function validateCreatorModelSubmission(values: Record<string, unknown>, availableAssets: string[]): CreatorModelSubmissionInput | null {
+  const details = validateCreatorModelDetails(values);
+  const assetPath = text(values.assetPath);
+  return details && availableAssets.includes(assetPath) ? { ...details, assetPath } : null;
 }

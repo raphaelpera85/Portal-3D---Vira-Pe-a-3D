@@ -48,8 +48,8 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
   const model = getShowcaseModel(id) ?? await loadPublishedCreatorModel(id);
   if (!model) notFound();
   if (model.id !== id) redirect(`/modelos/${encodeURIComponent(model.id)}`);
-  const previewUrl = getModelAssetUrl(model.filePath);
-  const downloadUrl = previewUrl;
+  const previewUrl = model.assetUrl ?? getModelAssetUrl(model.filePath);
+  const downloadUrl = model.downloadUrl ?? previewUrl;
   const downloadVariants = (model.downloads ?? []).flatMap(({ label, filePath }) => {
     const url = getModelAssetUrl(filePath);
     return url ? [{ label, filePath, url }] : [];

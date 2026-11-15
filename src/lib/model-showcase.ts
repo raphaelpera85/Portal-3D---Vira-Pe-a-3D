@@ -1,6 +1,6 @@
 import models from "./model-showcase-data.json";
 
-export type ShowcaseModel = { id: string; name: string; category: string; categorySlug: string; image: string; filePath: string; tags: string[]; creatorName?: string; sourceUrl?: string; downloads?: { label: string; filePath: string }[] };
+export type ShowcaseModel = { id: string; name: string; category: string; categorySlug: string; image: string; filePath: string; assetUrl?: string; downloadUrl?: string; tags: string[]; creatorName?: string; sourceUrl?: string; downloads?: { label: string; filePath: string }[] };
 export const modelShowcase = models as ShowcaseModel[];
 const modelAliases: Record<string, string> = {
   "ed02512a7e12": "803903c6b264", "842b11790cac": "254940e7f223", "ffcd1251d90c": "5e61567440ea",

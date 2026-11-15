@@ -1,6 +1,6 @@
 # Arquitetura atual
 
-Estado de schema verificado em 14/11/2026 no Supabase `drblsfcahfniwusfblfw`: 205 registros de migrations aplicadas; os 204 arquivos SQL atualmente no repositório correspondem a migrations aplicadas. Publicar código pelo Git/Vercel não aplica migrations novas. Anotações de versões anteriores abaixo são históricas quando divergem deste estado. A validação sandbox de pagamentos e das integrações externas continua pendente.
+Estado de schema verificado em 14/11/2026 no Supabase `drblsfcahfniwusfblfw`: 207 registros de migrations aplicadas; os 206 arquivos SQL atualmente no repositório correspondem a migrations aplicadas. Publicar código pelo Git/Vercel não aplica migrations novas. Anotações de versões anteriores abaixo são históricas quando divergem deste estado. A validação sandbox de pagamentos e das integrações externas continua pendente.
 
 ## Direção
 
@@ -32,6 +32,7 @@ flowchart LR
 
 - Homepage pública com busca, categorias, paginação e ordenação por novidades ou unidades de produtos pagas, páginas de produto e metadados para indexação.
 - A galeria `/modelos` organiza prévias de 108 arquivos 3MF em 89 páginas agrupadas, em sete categorias; busca por texto, tags e imagem. Variantes com a mesma prévia aparecem numa só página, onde cada arquivo pode ser visualizado no 3D e baixado; URLs antigas redirecionam para a página agrupada. Os originais ficam no repositório público e ainda não foram vinculados a uma loja aprovada para venda.
+- Vendedores com loja publicada podem enviar arquivos 3MF de até 50 MiB para revisão administrativa. O arquivo fica em bucket privado durante o envio e a análise; depois da aprovação, a página pública emite links assinados curtos para visualizar e baixar o modelo.
 - Diretório público `/lojas` e páginas individuais de fabricantes aprovados, com marca visual, localização aproximada, descrição, anúncios, prazos por produto, políticas comerciais e avaliações moderadas.
 - Supabase Auth com cadastro, confirmação, login e saída; compradores podem solicitar acesso maker e admins aprovam perfis, lojas e anúncios.
 - Compradores autenticados enviam pedidos de orçamento e solicitações individuais de compra. O fabricante pode propor preço para orçamento e confirmar ou recusar disponibilidade para compra.
