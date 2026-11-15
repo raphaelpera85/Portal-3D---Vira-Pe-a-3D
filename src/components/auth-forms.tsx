@@ -6,7 +6,7 @@ import { signInAction, signUpAction, type AuthActionState } from "@/app/conta/ac
 
 const initialState: AuthActionState = { message: "", success: false };
 
-export function AuthForms() {
+export function AuthForms({ returnToModelRegistration = false }: { returnToModelRegistration?: boolean }) {
   const [signInState, signIn, signingIn] = useActionState(signInAction, initialState);
   const [signUpState, signUp, signingUp] = useActionState(signUpAction, initialState);
 
@@ -15,6 +15,7 @@ export function AuthForms() {
       <section className="account-card">
         <span className="account-kicker">JÁ TEM CONTA?</span><h2>Entre na sua conta</h2>
         <form className="auth-form" action={signIn}>
+          {returnToModelRegistration && <input type="hidden" name="destination" value="maker-model-registration" />}
           <label>E-mail<input type="email" name="email" autoComplete="email" maxLength={254} required /></label>
           <label>Senha<input type="password" name="password" autoComplete="current-password" minLength={8} maxLength={128} required /></label>
           <label className="auth-remember"><input type="checkbox" name="rememberMe" defaultChecked /> Lembrar de mim neste dispositivo</label>

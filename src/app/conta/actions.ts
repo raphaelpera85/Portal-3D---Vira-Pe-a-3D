@@ -55,6 +55,10 @@ export async function signInAction(_previous: AuthActionState, formData: FormDat
     path: "/", sameSite: "lax", secure: process.env.NODE_ENV === "production",
     ...(rememberMe ? { maxAge: REMEMBERED_SESSION_MAX_AGE } : {}),
   });
+  if (formData.get("destination") === "maker-model-registration") {
+    const maker = await getUserWithRole("maker");
+    if (maker.authorized) redirect("/painel/maker#modelos-3d");
+  }
   redirect("/conta");
 }
 

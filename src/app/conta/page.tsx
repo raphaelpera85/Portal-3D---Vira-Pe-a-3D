@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AccountPage({ searchParams }: { searchParams: Promise<{ confirmacao?: string; endereco?: string; acesso?: string }> }) {
-  const [{ confirmacao, endereco, acesso }, supabase] = await Promise.all([searchParams, createSupabaseServerClient()]);
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ confirmacao?: string; endereco?: string; acesso?: string; destino?: string }> }) {
+  const [{ confirmacao, endereco, acesso, destino }, supabase] = await Promise.all([searchParams, createSupabaseServerClient()]);
   const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   const user = data.user;
   const displayName = typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name : null;
@@ -54,14 +54,14 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <div className="account-heading"><p className="eyebrow">VIRAPEÇA 3D · SUA CONTA</p><h1>{user ? `Olá, ${displayName ?? "criador(a)"}.` : <>Sua próxima ideia<br /><em>começa por aqui.</em></>}</h1><p>Salve suas escolhas e prepare seu espaço para comprar, fabricar e criar.</p></div>
         {confirmacao === "erro" && <p className="auth-notice is-error" role="alert">Não foi possível confirmar o e-mail. Solicite um novo link de confirmação.</p>}
         {user && acesso === "calculadora" && <section className="account-card" aria-labelledby="calculator-access-title"><span className="account-kicker">FERRAMENTAS DE CRIAÇÃO</span><h2 id="calculator-access-title">{creatorAccessPending ? "Sua solicitação de criador está em análise" : "A calculadora é para makers e designers aprovados"}</h2><p>{creatorAccessPending ? "A calculadora e o envio de imagens do fatiador ficam disponíveis depois que seu perfil de criador for aprovado." : "A calculadora e o envio de imagens do fatiador aparecem para contas com loja maker ou perfil de designer aprovado."}</p><div className="account-links">{!isMaker && <Link className="button button-secondary" href="#solicitar-loja">{makerApplicationPending ? "Acompanhar solicitação" : "Solicitar uma loja"}</Link>}{isBuyer && <Link className="button button-secondary" href="#perfil-criador">{designerProfilePending ? "Acompanhar perfil" : "Apresentar perfil de criador"}</Link>}</div></section>}
-        {!user ? <AuthForms /> : (
+        {!user ? <AuthForms returnToModelRegistration={destino === "modelo-3d"} /> : (
           <>
             <section className="account-card" aria-label="Conta conectada">
               <span className="account-kicker">CONTA CONECTADA</span><h2>{displayName ?? "Bem-vindo(a)"}</h2><p>{user.email}</p>
               <p className="account-next-step">O cadastro está ativo. {isMaker ? "Sua conta maker está aprovada e já pode administrar a loja." : "Use as ferramentas e acompanhe suas solicitações nesta conta."}</p>
               <div className="account-links">
                 {isBuyer && <><Link className="button button-secondary" href="/conta/notificacoes" aria-label={unreadNotificationCount ? `${unreadNotificationCount} notificações não lidas` : undefined}>{getUnreadNotificationLabel(unreadNotificationCount)}</Link><Link className="button button-secondary" href="/orcamentos">Meus pedidos</Link><Link className="button button-secondary" href="/conta/modelagem">Pedidos de modelagem</Link><Link className="button button-secondary" href="/favoritos"><Heart size={15} aria-hidden="true" /> Favoritos</Link></>}
-                {isMaker && <Link className="button button-primary" href="/painel/maker">Abrir painel da loja</Link>}
+                {isMaker && <Link className="button button-primary" href={destino === "modelo-3d" ? "/painel/maker#modelos-3d" : "/painel/maker"}>Abrir painel da loja</Link>}
                 {isDesigner && <Link className="button button-primary" href="/painel/designer">Gerenciar perfil de designer</Link>}
                 {isAdmin && <Link className="button button-secondary" href="/admin/fabricantes">Revisar marketplace</Link>}
                 {isAdmin && <Link className="button button-secondary" href="/admin/designers">Revisar designers</Link>}
