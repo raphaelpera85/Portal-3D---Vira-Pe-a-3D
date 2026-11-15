@@ -1,5 +1,5 @@
 begin;
-select plan(12);
+select plan(14);
 
 insert into auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -83,11 +83,21 @@ select * from public.create_seller_order_payment(
   (select id from public.seller_purchase_orders where store_id = '20000000-0000-4000-8000-000000000011'),
   '10000000-0000-4000-8000-000000000010', 450
 );
+select * from public.create_seller_order_payment(
+  (select id from public.seller_purchase_orders where store_id = '20000000-0000-4000-8000-000000000010'),
+  '10000000-0000-4000-8000-000000000010', 449
+);
+select * from public.create_seller_order_payment(
+  (select id from public.seller_purchase_orders where store_id = '20000000-0000-4000-8000-000000000011'),
+  '10000000-0000-4000-8000-000000000010', 450
+);
 reset role;
 select is((select total_cents from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000010'), 5499::bigint, 'adds shipping after seller-funded discount for seller A');
 select is((select marketplace_fee_cents from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000010'), 449::bigint, 'records commission on seller A discounted subtotal');
 select is((select total_cents from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000011'), 5500::bigint, 'adds shipping after seller-funded discount for seller B');
 select is((select marketplace_fee_cents from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000011'), 450::bigint, 'records commission on seller B discounted subtotal');
+select is((select count(*) from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000010'), 1::bigint, 'reuses seller A payment attempt on retry');
+select is((select count(*) from public.seller_order_payments p join public.seller_purchase_orders o on o.id = p.order_id where o.store_id = '20000000-0000-4000-8000-000000000011'), 1::bigint, 'reuses seller B payment attempt on retry');
 
 select * from finish();
 rollback;
