@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CREATOR_MODEL_MAX_UPLOAD_BYTES, normalizeCreatorModelUpload } from "@/lib/creator-model-upload";
@@ -11,14 +11,40 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState("");
+  const [draggingFile, setDraggingFile] = useState(false);
+
+  function selectModelFile(file: File | undefined) {
+    if (!file) return;
+    if (!normalizeCreatorModelUpload(file)) {
+      setSelectedFile(null);
+      setFileError("Escolha um arquivo 3MF válido de até 50 MiB.");
+      return;
+    }
+    setSelectedFile(file);
+    setFileError("");
+  }
+
+  function dropModelFile(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setDraggingFile(false);
+    if (pending) return;
+    if (event.dataTransfer.files.length > 1) {
+      setSelectedFile(null);
+      setFileError("Envie apenas um arquivo 3MF por cadastro.");
+      return;
+    }
+    selectModelFile(event.dataTransfer.files[0]);
+  }
 
   async function submitUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
     const form = event.currentTarget;
-    const file = (form.elements.namedItem("modelFile") as HTMLInputElement | null)?.files?.[0];
+    const file = selectedFile;
     if (!file || !normalizeCreatorModelUpload(file)) {
-      setMessage("Selecione um arquivo 3MF válido de até 50 MiB.");
+      setFileError("Escolha um arquivo 3MF válido de até 50 MiB.");
       return;
     }
     setPending(true);
@@ -43,6 +69,7 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
         return;
       }
       form.reset();
+      setSelectedFile(null);
       setMessage(result.message);
       router.refresh();
     } catch {
@@ -59,7 +86,16 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
     <p>Envie um arquivo 3MF para revisão. Após a aprovação, o modelo aparece na coleção pública com autoria e tags.</p>
     <form onSubmit={(event) => void submitUpload(event)} className="auth-form">
       <div className="equipment-form-grid">
-        <label>Arquivo 3MF<input name="modelFile" type="file" accept=".3mf,application/vnd.ms-3mfdocument,application/octet-stream" required disabled={pending} /><small>Até {Math.round(CREATOR_MODEL_MAX_UPLOAD_BYTES / 1024 / 1024)} MiB. O arquivo fica privado enquanto aguarda revisão.</small></label>
+        <div className="creator-model-file-field">
+          <label className={`creator-model-file-dropzone${draggingFile ? " is-dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); if (!pending) setDraggingFile(true); }} onDragLeave={() => setDraggingFile(false)} onDrop={dropModelFile}>
+            <span>Arquivo 3MF</span>
+            <input name="modelFile" type="file" accept=".3mf,application/vnd.ms-3mfdocument,application/octet-stream" required={!selectedFile} disabled={pending} onChange={(event) => { selectModelFile(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
+            <small>{draggingFile ? "Solte o arquivo para selecioná-lo" : `Arraste um 3MF até aqui ou escolha no dispositivo · máximo ${Math.round(CREATOR_MODEL_MAX_UPLOAD_BYTES / 1024 / 1024)} MiB`}</small>
+          </label>
+          {selectedFile && <div className="creator-model-file-selection"><span>{selectedFile.name} · {(selectedFile.size / (1024 * 1024)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MiB</span><button className="button button-secondary" type="button" disabled={pending} onClick={() => setSelectedFile(null)}>Remover arquivo</button></div>}
+          {fileError && <p className="auth-notice is-error" role="alert">{fileError}</p>}
+          <small>O arquivo fica privado enquanto aguarda revisão.</small>
+        </div>
         <label>Nome do modelo<input name="name" minLength={2} maxLength={120} required disabled={pending} /></label>
         <label>Categoria<select name="categorySlug" required defaultValue="" disabled={pending}><option value="" disabled>Escolha uma categoria</option>{modelShowcaseCategories.map(({ name, slug }) => <option value={slug} key={slug}>{name}</option>)}</select></label>
         <label>Criador original<input name="creatorName" minLength={2} maxLength={100} required disabled={pending} /></label>
