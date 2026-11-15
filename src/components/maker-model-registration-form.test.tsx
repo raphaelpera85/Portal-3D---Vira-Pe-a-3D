@@ -50,6 +50,15 @@ describe("MakerModelRegistrationForm", () => {
     expect(markup).toContain("O arquivo fica privado enquanto aguarda revisão.");
   });
 
+  it("presents already-versioned Git models before the Supabase upload option", () => {
+    const markup = renderToStaticMarkup(<MakerModelRegistrationForm availableAssets={["models/modelo-publicado.3mf"]} />);
+
+    expect(markup).toContain("Cadastrar arquivo do Git");
+    expect(markup.indexOf("Cadastrar arquivo do Git")).toBeLessThan(markup.indexOf("Enviar um novo arquivo 3MF"));
+    expect(markup).toContain("models/modelo-publicado.3mf");
+    expect(markup).toContain("armazenamento privado do Supabase enquanto aguarda revisão e continua armazenado lá após a publicação");
+  });
+
   it("uploads through the signed Supabase endpoint and reports byte progress", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
