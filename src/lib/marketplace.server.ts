@@ -28,8 +28,10 @@ export async function loadMarketplaceCatalog({ query = "", category = "", page =
   let productsQuery = supabase.from("marketplace_products").select("id, store_id, slug, name, description, listing_type, price_mode, price_brl, fulfillment_mode, stock_quantity, preparation_days, media, video_url, tags, color_theme, visual, digital_asset:digital_assets(personal_price_brl, commercial_price_brl), store:stores!inner(name, slug), category:product_categories!inner(name, slug)", { count: "exact" }).eq("catalog_status", "published").eq("store.status", "published");
   if (term) productsQuery = productsQuery.textSearch("search_document", term, { config: "portuguese", type: "websearch" });
   if (sort === "popular") {
+    const rankingClient = createSupabaseAdminClient();
+    if (!rankingClient) return { products: [], categories: [], source: "database" as const, error: "A ordenação por popularidade está temporariamente indisponível. Tente novamente.", query: term, category, page: selectedPage, pages: 0, sort };
     const [{ data: ranking, error: rankingError }, categoryResult] = await Promise.all([
-      supabase.rpc("get_marketplace_best_sellers", {
+      rankingClient.rpc("get_marketplace_best_sellers", {
         p_category_slug: category || null,
         p_search: term || null,
         p_page: selectedPage,

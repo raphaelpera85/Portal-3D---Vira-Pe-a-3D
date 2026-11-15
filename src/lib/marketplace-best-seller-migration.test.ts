@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(new URL("../../supabase/migrations/20261113093503_marketplace_best_seller_ranking.sql", import.meta.url), "utf8");
 const hierarchyMigration = readFileSync(new URL("../../supabase/migrations/20261113133221_marketplace_category_tree_filter.sql", import.meta.url), "utf8");
+const accessMigration = readFileSync(new URL("../../supabase/migrations/20261115041446_restrict_best_seller_rpc.sql", import.meta.url), "utf8");
 const migrationsDirectory = new URL("../../supabase/migrations/", import.meta.url);
 const latestRankingMigration = readdirSync(migrationsDirectory).filter((file) => file.endsWith(".sql")).sort().reverse()
   .map((file) => readFileSync(new URL(file, migrationsDirectory), "utf8"))
@@ -36,6 +37,7 @@ describe("public best-seller ranking data", () => {
   it("does not expose exact paid sales counts", () => {
     expect(latestRankingMigration).toContain("order by product.units desc");
     expect(latestRankingMigration).toContain("null::bigint as sold_units");
-    expect(latestRankingMigration).toContain("to anon, authenticated");
+    expect(accessMigration).toContain("from public, anon, authenticated");
+    expect(accessMigration).toContain("to service_role");
   });
 });
