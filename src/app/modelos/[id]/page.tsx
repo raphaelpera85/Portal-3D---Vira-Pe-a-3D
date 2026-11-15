@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ModelDetailContent } from "@/components/model-detail-content";
 import { ModelRecommendations } from "@/components/model-showcase";
 import { SiteHeader } from "@/components/site-header";
-import { getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase } from "@/lib/model-showcase";
+import { getModelAssetUrl, getRecommendedModels, getShowcaseFileLabel, getShowcaseModel, getShowcaseModelIds, modelShowcase } from "@/lib/model-showcase";
 import { getSiteUrl } from "@/lib/site-url";
 import { loadPublishedCreatorModel } from "@/lib/creator-models.server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -21,14 +21,15 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: ModelPageProps): Promise<Metadata> {
   const { id } = await params;
   const model = getShowcaseModel(id) ?? await loadPublishedCreatorModel(id);
+  const format = model ? getShowcaseFileLabel(model.filePath) : "3D";
   return model ? {
     title: `${model.name} | Modelos 3D | ViraPeça 3D`,
-    description: `Visualize o modelo 3D ${model.name} e baixe o arquivo 3MF original.`,
+    description: `Visualize o modelo 3D ${model.name} e baixe o arquivo ${format} original.`,
     ...(getSiteUrl() ? {
       alternates: { canonical: `/modelos/${encodeURIComponent(model.id)}` },
       openGraph: {
         title: `${model.name} | Modelo 3D ViraPeça 3D`,
-        description: `Visualize ${model.name} em 3D e baixe o arquivo 3MF original.`,
+        description: `Visualize ${model.name} em 3D e baixe o arquivo ${format} original.`,
         url: `/modelos/${encodeURIComponent(model.id)}`,
         type: "website" as const,
         images: [model.image],
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: ModelPageProps): Promise<Meta
       twitter: {
         card: "summary_large_image" as const,
         title: `${model.name} | Modelo 3D ViraPeça 3D`,
-        description: `Visualize ${model.name} em 3D e baixe o arquivo 3MF original.`,
+        description: `Visualize ${model.name} em 3D e baixe o arquivo ${format} original.`,
         images: [model.image],
       },
     } : {}),
@@ -55,8 +56,8 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
     return url ? [{ label, filePath, url }] : [];
   });
   const previewVersions = [
-    ...(downloadUrl ? [{ label: "Arquivo principal", url: downloadUrl }] : []),
-    ...downloadVariants.map(({ label, url }) => ({ label, url })),
+    ...(downloadUrl ? [{ label: "Arquivo principal", url: downloadUrl, filePath: model.filePath }] : []),
+    ...downloadVariants.map(({ label, filePath, url }) => ({ label, filePath, url })),
   ];
   const siteUrl = getSiteUrl();
   const modelUrl = siteUrl ? new URL(`/modelos/${encodeURIComponent(model.id)}`, siteUrl).toString() : null;
@@ -64,12 +65,12 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
     "@context": "https://schema.org",
     "@type": "3DModel",
     name: model.name,
-    description: `Modelo 3D ${model.name} para visualização e download em 3MF.`,
+    description: `Modelo 3D ${model.name} para visualização e download em ${getShowcaseFileLabel(model.filePath)}.`,
     category: model.category,
     keywords: model.tags,
     url: modelUrl,
     image: siteUrl ? new URL(model.image, siteUrl).toString() : undefined,
-    ...(downloadUrl ? { encoding: { "@type": "MediaObject", name: `${model.name}.3mf`, contentUrl: downloadUrl, encodingFormat: "model/3mf" } } : {}),
+    ...(downloadUrl ? { encoding: { "@type": "MediaObject", name: model.filePath.split("/").at(-1), contentUrl: downloadUrl, encodingFormat: model.filePath.toLowerCase().endsWith(".zip") ? "application/zip" : "model/3mf" } } : {}),
   } : null;
   const recommendations = getRecommendedModels(model);
   const supabase = await createSupabaseServerClient();
@@ -102,17 +103,17 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
       <div className="shell model-detail-heading">
         {structuredData && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />}
         <Link href="/modelos" className="model-detail-back">← Voltar à coleção</Link>
-        <p className="eyebrow">{model.category} · ARQUIVO 3MF</p>
+        <p className="eyebrow">{model.category} · ARQUIVO {getShowcaseFileLabel(model.filePath)}</p>
         <h1>{model.name}</h1>
         {model.creatorName && <p className="model-detail-creator">Criado por <strong>{model.creatorName}</strong>{model.sourceUrl && <> · <a href={model.sourceUrl} target="_blank" rel="noreferrer">Fonte original ↗</a></>}</p>}
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={`/modelos?q=${encodeURIComponent(tag)}#modelos`}>{tag}</Link></li>)}</ul>
       </div>
-      <ModelDetailContent key={model.id} modelId={model.id} modelName={model.name} previewUrl={previewUrl} previewVersions={previewVersions} today={new Date().toISOString().slice(0, 10)} profiles={profiles} profilesPage={requestedProfilePage} profilesPages={profilePages} profilesCount={profileResult?.count ?? 0} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />
+      <ModelDetailContent key={model.id} modelId={model.id} modelName={model.name} modelFilePath={model.filePath} previewUrl={previewUrl} previewVersions={previewVersions} today={new Date().toISOString().slice(0, 10)} profiles={profiles} profilesPage={requestedProfilePage} profilesPages={profilePages} profilesCount={profileResult?.count ?? 0} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />
       <ModelRecommendations models={recommendations} />
       <section className="shell model-detail-download" aria-label="Download do modelo">
-        <div><p className="eyebrow">ARQUIVOS ORIGINAIS</p><h2>{model.name}</h2><p>Escolha a versão 3MF para abrir no seu fatiador ou programa de modelagem.</p></div>
+        <div><p className="eyebrow">ARQUIVOS ORIGINAIS</p><h2>{model.name}</h2><p>Baixe o arquivo para abrir no seu fatiador ou programa de modelagem.</p></div>
         <ul className="model-download-options">
-          {downloadUrl && <li><a className="button button-primary" href={downloadUrl} download={`${model.name}.3mf`}>Baixar arquivo principal</a></li>}
+          {downloadUrl && <li><a className="button button-primary" href={downloadUrl} download={model.filePath.split("/").at(-1)}>Baixar arquivo principal</a></li>}
           {downloadVariants.map(({ label, filePath, url }) => <li key={filePath}><a className="button button-secondary" href={url} download={filePath.split("/").at(-1)}>{label}</a></li>)}
           {!downloadUrl && <li><span className="button button-primary" aria-disabled="true">Download indisponível</span></li>}
         </ul>

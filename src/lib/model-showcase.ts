@@ -31,8 +31,12 @@ export function getShowcaseModelIds(id: string) {
 const modelAssetBaseUrl = "https://raw.githubusercontent.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/main";
 
 export function getModelAssetUrl(filePath: string) {
-  if (!/^models\/[a-z0-9]+(?:-[a-z0-9]+)*\.3mf$/.test(filePath)) return null;
+  if (!/^models\/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:3mf|zip)$/.test(filePath)) return null;
   return `${modelAssetBaseUrl}/${filePath.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+export function getShowcaseFileLabel(filePath: string) {
+  return filePath.toLowerCase().endsWith(".zip") ? "OBJ · ZIP" : "3MF";
 }
 
 const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { modelShowcaseCategories, type ShowcaseModel } from "@/lib/model-showcase";
+import { getShowcaseFileLabel, modelShowcaseCategories, type ShowcaseModel } from "@/lib/model-showcase";
 import visualIndex from "@/lib/model-showcase-visual-index.json";
 import { CatalogImageSearch } from "@/components/catalog-image-search";
 import type { VisualImageCandidate } from "@/lib/visual-image-search";
@@ -17,7 +17,7 @@ function ModelCards({ models }: { models: ShowcaseModel[] }) {
   return <div className="model-gallery-grid" aria-live="polite">
     {models.map((model) => <article className="model-gallery-card" key={model.id}>
       <Link className="model-gallery-image" href={`/modelos/${model.id}`} prefetch={false} aria-label={`Abrir ${model.name}, visualizar e baixar modelo 3D`}>{model.image.startsWith("https://") ? <img src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width="480" height="360" loading="lazy" referrerPolicy="no-referrer" /> : <Image src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width={480} height={360} sizes="(max-width: 390px) 100vw, (max-width: 640px) 50vw, (max-width: 900px) 33vw, 25vw" loading="lazy" />}</Link>
-      <div className="model-gallery-copy"><Link className="model-gallery-summary" href={`/modelos/${model.id}`} prefetch={false}><div className="product-meta"><span>{model.category}</span><span aria-hidden="true">3MF</span></div><h3>{model.name}</h3></Link>{model.creatorName && <p className="model-gallery-creator">Criado por {model.creatorName}</p>}
+      <div className="model-gallery-copy"><Link className="model-gallery-summary" href={`/modelos/${model.id}`} prefetch={false}><div className="product-meta"><span>{model.category}</span><span aria-hidden="true">{getShowcaseFileLabel(model.filePath)}</span></div><h3>{model.name}</h3></Link>{model.creatorName && <p className="model-gallery-creator">Criado por {model.creatorName}</p>}
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={galleryUrl(tag, model.categorySlug)}>{tag}</Link></li>)}</ul>
       </div>
     </article>)}
@@ -42,7 +42,7 @@ export function ModelRecommendations({ models }: { models: ShowcaseModel[] }) {
 
 export function ModelShowcase({ models, query, category, page, pages, additionalVisualIndex = [] }: { models: ShowcaseModel[]; query: string; category: string; page: number; pages: number; additionalVisualIndex?: VisualImageCandidate[] }) {
   return <section className="model-showcase shell" id="modelos">
-    <div className="account-heading"><p className="eyebrow">ARQUIVOS 3D · COMUNIDADE VIRAPEÇA</p><h1>Modelos para <em>inspirar.</em></h1><p>Prévia visual dos arquivos 3MF, com categorias, tags e criadores para facilitar a descoberta.</p></div>
+    <div className="account-heading"><p className="eyebrow">ARQUIVOS 3D · COMUNIDADE VIRAPEÇA</p><h1>Modelos para <em>inspirar.</em></h1><p>Prévia visual dos modelos, com categorias, tags e criadores para facilitar a descoberta.</p></div>
     <p><Link className="button button-primary" href="/conta?destino=modelo-3d">Vende modelos 3D? Cadastre o seu</Link></p>
     <p className="model-ai-link"><Link className="button button-secondary" href="/gerar-modelo">Gerar rascunho 3D por imagem ↗</Link></p>
     <div className="model-gallery-controls">
@@ -54,7 +54,7 @@ export function ModelShowcase({ models, query, category, page, pages, additional
       {query && <p className="makerworld-search-link">Não encontrou no catálogo? <a href={`https://makerworld.com/en/search/models?keyword=${encodeURIComponent(query)}`} target="_blank" rel="noopener noreferrer nofollow">Buscar “{query}” no MakerWorld ↗</a><small>O portal não baixa arquivos do MakerWorld. Baixe somente um modelo que você tenha permissão para usar; vendedores podem <Link href="/conta?destino=modelo-3d">entrar e enviá-lo ao portal para revisão.</Link></small></p>}
       <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={category} redirectPath="/modelos" visualIndex={[...visualIndex, ...additionalVisualIndex]} />
     </div>
-    <p className="catalog-disclaimer">Abra um modelo para girar a prévia 3D e baixar o arquivo 3MF original.</p>
+    <p className="catalog-disclaimer">Abra um modelo para girar a prévia 3D e baixar o arquivo original.</p>
     <ModelCards models={models} />
     {pages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos modelos">{page > 1 ? <Link className="button button-secondary" href={galleryUrl(query, category, page - 1)}>← Página anterior</Link> : <span />}<span>Página {page} de {pages}</span>{page < pages ? <Link className="button button-secondary" href={galleryUrl(query, category, page + 1)}>Próxima página →</Link> : <span />}</nav>}
   </section>;

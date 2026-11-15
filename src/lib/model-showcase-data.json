@@ -1319,6 +1319,22 @@
     ]
   },
   {
+    "id": "grinch-tampa-texturizado",
+    "name": "Topo de Tampa do Grinch · Texturizado",
+    "category": "Natal",
+    "categorySlug": "natal",
+    "image": "/modelos/grinch-tampa-texturizado.png",
+    "filePath": "models/grinch-lid-topper-textured.zip",
+    "tags": [
+      "grinch",
+      "natal",
+      "topo de tampa",
+      "texturizado",
+      "meshy ai",
+      "obj"
+    ]
+  },
+  {
     "id": "2baf73896077",
     "name": "Miniaturas de Gorro de Papai Noel",
     "category": "Natal",

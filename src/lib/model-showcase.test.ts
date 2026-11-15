@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { filterHomepageModelShowcase, filterModelShowcase, getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase, modelShowcaseCategories, type ShowcaseModel } from "./model-showcase";
-import { readThreeMfPackage } from "./model-file";
+import { zipSync } from "fflate";
+import { filterHomepageModelShowcase, filterModelShowcase, getModelAssetUrl, getRecommendedModels, getShowcaseFileLabel, getShowcaseModel, getShowcaseModelIds, modelShowcase, modelShowcaseCategories, type ShowcaseModel } from "./model-showcase";
+import { MAX_OBJ_ARCHIVE_BYTES, MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES, readObjModelArchive, readThreeMfPackage } from "./model-file";
 import visualIndex from "./model-showcase-visual-index.json";
 import gitModelAssets from "./git-model-assets.json";
 import { getUnregisteredGitModelAssets } from "./creator-model-assets";
@@ -28,22 +29,22 @@ describe("filterModelShowcase", () => {
   });
 
   it("keeps all included previews backed by image files in the three requested categories", () => {
-    expect(modelShowcase).toHaveLength(89);
+    expect(modelShowcase).toHaveLength(90);
     expect(Object.fromEntries(modelShowcaseCategories.map(({ slug }) => [slug, modelShowcase.filter((model) => model.categorySlug === slug).length])))
-      .toEqual({ "suporte-para-oculos": 7, chaveiros: 51, infantil: 8, "jogos-de-mesa": 3, diversos: 6, natal: 10, "acessorios-para-impressora-3d": 4 });
+      .toEqual({ "suporte-para-oculos": 7, chaveiros: 51, infantil: 8, "jogos-de-mesa": 3, diversos: 6, natal: 11, "acessorios-para-impressora-3d": 4 });
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), "public", model.image.slice(1))))).toBe(true);
-    expect(modelShowcase.every((model) => /^models\/[a-z0-9]+(?:-[a-z0-9]+)*\.3mf$/.test(model.filePath))).toBe(true);
+    expect(modelShowcase.every((model) => /^models\/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:3mf|zip)$/.test(model.filePath))).toBe(true);
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), model.filePath)))).toBe(true);
-    expect(new Set(modelShowcase.map((model) => model.filePath)).size).toBe(89);
+    expect(new Set(modelShowcase.map((model) => model.filePath)).size).toBe(90);
     const allFiles = modelShowcase.flatMap((model) => [model.filePath, ...(model.downloads ?? []).map(({ filePath }) => filePath)]);
-    expect(new Set(allFiles).size).toBe(117);
+    expect(new Set(allFiles).size).toBe(118);
     expect(allFiles.every((filePath) => existsSync(path.join(process.cwd(), filePath)))).toBe(true);
     expect(modelShowcase.find(({ id }) => id === "9492febb5ebe")?.downloads).toHaveLength(2);
   });
 
   it("keeps the Git asset manifest complete while allowing newly added files to be registered", () => {
     const referencedFiles = modelShowcase.flatMap((model) => [model.filePath, ...(model.downloads ?? []).map(({ filePath }) => filePath)]);
-    const referencedSet = [...new Set(referencedFiles)].sort();
+    const referencedSet = [...new Set(referencedFiles.filter((filePath) => filePath.endsWith(".3mf")))].sort();
     const repositoryFiles = listThreeMfFiles(path.join(process.cwd(), "models")).sort();
     expect(referencedSet.every((filePath) => repositoryFiles.includes(filePath))).toBe(true);
     expect(gitModelAssets).toEqual(repositoryFiles);
@@ -64,6 +65,31 @@ describe("filterModelShowcase", () => {
       const file = readFileSync(path.join(process.cwd(), filePath));
       await expect(readThreeMfPackage(new Uint8Array(file))).resolves.toHaveProperty("unit");
     }
+  });
+
+  it("opens and validates the textured Grinch OBJ archive from the source folder", async () => {
+    const filePath = "models/grinch-lid-topper-textured.zip";
+    const file = readFileSync(path.join(process.cwd(), filePath));
+    expect(file.byteLength).toBeLessThanOrEqual(MAX_OBJ_ARCHIVE_BYTES);
+    const contents = await readObjModelArchive(new Uint8Array(file));
+    expect(contents.map(({ name }) => name).sort()).toEqual([
+      "Meshy_AI_Grinch_Lid_Topper_20261113_image-to-3d-texture.mtl",
+      "Meshy_AI_Grinch_Lid_Topper_20261113_image-to-3d-texture.obj",
+      "Meshy_AI_Grinch_Lid_Topper_20261113_image-to-3d-texture.png",
+    ]);
+    expect(contents.reduce((total, item) => total + item.data.byteLength, 0)).toBeLessThanOrEqual(MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES);
+    expect(new TextDecoder().decode(contents.find(({ name }) => name.endsWith(".mtl"))!.data)).toContain("map_Kd Meshy_AI_Grinch_Lid_Topper_20261113_image-to-3d-texture.png");
+    expect(modelShowcase.find(({ id }) => id === "grinch-tampa-texturizado")).toMatchObject({ filePath, name: "Topo de Tampa do Grinch · Texturizado" });
+  });
+
+  it("rejects unsafe OBJ archive paths and undeclared companion files", async () => {
+    const maliciousPath = zipSync({ "../outside.obj": new TextEncoder().encode("v 0 0 0") });
+    await expect(readObjModelArchive(maliciousPath)).rejects.toThrow("caminho inválido");
+    const missingTexture = zipSync({
+      "model/model.obj": new TextEncoder().encode("mtllib model.mtl\n"),
+      "model/model.mtl": new TextEncoder().encode("map_Kd missing.png\n"),
+    });
+    await expect(readObjModelArchive(missingTexture)).rejects.toThrow("não estão incluídos");
   });
 
   it("opens a model by id and returns no model for unknown ids", () => {
@@ -102,6 +128,9 @@ describe("filterModelShowcase", () => {
       .toBe("https://raw.githubusercontent.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/main/models/batman.3mf");
     expect(getModelAssetUrl("models/../../.env")).toBeNull();
     expect(getModelAssetUrl("https://attacker.example/model.3mf")).toBeNull();
+    expect(getModelAssetUrl("models/grinch-lid-topper-textured.zip")).toBe("https://raw.githubusercontent.com/raphaelpera85/Portal-3D---Vira-Pe-a-3D/main/models/grinch-lid-topper-textured.zip");
+    expect(getModelAssetUrl("models/../../package.zip")).toBeNull();
+    expect(getShowcaseFileLabel("models/grinch-lid-topper-textured.zip")).toBe("OBJ · ZIP");
   });
 
   it("matches accent-insensitive names and tags within the selected category", () => {

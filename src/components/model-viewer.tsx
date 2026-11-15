@@ -12,9 +12,9 @@ import { createMeterExportCopy } from "@/lib/model-export";
 import { evaluateBuildVolume, evaluateCompatibility, type CatalogMaterial, type CatalogNozzle, type CatalogPrinter, type CompatibilityCheck } from "@/lib/compatibility";
 import type { SavedSlicerMetrics } from "@/lib/saved-calculation";
 import {
-  formatModelDimensions, getModelViewerRotationX, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, type ModelDimensions, type ModelUnit,
+  formatModelDimensions, getModelViewerRotationX, MAX_MODEL_FILE_BYTES, MAX_MODEL_PREVIEW_FILE_BYTES, MAX_OBJ_ARCHIVE_BYTES, MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES, type ModelDimensions, type ModelUnit,
   type ModelFormat, type ModelSourceUnit, type ThreeMfColorData, type ThreeMfSlicePlate, getModelColorMatchedComponentIds,
-  formatThreeMfFilamentLabel, getModelColorMatchedTriangleIndexes, getModelFormat, readThreeMfPackage, validateModelFiles,
+  formatThreeMfFilamentLabel, getModelColorMatchedTriangleIndexes, getModelFormat, readObjModelArchive, readThreeMfPackage, validateModelFiles,
 } from "@/lib/model-file";
 
 type ViewerPrinter = CatalogPrinter & {
@@ -42,7 +42,7 @@ type ViewerCatalogProfile = {
   review_status: "draft" | "pending" | "published" | "rejected"; metrics: SavedSlicerMetrics;
 };
 
-export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, savedModelsPages = 1, savedModelsCount = 0, orcamento, catalogModels = [], materials = [], nozzles = [], printers = [], today, libraryError = false, previewUrl, localPreviewFile, modelName, previewLabel, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; savedModelsPage?: number; savedModelsPages?: number; savedModelsCount?: number; orcamento?: string; catalogModels?: ViewerCatalogModel[]; materials?: (CatalogMaterial & { label: string })[]; nozzles?: (CatalogNozzle & { brand: string })[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; localPreviewFile?: File | null; modelName?: string; previewLabel?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
+export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, savedModelsPages = 1, savedModelsCount = 0, orcamento, catalogModels = [], materials = [], nozzles = [], printers = [], today, libraryError = false, previewUrl, localPreviewFile, modelName, previewFileName, previewLabel, readOnly = false, onSlicePlatesChange }: { buyerId: string | null; savedModels?: SavedModelUpload[]; savedModelsPage?: number; savedModelsPages?: number; savedModelsCount?: number; orcamento?: string; catalogModels?: ViewerCatalogModel[]; materials?: (CatalogMaterial & { label: string })[]; nozzles?: (CatalogNozzle & { brand: string })[]; printers?: ViewerPrinter[]; today: string; libraryError?: boolean; previewUrl?: string | null; localPreviewFile?: File | null; modelName?: string; previewFileName?: string; previewLabel?: string; readOnly?: boolean; onSlicePlatesChange?: (plates: ThreeMfSlicePlate[]) => void }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -478,17 +478,25 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
     void fetch(previewUrl, { signal: controller.signal }).then(async (response) => {
       if (!response.ok) throw new Error("Prévia indisponível");
       const blob = await response.blob();
-      const isPublic3mf = modelName !== undefined;
+      const filename = previewFileName ?? (modelName !== undefined ? `${modelName}.3mf` : "preview.glb");
+      const isPublicPreview = modelName !== undefined;
+      if (isPublicPreview && filename.toLowerCase().endsWith(".zip")) {
+        if (blob.size > MAX_OBJ_ARCHIVE_BYTES) throw new Error("Pacote ZIP acima do limite");
+        const packageFiles = await readObjModelArchive(new Uint8Array(await blob.arrayBuffer()));
+        const files = packageFiles.map(({ name, data }) => new File([data], name));
+        await loadFiles(files, true, MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES);
+        return;
+      }
+      const isPublic3mf = isPublicPreview && filename.toLowerCase().endsWith(".3mf");
       const maxFileBytes = isPublic3mf ? MAX_MODEL_PREVIEW_FILE_BYTES : MAX_MODEL_FILE_BYTES;
       if (blob.size > maxFileBytes) throw new Error("Arquivo acima do limite");
-      const filename = isPublic3mf ? `${modelName}.3mf` : "preview.glb";
       const type = isPublic3mf ? "application/vnd.ms-package.3dmanufacturing-3dmodel+xml" : "model/gltf-binary";
       await loadFiles([new File([blob], filename, { type })], true, maxFileBytes);
     }).catch(() => {
       if (!controller.signal.aborted) setMessage("Prévia 3D indisponível. Atualize a página para tentar novamente.");
     });
     return () => controller.abort();
-  }, [previewUrl, readOnly, modelName]);
+  }, [previewUrl, readOnly, modelName, previewFileName]);
 
   useEffect(() => {
     if (readOnly && localPreviewFile) void loadFiles([localPreviewFile], false, MAX_MODEL_PREVIEW_FILE_BYTES);

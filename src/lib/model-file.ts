@@ -1,6 +1,9 @@
 export const MAX_MODEL_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_MODEL_PREVIEW_FILE_BYTES = 50 * 1024 * 1024;
 export const MAX_THREE_MF_UNCOMPRESSED_BYTES = 300 * 1024 * 1024;
+// shortcut: textured OBJ previews stop at 130 MiB extracted; profile mobile memory before raising this limit.
+export const MAX_OBJ_ARCHIVE_BYTES = 60 * 1024 * 1024;
+export const MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES = 130 * 1024 * 1024;
 
 export type ModelUnit = "mm" | "cm" | "m";
 export type ModelSourceUnit = ModelUnit | "um" | "in" | "ft";
@@ -117,6 +120,40 @@ export async function readThreeMfPackage(data: Uint8Array) {
     colors,
     slicePlates: sliceInfo ? parseThreeMfSliceInfo(new TextDecoder().decode(sliceInfo)) : [],
   };
+}
+
+export async function readObjModelArchive(data: Uint8Array) {
+  if (data.byteLength === 0 || data.byteLength > MAX_OBJ_ARCHIVE_BYTES) throw new Error("O pacote OBJ está vazio ou ultrapassa o limite de 60 MB.");
+  const { unzipSync } = await import("fflate");
+  let expandedBytes = 0;
+  const names = new Set<string>();
+  const archive = unzipSync(data, { filter: (entry) => {
+    if (entry.name.includes("\\") || entry.name.startsWith("/") || entry.name.split("/").some((part) => part === "..")) throw new Error("O pacote OBJ contém um caminho inválido.");
+    if (names.has(entry.name)) throw new Error("O pacote OBJ contém arquivos duplicados.");
+    names.add(entry.name);
+    if (names.size > 32 || entry.originalSize > MAX_OBJ_ARCHIVE_UNCOMPRESSED_BYTES - expandedBytes) throw new Error("O pacote OBJ excede o limite de extração de 130 MB.");
+    expandedBytes += entry.originalSize;
+    return true;
+  } });
+  const entries = Object.entries(archive).filter(([name]) => !name.endsWith("/"));
+  const files = entries.map(([path, bytes]) => {
+    const parts = path.split("/");
+    if (parts.length > 2 || parts.length === 2 && !parts[0] || !parts.at(-1)) throw new Error("O pacote OBJ contém uma estrutura de pastas inválida.");
+    return { name: parts.at(-1)!, data: bytes };
+  });
+  const basenames = files.map(({ name }) => name.toLowerCase());
+  if (new Set(basenames).size !== files.length) throw new Error("O pacote OBJ contém nomes de arquivos duplicados.");
+  if (files.filter(({ name }) => /\.obj$/i.test(name)).length !== 1 || files.filter(({ name }) => /\.mtl$/i.test(name)).length > 1) throw new Error("O pacote precisa conter exatamente um OBJ e no máximo um MTL.");
+  const supported = /\.(?:obj|mtl|png|jpe?g|webp)$/i;
+  if (files.some(({ name }) => !supported.test(name))) throw new Error("O pacote OBJ contém um tipo de arquivo não suportado.");
+  const mtl = files.find(({ name }) => /\.mtl$/i.test(name));
+  if (mtl) {
+    const text = new TextDecoder().decode(mtl.data);
+    const resources = [...text.matchAll(/^\s*(?:map_\w+|bump|disp|decal|norm)\s+(.+?)\s*$/gim)]
+      .map(([, value]) => value.trim().split(/\s+/).at(-1)!.replace(/["']/g, ""));
+    if (resources.some((name) => name.includes("/") || name.includes("\\") || !basenames.includes(name.toLowerCase()))) throw new Error("O MTL referencia recursos que não estão incluídos no pacote.");
+  }
+  return files;
 }
 
 export function parseThreeMfSliceInfo(xml: string): ThreeMfSlicePlate[] {
