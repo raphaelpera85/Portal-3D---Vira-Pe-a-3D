@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { uploadSupabaseFile } from "@/lib/supabase/upload-progress";
 
 const mocks = vi.hoisted(() => ({ router: { refresh: vi.fn() } }));
 vi.mock("server-only", () => ({}));
@@ -12,7 +13,7 @@ vi.mock("@/app/painel/maker/model-actions", () => ({
   submitCreatorModel: vi.fn(),
 }));
 
-import { MakerModelRegistrationForm, uploadCreatorModelFile } from "./maker-model-registration-form";
+import { MakerModelRegistrationForm } from "./maker-model-registration-form";
 
 class MockXMLHttpRequest {
   static instances: MockXMLHttpRequest[] = [];
@@ -56,7 +57,7 @@ describe("MakerModelRegistrationForm", () => {
     const file = new File(["3mf"], "modelo.3mf", { type: "application/octet-stream" });
     const progress = vi.fn();
 
-    await uploadCreatorModelFile("user-1/model.3mf", "signed-token", "user-session-token", file, progress);
+    await uploadSupabaseFile({ bucket: "creator-model-uploads", path: "user-1/model.3mf", signedToken: "signed-token", accessToken: "user-session-token", file, onProgress: progress });
 
     const request = MockXMLHttpRequest.instances[0];
     expect(request.open).toHaveBeenCalledWith("PUT", expect.stringContaining("/storage/v1/object/upload/sign/creator-model-uploads/user-1/model.3mf"));
@@ -71,7 +72,20 @@ describe("MakerModelRegistrationForm", () => {
     vi.stubGlobal("XMLHttpRequest", class extends MockXMLHttpRequest { status = 403; });
     const file = new File(["3mf"], "modelo.3mf", { type: "application/octet-stream" });
 
-    await expect(uploadCreatorModelFile("user-1/model.3mf", "signed-token", "user-session-token", file, () => {}))
+    await expect(uploadSupabaseFile({ bucket: "creator-model-uploads", path: "user-1/model.3mf", signedToken: "signed-token", accessToken: "user-session-token", file, onProgress: () => {} }))
       .rejects.toThrow("storage_upload_failed");
+  });
+
+  it("uses the authenticated object endpoint for private buyer library uploads", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
+    vi.stubGlobal("XMLHttpRequest", MockXMLHttpRequest);
+    const file = new File(["model"], "model.glb", { type: "model/gltf-binary" });
+
+    await uploadSupabaseFile({ bucket: "buyer-models", path: "buyer-1/bundle-1/model.glb", accessToken: "buyer-session", file, onProgress: () => {} });
+
+    const request = MockXMLHttpRequest.instances[0];
+    expect(request.open).toHaveBeenCalledWith("POST", "https://project.supabase.co/storage/v1/object/buyer-models/buyer-1/bundle-1/model.glb");
+    expect(request.setRequestHeader).toHaveBeenCalledWith("authorization", "Bearer buyer-session");
   });
 });

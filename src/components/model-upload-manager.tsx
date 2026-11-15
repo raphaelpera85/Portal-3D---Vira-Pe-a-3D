@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArchiveRestore, Download, Trash2, Upload } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { uploadSupabaseFile } from "@/lib/supabase/upload-progress";
 import { deleteBuyerModelUpload } from "@/app/visualizador/actions";
 import { prepareModelUploadFiles, type ModelUploadFile } from "@/lib/model-upload";
 import type { ModelDimensions } from "@/lib/model-file";
@@ -55,16 +56,23 @@ export function ModelUploadManager({ buyerId, files, savedModels, savedModelsPag
     const bundleId = crypto.randomUUID();
     const uploaded: string[] = [];
     const modelName = prepared.files.find((file) => getModelFormat(file.name))!.name;
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
     setPending(true);
     setProgress(0);
     setMessage("Preparando o envio privado…");
     let uploadId: string | null = null;
     try {
+      const { data: { session }, error: sessionError } = await client.auth.getSession();
+      if (sessionError || !session) throw new Error("session");
+      setMessage("Enviando arquivos para armazenamento privado…");
+      let uploadedBytes = 0;
       for (let index = 0; index < files.length; index += 1) {
         const path = `${buyerId}/${bundleId}/${prepared.files[index].storage_name}`;
-        setProgress(index + 1);
-        const { error } = await client.storage.from("buyer-models").upload(path, files[index], { upsert: false, contentType: files[index].type || "application/octet-stream" });
-        if (error) throw new Error("upload");
+        await uploadSupabaseFile({ bucket: "buyer-models", path, accessToken: session.access_token, file: files[index], onProgress: (loaded) => {
+          setProgress(Math.floor(((uploadedBytes + loaded) / totalBytes) * 100));
+        } });
+        uploadedBytes += files[index].size;
+        setProgress(Math.floor((uploadedBytes / totalBytes) * 100));
         uploaded.push(path);
       }
       const { data: registeredId, error } = await client.rpc("register_buyer_model_upload", {
@@ -134,9 +142,10 @@ export function ModelUploadManager({ buyerId, files, savedModels, savedModelsPag
     <div className="inspector-section-head"><h2>Biblioteca privada</h2><ArchiveRestore size={16} aria-hidden="true" /></div>
     <p className="model-library-note">Salve o modelo e os arquivos associados na sua conta para abri-los em outro momento. O conjunto inteiro fica privado.</p>
     {libraryError ? <p className="model-library-note" role="alert">A biblioteca privada precisa da migração de armazenamento para funcionar.</p> : buyerId ? files.length > 0 ? <button className="button button-primary model-library-save" type="button" onClick={() => void saveCurrentModel()} disabled={pending} aria-busy={pending}>
-      <Upload size={15} aria-hidden="true" /> {pending ? `Enviando ${Math.min(progress, files.length)} de ${files.length}…` : "Salvar conjunto na conta"}
+      <Upload size={15} aria-hidden="true" /> {pending ? message.startsWith("Enviando") ? `Enviando ${progress}%…` : "Preparando envio…" : "Salvar conjunto na conta"}
     </button> : <p className="model-library-note">Abra um modelo para habilitar o salvamento.</p> : <p className="model-library-note"><Link href="/conta">Entre em uma conta de comprador</Link> para salvar modelos privados.</p>}
     {message && <p className="model-library-message" role="status" aria-live="polite">{message}</p>}
+    {pending && message.startsWith("Enviando") && <progress className="model-library-upload-progress" value={progress} max={100} aria-label="Progresso do envio dos arquivos" />}
     {savedModels.length > 0 && <ul className="model-library-list">{savedModels.map((model) => <li key={model.id}>
       <div><strong>{model.model_name}</strong><span>{(model.total_bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB · {model.files.length} arquivo(s){model.dimensions_mm ? ` · ${model.dimensions_mm.x} × ${model.dimensions_mm.y} × ${model.dimensions_mm.z} mm` : ""}</span></div>
       <div className="model-library-actions">

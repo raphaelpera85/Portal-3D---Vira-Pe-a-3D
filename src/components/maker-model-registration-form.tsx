@@ -4,6 +4,7 @@ import { useEffect, useState, type DragEvent, type FormEvent } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { uploadSupabaseFile } from "@/lib/supabase/upload-progress";
 import { CREATOR_MODEL_MAX_PREVIEW_BYTES, CREATOR_MODEL_MAX_UPLOAD_BYTES, normalizeCreatorModelPreview, normalizeCreatorModelUpload } from "@/lib/creator-model-upload";
 import { differenceHash } from "@/lib/visual-image-search";
 import { readThreeMfPackage } from "@/lib/model-file";
@@ -14,32 +15,6 @@ const LocalModelPreview = dynamic(() => import("@/components/model-viewer").then
   ssr: false,
   loading: () => <p className="auth-notice" role="status">Preparando visualizador 3D…</p>,
 });
-
-export function uploadCreatorModelFile(path: string, token: string, accessToken: string, file: File, onProgress: (loaded: number) => void) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!supabaseUrl || !supabaseKey) return Promise.reject(new Error("storage_not_configured"));
-
-  const url = new URL(`/storage/v1/object/upload/sign/creator-model-uploads/${path.split("/").map(encodeURIComponent).join("/")}`, supabaseUrl);
-  url.searchParams.set("token", token);
-  return new Promise<void>((resolve, reject) => {
-    const request = new XMLHttpRequest();
-    request.open("PUT", url.toString());
-    request.setRequestHeader("apikey", supabaseKey);
-    request.setRequestHeader("authorization", `Bearer ${accessToken}`);
-    request.setRequestHeader("x-upsert", "false");
-    request.upload.onprogress = (event) => {
-      if (event.lengthComputable) onProgress(Math.min(event.loaded, file.size));
-    };
-    request.onload = () => request.status >= 200 && request.status < 300 ? resolve() : reject(new Error("storage_upload_failed"));
-    request.onerror = () => reject(new Error("storage_upload_failed"));
-    request.onabort = () => reject(new Error("storage_upload_aborted"));
-    const body = new FormData();
-    body.append("cacheControl", "3600");
-    body.append("", file);
-    request.send(body);
-  });
-}
 
 export function MakerModelRegistrationForm({ availableAssets }: { availableAssets: string[] }) {
   const router = useRouter();
@@ -153,14 +128,14 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
       if (sessionError || !session) throw new Error("storage_session_unavailable");
       setMessage("Enviando o arquivo para armazenamento privado…");
       const totalBytes = file.size + (previewFile?.size ?? 0);
-      await uploadCreatorModelFile(upload.path, upload.token, session.access_token, file, (loaded) => {
+      await uploadSupabaseFile({ bucket: "creator-model-uploads", path: upload.path, signedToken: upload.token, accessToken: session.access_token, file, onProgress: (loaded) => {
         setUploadProgress(Math.floor((loaded / totalBytes) * 100));
-      });
+      } });
       if (previewFile && !upload.preview) throw new Error("preview_upload");
       if (previewFile && upload.preview) {
-        await uploadCreatorModelFile(upload.preview.path, upload.preview.token, session.access_token, previewFile, (loaded) => {
+        await uploadSupabaseFile({ bucket: "creator-model-uploads", path: upload.preview.path, signedToken: upload.preview.token, accessToken: session.access_token, file: previewFile, onProgress: (loaded) => {
           setUploadProgress(Math.floor(((file.size + loaded) / totalBytes) * 100));
-        });
+        } });
       }
       setUploadProgress(100);
       const result = await finalizeCreatorModelUpload(upload.id);
