@@ -1041,6 +1041,12 @@
       "grinch",
       "wall",
       "mount"
+    ],
+    "downloads": [
+      {
+        "label": "Versão da pasta local",
+        "filePath": "models/grinch-wall-mount-local.3mf"
+      }
     ]
   },
   {
@@ -1141,6 +1147,12 @@
       "ferramentas",
       "drybox",
       "single"
+    ],
+    "downloads": [
+      {
+        "label": "Versão da pasta local · V3",
+        "filePath": "models/drybox-single-v3-local.3mf"
+      }
     ]
   },
   {
@@ -1299,6 +1311,10 @@
       {
         "label": "Topo de Grinch · peças separadas",
         "filePath": "models/grinch-character-topper-split-parts.3mf"
+      },
+      {
+        "label": "Seis cópias do topo segmentado",
+        "filePath": "models/grinch-topper-seis-copias.3mf"
       }
     ]
   },
@@ -1315,6 +1331,12 @@
       "gorro",
       "miniatura",
       "multicolorido"
+    ],
+    "downloads": [
+      {
+        "label": "Oito miniaturas multicoloridas",
+        "filePath": "models/gorros-papai-noel-oito-unidades.3mf"
+      }
     ]
   },
   {
@@ -1335,6 +1357,10 @@
       {
         "label": "Versão para AMS · 37 mm",
         "filePath": "models/nossa-senhora-aparecida-37mm.3mf"
+      },
+      {
+        "label": "Versão Meshy AI · placa com duas cópias",
+        "filePath": "models/nossa-senhora-aparecida-meshy-duas-copias.3mf"
       }
     ]
   }

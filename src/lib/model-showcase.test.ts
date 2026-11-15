@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { filterHomepageModelShowcase, filterModelShowcase, getModelAssetUrl, getRecommendedModels, getShowcaseModel, getShowcaseModelIds, modelShowcase, modelShowcaseCategories, type ShowcaseModel } from "./model-showcase";
+import { readThreeMfPackage } from "./model-file";
 import visualIndex from "./model-showcase-visual-index.json";
 import gitModelAssets from "./git-model-assets.json";
 import { getUnregisteredGitModelAssets } from "./creator-model-assets";
@@ -35,7 +36,7 @@ describe("filterModelShowcase", () => {
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), model.filePath)))).toBe(true);
     expect(new Set(modelShowcase.map((model) => model.filePath)).size).toBe(89);
     const allFiles = modelShowcase.flatMap((model) => [model.filePath, ...(model.downloads ?? []).map(({ filePath }) => filePath)]);
-    expect(new Set(allFiles).size).toBe(112);
+    expect(new Set(allFiles).size).toBe(117);
     expect(allFiles.every((filePath) => existsSync(path.join(process.cwd(), filePath)))).toBe(true);
     expect(modelShowcase.find(({ id }) => id === "9492febb5ebe")?.downloads).toHaveLength(2);
   });
@@ -48,6 +49,21 @@ describe("filterModelShowcase", () => {
     expect(gitModelAssets).toEqual(repositoryFiles);
     expect(getUnregisteredGitModelAssets()).toEqual([]);
     expect(getUnregisteredGitModelAssets([], ["models/new-model.3mf", "models/batman.3mf"])).toEqual(["models/new-model.3mf"]);
+  });
+
+  it("opens each newly recovered source model as a valid 3MF package", async () => {
+    const recoveredAssets = [
+      "models/drybox-single-v3-local.3mf",
+      "models/gorros-papai-noel-oito-unidades.3mf",
+      "models/grinch-topper-seis-copias.3mf",
+      "models/grinch-wall-mount-local.3mf",
+      "models/nossa-senhora-aparecida-meshy-duas-copias.3mf",
+    ];
+
+    for (const filePath of recoveredAssets) {
+      const file = readFileSync(path.join(process.cwd(), filePath));
+      await expect(readThreeMfPackage(new Uint8Array(file))).resolves.toHaveProperty("unit");
+    }
   });
 
   it("opens a model by id and returns no model for unknown ids", () => {
@@ -63,6 +79,11 @@ describe("filterModelShowcase", () => {
     expect(modelShowcase.find(({ name }) => name === "Gatos Flexi · Chaveiros")?.downloads).toHaveLength(3);
     expect(modelShowcase.find(({ name }) => name === "Presépio Exclusivo")?.downloads).toContainEqual({ label: "Versão final", filePath: "models/presepio-exclusivo-final.3mf" });
     expect(modelShowcase.find(({ name }) => name === "Suporte para Óculos de Gato")?.downloads).toContainEqual({ label: "Versão original", filePath: "models/cat.3mf" });
+    expect(modelShowcase.find(({ name }) => name === "Grinch Wall Mount")?.downloads).toContainEqual({ label: "Versão da pasta local", filePath: "models/grinch-wall-mount-local.3mf" });
+    expect(modelShowcase.find(({ name }) => name === "Drybox Single V3")?.downloads).toContainEqual({ label: "Versão da pasta local · V3", filePath: "models/drybox-single-v3-local.3mf" });
+    expect(modelShowcase.find(({ name }) => name === "Grinch com Gorro de Natal")?.downloads).toContainEqual({ label: "Seis cópias do topo segmentado", filePath: "models/grinch-topper-seis-copias.3mf" });
+    expect(modelShowcase.find(({ name }) => name === "Miniaturas de Gorro de Papai Noel")?.downloads).toContainEqual({ label: "Oito miniaturas multicoloridas", filePath: "models/gorros-papai-noel-oito-unidades.3mf" });
+    expect(modelShowcase.find(({ name }) => name === "Nossa Senhora Aparecida")?.downloads).toContainEqual({ label: "Versão Meshy AI · placa com duas cópias", filePath: "models/nossa-senhora-aparecida-meshy-duas-copias.3mf" });
   });
 
   it("does not show exact duplicate previews twice in the same category", () => {
