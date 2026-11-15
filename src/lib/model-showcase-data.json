@@ -1242,6 +1242,14 @@
       {
         "label": "Texturizada · variação 2",
         "filePath": "models/casal-forever-together-texturizado-v2.3mf"
+      },
+      {
+        "label": "Versão Meshy AI · Forever Together",
+        "filePath": "models/casal-forever-together-meshy-ai.3mf"
+      },
+      {
+        "label": "Forever Together · peças separadas",
+        "filePath": "models/casal-forever-together-split-parts.3mf"
       }
     ]
   },
@@ -1287,6 +1295,10 @@
       {
         "label": "Placa com 6 unidades",
         "filePath": "models/grinch-natal-6-unidades.3mf"
+      },
+      {
+        "label": "Topo de Grinch · peças separadas",
+        "filePath": "models/grinch-character-topper-split-parts.3mf"
       }
     ]
   },
