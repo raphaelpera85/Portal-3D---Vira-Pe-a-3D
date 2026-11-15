@@ -22,7 +22,8 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - [x] Reconciliar diariamente até oito reembolsos pendentes por execução usando a mesma chave idempotente.
 - [x] Receber o tópico `chargebacks`, consultar os detalhes pelo token OAuth do vendedor e exibir status, valor, cobertura e prazo no extrato.
 - [x] Enviar evidências de contestação uma única vez pelo painel do fabricante e sincronizar o status do provedor.
-- [ ] Adicionar testes de integração com contas de teste e validar as migrations no Supabase conectado.
+- [x] Aplicar e confirmar no histórico do Supabase as migrations de cancelamento de pedidos (`20261115015541_buyer_cancel_seller_purchase_orders`) e de validação da resposta do vendedor (`20261115015543_validate_seller_order_response`).
+- [ ] Adicionar testes de integração de pagamento e frete com contas sandbox.
 - [x] Implementar cotação manual de frete por loja para pedidos do carrinho e impressão personalizada, aceite do comprador, inclusão no checkout, rastreio manual e confirmação de recebimento.
 - [x] Coletar e validar peso e dimensões externas da embalagem em anúncios físicos para preparar cotações automáticas.
 - [x] Coletar CEP de origem por loja em registro privado protegido por RLS do proprietário.
@@ -37,7 +38,6 @@ Este plano começa pelo vínculo OAuth de cada loja, com PKCE. Tokens e refresh 
 - Credenciais e aplicação Mercado Pago com marketplace Split 1:1 e URL de callback cadastrada.
 - Cada vendedor precisa autorizar OAuth e atender ao nível de identificação solicitado pelo provedor.
 - Definir a comissão do ViraPeça antes de emitir preferências. Nenhuma taxa é presumida no código.
-- Aplicar `20261115230000_buyer_cancel_seller_purchase_orders.sql` ao Supabase para habilitar cancelamento de pedidos do carrinho.
 - Testar Pix/cartão e notificações com contas sandbox; não liberar produção até confirmar conciliação e política de reembolso.
 - Configurar as credenciais Melhor Envio antes de habilitar cotações ao vivo no ambiente publicado.
 
