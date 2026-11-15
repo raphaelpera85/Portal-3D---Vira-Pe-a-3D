@@ -35,7 +35,7 @@ describe("filterModelShowcase", () => {
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), model.filePath)))).toBe(true);
     expect(new Set(modelShowcase.map((model) => model.filePath)).size).toBe(89);
     const allFiles = modelShowcase.flatMap((model) => [model.filePath, ...(model.downloads ?? []).map(({ filePath }) => filePath)]);
-    expect(new Set(allFiles).size).toBe(108);
+    expect(new Set(allFiles).size).toBe(109);
     expect(allFiles.every((filePath) => existsSync(path.join(process.cwd(), filePath)))).toBe(true);
     expect(modelShowcase.find(({ id }) => id === "9492febb5ebe")?.downloads).toHaveLength(2);
   });

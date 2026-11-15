@@ -1282,6 +1282,12 @@
       "natal",
       "personagem",
       "decoração"
+    ],
+    "downloads": [
+      {
+        "label": "Placa com 6 unidades",
+        "filePath": "models/grinch-natal-6-unidades.3mf"
+      }
     ]
   },
   {
