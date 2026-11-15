@@ -11,14 +11,22 @@ import { CreatorModelReviewPreview } from "./creator-model-review-preview";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Revisão de modelos | Administração | ViraPeça 3D", robots: { index: false, follow: false } };
+const pageSize = 24;
 
-export default async function AdminCreatorModelsPage({ searchParams }: { searchParams: Promise<{ resultado?: string }> }) {
+export default async function AdminCreatorModelsPage({ searchParams }: { searchParams: Promise<{ resultado?: string; pagina?: string }> }) {
   const actor = await getUserWithRole("admin");
   if (!actor.supabase || !actor.user || !actor.authorized) redirect("/conta");
-  const { resultado } = await searchParams;
-  const { data, error } = await actor.supabase.from("creator_model_submissions")
-    .select("id, name, category_slug, asset_path, storage_path, preview_path, file_name, submitted_by, tags, creator_name, source_url, created_at, store:stores!inner(name, slug)")
-    .eq("review_status", "pending").order("created_at", { ascending: true }).order("id", { ascending: true }).limit(100);
+  const { resultado, pagina } = await searchParams;
+  const parsedPage = Number(pagina);
+  const requestedPage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const loadPage = (page: number) => actor.supabase!.from("creator_model_submissions")
+    .select("id, name, category_slug, asset_path, storage_path, preview_path, file_name, submitted_by, tags, creator_name, source_url, created_at, store:stores!inner(name, slug)", { count: "exact" })
+    .eq("review_status", "pending").order("created_at", { ascending: true }).order("id", { ascending: true })
+    .range((page - 1) * pageSize, page * pageSize - 1);
+  let { data, error, count } = await loadPage(requestedPage);
+  const pages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
+  const page = Math.min(requestedPage, pages);
+  if (!error && page !== requestedPage) ({ data, error } = await loadPage(page));
   const admin = createSupabaseAdminClient();
   const reviewRows = await Promise.all((data ?? []).map(async (row) => {
     let assetUrl = row.asset_path ? getModelAssetUrl(row.asset_path) : null;
@@ -52,10 +60,10 @@ export default async function AdminCreatorModelsPage({ searchParams }: { searchP
             {row.source_url && <p><a href={row.source_url} target="_blank" rel="noreferrer">Abrir fonte informada ↗</a></p>}
             {assetUrl && <><CreatorModelReviewPreview assetUrl={assetUrl} modelName={row.name} id={row.id} /><p><a href={assetUrl} target="_blank" rel="noreferrer">Baixar arquivo 3MF ↗</a></p></>}
           </div>
-          <form action={reviewCreatorModel} className="auth-form"><label>Observação para o vendedor<textarea name="reviewNote" rows={2} maxLength={1000} /></label><input type="hidden" name="id" value={row.id} /><button className="button button-primary" type="submit" name="decision" value="published">Aprovar e publicar</button><button className="button button-secondary" type="submit" name="decision" value="rejected">Rejeitar</button></form>
+          <form action={reviewCreatorModel} className="auth-form"><label>Observação para o vendedor<textarea name="reviewNote" rows={2} maxLength={1000} /></label><input type="hidden" name="id" value={row.id} /><input type="hidden" name="pagina" value={page} /><button className="button button-primary" type="submit" name="decision" value="published">Aprovar e publicar</button><button className="button button-secondary" type="submit" name="decision" value="rejected">Rejeitar</button></form>
         </article>;
       })}
     </div>}
-    {data?.length === 100 && <p className="quote-small-note">Exibindo os 100 envios pendentes mais antigos.</p>}
+    {!error && count !== null && count > pageSize && <nav className="catalog-pagination" aria-label="Paginação dos modelos enviados"><span>Página {page} de {pages} · {count} envios pendentes</span><div>{page > 1 && <Link className="button button-secondary" href={`/admin/modelos?pagina=${page - 1}`}>Anterior</Link>}{page < pages && <Link className="button button-secondary" href={`/admin/modelos?pagina=${page + 1}`}>Próxima</Link>}</div></nav>}
   </main></>;
 }
