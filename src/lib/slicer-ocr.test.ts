@@ -148,7 +148,7 @@ Material Cost: $0.72`]);
     });
   });
 
-  it("uses the Total column in Anycubic Slicer Next summaries and ignores zero mass when length is positive", () => {
+  it("uses the Total column in Anycubic Slicer Next summaries without estimating missing weight", () => {
     const result = parseSlicerOcrTexts([`Anycubic Slicer Next
 Filamento Modelo Limpo Torre Total
 Comprimento 8,50 m 24,52 m 8,16 m 41,19 m
@@ -161,6 +161,39 @@ Tempo total: 12h44m`]);
       slicer: "Anycubic Slicer Next", lengthMeters: 41.19, printHours: 12 + 44 / 60,
       filamentChanges: 686, totalGrams: null, filamentGrams: null,
     });
+  });
+
+  it("extracts total and per-filament values from the Anycubic Slicer Next preview table", () => {
+    const result = parseSlicerOcrTexts([`Anycubic Slicer Next
+Filamento Modelo Suporte Limpo Torre Total
+1 6,40 m 6,54 m 21,04 m 3,73 m 37,71 m
+18,93 g 19,36 g 62,26 g 11,02 g 111,57 g
+Total 25,40 m 14,37 m 91,80 m 17,34 m 148,71 m
+75,15 g 42,51 g 271,01 g 51,29 g 439,95 g
+Quantidade de trocas de filamento: 1276
+Custo: 33,00
+Tempo de impressão do modelo: 1d3h58m
+Tempo total: 1d3h58m`]);
+
+    expect(result).toMatchObject({
+      slicer: "Anycubic Slicer Next", lengthMeters: 148.71, totalGrams: 439.95,
+      filamentGrams: 439.95, filamentChanges: 1276, printHours: 27 + 58 / 60,
+      estimatedCost: 33,
+      filaments: [
+        { index: 1, lengthMeters: 37.71, grams: 111.57 },
+      ],
+    });
+  });
+
+  it("preserves zero weight reported by the Anycubic Slicer Next table", () => {
+    const result = parseSlicerOcrTexts([`Anycubic Slicer Next
+Filamento Modelo Suporte Limpo Torre Total
+1 0,10 m 0,10 m 0,10 m 0,10 m 0,40 m
+0,00 g 0,00 g 0,00 g 0,00 g 0,00 g
+Total 0,10 m 0,10 m 0,10 m 0,10 m 0,40 m
+0,00 g 0,00 g 0,00 g 0,00 g 0,00 g`]);
+
+    expect(result).toMatchObject({ lengthMeters: 0.4, totalGrams: 0, filamentGrams: 0, derivedMass: false });
   });
 
   it("recognizes only explicit currency labels for slicer cost", () => {

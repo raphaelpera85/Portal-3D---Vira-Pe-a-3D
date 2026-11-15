@@ -49,6 +49,48 @@ function parseNumber(value: string) {
   return Number(clean.replace(",", "."));
 }
 
+function findAnycubicSummaryTable(lines: string[]) {
+  const headerIndex = lines.findIndex((line) => /^\s*filamento\s+modelo\s+(?:suporte\s+)?limpo\s+torre\s+total\s*$/i.test(line));
+  if (headerIndex < 0) return null;
+  const totalIndex = lines.findIndex((line, index) => index > headerIndex && /^\s*total\b/i.test(line));
+  return totalIndex < 0 ? null : { headerIndex, totalIndex };
+}
+
+function readTableMeasurements(line: string, units: string, normalize: (value: number, unit: string) => number) {
+  return [...line.matchAll(new RegExp(`(${numberPattern})\\s*(${units})\\b`, "gi"))]
+    .map((match) => normalize(parseNumber(match[1]), match[2].toLowerCase()));
+}
+
+function findAnycubicSummaryTotalGrams(lines: string[]) {
+  const table = findAnycubicSummaryTable(lines);
+  if (!table) return null;
+  const normalize = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
+  const rows = lines.slice(table.totalIndex, table.totalIndex + 3);
+  const values = rows.map((line) => readTableMeasurements(line, String.raw`(?:g|gr|grams?|gramas?|kg)`, normalize))
+    .find((measurements) => measurements.length >= 5);
+  return values?.at(-1) ?? null;
+}
+
+function findAnycubicSummaryFilamentReadings(lines: string[]) {
+  const table = findAnycubicSummaryTable(lines);
+  if (!table) return [];
+  const readings: Array<{ index: number; grams: number | null; lengthMeters: number | null; material: string | null; color: string | null }> = [];
+  for (let index = table.headerIndex + 1; index < table.totalIndex; index++) {
+    const row = /^\s*(\d+)\s+(.+)$/.exec(lines[index]);
+    if (!row) continue;
+    const lengths = readTableMeasurements(row[2], String.raw`(?:mm|m)`, (value, unit) => unit === "mm" ? value / 1000 : value);
+    if (lengths.length < 5) continue;
+    const normalize = (value: number, unit: string) => unit === "kg" ? value * 1000 : value;
+    let grams = readTableMeasurements(row[2], String.raw`(?:g|gr|grams?|gramas?|kg)`, normalize);
+    if (grams.length < 5) {
+      grams = readTableMeasurements(lines[index + 1] ?? "", String.raw`(?:g|gr|grams?|gramas?|kg)`, normalize);
+      if (grams.length >= 5) index++;
+    }
+    readings.push({ index: Number(row[1]), lengthMeters: lengths.at(-1) ?? null, grams: grams.at(-1) ?? null, material: null, color: null });
+  }
+  return readings;
+}
+
 function splitGcodeValues(value: string) {
   return value.includes(".") ? value.split(/,\s*/) : value.split(/,\s+/);
 }
@@ -139,7 +181,12 @@ function findFilamentLength(lines: string[], conflicts: string[]) {
   }
   const gcodeTotal = findGcodeFilamentTotal(lines, String.raw`(?:mm|m)`, (value, unit) => unit === "mm" ? value / 1000 : value);
   if (gcodeTotal !== undefined) return gcodeTotal;
-  const summaryHeader = lines.findIndex((line) => /filamento.*modelo.*limpo.*torre.*total/i.test(line));
+  const summaryTable = findAnycubicSummaryTable(lines);
+  if (summaryTable) {
+    const totalLengths = readTableMeasurements(lines[summaryTable.totalIndex], String.raw`(?:mm|m)`, (value, unit) => unit === "mm" ? value / 1000 : value);
+    if (totalLengths.length >= 5) return totalLengths.at(-1)!;
+  }
+  const summaryHeader = lines.findIndex((line) => /^\s*filamento\s+modelo\s+(?:suporte\s+)?limpo\s+torre\s+total\s*$/i.test(line));
   if (summaryHeader >= 0) {
     const totalRow = lines.slice(summaryHeader + 1).find((line) => /^comprimento\b/i.test(line));
     const measurements = totalRow ? [...totalRow.matchAll(/(\d[\d.,]*)\s*(mm|m)\b/gi)] : [];
@@ -152,7 +199,7 @@ function findFilamentLength(lines: string[], conflicts: string[]) {
 }
 
 function findCost(lines: string[], conflicts: string[]) {
-  const labels = String.raw`(?:estimated\s+cost|material\s+cost|filament\s+cost|custo\s+(?:estimado|do\s+material)|\bcost\b)`;
+  const labels = String.raw`(?:estimated\s+cost|material\s+cost|filament\s+cost|custo(?:\s+(?:estimado|do\s+material))?|\bcost\b)`;
   const expression = /(?:(?:R\$|US\$|BRL|USD|\$)\s*)?(\d[\d.,]*)(?:\s*(?:BRL|R\$|USD|\$))?/i;
   const standalone = new RegExp(`^\\s*[:=\\-–]?\\s*(?:(?:R\\$|US\\$|BRL|USD|\\$)\\s*)?${numberPattern}(?:\\s*(?:BRL|R\\$|USD|\\$))?\\s*$`, "i");
   const values: number[] = [];
@@ -219,7 +266,7 @@ function findPrintHours(lines: string[], conflicts: string[]) {
 }
 
 function findCostCurrency(lines: string[], conflicts: string[]): "BRL" | "USD" | null {
-  const labels = /(?:estimated\s+cost|material\s+cost|filament\s+cost|custo\s+(?:estimado|do\s+material)|\bcost\b)/i;
+  const labels = /(?:estimated\s+cost|material\s+cost|filament\s+cost|custo(?:\s+(?:estimado|do\s+material))?|\bcost\b)/i;
   const currencies: Array<"BRL" | "USD"> = [];
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
@@ -312,7 +359,9 @@ function parseOne(text: string) {
     modelGrams: findMeasurement(lines, slicer === "Simplify3D" ? `${massLabels.model}|weight` : massLabels.model, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "peso do modelo", conflicts),
     supportGrams: findMeasurement(lines, massLabels.support, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "peso dos suportes", conflicts),
     totalGrams: gcodeTotalGrams !== undefined ? gcodeTotalGrams
-      : findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "consumo total", conflicts),
+      : slicer === "Anycubic Slicer Next" ? findAnycubicSummaryTotalGrams(lines)
+        ?? findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "consumo total", conflicts)
+        : findMeasurement(lines, massLabels.total, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "consumo total", conflicts),
     purgeGrams: findMeasurement(lines, String.raw`(?:purge|flush|purga|filamento\s+descartado)`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, /(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza)/i, "purga", conflicts),
     wipeTowerGrams: findMeasurement(lines, String.raw`(?:(?:wipe|prime|purge|cleaning)\s*tower|torre\s+(?:de\s+)?(?:purga|limpeza))`, String.raw`(?:g|gr|grams?|gramas?|kg)`, grams, undefined, "torre de limpeza", conflicts),
     lengthMeters: length,
@@ -321,7 +370,7 @@ function parseOne(text: string) {
     estimatedCost: cost,
     estimatedCostCurrency: findCostCurrency(lines, conflicts),
     materials,
-    filamentReadings: [...filamentReadings, ...findStackedFilamentReadings(lines), ...findGcodeFilamentReadings(lines)],
+    filamentReadings: [...filamentReadings, ...findAnycubicSummaryFilamentReadings(lines), ...findStackedFilamentReadings(lines), ...findGcodeFilamentReadings(lines)],
     conflicts,
   };
 }
