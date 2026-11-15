@@ -1359,13 +1359,14 @@
   {
     "id": "79c18aefe674",
     "name": "Nossa Senhora Aparecida",
-    "category": "Diversos",
-    "categorySlug": "diversos",
+    "category": "Natal",
+    "categorySlug": "natal",
     "image": "/modelos/79c18aefe674.png",
     "filePath": "models/nossa-senhora-aparecida.3mf",
     "tags": [
       "nossa senhora",
       "aparecida",
+      "natal",
       "religioso",
       "imagem",
       "multicolorido"

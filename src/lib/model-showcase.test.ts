@@ -31,7 +31,8 @@ describe("filterModelShowcase", () => {
   it("keeps all included previews backed by image files in the three requested categories", () => {
     expect(modelShowcase).toHaveLength(90);
     expect(Object.fromEntries(modelShowcaseCategories.map(({ slug }) => [slug, modelShowcase.filter((model) => model.categorySlug === slug).length])))
-      .toEqual({ "suporte-para-oculos": 7, chaveiros: 51, infantil: 8, "jogos-de-mesa": 3, diversos: 6, natal: 11, "acessorios-para-impressora-3d": 4 });
+      .toEqual({ "suporte-para-oculos": 7, chaveiros: 51, infantil: 8, "jogos-de-mesa": 3, diversos: 5, natal: 12, "acessorios-para-impressora-3d": 4 });
+    expect(modelShowcase.find(({ name }) => name === "Nossa Senhora Aparecida")).toMatchObject({ category: "Natal", categorySlug: "natal" });
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), "public", model.image.slice(1))))).toBe(true);
     expect(modelShowcase.every((model) => /^models\/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:3mf|zip)$/.test(model.filePath))).toBe(true);
     expect(modelShowcase.every((model) => existsSync(path.join(process.cwd(), model.filePath)))).toBe(true);
