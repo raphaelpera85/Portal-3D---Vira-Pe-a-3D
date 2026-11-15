@@ -4,6 +4,7 @@ import { useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CREATOR_MODEL_MAX_PREVIEW_BYTES, CREATOR_MODEL_MAX_UPLOAD_BYTES, normalizeCreatorModelPreview, normalizeCreatorModelUpload } from "@/lib/creator-model-upload";
+import { differenceHash } from "@/lib/visual-image-search";
 import { discardCreatorModelUpload, finalizeCreatorModelUpload, prepareCreatorModelUpload, submitCreatorModel, type CreatorModelUploadPreparation } from "@/app/painel/maker/model-actions";
 import { modelShowcaseCategories } from "@/lib/model-showcase";
 
@@ -50,6 +51,19 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
     selectModelFile(event.dataTransfer.files[0]);
   }
 
+  async function hashPreview(file: File) {
+    const bitmap = await createImageBitmap(file, { resizeWidth: 9, resizeHeight: 8, resizeQuality: "high" });
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 9;
+      canvas.height = 8;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) throw new Error("preview_hash_failed");
+      context.drawImage(bitmap, 0, 0, 9, 8);
+      return differenceHash(context.getImageData(0, 0, 9, 8).data);
+    } finally { bitmap.close(); }
+  }
+
   async function submitUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
@@ -65,7 +79,8 @@ export function MakerModelRegistrationForm({ availableAssets }: { availableAsset
     let upload: Extract<CreatorModelUploadPreparation, { success: true }>["upload"] | null = null;
     try {
       const values = Object.fromEntries([...new FormData(form).entries()].filter(([key]) => key !== "modelFile" && key !== "previewFile")) as Record<string, string>;
-      const prepared = await prepareCreatorModelUpload(values, { name: file.name, size: file.size, type: file.type }, previewFile ? { name: previewFile.name, size: previewFile.size, type: previewFile.type } : null);
+      const previewHash = previewFile ? await hashPreview(previewFile) : null;
+      const prepared = await prepareCreatorModelUpload(values, { name: file.name, size: file.size, type: file.type }, previewFile ? { name: previewFile.name, size: previewFile.size, type: previewFile.type } : null, previewHash);
       if (!prepared.success) { setMessage(prepared.message); return; }
       upload = prepared.upload;
       const client = createSupabaseBrowserClient();

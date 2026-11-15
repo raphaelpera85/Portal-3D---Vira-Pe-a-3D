@@ -7,7 +7,7 @@ import { fetchAllPages } from "./pagination";
 import { isCreatorModelPreviewPathForId, isCreatorModelUploadPath } from "./creator-model-upload";
 
 type CreatorModelRow = {
-  id: string; name: string; category_slug: string; asset_path: string | null; preview_path: string | null; tags: string[];
+  id: string; name: string; category_slug: string; asset_path: string | null; preview_path: string | null; preview_hash: string | null; tags: string[];
   creator_name: string; source_url: string | null; created_at: string;
 };
 
@@ -18,6 +18,7 @@ function toShowcaseModel(row: CreatorModelRow): ShowcaseModel | null {
   return {
     id: row.id, name: row.name, category: category.name, categorySlug: category.slug,
     image: "/modelos/modelo-sem-imagem.svg", filePath: row.asset_path ?? "", tags: row.tags,
+    ...(typeof row.preview_hash === "string" && /^[a-f0-9]{16}$/i.test(row.preview_hash) ? { visualHash: row.preview_hash.toLowerCase() } : {}),
     creatorName: row.creator_name, sourceUrl: row.source_url ?? undefined,
   };
 }
@@ -26,7 +27,7 @@ export async function loadPublishedCreatorModels(): Promise<ShowcaseModel[]> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await fetchAllPages((from, to) => supabase.from("creator_model_submissions")
-    .select("id, name, category_slug, asset_path, preview_path, tags, creator_name, source_url, created_at")
+    .select("id, name, category_slug, asset_path, preview_path, preview_hash, tags, creator_name, source_url, created_at")
     .eq("review_status", "published").order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to));
   if (error) return [];
   return (data ?? []).flatMap((row) => {
@@ -58,7 +59,7 @@ export async function loadPublishedCreatorModel(id: string): Promise<ShowcaseMod
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const { data, error } = await supabase.from("creator_model_submissions")
-    .select("id, name, category_slug, asset_path, preview_path, tags, creator_name, source_url, created_at")
+    .select("id, name, category_slug, asset_path, preview_path, preview_hash, tags, creator_name, source_url, created_at")
     .eq("id", id).eq("review_status", "published").maybeSingle();
   if (error || !data) return null;
   const model = toShowcaseModel(data as CreatorModelRow);

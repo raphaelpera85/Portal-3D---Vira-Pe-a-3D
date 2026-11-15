@@ -17,11 +17,15 @@ export default async function ModelsPage({ searchParams }: { searchParams: Promi
   const query = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
   const allowedCategories = new Set<string>(modelShowcaseCategories.map(({ slug }) => slug));
   const category = typeof params.categoria === "string" && allowedCategories.has(params.categoria) ? params.categoria : "";
-  const filtered = filterModelShowcase([...modelShowcase, ...await loadPublishedCreatorModels()], query, category);
+  const creatorModels = await addPublishedCreatorPreviews(await loadPublishedCreatorModels());
+  const additionalVisualIndex = creatorModels.flatMap((model) => model.visualHash && model.image !== "/modelos/modelo-sem-imagem.svg"
+    ? [{ id: model.id, name: model.name, categorySlug: model.categorySlug, image: model.image, tags: model.tags, hash: model.visualHash }]
+    : []);
+  const filtered = filterModelShowcase([...modelShowcase, ...creatorModels], query, category);
   const pages = Math.ceil(filtered.length / 24);
   const requestedPage = typeof params.pagina === "string" && /^\d+$/.test(params.pagina) ? Number(params.pagina) : 1;
   const page = pages ? Math.max(1, Math.min(requestedPage, pages)) : 1;
-  const visibleModels = await addPublishedCreatorPreviews(filtered.slice((page - 1) * 24, page * 24));
+  const visibleModels = filtered.slice((page - 1) * 24, page * 24);
 
-  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="model-gallery-page"><ModelShowcase models={visibleModels} query={query} category={category} page={page} pages={pages} /></main><footer className="site-footer"><div className="shell footer-inner"><a className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></a><p>Sua ideia vira realidade.</p><span>© 2026 ViraPeça 3D</span></div></footer></>;
+  return <><SiteHeader /><main id="main-content" tabIndex={-1} className="model-gallery-page"><ModelShowcase models={visibleModels} query={query} category={category} page={page} pages={pages} additionalVisualIndex={additionalVisualIndex} /></main><footer className="site-footer"><div className="shell footer-inner"><a className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></a><p>Sua ideia vira realidade.</p><span>© 2026 ViraPeça 3D</span></div></footer></>;
 }

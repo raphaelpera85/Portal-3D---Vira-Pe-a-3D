@@ -23,12 +23,13 @@ async function getCreatorModelSubmissionActor() {
   return store?.status === "published" ? { actor, store } : null;
 }
 
-export async function prepareCreatorModelUpload(values: Record<string, string>, rawFile: { name: string; size: number; type?: string }, rawPreviewFile: { name: string; size: number; type?: string } | null = null): Promise<CreatorModelUploadPreparation> {
+export async function prepareCreatorModelUpload(values: Record<string, string>, rawFile: { name: string; size: number; type?: string }, rawPreviewFile: { name: string; size: number; type?: string } | null = null, previewHash: unknown = null): Promise<CreatorModelUploadPreparation> {
   if (!values || typeof values !== "object" || Array.isArray(values)) return { success: false, message: "Confira os dados e selecione um arquivo 3MF válido de até 50 MiB." };
   const details = validateCreatorModelDetails({ ...values, rightsConfirmed: values.rightsConfirmed === "true" ? "on" : values.rightsConfirmed });
   const file = normalizeCreatorModelUpload(rawFile);
   const preview = rawPreviewFile ? normalizeCreatorModelPreview(rawPreviewFile) : null;
-  if (!details || !file || (rawPreviewFile && !preview)) return { success: false, message: "Confira os dados, o arquivo 3MF e a capa opcional." };
+  const validPreviewHash = typeof previewHash === "string" && /^[a-f0-9]{16}$/i.test(previewHash) ? previewHash.toLowerCase() : null;
+  if (!details || !file || (rawPreviewFile && (!preview || !validPreviewHash)) || (!rawPreviewFile && previewHash != null)) return { success: false, message: "Confira os dados, o arquivo 3MF e a capa opcional." };
   const authorized = await getCreatorModelSubmissionActor();
   const admin = createSupabaseAdminClient();
   if (!authorized || !admin) return { success: false, message: "Entre em uma conta de vendedor com loja publicada para enviar modelos." };
@@ -40,6 +41,7 @@ export async function prepareCreatorModelUpload(values: Record<string, string>, 
     id, store_id: authorized.store.id, submitted_by: authorized.actor.user!.id, ...details,
     asset_path: null, storage_path: path, file_name: file.name, file_size_bytes: file.size,
     preview_path: previewPath, preview_size_bytes: preview?.size ?? null, preview_content_type: preview?.contentType ?? null,
+    preview_hash: validPreviewHash,
     rights_confirmed_at: new Date().toISOString(), review_status: "uploading",
   });
   if (insertError) return { success: false, message: insertError.code === "23505" ? "Este arquivo já foi enviado." : "Não foi possível preparar o cadastro do modelo." };
