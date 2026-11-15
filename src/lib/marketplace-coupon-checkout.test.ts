@@ -24,4 +24,17 @@ describe("marketplace coupon checkout", () => {
     expect(couponMigration).toContain("coalesce(auth.role(), '') <> 'service_role'");
     expect(couponMigration).toContain("Service role required");
   });
+
+  it("limits order creation to the buyer's own address and cart", () => {
+    expect(couponMigration).toContain("r.role = 'buyer'::public.app_role");
+    expect(couponMigration).toContain("a.buyer_id = (select auth.uid()) for share");
+    expect(couponMigration).toContain("c.buyer_id = (select auth.uid()) for update");
+  });
+
+  it("queues seller notifications and requires WhatsApp opt-in", () => {
+    expect(couponMigration).toContain("insert into public.store_notification_deliveries");
+    expect(couponMigration).toContain("select new_order, 'email', c.email");
+    expect(couponMigration).toContain("select new_order, 'whatsapp', c.whatsapp");
+    expect(couponMigration).toContain("c.whatsapp_opt_in");
+  });
 });
