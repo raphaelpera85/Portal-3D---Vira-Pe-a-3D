@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { confirmSlicerOcrCostCurrency, hasReviewableSlicerOcrData, parseSlicerOcrTexts, slicerColorPresentation } from "./slicer-ocr";
 
 describe("parseSlicerOcrTexts", () => {
@@ -190,7 +191,9 @@ Tempo total: 1d3h58m`]);
     const fixture = new URL("./fixtures/anycubic-slicer-next-filament-panel.txt", import.meta.url);
     const screenshot = new URL("./fixtures/anycubic-slicer-next-filament-panel.png", import.meta.url);
     const text = readFileSync(fixture, "utf8");
-    expect(statSync(screenshot).size).toBeGreaterThan(0);
+    expect(
+      createHash("sha256").update(readFileSync(screenshot)).digest("hex"),
+    ).toBe("b220cbe815d0689efb7b72b46a62794396893f8f231d217c4500aa1f27880a92");
     const result = parseSlicerOcrTexts([text]);
 
     expect(result).toMatchObject({
