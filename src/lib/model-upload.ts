@@ -3,6 +3,7 @@ import { validateModelFiles } from "./model-file";
 export type ModelUploadFile = { name: string; storage_name: string; size: number };
 
 export function prepareModelUploadFiles(files: Array<Pick<File, "name" | "size" | "type">>): { error: string | null; files: ModelUploadFile[] | null } {
+  if (files.length > 10) return { error: "O conjunto pode ter até 10 arquivos.", files: null };
   const validation = validateModelFiles(files);
   if (validation) return { error: validation, files: null };
 

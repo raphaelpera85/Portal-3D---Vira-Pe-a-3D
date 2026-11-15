@@ -6,6 +6,7 @@ import { runCatalogSourceCheck } from "@/lib/catalog-source-check.server";
 import { runCatalogModelDiscovery } from "@/lib/catalog-discovery.server";
 import { cleanupStaleDesignerServiceDeliveryUploads } from "@/lib/designer-service-delivery-cleanup.server";
 import { cleanupStaleCreatorModelUploads } from "@/lib/creator-model-upload-cleanup.server";
+import { cleanupStaleBuyerModelUploadReservations } from "@/lib/buyer-model-upload-cleanup.server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -34,8 +35,9 @@ export async function GET(request: Request) {
   const evidenceCleanup = await cleanupStaleChargebackEvidenceUploads();
   const designerDeliveryCleanup = await cleanupStaleDesignerServiceDeliveryUploads();
   const creatorModelUploadCleanup = await cleanupStaleCreatorModelUploads();
+  const buyerModelUploadCleanup = await cleanupStaleBuyerModelUploadReservations();
   const catalogSourceCheck = await runCatalogSourceCheck();
   const catalogDiscovery = await runCatalogModelDiscovery();
   const status = result.status === 200 && (!catalogSourceCheck.ok || !catalogDiscovery.ok) ? 500 : result.status;
-  return Response.json({ notifications: result.body, refundReconciliation: refunds, evidenceCleanup, designerDeliveryCleanup, creatorModelUploadCleanup, catalogSourceCheck, catalogDiscovery }, { status });
+  return Response.json({ notifications: result.body, refundReconciliation: refunds, evidenceCleanup, designerDeliveryCleanup, creatorModelUploadCleanup, buyerModelUploadCleanup, catalogSourceCheck, catalogDiscovery }, { status });
 }

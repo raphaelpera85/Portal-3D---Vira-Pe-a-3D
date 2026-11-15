@@ -6,7 +6,7 @@ import { useState } from "react";
 import { ArchiveRestore, Download, Trash2, Upload } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { uploadSupabaseFile } from "@/lib/supabase/upload-progress";
-import { deleteBuyerModelUpload } from "@/app/visualizador/actions";
+import { deleteBuyerModelUpload, prepareBuyerModelUpload, releaseBuyerModelUploadReservation } from "@/app/visualizador/actions";
 import { prepareModelUploadFiles, type ModelUploadFile } from "@/lib/model-upload";
 import type { ModelDimensions } from "@/lib/model-file";
 import { getModelFormat } from "@/lib/model-file";
@@ -61,14 +61,18 @@ export function ModelUploadManager({ buyerId, files, savedModels, savedModelsPag
     setProgress(0);
     setMessage("Preparando o envio privado…");
     let uploadId: string | null = null;
+    let reservationCreated = false;
     try {
       const { data: { session }, error: sessionError } = await client.auth.getSession();
       if (sessionError || !session) throw new Error("session");
+      const preparation = await prepareBuyerModelUpload(bundleId, modelName, prepared.files);
+      if (!preparation.success) { setMessage(preparation.message); return; }
+      reservationCreated = true;
       setMessage("Enviando arquivos para armazenamento privado…");
       let uploadedBytes = 0;
       for (let index = 0; index < files.length; index += 1) {
-        const path = `${buyerId}/${bundleId}/${prepared.files[index].storage_name}`;
-        await uploadSupabaseFile({ bucket: "buyer-models", path, accessToken: session.access_token, file: files[index], onProgress: (loaded) => {
+        const { path, token } = preparation.uploads[index];
+        await uploadSupabaseFile({ bucket: "buyer-models", path, signedToken: token, accessToken: session.access_token, file: files[index], onProgress: (loaded) => {
           setProgress(Math.floor(((uploadedBytes + loaded) / totalBytes) * 100));
         } });
         uploadedBytes += files[index].size;
@@ -89,8 +93,13 @@ export function ModelUploadManager({ buyerId, files, savedModels, savedModelsPag
       setMessage("Modelo salvo na sua biblioteca privada.");
       router.refresh();
     } catch {
+      if (!uploadId && reservationCreated) {
+        const { data: registered } = await client.from("buyer_model_uploads").select("id").eq("buyer_id", buyerId).eq("bundle_id", bundleId).maybeSingle();
+        uploadId = registered?.id ?? null;
+      }
       if (uploadId) await client.rpc("delete_buyer_model_upload", { p_upload_id: uploadId });
       const cleanup = uploaded.length ? await client.storage.from("buyer-models").remove(uploaded) : { error: null };
+      if (reservationCreated) await releaseBuyerModelUploadReservation(bundleId);
       setMessage(cleanup.error
         ? "O envio não foi concluído e alguns arquivos podem ter ficado sem registro. Eles continuam privados."
         : "Não foi possível salvar o modelo. Confira a conexão e tente novamente.");
@@ -140,7 +149,7 @@ export function ModelUploadManager({ buyerId, files, savedModels, savedModelsPag
 
   return <section className="model-library" aria-label="Biblioteca privada de modelos">
     <div className="inspector-section-head"><h2>Biblioteca privada</h2><ArchiveRestore size={16} aria-hidden="true" /></div>
-    <p className="model-library-note">Salve o modelo e os arquivos associados na sua conta para abri-los em outro momento. O conjunto inteiro fica privado e pode ter até 20 MB; modelos maiores ainda podem ser vistos na prévia local, com limite de 50 MB.</p>
+    <p className="model-library-note">Salve o modelo e os arquivos associados na sua conta para abri-los em outro momento. Cada conjunto privado pode ter até 20 MB, com limite de cinco envios em 24 horas. Modelos maiores ainda podem ser vistos na prévia local, com limite de 50 MB.</p>
     {libraryError ? <p className="model-library-note" role="alert">A biblioteca privada precisa da migração de armazenamento para funcionar.</p> : buyerId ? files.length > 0 ? <button className="button button-primary model-library-save" type="button" onClick={() => void saveCurrentModel()} disabled={pending} aria-busy={pending}>
       <Upload size={15} aria-hidden="true" /> {pending ? message.startsWith("Enviando") ? `Enviando ${progress}%…` : "Preparando envio…" : "Salvar conjunto na conta"}
     </button> : <p className="model-library-note">Abra um modelo para habilitar o salvamento.</p> : <p className="model-library-note"><Link href="/conta">Entre em uma conta de comprador</Link> para salvar modelos privados.</p>}

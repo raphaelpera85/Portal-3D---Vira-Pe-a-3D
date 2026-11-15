@@ -20,4 +20,11 @@ describe("private model upload manifest", () => {
     ]).error).toContain("mesmo nome");
     expect(prepareModelUploadFiles([{ name: "scene.pdf", size: 20, type: "application/pdf" }]).error).toContain("modelo principal");
   });
+
+  it("rejects bundles with more than ten files before upload", () => {
+    expect(prepareModelUploadFiles([
+      { name: "scene.3mf", size: 20, type: "model/3mf" },
+      ...Array.from({ length: 10 }, (_, index) => ({ name: `part-${index}.bin`, size: 20, type: "application/octet-stream" })),
+    ]).error).toContain("até 10 arquivos");
+  });
 });
