@@ -1,0 +1,35 @@
+name: Publish TripoSR Space
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Hugging Face client
+        run: python -m pip install --disable-pip-version-check huggingface_hub==0.36.0
+      - name: Publish Space when HF_TOKEN is configured
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::notice::Set the HF_TOKEN repository secret to publish the TripoSR Space."
+            exit 0
+          fi
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          HfApi(token=os.environ["HF_TOKEN"]).upload_folder(
+              repo_id="raphaelpera85/virapeca-triposr",
+              repo_type="space",
+              folder_path="spaces/triposr",
+              ignore_patterns=["__pycache__/**", "*.pyc"],
+              commit_message="chore: publish TripoSR Space from ViraPeca portal",
+          )
+          PY

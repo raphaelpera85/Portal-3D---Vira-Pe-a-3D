@@ -1,6 +1,7 @@
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
 ACCEPTED_IMAGE_FORMATS = {"PNG", "JPEG", "WEBP"}
+GRADIO_CACHE_POLICY = (60 * 60, 24 * 60 * 60)
 
 
 def validate_image_size(file_size):

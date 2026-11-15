@@ -1,9 +1,12 @@
 import unittest
 
-from policy import validate_image_metadata, validate_image_size
+from policy import GRADIO_CACHE_POLICY, validate_image_metadata, validate_image_size
 
 
 class ImagePolicyTest(unittest.TestCase):
+    def test_uploaded_and_generated_files_expire_after_one_day(self):
+        self.assertEqual(GRADIO_CACHE_POLICY, (60 * 60, 24 * 60 * 60))
+
     def test_accepts_supported_image_at_limits(self):
         validate_image_size(5 * 1024 * 1024)
         validate_image_metadata("PNG", 5000, 4000)

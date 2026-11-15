@@ -10,7 +10,7 @@ import rembg
 import torch
 from PIL import Image
 from PIL import UnidentifiedImageError
-from policy import validate_image_metadata, validate_image_size
+from policy import GRADIO_CACHE_POLICY, MAX_IMAGE_BYTES, validate_image_metadata, validate_image_size
 
 TSR_REVISION = "107cefdc244c39106fa830359024f6a2f1c78871"
 TSR_DIR = "/tmp/TripoSR"
@@ -71,7 +71,7 @@ def generate(image_path):
     return mesh_path, mesh_path
 
 
-with gr.Blocks(title="ViraPeça 3D · TripoSR") as demo:
+with gr.Blocks(title="ViraPeça 3D · TripoSR", delete_cache=GRADIO_CACHE_POLICY) as demo:
     gr.Markdown("## Gere um rascunho 3D a partir de uma imagem\nO arquivo GLB é uma prévia inicial e precisa ser revisado antes de qualquer impressão 3D.")
     image = gr.Image(label="Imagem", type="filepath", sources=["upload"])
     submit = gr.Button("Gerar modelo", variant="primary")
@@ -79,4 +79,4 @@ with gr.Blocks(title="ViraPeça 3D · TripoSR") as demo:
     download = gr.File(label="Baixar GLB", interactive=False)
     submit.click(generate, inputs=image, outputs=[preview, download], api_name="generate")
 
-demo.queue(max_size=2).launch()
+demo.queue(max_size=2).launch(max_file_size=MAX_IMAGE_BYTES)
