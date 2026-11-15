@@ -95,6 +95,7 @@ export function mapTechnicalCatalog(
     return {
       id: text(row.id), name: [text(row.manufacturer), text(row.model), text(row.variant)].filter(Boolean).join(" "),
       brand: text(row.manufacturer), model: text(row.model), variant: text(row.variant, "standard"),
+      modelYear: number(row.model_year),
       buildVolumeDescription: text(properties.buildVolumeDescription) || null,
       technology: row.technology === "SLA" || row.technology === "MSLA" || row.technology === "DLP" ? row.technology : "FDM",
       buildVolumeMm, extruders: number(row.extruder_count), filamentDiameterMm: number(row.filament_diameter_mm),

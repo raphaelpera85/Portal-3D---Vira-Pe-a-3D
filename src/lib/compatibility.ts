@@ -8,6 +8,7 @@ export type CatalogPrinter = {
   id: string;
   name: string;
   model?: string;
+  modelYear?: number | null;
   technology: PrinterTechnology;
   buildVolumeMm: { x: number; y: number; z: number } | null;
   filamentDiameterMm: number | null;

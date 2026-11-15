@@ -148,6 +148,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
             </label>
             <dl className="technical-facts">
               <div><dt>Status comercial</dt><dd>{commercialStatusText[printer.commercialStatus ?? "unknown"]}{printer.commercialStatusSource?.checkedAt ? ` · conferido em ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${printer.commercialStatusSource.checkedAt}T00:00:00Z`))}` : ""}</dd></div>
+              <div><dt>Ano de lançamento</dt><dd>{printer.modelYear ?? "Não informado"}</dd></div>
               <div><dt>Tecnologia</dt><dd>{printer.technology}</dd></div>
               {!hasNozzleSpecificVolumes && <div><dt>Volume útil</dt><dd>{printer.buildVolumeDescription ?? (printer.buildVolumeMm ? volumeText(printer.buildVolumeMm) : "Não informado")}</dd></div>}
               {singleNozzleVolume && <div><dt>Volume útil · 1 bico</dt><dd>{volumeText(singleNozzleVolume)}</dd></div>}

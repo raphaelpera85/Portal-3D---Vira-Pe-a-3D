@@ -4,6 +4,16 @@ import { TechnicalCatalog } from "./technical-catalog";
 import { mapTechnicalCatalog } from "../lib/technical-catalog-data";
 
 describe("TechnicalCatalog manufacturer conditions", () => {
+  it("shows a cataloged printer launch year", () => {
+    const catalog = mapTechnicalCatalog(
+      [{ id: "k1-max", manufacturer: "Creality", model: "K1 Max", variant: "2024", model_year: 2024, technology: "FDM" }],
+      [{ id: "pla", manufacturer: "Marca", product: "PLA", family: "PLA", process: "filament" }], [], [], [],
+    );
+
+    const markup = renderToStaticMarkup(<TechnicalCatalog {...catalog} notice={null} />);
+    expect(markup).toContain("<dt>Ano de lançamento</dt><dd>2024</dd>");
+  });
+
   it("shows a known non-multicolor configuration instead of calling it unknown", () => {
     const catalog = mapTechnicalCatalog(
       [{

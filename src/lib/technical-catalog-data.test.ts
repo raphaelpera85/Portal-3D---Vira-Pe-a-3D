@@ -12,6 +12,12 @@ const profileHash = (profiles: unknown) => {
 };
 
 describe("mapTechnicalCatalog", () => {
+  it("maps the stored printer launch year into the public catalog data", () => {
+    expect(mapTechnicalCatalog([{
+      id: "printer", manufacturer: "Creality", model: "K1 Max", variant: "2024", model_year: 2024, technology: "FDM",
+    }], [], [], [], []).printers[0].modelYear).toBe(2024);
+  });
+
   it("keeps Raise3D Pro3 Plus HS available in the local fallback with both build modes", () => {
     const printer = printers.find((entry) => entry.id === "raise3d-pro3-plus-hs");
 

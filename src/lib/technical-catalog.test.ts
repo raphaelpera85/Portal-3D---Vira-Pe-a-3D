@@ -299,6 +299,7 @@ describe("verified technical catalog records", () => {
     const compatibleNozzles = nozzles.filter((item) => item.printerCompatibility?.["creality-k1-max-2024"] === "compatible");
 
     expect(printer).toMatchObject({
+      modelYear: 2024,
       buildVolumeMm: { x: 300, y: 300, z: 300 },
       maximumSpeedMmPerSecond: 600,
       maxBedTemperatureC: null,
