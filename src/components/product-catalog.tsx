@@ -83,7 +83,7 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
         <span>Página {page} de {pages}</span>
         {page < pages ? <Link className="button button-secondary" href={catalogUrl({ query, category, page: page + 1, sort })}>Próxima página →</Link> : <span />}
       </nav>}
-      <p className="catalog-disclaimer">{source === "local" ? "Vitrine demonstrativa; produtos e fabricantes são exemplos locais." : "Produtos publicados por lojas aprovadas. Valores e disponibilidade podem mudar; confirme antes de contratar."}</p>
+      {(products.length > 0 || source === "local") && <p className="catalog-disclaimer">{source === "local" ? "Vitrine demonstrativa; produtos e fabricantes são exemplos locais." : "Produtos publicados por lojas aprovadas. Valores e disponibilidade podem mudar; confirme antes de contratar."}</p>}
     </section>
   );
 }

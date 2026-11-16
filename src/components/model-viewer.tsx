@@ -704,6 +704,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
           </section>}
         </div>
         {!readOnly && <aside className="viewer-inspector">
+          {rawDimensions ? <div className="viewer-settings">
           <div className="inspector-heading"><div><p className="eyebrow">PAINEL DO MODELO</p><h1>Inspecione<br /><em>cada detalhe.</em></h1></div><span className="inspector-mark"><Box size={19} /></span></div>
           <p className="inspector-description">Gire, aproxime e confira as medidas antes de transformar o arquivo em uma peça.</p>
           <div className="inspector-divider" />
@@ -794,6 +795,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
             </ul>
           </>}
           <div className="inspector-divider" />
+          </div> : <p className="viewer-empty-inspector">Abra um modelo 3D para consultar dimensões e compatibilidade.</p>}
           <div className="file-summary"><span className="file-summary-icon"><Box size={17} /></span><div><strong>{fileName || "Seu arquivo 3D"}</strong><small>{fileKind ? `${fileKind.toUpperCase()} · prévia até ${Math.round(MAX_MODEL_PREVIEW_FILE_BYTES / 1024 / 1024)} MB` : "STL, OBJ, 3MF, GLB ou GLTF · prévia até 50 MB"}</small></div></div>
           <label className="viewer-upload-secondary"><Upload size={15} /> {rawDimensions ? "Trocar arquivo" : "Escolher arquivo"}<input type="file" multiple accept=".stl,.obj,.3mf,.glb,.gltf,.mtl,.bin,.png,.jpg,.jpeg,.webp,model/stl,model/obj,model/3mf,model/gltf-binary,model/gltf+json" onChange={(event) => { void loadFiles(Array.from(event.target.files ?? [])); event.currentTarget.value = ""; }} /></label>
           <ModelUploadManager buyerId={buyerId} files={selectedFiles} savedModels={savedModels} savedModelsPage={savedModelsPage} savedModelsPages={savedModelsPages} savedModelsCount={savedModelsCount} orcamento={orcamento} materials={materials} dimensionsMm={dimensionsMm} today={today} onLoad={loadFiles} libraryError={libraryError} />

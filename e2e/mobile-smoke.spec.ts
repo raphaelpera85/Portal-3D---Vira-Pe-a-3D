@@ -68,6 +68,8 @@ test("mobile 3D viewer fits the viewport without horizontal scrolling", async ({
   await expect(page.locator(".viewer-layout")).toBeVisible();
   await expect(page.locator(".viewer-stage")).toBeVisible();
   await expect(page.locator(".viewer-inspector")).toBeVisible();
+  await expect(page.locator(".viewer-empty-inspector")).toContainText("Abra um modelo 3D");
+  await expect(page.getByRole("heading", { name: "Dimensões", exact: true })).toHaveCount(0);
 
   const layout = await page.locator(".viewer-layout").evaluate((element) => {
     const rect = element.getBoundingClientRect();
@@ -80,6 +82,8 @@ test("mobile 3D viewer fits the viewport without horizontal scrolling", async ({
 
 test("viewer exposes printer, material, nozzle, and volume compatibility checks", async ({ page }) => {
   await page.goto("/visualizador");
+  await page.locator(".viewer-upload-button input[type=file]").setInputFiles("models/drybox-single-v3.3mf");
+  await expect(page.getByRole("heading", { name: "Dimensões", exact: true })).toBeVisible({ timeout: 60_000 });
   const printer = page.getByLabel("Impressora para verificar compatibilidade");
   await printer.selectOption({ label: "Bambu Lab A1 mini standard" });
   await expect(page.locator(".viewer-volume-value")).toContainText("180 × 180 × 180 mm");
@@ -101,6 +105,8 @@ test("viewer exposes printer, material, nozzle, and volume compatibility checks"
 
 test("viewer shows exact resin profiles and keeps unknown exposure unverified", async ({ page }) => {
   await page.goto("/visualizador");
+  await page.locator(".viewer-upload-button input[type=file]").setInputFiles("models/drybox-single-v3.3mf");
+  await expect(page.getByRole("heading", { name: "Dimensões", exact: true })).toBeVisible({ timeout: 60_000 });
   const printer = page.getByLabel("Impressora para verificar compatibilidade");
   const material = page.getByLabel("Material para verificar compatibilidade");
   const checks = page.locator(".viewer-volume-check > li");
