@@ -1656,6 +1656,10 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .legal-footer { align-items: flex-start; flex-direction: column; padding-block: 20px; }
   .footer-policy-links { gap: 12px; }
 }
+@media (max-width: 680px) {
+  .shell form :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea) { box-sizing: border-box; min-height: 44px; font-size: 16px; }
+  .shell form :is(button, .button) { min-height: 44px; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
