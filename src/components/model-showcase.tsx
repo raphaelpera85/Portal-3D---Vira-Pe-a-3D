@@ -14,10 +14,10 @@ function galleryUrl(query: string, category: string, page = 1) {
   return `/modelos${params.size ? `?${params.toString()}` : ""}#modelos`;
 }
 
-function ModelCards({ models }: { models: ShowcaseModel[] }) {
+function ModelCards({ models, eagerFirst = false }: { models: ShowcaseModel[]; eagerFirst?: boolean }) {
   return <div className="model-gallery-grid" aria-live="polite">
-    {models.map((model) => <article className="model-gallery-card" key={model.id}>
-      <Link className="model-gallery-image" href={`/modelos/${model.id}`} prefetch={false} aria-label={`Abrir ${model.name}, visualizar e baixar modelo 3D`}>{model.image.startsWith("https://") ? <img src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width="480" height="360" loading="lazy" referrerPolicy="no-referrer" /> : <Image src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width={480} height={360} sizes="(max-width: 390px) 100vw, (max-width: 640px) 50vw, (max-width: 900px) 33vw, 25vw" loading="lazy" />}</Link>
+    {models.map((model, index) => <article className="model-gallery-card" key={model.id}>
+      <Link className="model-gallery-image" href={`/modelos/${model.id}`} prefetch={false} aria-label={`Abrir ${model.name}, visualizar e baixar modelo 3D`}>{model.image.startsWith("https://") ? <img src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width="480" height="360" loading={eagerFirst && index === 0 ? "eager" : "lazy"} referrerPolicy="no-referrer" /> : <Image src={model.image} alt={`Prévia do modelo 3D ${model.name}`} width={480} height={360} sizes="(max-width: 390px) 100vw, (max-width: 640px) 50vw, (max-width: 900px) 33vw, 25vw" loading={eagerFirst && index === 0 ? "eager" : "lazy"} />}</Link>
       <div className="model-gallery-copy"><Link className="model-gallery-summary" href={`/modelos/${model.id}`} prefetch={false}><div className="product-meta"><span>{model.category}</span><span aria-hidden="true">{getShowcaseFileLabel(model.filePath)}</span></div><h3>{model.name}</h3></Link>{model.creatorName && <p className="model-gallery-creator">Criado por {model.creatorName}</p>}
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={galleryUrl(tag, model.categorySlug)}>{tag}</Link></li>)}</ul>
       </div>
@@ -54,7 +54,7 @@ export function ModelShowcase({ models, query, category, page, pages, additional
       {query && <p className="makerworld-search-link">Não encontrou no catálogo? <a href={`https://makerworld.com/en/search/models?keyword=${encodeURIComponent(query)}`} target="_blank" rel="noopener noreferrer nofollow">Buscar “{query}” no MakerWorld ↗</a><small>O portal não baixa arquivos do MakerWorld. Baixe somente um modelo que você tenha permissão para usar; vendedores podem <Link href="/conta?destino=modelo-3d">entrar e enviá-lo ao portal para revisão.</Link></small></p>}
     </div>
     <p className="catalog-disclaimer">Abra um modelo para girar a prévia 3D e baixar o arquivo original.</p>
-    <ModelCards models={models} />
+    <ModelCards models={models} eagerFirst />
     {pages > 1 && <nav className="catalog-pagination" aria-label="Paginação dos modelos">{page > 1 ? <Link className="button button-secondary" href={galleryUrl(query, category, page - 1)}>← Página anterior</Link> : <span />}<span>Página {page} de {pages}</span>{page < pages ? <Link className="button button-secondary" href={galleryUrl(query, category, page + 1)}>Próxima página →</Link> : <span />}</nav>}
   </section>;
 }

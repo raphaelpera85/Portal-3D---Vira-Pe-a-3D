@@ -18,6 +18,14 @@ describe("ModelShowcase", () => {
     expect(markup).not.toContain("makerworld.com/en/search/models");
   });
 
+  it("loads only the first catalog preview eagerly", () => {
+    const model = { id: "first", name: "First", category: "Diversos", categorySlug: "diversos", image: "/first.png", filePath: "models/first.3mf", tags: [] };
+    const markup = renderToStaticMarkup(<ModelShowcase models={[model, { ...model, id: "second", image: "/second.png" }]} query="" category="" page={1} pages={1} />);
+
+    expect(markup.match(/<img[^>]+loading="eager"/g)).toHaveLength(1);
+    expect(markup.match(/<img[^>]+loading="lazy"/g)).toHaveLength(1);
+  });
+
   it("combines text and image search in one compact catalog field", () => {
     const markup = renderToStaticMarkup(<ModelShowcase models={[]} query="" category="" page={1} pages={1} />);
 
