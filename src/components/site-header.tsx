@@ -75,7 +75,7 @@ export function SiteHeader() {
   return (
     <header className="site-header" id="top">
       <div className="shell header-inner">
-        <Link className="brand" href="/" aria-label="ViraPeça 3D, início">
+        <Link className="brand" href="/" aria-label="ViraPeça3D, início">
           <span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span>
           <span>vira<span className="brand-strong">peça</span><small>3D</small></span>
         </Link>

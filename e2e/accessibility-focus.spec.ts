@@ -18,4 +18,8 @@ test("account forms show focus rings during keyboard navigation", async ({ page 
   await page.keyboard.press("Tab");
   await expect(confirmation).toBeFocused();
   await expect.poll(() => confirmation.evaluate((input) => getComputedStyle(input).outlineStyle)).toBe("solid");
+
+  for (const link of await page.locator(".auth-legal-note a").all()) {
+    await expect.poll(() => link.evaluate((element) => getComputedStyle(element).textDecorationLine)).toContain("underline");
+  }
 });

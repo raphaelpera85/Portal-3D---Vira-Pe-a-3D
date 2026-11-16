@@ -71,6 +71,8 @@ test("mobile 3D viewer fits the viewport without horizontal scrolling", async ({
   await expect(page.locator(".viewer-layout")).toBeVisible();
   await expect(page.locator(".viewer-stage")).toBeVisible();
   await expect(page.locator(".viewer-inspector")).toBeVisible();
+  await expect(page.getByRole("button", { name: "XYZ, alternar eixos" })).toBeVisible();
+  await expect(page.locator(".viewer-upload-secondary")).toHaveCount(0);
   await expect(page.locator(".viewer-empty-inspector")).toContainText("Abra um modelo 3D");
   await expect(page.getByRole("heading", { name: "Dimensões", exact: true })).toHaveCount(0);
 
