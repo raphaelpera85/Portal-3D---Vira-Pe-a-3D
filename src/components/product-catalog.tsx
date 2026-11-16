@@ -45,15 +45,16 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
       </div>
       {notice && <p className="catalog-disclaimer" role="status">{notice}</p>}
       <div className="catalog-controls">
-        <div className="category-list" aria-label="Filtrar por categoria">
+        <nav className="category-list" aria-label="Filtrar por categoria">
           <Link className={`category-chip${!activeCategory ? " is-active" : ""}`} aria-current={!activeCategory ? "page" : undefined} href={catalogUrl({ query, category: "", sort })}>Todos</Link>
           {categories.map((item) => <Link key={item.slug} className={`category-chip${activeCategory === item.slug ? " is-active" : ""}`} aria-current={activeCategory === item.slug ? "page" : undefined} href={catalogUrl({ query, category: item.slug, sort })}>{categoryLabels.get(item.id) ?? item.name}</Link>)}
-        </div>
-        <form className="search-field" action="/" method="get">
-          <Search size={17} aria-hidden="true" /><label className="sr-only" htmlFor="product-search">Buscar produtos</label>
+        </nav>
+        <form className="search-field catalog-product-search" action="/" method="get">
+          <Search size={17} aria-hidden="true" /><label className="sr-only" htmlFor="product-search">Buscar produtos por nome ou modelo 3D por imagem</label>
           <input id="product-search" type="search" name="q" maxLength={100} defaultValue={query} placeholder="O que você imaginou?" />
           {activeCategory && <input type="hidden" name="categoria" value={activeCategory} />}
           {sort === "popular" && <input type="hidden" name="ordem" value="popular" />}
+          <CatalogImageSearch compact configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category="" visualIndex={visualIndex} />
           <button type="submit" aria-label="Buscar">Buscar</button>
         </form>
       </div>
@@ -61,7 +62,6 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
         <Link className={sort === "newest" ? "is-active" : ""} aria-current={sort === "newest" ? "page" : undefined} href={catalogUrl({ query, category: activeCategory, sort: "newest" })}>Novidades</Link>
         <Link className={sort === "popular" ? "is-active" : ""} aria-current={sort === "popular" ? "page" : undefined} href={catalogUrl({ query, category: activeCategory, sort: "popular" })}>Mais vendidos</Link>
       </nav>}
-      <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category="" visualIndex={visualIndex} />
       <div className="product-grid" aria-live="polite">
         {products.map((product, index) => (
           <article className="product-card" key={product.id}>
