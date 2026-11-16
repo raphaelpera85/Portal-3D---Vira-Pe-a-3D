@@ -40,7 +40,7 @@
 .buyer-address-summary span:not(.account-kicker), .buyer-address-summary small { color: var(--muted); font-size: 11px; line-height: 1.5; }
 .buyer-address-form { margin-top: 14px; }
 @media (max-width: 680px) { .buyer-address-fields { grid-template-columns: 1fr; } }
-@media (max-width: 680px) { .auth-grid { grid-template-columns: 1fr; } .account-heading { margin-top: 44px; } }
+@media (max-width: 680px) { .auth-grid { grid-template-columns: 1fr; } .account-heading { margin-top: 24px; } }
 @media (max-width: 680px) {
   .category-list { flex-wrap: nowrap; max-width: 100%; overflow-x: auto; padding: 3px; }
   .category-chip { flex: 0 0 auto; }
