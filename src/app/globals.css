@@ -302,7 +302,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .model-gallery-controls .category-chip { min-height: 38px; padding-inline: 15px; border: 0; border-radius: 6px; color: var(--muted-strong); font-size: 11px; font-weight: 600; text-decoration: none; }
 .model-gallery-controls .category-chip:hover { background: color-mix(in srgb, var(--brand) 9%, var(--surface)); color: var(--brand); }
 .model-gallery-controls .category-chip.is-active { background: var(--brand); color: var(--on-brand); }
-.model-gallery-controls > .search-field { box-sizing: border-box; width: min(100%, 1040px); min-width: 0; min-height: 48px; justify-self: center; margin-inline: auto; padding: 6px 7px 6px 14px; border-radius: 8px; background: var(--paper); }
+.model-gallery-controls > .search-field { box-sizing: border-box; width: min(100%, 1200px); min-width: 0; min-height: 48px; justify-self: center; margin-inline: auto; padding: 6px 7px 6px 14px; border-radius: 8px; background: var(--paper); }
 .model-gallery-controls > .search-field input { min-width: 0; flex: 1 1 auto; }
 .model-gallery-controls > .search-field button { flex: 0 0 auto; min-height: 34px; padding-inline: 15px; border-radius: 6px; }
 .catalog-product-search { flex-wrap: wrap; }
