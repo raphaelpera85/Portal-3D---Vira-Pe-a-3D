@@ -132,6 +132,16 @@ const qidiQ2cSource = {
   url: "https://us.qidi3d.com/collections/printer-gift/products/q2c",
   checkedAt: "2026-11-13",
 };
+const qidiSmart5Source = {
+  label: "QIDI Tech — MakeBuddy Smart5 Technical Specifications",
+  url: "https://us.qidi3d.com/products/smart5",
+  checkedAt: "2026-11-16",
+};
+const qidiSmart5NozzleSource = {
+  label: "QIDI Tech — Smart5 Bimetal Hotend",
+  url: "https://us.qidi3d.com/products/smart5-bimetal-hot-end",
+  checkedAt: "2026-11-16",
+};
 const elegooCentauri2Source = {
   label: "ELEGOO — Centauri 2 official specifications",
   url: "https://us.elegoo.com/products/centauri-2",
@@ -283,6 +293,7 @@ const seededPrinterFallbacks: PrinterEntry[] = [
   seededPrinter({ id: "qidi-plus5-box-combo", brand: "QIDI Tech", model: "Plus5", variant: "QIDI Box Combo", technology: "FDM", buildVolumeMm: { x: 320, y: 320, z: 300 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedDescription: "600 mm/s de deslocamento do cabeçote; velocidade de impressão não informada", multicolorSystem: "QIDI Box", multicolorSlots: 4, technicalProperties: { maxToolheadSpeedMmPerSecond: 600, activeChamberMaximumTemperatureC: 65, maxAccelerationMmPerSecondSquared: 20000, ratedPowerComponentsW: [150, 550, 500], maximumMulticolorFilamentsWithExtraBoxes: 16 }, sourceUrl: "https://us.qidi3d.com/products/plus5", checkedAt: "2026-11-13" }),
   seededPrinter({ id: "qidi-q2c", brand: "QIDI Tech", model: "Q2C", variant: "standard", technology: "FDM", buildVolumeMm: { x: 270, y: 270, z: 256 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedDescription: "600 mm/s de deslocamento do cabeçote; velocidade de impressão não informada", multicolorSystem: "QIDI Box (vendido separadamente)", technicalProperties: { maxToolheadSpeedMmPerSecond: 600, maxAccelerationMmPerSecondSquared: 20000, ratedPowerWatts: 350, activeChamberHeating: false, airFilter: "Opcional", camera: "Opcional", maximumMulticolorFilamentsWithExtraBoxes: 16 }, sourceUrl: "https://us.qidi3d.com/collections/printer-gift/products/q2c", checkedAt: "2026-11-13" }),
   seededPrinter({ id: "qidi-q2c-box-combo", brand: "QIDI Tech", model: "Q2C", variant: "QIDI Box Combo", technology: "FDM", buildVolumeMm: { x: 270, y: 270, z: 256 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 370, maxBedTemperatureC: 120, heatedBed: true, enclosure: true, maximumSpeedDescription: "600 mm/s de deslocamento do cabeçote; velocidade de impressão não informada", multicolorSystem: "QIDI Box", multicolorSlots: 4, technicalProperties: { maxToolheadSpeedMmPerSecond: 600, maxAccelerationMmPerSecondSquared: 20000, ratedPowerWatts: 350, activeChamberHeating: false, airFilter: "Opcional", camera: "Opcional", maximumMulticolorFilamentsWithExtraBoxes: 16 }, sourceUrl: "https://us.qidi3d.com/collections/printer-gift/products/q2c", checkedAt: "2026-11-13" }),
+  seededPrinter({ id: "qidi-makebuddy-smart5", brand: "QIDI Tech", model: "MakeBuddy Smart5", variant: "standard", technology: "FDM", commercialStatus: "available", commercialStatusSource: qidiSmart5Source, buildVolumeMm: { x: 180, y: 180, z: 180 }, extruders: 1, filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 80, heatedBed: true, enclosure: true, maximumSpeedDescription: "600 mm/s de deslocamento do cabeçote; velocidade de impressão não informada", multicolorSystem: "QIDI Box (vendido separadamente)", supportedMaterials: { PLA: "compatible", PETG: "compatible" }, technicalProperties: { maxToolheadSpeedMmPerSecond: 600, maxAccelerationMmPerSecondSquared: 20000, ratedPowerWatts: 150, ratedPowerNote: "Potência nominal informada pelo fabricante; consumo depende do uso e da tensão regional.", originalNozzleDiameterMm: 0.4, supportedNozzleDiametersMm: [0.2, 0.4, 0.6, 0.8], manufacturerSupportedMaterials: ["PLA", "PETG"], airFilter: "HEPA e carvão ativado", camera: "Até 1080p", multicolorUpgradeDescription: "QIDI Box opcional; impressão em uma cor sem o acessório." }, sourceUrl: qidiSmart5Source.url, sourceLabel: qidiSmart5Source.label, checkedAt: qidiSmart5Source.checkedAt }),
   seededPrinter({ id: "artillery-m1-pro", brand: "Artillery", model: "M1 Pro", variant: "standard", technology: "FDM", buildVolumeMm: { x: 260, y: 260, z: 260 }, maxNozzleTemperatureC: 320, maximumSpeedMmPerSecond: 600, sourceUrl: "https://uk.artillery3d.com/pages/m1" }),
   seededPrinter({ id: "artillery-sidewinder-x4-plus", brand: "Artillery", model: "Sidewinder X4 Plus", variant: "standard", technology: "FDM", buildVolumeMm: { x: 300, y: 300, z: 400 }, extruders: 1, maxNozzleTemperatureC: 300, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 500, technicalProperties: { dualGearDirectExtruder: true, autoBedLevelingPoints: 121, firmware: "Klipper", bedSurface: "PEI magnética flexível", manufacturerSupportedMaterials: ["PLA", "TPU", "PETG", "ABS", "PET", "Carbon"] }, sourceUrl: "https://www.artillery3d.com/blogs/projects/artillery-sidewinder-x4-plus-review-3d-printer-testing-settings-tips", sourceLabel: "Artillery — Sidewinder X4 Plus specifications", checkedAt: "2026-11-14" }),
   seededPrinter({ id: "flsun-v400-max", brand: "FLSUN", model: "V400 Max", variant: "standard", technology: "FDM", buildVolumeDescription: "Cilíndrico · Ø500 × 550 mm (altura cilíndrica máx. 480 mm)", filamentDiameterMm: 1.75, maxNozzleTemperatureC: 350, maxBedTemperatureC: 100, heatedBed: true, maximumSpeedMmPerSecond: 600, maximumPowerWatts: 1400, technicalProperties: { buildVolumeShape: "cylindrical", buildDiameterMm: 500, buildHeightMm: 550, buildHeightConditions: { singleColorMm: 480, multicolorMm: 480 } }, sourceUrl: "https://wiki.flsun3d.com/en/V400MaxProductIntroduction" }),
@@ -2201,6 +2212,19 @@ export const nozzles: NozzleEntry[] = [
     printerCompatibility: { "qidi-max4": "compatible" as const },
     original: diameter === 0.4,
     sources: [qidiMax4Source],
+  })),
+  ...[0.2, 0.4, 0.6, 0.8].map((diameter) => ({
+    id: `qidi-makebuddy-smart5-${diameter}`,
+    name: `Bico ${diameter.toLocaleString("pt-BR")} mm · MakeBuddy Smart5`,
+    brand: "QIDI Tech",
+    diameterMm: diameter,
+    material: null,
+    maxTemperatureC: 300,
+    abrasionResistant: null,
+    printerCompatibility: { "qidi-makebuddy-smart5": "compatible" as const },
+    printerCompatibilityConditions: { "qidi-makebuddy-smart5": diameter === 0.4 ? "Diâmetro original informado pela QIDI." : "Diâmetro opcional da Smart5 Bimetal Hotend; material do bico não especificado." },
+    original: diameter === 0.4,
+    sources: [qidiSmart5Source, qidiSmart5NozzleSource],
   })),
   ...[0.25, 0.4, 0.6, 0.8].map((diameter) => ({
     id: `prusa-mk4s-nozzle-${diameter}`,

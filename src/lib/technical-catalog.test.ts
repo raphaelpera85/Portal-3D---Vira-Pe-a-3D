@@ -14,6 +14,7 @@ const qidiQ2Migration = readFileSync(new URL("../../supabase/migrations/20261115
 const qidiPlus5Migration = readFileSync(new URL("../../supabase/migrations/20261115003323_seed_qidi_plus5.sql", import.meta.url), "utf8");
 const qidiQ2cMigration = readFileSync(new URL("../../supabase/migrations/20261115003325_seed_qidi_q2c.sql", import.meta.url), "utf8");
 const qidiQ2cPowerMigration = readFileSync(new URL("../../supabase/migrations/20261115003327_fix_qidi_q2c_rated_power.sql", import.meta.url), "utf8");
+const qidiSmart5Migration = readFileSync(new URL("../../supabase/migrations/20261116081000_seed_qidi_makebuddy_smart5.sql", import.meta.url), "utf8");
 const bambuH2cMigration = readFileSync(new URL("../../supabase/migrations/20261115003329_seed_bambu_h2c.sql", import.meta.url), "utf8");
 const bambuX1CarbonMigration = readFileSync(new URL("../../supabase/migrations/20261115015453_seed_bambu_x1_carbon.sql", import.meta.url), "utf8");
 const bambuX1CarbonMaterialMigration = readFileSync(new URL("../../supabase/migrations/20261115015455_link_bambu_x1_carbon_materials.sql", import.meta.url), "utf8");
@@ -112,6 +113,7 @@ describe("verified technical catalog records", () => {
       ["QIDI Tech", "Plus5", "QIDI Box Combo"],
       ["QIDI Tech", "Q2C", "standard"],
       ["QIDI Tech", "Q2C", "QIDI Box Combo"],
+      ["QIDI Tech", "MakeBuddy Smart5", "standard"],
       ["Artillery", "M1 Pro", "standard"],
       ["Artillery", "Sidewinder X4 Plus", "standard"],
       ["FLSUN", "V400 Max", "standard"],
@@ -171,7 +173,7 @@ describe("verified technical catalog records", () => {
 
     expect(printers).toEqual(expect.arrayContaining(seededVariants.map(([brand, model, variant]) =>
       expect.objectContaining({ brand, model, variant }))));
-    expect(printers).toHaveLength(111);
+    expect(printers).toHaveLength(112);
     expect(new Set(printers.map((printer) => printer.id)).size).toBe(printers.length);
     expect(printers.every((printer) => printer.sources.length > 0)).toBe(true);
   });
@@ -569,6 +571,24 @@ describe("verified technical catalog records", () => {
       && nozzle.printerCompatibility?.["qidi-q2-box-combo"] === "compatible")).toBe(true);
     expect(qidiPlus5Migration).toContain("'QIDI Tech', 'Plus5', 'QIDI Box Combo'");
     expect(qidiPlus5Migration).toContain("'QIDI Q2'");
+  });
+
+  it("keeps QIDI MakeBuddy Smart5 specifications and optional nozzles verified", () => {
+    const smart5 = printers.find((printer) => printer.id === "qidi-makebuddy-smart5");
+    const smart5Nozzles = nozzles.filter((nozzle) => nozzle.printerCompatibility?.["qidi-makebuddy-smart5"] === "compatible");
+
+    expect(smart5).toMatchObject({
+      brand: "QIDI Tech", model: "MakeBuddy Smart5", variant: "standard", buildVolumeMm: { x: 180, y: 180, z: 180 },
+      filamentDiameterMm: 1.75, maxNozzleTemperatureC: 300, maxBedTemperatureC: 80, enclosure: true,
+      maximumSpeedMmPerSecond: null, maximumSpeedDescription: "600 mm/s de deslocamento do cabeçote; velocidade de impressão não informada",
+      multicolorSystem: "QIDI Box (vendido separadamente)", supportedMaterials: { PLA: "compatible", PETG: "compatible" },
+      technicalProperties: { maxAccelerationMmPerSecondSquared: 20000, ratedPowerWatts: 150, originalNozzleDiameterMm: 0.4 },
+    });
+    expect(smart5Nozzles.map((nozzle) => nozzle.diameterMm)).toEqual([0.2, 0.4, 0.6, 0.8]);
+    expect(smart5Nozzles.filter((nozzle) => nozzle.original).map((nozzle) => nozzle.diameterMm)).toEqual([0.4]);
+    expect(qidiSmart5Migration).toContain("'QIDI Tech', 'MakeBuddy Smart5', 'standard'");
+    expect(qidiSmart5Migration).toContain("'Smart5 nozzle'");
+    expect(qidiSmart5Migration).toContain("family in ('PLA', 'PETG')");
   });
 
   it("keeps the QIDI Q2C's differences from Q2 and its four-slot Box Combo", () => {
