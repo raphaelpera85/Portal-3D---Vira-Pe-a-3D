@@ -49,5 +49,6 @@ describe("ProductCatalog visual image search", () => {
 
     expect(markup).toContain('href="/modelos">Explore os modelos 3D</a>');
     expect(markup).toContain('href="/conta">cadastre-se para vender</a>');
+    expect(markup).toContain('class="catalog-section shell is-empty"');
   });
 });

@@ -249,6 +249,7 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
 .admin-banner-record .equipment-edit-form { border-top: 1px solid var(--line); padding-top: 13px; }
 
 .catalog-section { padding-block: 110px 118px; }
+.catalog-section.is-empty { padding-block: 58px; }
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 32px; }
 .section-heading .eyebrow { margin-bottom: 14px; }
 .section-heading h2, .maker-copy h2 { margin-bottom: 0; font-size: clamp(39px, 4vw, 54px); line-height: 1.04; }
@@ -939,6 +940,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 }
 .catalog-disclaimer { margin: 28px 0 0; color: var(--muted); font-size: 10px; }
 .empty-state { grid-column: 1 / -1; padding: 50px 0; color: var(--muted); text-align: center; }
+.catalog-section.is-empty .empty-state { padding-block: 20px; }
 .empty-state a { color: var(--blue); font-weight: 700; }
 .art-shadow { fill: var(--shadow-wash); }
 .vase-front, .dragon-body, .organizer-front, .keychain-body { fill: var(--blue); }
@@ -1575,6 +1577,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .trust-inner b { font-size: 8px; }
   .trust-tail { display: none; }
   .catalog-section, .how-section { padding-block: 76px; }
+  .catalog-section.is-empty { padding-block: 48px; }
   .section-heading { display: block; }
   .section-heading h2, .maker-copy h2 { font-size: 42px; }
   .section-heading > p { margin-top: 15px; font-size: 12px; }

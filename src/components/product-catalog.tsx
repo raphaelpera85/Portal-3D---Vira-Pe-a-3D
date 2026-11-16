@@ -38,7 +38,7 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
   const categoryLabels = getProductCategoryLabels(categories);
   const emptyState = getCatalogEmptyState({ source, unavailable, query, category });
   return (
-    <section className="catalog-section shell" id="produtos">
+    <section className={`catalog-section shell${products.length === 0 ? " is-empty" : ""}`} id="produtos">
       <div className="section-heading catalog-heading">
         <div><p className="eyebrow">PEÇAS COM HISTÓRIA</p><h2>Comece por <em>uma ideia.</em></h2></div>
         <p>Encontre peças, arquivos e serviços feitos por quem transforma ideias em objetos.</p>
