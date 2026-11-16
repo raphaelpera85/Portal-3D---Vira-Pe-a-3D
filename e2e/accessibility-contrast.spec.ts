@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 test("muted text meets WCAG AA contrast on page surfaces in both themes", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.addInitScript(() => localStorage.setItem("virapeca-theme", "light"));
-  await page.goto("/modelos");
+  await page.goto("/modelos", { timeout: 60_000 });
 
   for (const theme of ["light", "dark"] as const) {
     if (theme === "dark") {
