@@ -21,6 +21,7 @@ type Props = {
   pages: number;
   sort: MarketplaceSort;
   canFavorite?: boolean;
+  canManageStore?: boolean;
   favoriteProductIds?: string[];
 };
 
@@ -33,7 +34,7 @@ function catalogUrl({ query, category, page, sort = "newest" }: { query: string;
   return `/${params.size ? `?${params.toString()}` : ""}#produtos`;
 }
 
-export function ProductCatalog({ products, categories, source, unavailable, notice, query, category, page, pages, sort, canFavorite = false, favoriteProductIds = [] }: Props) {
+export function ProductCatalog({ products, categories, source, unavailable, notice, query, category, page, pages, sort, canFavorite = false, canManageStore = false, favoriteProductIds = [] }: Props) {
   const activeCategory = categories.find((item) => item.slug === category)?.slug ?? "";
   const categoryLabels = getProductCategoryLabels(categories);
   const emptyState = getCatalogEmptyState({ source, unavailable, query, category });
@@ -76,7 +77,7 @@ export function ProductCatalog({ products, categories, source, unavailable, noti
             <p className="product-price">{product.priceLabel}</p>
           </article>
         ))}
-        {products.length === 0 && <p className="empty-state">{emptyState === "unavailable" ? "O catálogo não pôde ser carregado agora." : emptyState === "no-published-products" ? <>Ainda não há produtos publicados. <Link href="/modelos">Explore os modelos 3D</Link> ou <Link href="/conta">cadastre-se para vender</Link>.</> : "Nenhum produto encontrado. Tente outra busca ou categoria."}</p>}
+        {products.length === 0 && <p className="empty-state">{emptyState === "unavailable" ? "O catálogo não pôde ser carregado agora." : emptyState === "no-published-products" ? <>Ainda não há produtos publicados. <Link href="/modelos">Explore os modelos 3D</Link> ou {canManageStore ? <Link href="/painel/maker">acesse o painel da sua loja</Link> : <Link href="/conta">cadastre-se para vender</Link>}.</> : "Nenhum produto encontrado. Tente outra busca ou categoria."}</p>}
       </div>
       {pages > 1 && <nav className="catalog-pagination" aria-label="Paginação de produtos">
         {page > 1 ? <Link className="button button-secondary" href={catalogUrl({ query, category, page: page - 1, sort })}>← Página anterior</Link> : <span />}

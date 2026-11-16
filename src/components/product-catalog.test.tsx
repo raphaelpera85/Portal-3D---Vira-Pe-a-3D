@@ -51,4 +51,23 @@ describe("ProductCatalog visual image search", () => {
     expect(markup).toContain('href="/conta">cadastre-se para vender</a>');
     expect(markup).toContain('class="catalog-section shell is-empty"');
   });
+
+  it("links makers to their seller panel while no products are published", () => {
+    const markup = renderToStaticMarkup(<ProductCatalog
+      products={[]}
+      categories={[]}
+      source="database"
+      unavailable={false}
+      notice={null}
+      query=""
+      category=""
+      page={1}
+      pages={0}
+      sort="newest"
+      canManageStore
+    />);
+
+    expect(markup).toContain('href="/painel/maker">acesse o painel da sua loja</a>');
+    expect(markup).not.toContain('href="/conta">cadastre-se para vender</a>');
+  });
 });
