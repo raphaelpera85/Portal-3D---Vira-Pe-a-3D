@@ -1580,7 +1580,7 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .trust-inner { min-height: 74px; flex-wrap: wrap; justify-content: center; gap: 8px 13px; padding-block: 14px; font-size: 8px; }
   .trust-inner b { font-size: 8px; }
   .trust-tail { display: none; }
-  .catalog-section, .how-section { padding-block: 76px; }
+  .catalog-section, .how-section { padding-block: 56px; }
   .catalog-section.is-empty { padding-block: 48px; }
   .section-heading { display: block; }
   .section-heading h2, .maker-copy h2 { font-size: 42px; }
@@ -1609,10 +1609,10 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .maker-copy > p:not(.eyebrow) { font-size: 12px; }
   .how-heading { margin-bottom: 25px; }
   .steps-grid { grid-template-columns: 1fr; }
-  .step-card { min-height: 205px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .step-card { min-height: 190px; border-right: 0; border-bottom: 1px solid var(--line); }
   .step-card:last-child { border-bottom: 0; }
   .closing-section { padding-bottom: 58px; }
-  .closing-panel { min-height: 310px; align-items: flex-start; flex-direction: column; justify-content: center; gap: 25px; padding: 34px 25px; }
+  .closing-panel { min-height: 280px; align-items: flex-start; flex-direction: column; justify-content: center; gap: 18px; padding: 28px 22px; }
   .closing-panel h2 { font-size: 43px; }
   .closing-shape { top: -12px; right: -115px; width: 300px; height: 300px; }
   .phase-note { text-align: left; line-height: 1.6; }
