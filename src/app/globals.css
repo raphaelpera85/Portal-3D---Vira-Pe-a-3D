@@ -1569,12 +1569,12 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .technical-panel { padding: 17px 14px; }
   .technical-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .compatibility-panel { position: static; padding: 18px 15px; }
-  .hero { display: flex; flex-direction: column; align-items: stretch; padding-block: 50px 45px; }
+  .hero { display: flex; min-height: 0; flex-direction: column; align-items: stretch; padding-block: 34px 26px; }
   .hero-copy { padding: 0; }
-  .hero h1 { font-size: clamp(52px, 15vw, 72px); }
+  .hero h1 { font-size: clamp(42px, 13vw, 56px); }
   .hero-description { max-width: 390px; font-size: 14px; }
-  .hero-note { margin-top: 26px; font-size: 10px; }
-  .hero-art { min-height: auto; margin-top: 22px; }
+  .hero-note { margin-top: 20px; font-size: 10px; }
+  .hero-art { min-height: auto; margin-top: 12px; }
   .art-stamp { top: 20px; right: 3px; }
   .art-caption { right: 0; bottom: -7px; font-size: 11px; }
   .trust-inner { min-height: 74px; flex-wrap: wrap; justify-content: center; gap: 8px 13px; padding-block: 14px; font-size: 8px; }
