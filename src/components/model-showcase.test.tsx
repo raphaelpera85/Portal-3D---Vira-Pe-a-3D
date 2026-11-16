@@ -17,4 +17,14 @@ describe("ModelShowcase", () => {
 
     expect(markup).not.toContain("makerworld.com/en/search/models");
   });
+
+  it("combines text and image search in one compact catalog field", () => {
+    const markup = renderToStaticMarkup(<ModelShowcase models={[]} query="" category="" page={1} pages={1} />);
+
+    expect(markup).toContain('for="model-gallery-search">Buscar modelos por nome, tag ou imagem</label>');
+    expect(markup).toContain('type="file" accept="image/png,image/jpeg,image/webp"');
+    expect(markup).toContain('title="Buscar modelos por imagem"');
+    expect(markup).not.toContain("Comparar com prévias");
+    expect(markup).not.toContain("Comparação visual local com as prévias do catálogo");
+  });
 });

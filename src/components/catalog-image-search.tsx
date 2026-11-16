@@ -7,7 +7,7 @@ import { differenceHash, rankVisualCandidates, type RankedVisualCandidate, type 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
-export function CatalogImageSearch({ configured, category, redirectPath = "/modelos", visualIndex = [] }: { configured: boolean; category: string; redirectPath?: string; visualIndex?: VisualImageCandidate[] }) {
+export function CatalogImageSearch({ configured, category, redirectPath = "/modelos", visualIndex = [], compact = false }: { configured: boolean; category: string; redirectPath?: string; visualIndex?: VisualImageCandidate[]; compact?: boolean }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -100,15 +100,15 @@ export function CatalogImageSearch({ configured, category, redirectPath = "/mode
     fileInputRef.current?.focus();
   }
 
-  return <div className="catalog-image-search">
-    <label className="catalog-image-file"><ImageUp size={16} aria-hidden="true" /> Buscar por imagem<input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" disabled={!canUpload || loading || localLoading} onChange={(event) => { const file = event.currentTarget.files?.[0] ?? null; selectImage(file); event.currentTarget.value = ""; }} /></label>
+  return <div className={`catalog-image-search${compact ? " is-compact" : ""}`}>
+    <label className="catalog-image-file" aria-label={canUpload ? "Buscar modelos por imagem" : "Busca por imagem indisponível"} title="Buscar modelos por imagem"><ImageUp size={17} aria-hidden="true" />{compact ? <span className="sr-only">Buscar modelos por imagem</span> : " Buscar por imagem"}<input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" disabled={!canUpload || loading || localLoading} onChange={(event) => { const file = event.currentTarget.files?.[0] ?? null; selectImage(file); event.currentTarget.value = ""; }} /></label>
     {image && imagePreviewUrl && <span className="catalog-image-selected"><img src={imagePreviewUrl} alt={`Imagem selecionada: ${image.name}`} width="44" height="44" /><span className="catalog-image-name">{image.name}</span><button className="catalog-image-clear" type="button" aria-label={`Remover imagem ${image.name}`} onClick={clearImage} disabled={loading || localLoading}><X size={15} aria-hidden="true" /></button></span>}
-    {localSearchAvailable && <button className="catalog-image-submit" type="button" onClick={searchLocally} disabled={!image || localLoading || loading}>{localLoading ? <><LoaderCircle size={14} className="spin" /> Comparando…</> : "Comparar com prévias"}</button>}
+    {localSearchAvailable && (!compact || image) && <button className="catalog-image-submit" type="button" onClick={searchLocally} disabled={!image || localLoading || loading}>{localLoading ? <><LoaderCircle size={14} className="spin" /> Comparando…</> : compact ? "Buscar imagem" : "Comparar com prévias"}</button>}
     {configured ? <>
-      <label className="catalog-image-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> Enviar a imagem ao Google Cloud Vision para reconhecer objetos e encontrar modelos relacionados.</label>
+      {(!compact || image) && <><label className="catalog-image-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> Enviar a imagem ao Google Cloud Vision para reconhecer objetos e encontrar modelos relacionados.</label>
       <button className="catalog-image-submit" type="button" onClick={searchWithVision} disabled={!image || !agreed || loading || localLoading}>{loading ? <><LoaderCircle size={14} className="spin" /> Buscando…</> : "Reconhecer objeto"}</button>
-      <small className="catalog-image-note">A comparação local não envia a imagem. O reconhecimento do Google Vision não armazena a imagem no ViraPeça; limite de 5 buscas por IP ao dia.</small>
-    </> : localSearchAvailable ? <small className="catalog-image-note">Comparação visual local com as prévias do catálogo; a imagem não sai deste dispositivo. Reconhecimento semântico exige Google Cloud Vision.</small> : <p className="catalog-image-note">Configure Google Cloud Vision para ativar a busca por imagem.</p>}
+      <small className="catalog-image-note">A comparação local não envia a imagem. O reconhecimento do Google Vision não armazena a imagem no ViraPeça; limite de 5 buscas por IP ao dia.</small></>}
+    </> : localSearchAvailable ? (!compact || image) && <small className="catalog-image-note">Comparação visual local com as prévias do catálogo; a imagem não sai deste dispositivo. Reconhecimento semântico exige Google Cloud Vision.</small> : !compact && <p className="catalog-image-note">Configure Google Cloud Vision para ativar a busca por imagem.</p>}
     {localMatches && <div className="catalog-image-results" role="status">{localMatches.length ? <><strong>Prévias mais parecidas</strong><ol>{localMatches.map((model) => <li key={model.id}><a href={`/modelos/${model.id}`}><img src={model.image} alt="" width="48" height="36" /><span>{model.name}<small>Diferença visual: {model.distance}/64</small></span></a></li>)}</ol><small>Ordenadas pela semelhança com as prévias. Para encontrar o mesmo objeto em outro ângulo, use o reconhecimento do Google Vision.</small></> : <p>Nenhuma prévia teve semelhança suficiente. Tente outra imagem ou use o reconhecimento do objeto, se estiver disponível.</p>}</div>}
     {message && <p className={`catalog-image-note${error ? " is-error" : ""}`} role={error ? "alert" : "status"}>{message}</p>}
   </div>;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Search } from "lucide-react";
 import { getShowcaseFileLabel, modelShowcaseCategories, type ShowcaseModel } from "@/lib/model-showcase";
 import visualIndex from "@/lib/model-showcase-visual-index.json";
 import { CatalogImageSearch } from "@/components/catalog-image-search";
@@ -43,16 +44,14 @@ export function ModelRecommendations({ models }: { models: ShowcaseModel[] }) {
 export function ModelShowcase({ models, query, category, page, pages, additionalVisualIndex = [] }: { models: ShowcaseModel[]; query: string; category: string; page: number; pages: number; additionalVisualIndex?: VisualImageCandidate[] }) {
   return <section className="model-showcase shell" id="modelos">
     <div className="account-heading"><p className="eyebrow">ARQUIVOS 3D · COMUNIDADE VIRAPEÇA</p><h1>Modelos para <em>inspirar.</em></h1><p>Prévia visual dos modelos, com categorias, tags e criadores para facilitar a descoberta.</p></div>
-    <p><Link className="button button-primary" href="/conta?destino=modelo-3d">Vende modelos 3D? Cadastre o seu</Link></p>
-    <p className="model-ai-link"><Link className="button button-secondary" href="/gerar-modelo">Gerar rascunho 3D por imagem ↗</Link></p>
+    <div className="model-showcase-actions"><Link className="button button-primary" href="/conta?destino=modelo-3d">Vende modelos 3D? Cadastre o seu</Link><Link className="button button-secondary" href="/gerar-modelo">Gerar rascunho 3D por imagem ↗</Link></div>
     <div className="model-gallery-controls">
       <nav className="category-list" aria-label="Filtrar modelos por categoria">
         <Link className={`category-chip${!category ? " is-active" : ""}`} aria-current={!category ? "page" : undefined} href={galleryUrl(query, "")}>Todos</Link>
         {modelShowcaseCategories.map((item) => <Link className={`category-chip${category === item.slug ? " is-active" : ""}`} aria-current={category === item.slug ? "page" : undefined} href={galleryUrl(query, item.slug)} key={item.slug}>{item.name}</Link>)}
       </nav>
-      <form className="search-field" action="/modelos" method="get"><label className="sr-only" htmlFor="model-gallery-search">Buscar modelos por nome ou tag</label><input id="model-gallery-search" type="search" name="q" maxLength={100} defaultValue={query} placeholder="Nome, animal, tema ou tag" />{category && <input type="hidden" name="categoria" value={category} />}<button type="submit">Buscar</button></form>
+      <form className="search-field catalog-model-search" action="/modelos" method="get"><Search size={17} aria-hidden="true" /><label className="sr-only" htmlFor="model-gallery-search">Buscar modelos por nome, tag ou imagem</label><input id="model-gallery-search" type="search" name="q" maxLength={100} defaultValue={query} placeholder="Buscar por nome, tag ou imagem" />{category && <input type="hidden" name="categoria" value={category} />}<CatalogImageSearch compact configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={category} redirectPath="/modelos" visualIndex={[...visualIndex, ...additionalVisualIndex]} /><button type="submit">Buscar</button></form>
       {query && <p className="makerworld-search-link">Não encontrou no catálogo? <a href={`https://makerworld.com/en/search/models?keyword=${encodeURIComponent(query)}`} target="_blank" rel="noopener noreferrer nofollow">Buscar “{query}” no MakerWorld ↗</a><small>O portal não baixa arquivos do MakerWorld. Baixe somente um modelo que você tenha permissão para usar; vendedores podem <Link href="/conta?destino=modelo-3d">entrar e enviá-lo ao portal para revisão.</Link></small></p>}
-      <CatalogImageSearch configured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} category={category} redirectPath="/modelos" visualIndex={[...visualIndex, ...additionalVisualIndex]} />
     </div>
     <p className="catalog-disclaimer">Abra um modelo para girar a prévia 3D e baixar o arquivo original.</p>
     <ModelCards models={models} />
