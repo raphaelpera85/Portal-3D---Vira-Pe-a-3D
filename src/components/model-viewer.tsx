@@ -646,7 +646,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
               <Upload size={16} aria-hidden="true" /> Abrir modelo
               <input type="file" multiple accept=".stl,.obj,.3mf,.glb,.gltf,.mtl,.bin,.png,.jpg,.jpeg,.webp,model/stl,model/obj,model/3mf,model/gltf-binary,model/gltf+json" onChange={(event) => { void loadFiles(Array.from(event.target.files ?? [])); event.currentTarget.value = ""; }} />
             </label>}
-            <span className="viewer-file-label" title={fileName}>{fileName || "Nenhum modelo selecionado"}</span>
+            <span className="viewer-file-label" title={fileName || previewFileName || localPreviewFile?.name || modelName}>{fileName || previewFileName || localPreviewFile?.name || modelName || "Nenhum modelo selecionado"}</span>
             <div className="viewer-stage-actions">
               <button type="button" className={`viewer-icon-button${showGrid ? " is-active" : ""}`} aria-pressed={showGrid} aria-label="Alternar grade" title="Alternar grade" onClick={() => setShowGrid(!showGrid)}><Grid2X2 size={16} /></button>
               <button type="button" className={`viewer-icon-button${showAxes ? " is-active" : ""}`} aria-pressed={showAxes} aria-label="Alternar eixos" title="Alternar eixos" onClick={() => setShowAxes(!showAxes)}>XYZ</button>

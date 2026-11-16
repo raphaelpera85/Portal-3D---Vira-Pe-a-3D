@@ -109,16 +109,17 @@ export default async function ModelPage({ params, searchParams }: ModelPageProps
         {model.creatorName && <p className="model-detail-creator">Criado por <strong>{model.creatorName}</strong>{model.sourceUrl && <> · <a href={model.sourceUrl} target="_blank" rel="noreferrer">Fonte original ↗</a></>}</p>}
         <ul className="product-tags" aria-label={`Tags de ${model.name}`}>{model.tags.map((tag) => <li key={tag}><Link href={`/modelos?q=${encodeURIComponent(tag)}#modelos`}>{tag}</Link></li>)}</ul>
       </div>
-      <ModelDetailContent key={model.id} modelId={model.id} modelName={model.name} modelFilePath={model.filePath} previewUrl={previewUrl} previewVersions={previewVersions} today={new Date().toISOString().slice(0, 10)} profiles={profiles} profilesPage={requestedProfilePage} profilesPages={profilePages} profilesCount={profileResult?.count ?? 0} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice} />
+      <ModelDetailContent key={model.id} modelId={model.id} modelName={model.name} modelFilePath={model.filePath} previewUrl={previewUrl} previewVersions={previewVersions} today={new Date().toISOString().slice(0, 10)} profiles={profiles} profilesPage={requestedProfilePage} profilesPages={profilePages} profilesCount={profileResult?.count ?? 0} authenticated={Boolean(auth.user)} canUseOcr={Boolean(makerRoleResult?.data)} ocrConfigured={Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY)} notice={notice}>
+        <section className="shell model-detail-download" aria-label="Download do modelo">
+          <div><p className="eyebrow">ARQUIVOS ORIGINAIS</p><h2>{model.name}</h2><p>Baixe o arquivo para abrir no seu fatiador ou programa de modelagem.</p></div>
+          <ul className="model-download-options">
+            {downloadUrl && <li><a className="button button-primary" href={downloadUrl} download={model.filePath.split("/").at(-1)}>Baixar arquivo principal</a></li>}
+            {downloadVariants.map(({ label, filePath, url }) => <li key={filePath}><a className="button button-secondary" href={url} download={filePath.split("/").at(-1)}>{label}</a></li>)}
+            {!downloadUrl && <li><span className="button button-primary" aria-disabled="true">Download indisponível</span></li>}
+          </ul>
+        </section>
+      </ModelDetailContent>
       <ModelRecommendations models={recommendations} />
-      <section className="shell model-detail-download" aria-label="Download do modelo">
-        <div><p className="eyebrow">ARQUIVOS ORIGINAIS</p><h2>{model.name}</h2><p>Baixe o arquivo para abrir no seu fatiador ou programa de modelagem.</p></div>
-        <ul className="model-download-options">
-          {downloadUrl && <li><a className="button button-primary" href={downloadUrl} download={model.filePath.split("/").at(-1)}>Baixar arquivo principal</a></li>}
-          {downloadVariants.map(({ label, filePath, url }) => <li key={filePath}><a className="button button-secondary" href={url} download={filePath.split("/").at(-1)}>{label}</a></li>)}
-          {!downloadUrl && <li><span className="button button-primary" aria-disabled="true">Download indisponível</span></li>}
-        </ul>
-      </section>
     </main>
     <footer className="site-footer"><div className="shell footer-inner"><a className="brand footer-brand" href="/"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>vira<span className="brand-strong">peça</span><small>3D</small></span></a><p>Sua ideia vira realidade.</p><span>© 2026 ViraPeça 3D</span></div></footer>
   </>;
