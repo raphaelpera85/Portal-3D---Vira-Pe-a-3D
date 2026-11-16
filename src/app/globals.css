@@ -452,6 +452,14 @@ h1 em, h2 em { color: var(--brand); font-weight: 400; }
   @media (max-width: 640px) { .model-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .model-gallery-copy { padding: 10px; } .model-gallery-copy h3 { font-size: 13px; } .model-gallery-page { padding-top: 22px; } .model-detail-page { padding-top: 20px; } .model-detail-download { align-items: stretch; flex-direction: column; } .model-download-options { flex-direction: column; } .model-download-options li, .model-download-options a { width: 100%; } .model-print-profile-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .model-print-profile-form { grid-template-columns: 1fr; } .model-print-profiles-heading { flex-direction: column; } .model-print-profile-card > summary { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 680px) { .model-gallery-controls .category-list { position: relative; width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; } .model-gallery-controls .category-list::-webkit-scrollbar { height: 4px; } .model-gallery-controls .category-list::-webkit-scrollbar-thumb { border-radius: 4px; background: var(--line-strong); } .model-gallery-controls .category-list::after { position: sticky; right: 0; display: grid; flex: 0 0 24px; place-items: center; margin-left: -24px; background: linear-gradient(90deg, transparent, var(--surface) 35%); color: var(--brand); content: "→"; font-size: 14px; font-weight: 700; pointer-events: none; } .model-gallery-controls .category-chip { flex: 0 0 auto; } .model-gallery-controls .category-chip[aria-current="page"] { order: -1; } .model-gallery-controls > .search-field { width: 100%; } }
+@media (max-width: 640px) {
+  .model-gallery-page > .model-showcase { padding-top: 0; }
+  .model-showcase .account-heading { margin-bottom: 14px; }
+  .model-showcase .account-heading h1 { margin-bottom: 10px; font-size: 36px; }
+  .model-showcase .account-heading > p:last-child { font-size: 13px; line-height: 1.5; }
+  .model-showcase-actions .button { min-height: 44px; padding-inline: 12px; font-size: 11px; }
+  .model-gallery-controls { gap: 10px; margin-bottom: 18px; }
+}
 @media (max-width: 359px) { .model-gallery-grid { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .model-gallery-copy .product-meta { font-size: 8px; letter-spacing: .5px; } .model-gallery-copy .product-meta span:last-child { font-size: 12px; } }
 .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
