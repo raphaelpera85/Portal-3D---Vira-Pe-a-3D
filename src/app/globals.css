@@ -932,6 +932,11 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 @media (max-width: 680px) {
   .admin-review-card, .admin-review-card-compact { grid-template-columns: 1fr; }
   .maker-dashboard, .admin-dashboard { padding-bottom: 48px; }
+  .maker-dashboard :is(.button, button), .admin-dashboard :is(.button, button) { min-height: 44px; }
+  .maker-dashboard :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
+  .admin-dashboard :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { min-height: 44px; font-size: 16px; }
+  .admin-catalog-links a { display: inline-flex; min-height: 44px; align-items: center; }
+  .maker-dashboard summary, .admin-dashboard summary { min-height: 44px; align-content: center; }
   .maker-dashboard-heading { margin-top: 24px; }
   .maker-dashboard-heading h1 { font-size: 34px; }
   .support-ticket-heading { flex-direction: column; }
