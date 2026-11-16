@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import Link from "next/link";
+import { ImageUp } from "lucide-react";
 import { Client, handle_file } from "@gradio/client";
 
 const ModelViewer = dynamic(() => import("@/components/model-viewer").then((module) => module.ModelViewer), { ssr: false });
@@ -67,7 +68,7 @@ export function TriposrGenerator({ spaceId }: { spaceId: string }) {
 
   return <div className="ai-model-panel">
     {spaceId ? <>
-      <label className="ai-model-upload">Imagem de entrada<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => selectFile(event.target.files?.[0])} /><small>{file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MiB` : "PNG, JPEG ou WebP · máximo 5 MiB"}</small></label>
+      <div className="ai-model-upload"><span>Imagem de entrada</span><div className="ai-model-file-control"><label className="button button-secondary" htmlFor="triposr-image-input"><ImageUp size={16} aria-hidden="true" /> Escolher imagem</label><span className="ai-model-file-name" aria-live="polite">{file?.name ?? "Nenhuma imagem selecionada"}</span><input id="triposr-image-input" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { selectFile(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} /></div><small>PNG, JPEG ou WebP · máximo 5 MiB{file ? ` · ${(file.size / 1024 / 1024).toFixed(1)} MiB` : ""}</small></div>
       <label className="ai-model-consent"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>Autorizo o envio desta imagem ao Hugging Face para processamento pelo TripoSR. A plataforma externa pode processar e reter temporariamente o arquivo conforme suas próprias regras. <Link href="/privacidade">Leia a política de privacidade.</Link></span></label>
       <button className="button button-primary" type="button" disabled={!file || !consent || busy} onClick={generate}>{busy ? "Gerando modelo…" : "Gerar modelo 3D"}</button>
       {status && <p className="ai-model-status" role="status" aria-live="polite">{status}</p>}
