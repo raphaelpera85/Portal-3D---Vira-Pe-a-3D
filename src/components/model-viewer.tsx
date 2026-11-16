@@ -50,6 +50,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
   const controlsRef = useRef<OrbitControls | null>(null);
   const threeRef = useRef<typeof import("three") | null>(null);
   const modelRef = useRef<THREE.Group | null>(null);
+  const syncRendererLoopRef = useRef<(() => void) | null>(null);
   const componentObjectsRef = useRef<Map<string, THREE.Object3D>>(new Map());
   const originalEmissivesRef = useRef<Map<string, Array<{ material: THREE.Material & { emissive?: THREE.Color; emissiveIntensity?: number }; color: THREE.Color; intensity: number; colorHex: string | null }>>>(new Map());
   const colorHighlightObjectsRef = useRef<THREE.Mesh[]>([]);
@@ -141,6 +142,8 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
     if (!host) return;
     const canvasHost = host;
     let stopped = false;
+    const onVisibilityChange = () => syncRendererLoopRef.current?.();
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     async function start() {
       try {
@@ -198,10 +201,13 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
           createdRenderer.setSize(canvasHost.clientWidth, canvasHost.clientHeight);
         });
         resize.observe(canvasHost);
-        createdRenderer.setAnimationLoop(() => {
+        const renderFrame = () => {
           controls.update();
           createdRenderer.render(scene, camera);
-        });
+        };
+        syncRendererLoopRef.current = () => createdRenderer.setAnimationLoop(
+          modelRef.current && document.visibilityState === "visible" ? renderFrame : null,
+        );
 
         return () => {
           resize.disconnect();
@@ -220,6 +226,8 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
     void start().then((value) => { cleanup = value; if (stopped) cleanup?.(); });
     return () => {
       stopped = true;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      syncRendererLoopRef.current = null;
       sceneReadyRef.current?.resolve();
       cleanup?.();
       if (!cleanup && rendererRef.current) {
@@ -402,6 +410,7 @@ export function ModelViewer({ buyerId, savedModels = [], savedModelsPage = 1, sa
       }
       frameRef.current?.add(wrapper);
       modelRef.current = wrapper;
+      syncRendererLoopRef.current?.();
       modelOriginPositionRef.current = wrapper.position.clone();
       wrapper.scale.setScalar(1);
       const parts: ViewerComponent[] = [];

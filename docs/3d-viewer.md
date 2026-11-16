@@ -32,4 +32,4 @@
 
 ## Implementação
 
-Three.js e seus loaders são carregados sob demanda na rota do visualizador. 3MF usa o `ThreeMFLoader` e `fflate` para ler a unidade declarada no pacote. A geometria não é enviada à API. Malhas antigas e materiais são descartados da GPU ao trocar de arquivo.
+Three.js e seus loaders são carregados sob demanda na rota do visualizador. O loop de renderização só começa depois que a geometria é carregada e pausa quando a aba fica oculta; volta ao alternar para a aba com um modelo aberto. 3MF usa o `ThreeMFLoader` e `fflate` para ler a unidade declarada no pacote. A geometria não é enviada à API. Malhas antigas e materiais são descartados da GPU ao trocar de arquivo.

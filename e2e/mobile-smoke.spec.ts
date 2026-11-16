@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { resolve } from "node:path";
 
+declare global {
+  interface Window { viewerAnimationFrameRequests?: number; }
+}
+
 test("keyboard skip link focuses the main content", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Sua ideia" })).toBeVisible();
@@ -72,6 +76,14 @@ test("mobile navigation opens the model catalog and a model detail", async ({ pa
 
 test("mobile 3D viewer fits the viewport without horizontal scrolling", async ({ page }) => {
   await page.setViewportSize({ width: 400, height: 608 });
+  await page.addInitScript(() => {
+    const original = window.requestAnimationFrame.bind(window);
+    window.viewerAnimationFrameRequests = 0;
+    window.requestAnimationFrame = (callback) => {
+      window.viewerAnimationFrameRequests = (window.viewerAnimationFrameRequests ?? 0) + 1;
+      return original(callback);
+    };
+  });
   await page.goto("/visualizador");
   await expect(page.locator(".viewer-layout")).toBeVisible();
   await expect(page.locator(".viewer-stage")).toBeVisible();
@@ -80,6 +92,9 @@ test("mobile 3D viewer fits the viewport without horizontal scrolling", async ({
   await expect(page.locator(".viewer-upload-secondary")).toHaveCount(0);
   await expect(page.locator(".viewer-empty-inspector")).toContainText("Abra um modelo 3D");
   await expect(page.getByRole("heading", { name: "Dimensões", exact: true })).toHaveCount(0);
+  const idleFrameRequests = await page.evaluate(() => window.viewerAnimationFrameRequests ?? 0);
+  await page.waitForTimeout(150);
+  expect(await page.evaluate(() => window.viewerAnimationFrameRequests ?? 0)).toBe(idleFrameRequests);
 
   const layout = await page.locator(".viewer-layout").evaluate((element) => {
     const rect = element.getBoundingClientRect();
@@ -91,9 +106,18 @@ test("mobile 3D viewer fits the viewport without horizontal scrolling", async ({
 });
 
 test("viewer exposes printer, material, nozzle, and volume compatibility checks", async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = window.requestAnimationFrame.bind(window);
+    window.viewerAnimationFrameRequests = 0;
+    window.requestAnimationFrame = (callback) => {
+      window.viewerAnimationFrameRequests = (window.viewerAnimationFrameRequests ?? 0) + 1;
+      return original(callback);
+    };
+  });
   await page.goto("/visualizador");
   await page.locator(".viewer-upload-button input[type=file]").setInputFiles("models/drybox-single-v3.3mf");
   await expect(page.getByRole("heading", { name: "Dimensões", exact: true })).toBeVisible({ timeout: 60_000 });
+  await expect.poll(() => page.evaluate(() => window.viewerAnimationFrameRequests ?? 0)).toBeGreaterThan(0);
   const printer = page.getByLabel("Impressora para verificar compatibilidade");
   await printer.selectOption({ label: "Bambu Lab A1 mini standard" });
   await expect(page.locator(".viewer-volume-value")).toContainText("180 × 180 × 180 mm");
@@ -111,6 +135,19 @@ test("viewer exposes printer, material, nozzle, and volume compatibility checks"
   await printer.selectOption({ label: "FLSUN V400 Max standard" });
   await expect(page.locator(".viewer-volume-check")).toContainText("cilíndrico");
   await expect(page.locator(".viewer-volume-check > li").filter({ hasText: "Volume de impressão" })).toHaveClass(/status-unverified/);
+
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  const pausedFrameRequests = await page.evaluate(() => window.viewerAnimationFrameRequests ?? 0);
+  await page.waitForTimeout(150);
+  expect(await page.evaluate(() => window.viewerAnimationFrameRequests ?? 0)).toBe(pausedFrameRequests);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect.poll(() => page.evaluate(() => window.viewerAnimationFrameRequests ?? 0)).toBeGreaterThan(pausedFrameRequests);
 });
 
 test("viewer shows exact resin profiles and keeps unknown exposure unverified", async ({ page }) => {
