@@ -42,7 +42,7 @@ test("mobile navigation opens the model catalog and a model detail", async ({ pa
   await expect(page).toHaveURL(/\/modelos$/);
   await expect(page.getByRole("heading", { name: "Modelos para inspirar." })).toBeVisible();
   await page.locator(".catalog-image-file input[type=file]").setInputFiles(resolve("public/modelos/65efab07f3fd.png"));
-  await page.getByRole("button", { name: "Comparar com prévias" }).click();
+  await page.getByRole("button", { name: "Buscar imagem" }).click();
   await expect(page.locator(".catalog-image-results")).toContainText("Prévias mais parecidas");
   await expect(page.locator(".catalog-image-results")).toContainText("capivara final");
 
