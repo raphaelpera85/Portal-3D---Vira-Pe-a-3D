@@ -67,3 +67,12 @@ O advisor lista 78 funções `SECURITY DEFINER` executáveis por `authenticated`
 O advisor também lista 12 tabelas internas com RLS habilitado e sem políticas. A consulta atual confirmou que `anon` e `authenticated` não têm permissões `SELECT`, `INSERT`, `UPDATE` ou `DELETE` nessas tabelas; mantenha o acesso reservado ao servidor.
 
 O portal exige senhas de 8 a 128 caracteres e confirma a senha no cadastro e na redefinição. A proteção de senhas vazadas do Supabase está desativada; no painel atual ela aparece em **Authentication → Attack Protection**. A organização do projeto está no plano Free, e essa proteção exige Pro ou superior. Consulte a [documentação de segurança de senhas do Supabase](https://supabase.com/docs/guides/auth/password-security).
+
+## Verificação de segurança — 16/11/2026
+
+- O Supabase Advisor continua listando 78 funções `SECURITY DEFINER` executáveis por `authenticated`; consulta somente leitura confirmou que todas definem `search_path` e referenciam `auth.uid()`, e nenhuma é executável por `anon` ou `PUBLIC`. O inventário por si só não prova isolamento para cada registro; não alterei grants nem permissões. O Advisor também listou 12 tabelas internas com RLS e sem políticas, mas a consulta anterior confirmou que `anon` e `authenticated` não têm `SELECT`, `INSERT`, `UPDATE` ou `DELETE` nelas. Referências: [aviso de funções SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable) e [aviso de RLS sem política](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+- O aviso remanescente de Auth é `auth_leaked_password_protection`: a proteção de senhas comprometidas está desativada. O portal continua validando senha de 8 a 128 caracteres; habilitar a checagem contra HaveIBeenPwned depende de plano Supabase Pro ou superior e configuração no painel.
+- `npm audit --omit=dev --audit-level=high` reportou zero vulnerabilidades nas dependências de produção. O `.env.local` continua ignorado pelo Git; `git ls-files` lista somente o template `.env.example` entre os arquivos `.env*`.
+- A resposta da homepage em Production inclui CSP (`base-uri`, `object-src`, `frame-ancestors`), HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` e `Permissions-Policy`.
+
+Esta verificação foi somente leitura. Não foram executadas gravações no Supabase nem feita uma varredura integral do histórico Git.
