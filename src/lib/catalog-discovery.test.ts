@@ -54,4 +54,23 @@ describe("additional official printer feeds", () => {
       manufacturer: "Creality", title: "K2 SE 4C 3D Printer", productType: "3D Printer", sourceUrl: "https://us.store.creality.com/products/k2-se-4c-3d-printer",
     }]);
   });
+
+  it("accepts only QIDI printers from the official printer collection", () => {
+    expect(parseOfficialPrinterFeed({ products: [
+      { title: "QIDI Max4 3D Printer", handle: "max4", product_type: "Printer", vendor: "QIDI US Store", published_at: "2026-11-01T00:00:00Z" },
+      { title: "MakeBuddy Smart5", handle: "smart5", product_type: "Printer", vendor: "QIDI US Store", published_at: "2026-11-01T00:00:00Z" },
+      { title: "QIDI Printer Nozzle", handle: "printer-nozzle", product_type: "Accessories", vendor: "QIDI US Store", published_at: "2026-11-01T00:00:00Z" },
+      { title: "Other Printer", handle: "other-printer", product_type: "Printer", vendor: "Other", published_at: "2026-11-01T00:00:00Z" },
+    ] }, officialPrinterFeeds[3])).toEqual([
+      { manufacturer: "QIDI Tech", title: "QIDI Max4 3D Printer", productType: "3D Printer", sourceUrl: "https://us.qidi3d.com/products/max4" },
+      { manufacturer: "QIDI Tech", title: "MakeBuddy Smart5", productType: "3D Printer", sourceUrl: "https://us.qidi3d.com/products/smart5" },
+    ]);
+  });
+
+  it("does not queue QIDI printers whose models already exist under a different source URL", () => {
+    expect(getUnknownPrinterCandidates({ products: [
+      { title: "QIDI Max4 3D Printer", handle: "max4", product_type: "Printer", vendor: "QIDI US Store", published_at: "2026-11-01T00:00:00Z" },
+      { title: "MakeBuddy Smart5", handle: "smart5", product_type: "Printer", vendor: "QIDI US Store", published_at: "2026-11-01T00:00:00Z" },
+    ] }, [], officialPrinterFeeds[3], [{ manufacturer: "QIDI Tech", model: "Max4" }]).map(({ title }) => title)).toEqual(["MakeBuddy Smart5"]);
+  });
 });

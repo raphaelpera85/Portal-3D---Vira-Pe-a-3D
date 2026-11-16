@@ -50,7 +50,7 @@ describe("scheduled catalog model discovery", () => {
     }], { onConflict: "source_url", ignoreDuplicates: true });
   });
 
-  it("queues models from the official ELEGOO and Creality collections", async () => {
+  it("queues models from the official ELEGOO, Creality and QIDI collections", async () => {
     const payloads: Record<string, unknown> = {
       "store.anycubic.com": { products: [] },
       "us.elegoo.com": { products: [
@@ -59,6 +59,10 @@ describe("scheduled catalog model discovery", () => {
       ] },
       "us.store.creality.com": { products: [
         { title: "K2 SE 4C 3D Printer", handle: "k2-se-4c-3d-printer", product_type: "Bundles", vendor: "Creality Official Store", published_at: "2026-11-01T00:00:00Z" },
+      ] },
+      "us.qidi3d.com": { products: [
+        { title: "QIDI Max4 3D Printer", handle: "max4", product_type: "Printer", vendor: "QIDI US Store", published_at: "2026-11-01T00:00:00Z" },
+        { title: "MakeBuddy Smart5", handle: "smart5", product_type: "Printer", vendor: "QIDI US Store", published_at: "2026-11-01T00:00:00Z" },
       ] },
     };
     const fetchMock = vi.fn(async (input: URL | RequestInfo) => {
@@ -69,13 +73,16 @@ describe("scheduled catalog model discovery", () => {
 
     const result = await runCatalogModelDiscovery();
 
-    expect(result).toEqual({ ok: true, checked: 2, candidates: 2, sourceFailures: 0, storageFailures: 0 });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result).toEqual({ ok: true, checked: 4, candidates: 4, sourceFailures: 0, storageFailures: 0 });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(upsert).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({ manufacturer: "ELEGOO", product_title: "Neptune 4 Plus" }),
     ]), { onConflict: "source_url", ignoreDuplicates: true });
     expect(upsert).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({ manufacturer: "Creality", product_title: "K2 SE 4C 3D Printer" }),
+    ]), { onConflict: "source_url", ignoreDuplicates: true });
+    expect(upsert).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({ manufacturer: "QIDI Tech", product_title: "MakeBuddy Smart5" }),
     ]), { onConflict: "source_url", ignoreDuplicates: true });
   });
 
@@ -85,16 +92,18 @@ describe("scheduled catalog model discovery", () => {
       if (host === "store.anycubic.com") throw new Error("feed timeout");
       const product = host === "us.elegoo.com"
         ? { title: "Neptune 4 Plus", handle: "neptune-4-plus", product_type: "FDM 3D Printers", vendor: "ELEGOO", published_at: "2026-11-01T00:00:00Z" }
-        : { title: "K2 SE 4C 3D Printer", handle: "k2-se-4c-3d-printer", product_type: "Bundles", vendor: "Creality Official Store", published_at: "2026-11-01T00:00:00Z" };
+        : host === "us.store.creality.com"
+          ? { title: "K2 SE 4C 3D Printer", handle: "k2-se-4c-3d-printer", product_type: "Bundles", vendor: "Creality Official Store", published_at: "2026-11-01T00:00:00Z" }
+          : { title: "MakeBuddy Smart5", handle: "smart5", product_type: "Printer", vendor: "QIDI US Store", published_at: "2026-11-01T00:00:00Z" };
       return new Response(JSON.stringify({ products: [product] }), { headers: { "content-type": "application/json" } });
     });
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await runCatalogModelDiscovery();
 
-    expect(result).toEqual({ ok: false, checked: 2, candidates: 2, sourceFailures: 1, storageFailures: 0 });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(upsert).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ ok: false, checked: 3, candidates: 3, sourceFailures: 1, storageFailures: 0 });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(upsert).toHaveBeenCalledTimes(3);
   });
 
   it("continues to later pages until the final partial page", async () => {
@@ -115,7 +124,7 @@ describe("scheduled catalog model discovery", () => {
 
     const result = await runCatalogModelDiscovery();
 
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock.mock.calls.filter(([input]) => new URL(String(input)).host === "store.anycubic.com")).toHaveLength(2);
     expect(String(fetchMock.mock.calls[0][0])).toContain("page=1");
     expect(String(fetchMock.mock.calls[1][0])).toContain(`page=${firstRotatingPage}`);
     expect(result).toEqual({ ok: true, checked: 2, candidates: 1, sourceFailures: 0, storageFailures: 0 });
@@ -186,5 +195,30 @@ describe("scheduled catalog model discovery", () => {
 
     expect(result).toEqual({ ok: true, skipped: "migration-required", checked: 0, candidates: 0, sourceFailures: 0, storageFailures: 0 });
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("skips cleanly when the QIDI source URL check still needs its migration", async () => {
+    upsert.mockImplementation(async (candidates: { manufacturer: string }[]) => candidates[0]?.manufacturer === "QIDI Tech"
+      ? { error: { code: "23514" } }
+      : { error: null });
+    vi.stubGlobal("fetch", vi.fn(async (input: URL | RequestInfo) => new Response(JSON.stringify({ products: new URL(String(input)).host === "us.qidi3d.com" ? [
+      { title: "MakeBuddy Smart5", handle: "smart5", product_type: "Printer", vendor: "QIDI US Store", published_at: "2026-11-01T00:00:00Z" },
+    ] : [] }), { headers: { "content-type": "application/json" } })));
+
+    const result = await runCatalogModelDiscovery();
+
+    expect(result).toEqual({ ok: true, skipped: "migration-required", checked: 1, candidates: 1, sourceFailures: 0, storageFailures: 0 });
+    expect(cursorUpsert).not.toHaveBeenCalledWith({ manufacturer: "QIDI Tech", next_page: 2 }, { onConflict: "manufacturer" });
+  });
+
+  it("skips cleanly when the QIDI cursor check still needs its migration", async () => {
+    cursorUpsert.mockImplementation(async ({ manufacturer }: { manufacturer: string }) => manufacturer === "QIDI Tech"
+      ? { error: { code: "23514" } }
+      : { error: null });
+
+    const result = await runCatalogModelDiscovery();
+
+    expect(result).toEqual({ ok: true, skipped: "migration-required", checked: 2, candidates: 1, sourceFailures: 0, storageFailures: 0 });
+    expect(cursorUpsert).toHaveBeenCalledWith({ manufacturer: "QIDI Tech", next_page: 2 }, { onConflict: "manufacturer" });
   });
 });

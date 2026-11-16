@@ -14,9 +14,10 @@ export async function runCatalogModelDiscovery() {
   if (!supabase) return { ok: false, checked: 0, candidates: 0, sourceFailures: 0, storageFailures: 1 };
 
   try {
-    const known = await fetchAllCatalogRows(async (from, to) => await supabase.from("printer_models").select("source_url").order("id").range(from, to));
+    const known = await fetchAllCatalogRows(async (from, to) => await supabase.from("printer_models").select("source_url,manufacturer,model").order("id").range(from, to));
     if (known.error) return { ok: false, checked: 0, candidates: 0, sourceFailures: 0, storageFailures: 1 };
     const knownSourceUrls = (known.data ?? []).map((row) => row.source_url).filter((url): url is string => typeof url === "string");
+    const knownModels = (known.data ?? []).filter((row) => typeof row.manufacturer === "string" && typeof row.model === "string");
     let checked = 0;
     let candidateCount = 0;
     let sourceFailures = 0;
@@ -61,7 +62,7 @@ export async function runCatalogModelDiscovery() {
           }
           const products = (payload as { products: unknown[] }).products;
           checked += parseOfficialPrinterFeed(payload, feed).length;
-          const candidates = getUnknownPrinterCandidates(payload, knownSourceUrls, feed);
+          const candidates = getUnknownPrinterCandidates(payload, knownSourceUrls, feed, knownModels);
           if (candidates.length) {
             const { error } = await supabase.from("catalog_discovery_candidates").upsert(candidates.map((candidate) => ({
               manufacturer: candidate.manufacturer,
@@ -70,6 +71,9 @@ export async function runCatalogModelDiscovery() {
               source_url: candidate.sourceUrl,
             })), { onConflict: "source_url", ignoreDuplicates: true });
             if (error?.code === "PGRST205" || error?.code === "42P01") {
+              return { ok: true, skipped: "migration-required", checked, candidates: candidateCount + candidates.length, sourceFailures, storageFailures };
+            }
+            if (feed.manufacturer === "QIDI Tech" && error?.code === "23514") {
               return { ok: true, skipped: "migration-required", checked, candidates: candidateCount + candidates.length, sourceFailures, storageFailures };
             }
             if (error) {
@@ -94,6 +98,9 @@ export async function runCatalogModelDiscovery() {
         const nextPage = reachedEnd || startPage + rotatingFeedPages > lastFeedPage ? 2 : startPage + rotatingFeedPages;
         const { error } = await supabase.from("catalog_discovery_cursors").upsert({ manufacturer: feed.manufacturer, next_page: nextPage }, { onConflict: "manufacturer" });
         if (error?.code === "PGRST205" || error?.code === "42P01") {
+          return { ok: true, skipped: "migration-required", checked, candidates: candidateCount, sourceFailures, storageFailures };
+        }
+        if (feed.manufacturer === "QIDI Tech" && error?.code === "23514") {
           return { ok: true, skipped: "migration-required", checked, candidates: candidateCount, sourceFailures, storageFailures };
         }
         if (error) storageFailures += 1;

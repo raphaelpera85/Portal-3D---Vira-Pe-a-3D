@@ -1,4 +1,4 @@
-export type DiscoveredPrinterCandidate = { manufacturer: "Anycubic" | "ELEGOO" | "Creality"; title: string; productType: string; sourceUrl: string };
+export type DiscoveredPrinterCandidate = { manufacturer: "Anycubic" | "ELEGOO" | "Creality" | "QIDI Tech"; title: string; productType: string; sourceUrl: string };
 
 export type OfficialPrinterFeed = {
   manufacturer: DiscoveredPrinterCandidate["manufacturer"];
@@ -6,6 +6,7 @@ export type OfficialPrinterFeed = {
   host: string;
   acceptedVendors: readonly string[];
   collectionScoped: boolean;
+  collectionProductTypes?: readonly string[];
 };
 
 export const officialPrinterFeeds: readonly OfficialPrinterFeed[] = [
@@ -30,6 +31,14 @@ export const officialPrinterFeeds: readonly OfficialPrinterFeed[] = [
     acceptedVendors: ["creality", "creality official store", "creality usa"],
     collectionScoped: true,
   },
+  {
+    manufacturer: "QIDI Tech",
+    url: "https://us.qidi3d.com/collections/3d-printers/products.json?limit=250",
+    host: "us.qidi3d.com",
+    acceptedVendors: ["qidi us store", "qidi tech"],
+    collectionScoped: true,
+    collectionProductTypes: ["Printer"],
+  },
 ];
 
 const printerProductTypes = new Set(["FDM 3D Printer", "FDM 3D Printers", "LCD 3D Printer", "LCD 3D Printers"]);
@@ -46,7 +55,7 @@ export function parseOfficialPrinterFeed(payload: unknown, feed: OfficialPrinter
     const title = product.title.trim();
     const productType = typeof product.product_type === "string" ? product.product_type : "";
     if (feed.collectionScoped) {
-      if (!/\b3d printer\b/i.test(title) || /^\[.*?flash sale.*?\]/i.test(title)) return [];
+      if ((!/\b3d printer\b/i.test(title) && !feed.collectionProductTypes?.includes(productType)) || /^\[.*?flash sale.*?\]/i.test(title)) return [];
     } else if (!printerProductTypes.has(productType)) return [];
     if (feed.manufacturer === "ELEGOO" && /\b(bundle|frequently bought together|all-in-one)\b|with mercury/i.test(title)) return [];
     return [{
@@ -62,7 +71,12 @@ export function parseAnycubicPrinterFeed(payload: unknown) {
   return parseOfficialPrinterFeed(payload, officialPrinterFeeds[0]);
 }
 
-export function getUnknownPrinterCandidates(payload: unknown, knownSourceUrls: string[], feed: OfficialPrinterFeed = officialPrinterFeeds[0]) {
+export function getUnknownPrinterCandidates(
+  payload: unknown,
+  knownSourceUrls: string[],
+  feed: OfficialPrinterFeed = officialPrinterFeeds[0],
+  knownModels: { manufacturer: string; model: string }[] = [],
+) {
   const sourceKey = (value: string) => {
     try {
       const url = new URL(value);
@@ -71,7 +85,14 @@ export function getUnknownPrinterCandidates(payload: unknown, knownSourceUrls: s
     } catch { return null; }
   };
   const known = new Set(knownSourceUrls.map(sourceKey).filter((value): value is string => value !== null));
-  return parseOfficialPrinterFeed(payload, feed).filter((candidate) => !known.has(sourceKey(candidate.sourceUrl)!));
+  return parseOfficialPrinterFeed(payload, feed).filter((candidate) => {
+    const brand = candidate.manufacturer.split(/\s+/)[0];
+    const titleModel = candidate.title.replace(new RegExp(`^${brand}\\s+`, "i"), "").replace(/\s+3d printers?$/i, "").trim().toLocaleLowerCase("en-US");
+    return !known.has(sourceKey(candidate.sourceUrl)!) && !knownModels.some((knownModel) =>
+      knownModel.manufacturer.toLocaleLowerCase("en-US") === candidate.manufacturer.toLocaleLowerCase("en-US")
+      && knownModel.model.trim().toLocaleLowerCase("en-US") === titleModel,
+    );
+  });
 }
 
 export async function readLimitedResponseText(response: Response, maximumBytes: number) {
