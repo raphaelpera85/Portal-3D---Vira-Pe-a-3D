@@ -26,7 +26,7 @@ test("primary mobile controls meet the 44px touch target minimum", async ({ page
   await page.setViewportSize({ width: 390, height: 844 });
 
   for (const [path, selectors] of [
-    ["/modelos", [".header-cart", ".icon-button.theme-button", ".icon-button.menu-button", ".model-gallery-controls .category-chip"]],
+    ["/modelos", [".header-cart", ".icon-button.theme-button", ".icon-button.menu-button", ".model-gallery-controls .category-chip", ".catalog-model-search .catalog-image-file", ".catalog-model-search > button"]],
     ["/visualizador", [".viewer-back-link", ".viewer-icon-button", ".viewer-view-button"]],
   ] as const) {
     await page.goto(path);
