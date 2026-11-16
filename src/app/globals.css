@@ -950,6 +950,10 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .digital-license-options > label { grid-template-columns: 18px minmax(0, 1fr); }
   .digital-license-options b { grid-column: 2; }
   .digital-report-card { grid-template-columns: 1fr; }
+  .creator-model-file-selection .button, .quote-actions .button, .quote-cancel-form .button,
+  .maker-notification-actions .button, .quote-delivery-status .button,
+  .consignment-create-form > .button, .consignment-movement-form .button,
+  .maker-product-list .button, .admin-review-card .button { min-height: 44px; }
 }
 .catalog-disclaimer { margin: 28px 0 0; color: var(--muted); font-size: 10px; }
 .empty-state { grid-column: 1 / -1; padding: 50px 0; color: var(--muted); text-align: center; }
@@ -1535,7 +1539,12 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .header-actions { gap: 8px; }
   .header-login { display: none; }
   .header-maker { display: none; }
-  .icon-button { width: 35px; height: 35px; }
+  .icon-button { width: 44px; height: 44px; }
+  .header-cart { min-width: 44px; min-height: 44px; }
+  .catalog-controls .category-chip, .model-gallery-controls .category-chip { min-height: 44px; }
+  .viewer-back-link { min-height: 44px; }
+  .viewer-icon-button { width: 44px; height: 44px; }
+  .viewer-view-button { min-height: 44px; }
   .menu-button { display: grid; }
   .viewer-page { width: 100%; overflow-x: clip; }
   .viewer-page .shell, .viewer-shell, .viewer-layout, .viewer-stage-wrap, .viewer-inspector { min-width: 0; max-width: 100%; }
