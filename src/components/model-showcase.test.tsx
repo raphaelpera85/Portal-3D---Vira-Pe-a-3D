@@ -30,6 +30,7 @@ describe("ModelShowcase", () => {
     const markup = renderToStaticMarkup(<ModelShowcase models={[]} query="" category="" page={1} pages={1} />);
 
     expect(markup).toContain('for="model-gallery-search">Buscar modelos por nome, tag ou imagem</label>');
+    expect(markup).toContain('placeholder="Nome, tag ou imagem"');
     expect(markup).toContain('type="file" accept="image/png,image/jpeg,image/webp"');
     expect(markup).toContain('title="Buscar modelos por imagem"');
     expect(markup).not.toContain("Comparar com prévias");
