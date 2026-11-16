@@ -27,9 +27,12 @@ test("skip link restores focus when streamed main content becomes visible", asyn
 test("mobile navigation opens the model catalog and a model detail", async ({ page }) => {
   await page.setViewportSize({ width: 400, height: 608 });
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Fabricantes recomendados" })).toBeVisible();
-  if (await page.locator(".featured-store-empty").isVisible()) {
-    await expect(page.getByRole("link", { name: "Ver todas as lojas" })).toHaveCount(0);
+  const featuredStores = page.locator(".featured-stores");
+  if (await featuredStores.isVisible()) {
+    await expect(page.getByRole("heading", { name: "Fabricantes recomendados" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver todas as lojas" })).toBeVisible();
+  } else {
+    await expect(page.getByRole("heading", { name: "Fabricantes recomendados" })).toHaveCount(0);
   }
   const menuButton = page.locator(".menu-button");
   await expect(menuButton).toHaveAttribute("aria-controls", "primary-navigation");
