@@ -28,6 +28,9 @@ test("mobile navigation opens the model catalog and a model detail", async ({ pa
   await page.setViewportSize({ width: 400, height: 608 });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Fabricantes recomendados" })).toBeVisible();
+  if (await page.locator(".featured-store-empty").isVisible()) {
+    await expect(page.getByRole("link", { name: "Ver todas as lojas" })).toHaveCount(0);
+  }
   const menuButton = page.locator(".menu-button");
   await expect(menuButton).toHaveAttribute("aria-controls", "primary-navigation");
   await menuButton.click();
