@@ -9,6 +9,8 @@ export function SiteHeader() {
   const [dark, setDark] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [canUseCreatorTools, setCanUseCreatorTools] = useState(false);
+  const [canManageStore, setCanManageStore] = useState(false);
+  const [canManagePlatform, setCanManagePlatform] = useState(false);
   const firstMenuLinkRef = useRef<HTMLAnchorElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -28,11 +30,18 @@ export function SiteHeader() {
       const currentRequestId = ++requestId;
       if (!userId) {
         setCanUseCreatorTools(false);
+        setCanManageStore(false);
+        setCanManagePlatform(false);
         return;
       }
       const { data, error } = await supabase.from("user_roles").select("role")
-        .eq("user_id", userId).in("role", ["maker", "designer"]);
-      if (currentRequestId === requestId) setCanUseCreatorTools(!error && Boolean(data?.length));
+        .eq("user_id", userId).in("role", ["maker", "designer", "admin"]);
+      if (currentRequestId === requestId) {
+        const roles = new Set((data ?? []).map(({ role }) => role));
+        setCanUseCreatorTools(!error && roles.size > 0);
+        setCanManageStore(!error && roles.has("maker"));
+        setCanManagePlatform(!error && roles.has("admin"));
+      }
     };
 
     void supabase.auth.getUser().then(({ data }) => syncCreatorRole(data.user?.id ?? null)).catch(() => syncCreatorRole(null));
@@ -83,11 +92,14 @@ export function SiteHeader() {
           <Link ref={firstMenuLinkRef} href="/#produtos" onClick={closeMenu}>Explorar</Link>
           <Link href="/modelos" onClick={closeMenu}>Modelos 3D</Link>
           <Link href="/visualizador" onClick={closeMenu}>Visualizador 3D</Link>
-          {canUseCreatorTools && <Link href="/catalogos" onClick={closeMenu}>Catálogos</Link>}
+          {canUseCreatorTools && <Link href="/catalogos" onClick={closeMenu}>Impressoras</Link>}
+          {canUseCreatorTools && <Link href="/calculadora" onClick={closeMenu}>Calculadora</Link>}
+          {canManageStore && <Link href="/painel/maker" onClick={closeMenu}>Painel da loja</Link>}
+          {canManagePlatform && <Link href="/admin" onClick={closeMenu}>Administração</Link>}
+          {canManagePlatform && <Link href="/admin/integracoes" onClick={closeMenu}>Integrações</Link>}
           <Link href="/lojas" onClick={closeMenu}>Lojas</Link>
           <Link href="/designers" onClick={closeMenu}>Designers</Link>
           <Link href="/favoritos" onClick={closeMenu}>Favoritos</Link>
-          {canUseCreatorTools && <Link href="/calculadora" onClick={closeMenu}>Calculadora</Link>}
           <Link href="/#como-funciona" onClick={closeMenu}>Como funciona</Link>
           <Link href="/#fabricantes" onClick={closeMenu}>Para makers</Link>
         </nav>

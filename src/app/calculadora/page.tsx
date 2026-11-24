@@ -22,12 +22,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function CalculatorPage({ searchParams }: { searchParams: Promise<{ produto?: string | string[] }> }) {
-  const actor = await getUserWithRole(["maker", "designer"]);
+  const actor = await getUserWithRole(["maker", "designer", "admin"]);
   if (!actor.user) redirect("/conta");
   if (!actor.authorized) redirect("/conta?acesso=calculadora");
 
   const [{ produto }, catalog] = await Promise.all([searchParams, loadTechnicalCatalog()]);
-  const canUseOcr = Boolean(actor.supabase && actor.user && actor.roles.some((role) => role === "maker" || role === "designer"));
+  const canUseOcr = Boolean(actor.supabase && actor.user && actor.roles.length > 0);
   const ocrConfigured = Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY);
   let equipment: Array<{ id: string; label: string; purchasePriceBrl: number | string | null; residualValueBrl: number | string | null; usefulLifeHours: number | string | null; averagePowerWatts: number | string | null; energyTariffPerKwh: number | string | null; maintenanceCostBrl: number | null; accumulatedHours: number | string; catalogPrinterId: string | null }> = [];
   let products: CalculatorProduct[] = [];

@@ -232,6 +232,15 @@ export default async function MakerDashboard({ searchParams }: { searchParams: P
       <main id="main-content" tabIndex={-1} className="maker-dashboard shell">
         <Link className="viewer-back-link" href="/conta">← Voltar à conta</Link>
         <div className="account-heading maker-dashboard-heading"><p className="eyebrow">ÁREA DO FABRICANTE</p><h1>{store?.name ?? "Sua loja"}</h1><p>Cadastre rascunhos e acompanhe a análise de publicação.</p></div>
+        {store && <nav className="account-links maker-quick-nav" aria-label="Atalhos do painel da loja">
+          <Link className="button button-secondary" href="/catalogos">Catálogo de impressoras</Link>
+          <Link className="button button-secondary" href="/calculadora">Calculadora de preços</Link>
+          <Link className="button button-secondary" href="#equipamentos">Minhas impressoras</Link>
+          <Link className="button button-secondary" href="#perfis">Perfis de impressão</Link>
+          <Link className="button button-secondary" href="#pagamentos">Mercado Pago</Link>
+          <Link className="button button-secondary" href="#frete">Melhor Envio</Link>
+          <Link className="button button-secondary" href="#loja">Dados da loja</Link>
+        </nav>}
         {shippingLabelLoadError && <p className="auth-notice is-error" role="alert">Não foi possível confirmar o estado das etiquetas Melhor Envio. Atualize o painel antes de criar etiquetas ou marcar pedidos como enviados.</p>}
         {store && <p className="maker-finance-link"><Link className="button button-secondary" href="/painel/maker/financeiro">Abrir financeiro e pagamentos →</Link></p>}
         {store && <p className="maker-finance-link"><Link className="button button-secondary" href="/painel/maker/relatorios">Ver relatórios da loja →</Link></p>}

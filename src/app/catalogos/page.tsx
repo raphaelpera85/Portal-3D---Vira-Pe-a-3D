@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function CatalogPage() {
-  const actor = await getUserWithRole(["maker", "designer"]);
+  const actor = await getUserWithRole(["maker", "designer", "admin"]);
   if (!actor.user || !actor.authorized) redirect("/conta");
 
   const catalog = await loadTechnicalCatalog();
