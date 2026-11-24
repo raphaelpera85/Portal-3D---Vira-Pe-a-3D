@@ -51,13 +51,18 @@ export function TechnicalCatalog(props: TechnicalCatalogProps) {
 }
 
 function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatalogProps) {
-  const [printerId, setPrinterId] = useState(printers[0].id);
-  const [materialId, setMaterialId] = useState(materials.find((item) => item.process === processForPrinter(printers[0]))?.id ?? materials[0].id);
+  const initialPrinter = printers.find((item) => item.technology === "FDM") ?? printers[0];
+  const [printerId, setPrinterId] = useState(initialPrinter.id);
+  const [materialId, setMaterialId] = useState(materials.find((item) => item.process === processForPrinter(initialPrinter))?.id ?? materials[0].id);
   const [nozzleId, setNozzleId] = useState(nozzles.find((item) => item.original)?.id ?? nozzles[0]?.id ?? "");
   const [dimensions, setDimensions] = useState({ x: "", y: "", z: "" });
   const [useMulticolor, setUseMulticolor] = useState(false);
   const [volumeModeId, setVolumeModeId] = useState("");
   const printer = printers.find((item) => item.id === printerId) ?? printers[0];
+  const printerSort = (a: PrinterEntry, b: PrinterEntry) => `${a.brand} ${a.model} ${a.variant}`.localeCompare(`${b.brand} ${b.model} ${b.variant}`, "pt-BR");
+  const fdmPrinters = printers.filter((item) => item.technology === "FDM").sort(printerSort);
+  const resinPrinters = printers.filter((item) => item.technology !== "FDM").sort(printerSort);
+  const availableMaterials = materials.filter((item) => item.process === processForPrinter(printer));
   const printerProperties = printer.technicalProperties ?? {};
   const volumeModes = getBuildVolumeModes(printerProperties);
   const selectedVolumeMode = volumeModes.find((mode) => mode.id === volumeModeId) ?? volumeModes[0];
@@ -83,7 +88,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
   const specificationNotes = Array.isArray(printerProperties.manufacturerSpecificationNotes)
     ? printerProperties.manufacturerSpecificationNotes.filter((value): value is string => typeof value === "string") : [];
   const multicolorSystem = printer.multicolorSystem ?? (typeof printer.technicalProperties?.multicolorUpgradeDescription === "string" ? printer.technicalProperties.multicolorUpgradeDescription : null);
-  const material = materials.find((item) => item.id === materialId) ?? materials[0];
+  const material = availableMaterials.find((item) => item.id === materialId) ?? availableMaterials[0] ?? materials[0];
   const resinProperties = material.technicalProperties ?? {};
   const washingMethods = Array.isArray(resinProperties.washingMethods) ? resinProperties.washingMethods.filter((value): value is string => typeof value === "string") : [];
   const washingDurationMin = typeof resinProperties.washingDurationMinutes === "object" && resinProperties.washingDurationMinutes !== null
@@ -143,7 +148,12 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
                   setMaterialId(materials.find((item) => item.process === processForPrinter(nextPrinter))?.id ?? materialId);
                 }
               }}>
-                {printers.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.model} · {item.variant}</option>)}
+                <optgroup label={`FDM · ${fdmPrinters.length} opções`}>
+                  {fdmPrinters.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.model} · {item.variant}</option>)}
+                </optgroup>
+                <optgroup label={`Impressoras de resina · ${resinPrinters.length} opções`}>
+                  {resinPrinters.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.model} · {item.variant}</option>)}
+                </optgroup>
               </select>
             </label>
             <dl className="technical-facts">
@@ -180,7 +190,7 @@ function CatalogContent({ printers, materials, nozzles, notice }: TechnicalCatal
             <div className="technical-panel-heading"><span className="technical-panel-icon is-green"><FlaskConical size={17} /></span><div><p>02 / MATERIAL</p><h2>Produto e condições de impressão</h2></div></div>
             <label className="technical-select">Marca e material
               <select value={materialId} onChange={(event) => setMaterialId(event.target.value)}>
-                {materials.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name}</option>)}
+                {availableMaterials.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name}</option>)}
               </select>
             </label>
             <div className="material-summary">

@@ -8,7 +8,7 @@ import { calculatePrintPrice, laborActivityFields, laborActivityLabels, MAX_BATC
 import { exportPrintCalculationCsv } from "@/lib/pricing-export";
 import { deriveEquipmentRates, type EquipmentRateInput } from "@/lib/printer-equipment";
 import { evaluateMaterialCompatibility, type CatalogPrinter } from "@/lib/compatibility";
-import type { MaterialEntry, NozzleEntry } from "@/lib/technical-catalog";
+import type { MaterialEntry, NozzleEntry, PrinterEntry } from "@/lib/technical-catalog";
 import { applyCalculatedProductPrice, deleteMakerCalculation, saveMakerCalculation } from "@/app/calculadora/actions";
 import { createMakerConsignmentItem } from "@/app/painel/maker/actions";
 import { MAX_CONSIGNMENT_QUANTITY } from "@/lib/consignment";
@@ -58,29 +58,29 @@ const materialLabel = (material?: CalculatorMaterial) => material ? `${material.
 const compatibilityText = { compatible: "Compatível", conditional: "Compatível com condições", incompatible: "Incompatível", unverified: "Não verificado" };
 const metric = (value: number | null, suffix: string) => value == null ? "—" : `${value.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ${suffix}`;
 
-function MaterialCompatibilityNote({ equipmentId, materialName, equipment, materials, nozzles, nozzleId, onNozzleChange }: {
-  equipmentId: string; materialName: string; equipment: CalculatorEquipment[]; materials: CalculatorMaterial[]; nozzles: NozzleEntry[];
+function MaterialCompatibilityNote({ equipmentId, catalogPrinter, materialName, equipment, materials, nozzles, nozzleId, onNozzleChange }: {
+  equipmentId: string; catalogPrinter?: CalculatorEquipment["catalogPrinter"]; materialName: string; equipment: CalculatorEquipment[]; materials: CalculatorMaterial[]; nozzles: NozzleEntry[];
   nozzleId: string; onNozzleChange: (id: string) => void;
 }) {
-  if (!equipmentId) return null;
   const selectedEquipment = equipment.find((item) => item.id === equipmentId);
-  if (!selectedEquipment) return null;
+  const printer = selectedEquipment?.catalogPrinter ?? catalogPrinter;
+  if (!selectedEquipment && !printer) return null;
   const material = materials.find((item) => materialLabel(item) === materialName);
   const nozzle = nozzles.find((item) => item.id === nozzleId) ?? null;
-  const evaluation = selectedEquipment.catalogPrinter && material
-    ? evaluateMaterialCompatibility(selectedEquipment.catalogPrinter, material, nozzle ?? undefined)
+  const evaluation = printer && material
+    ? evaluateMaterialCompatibility(printer, material, nozzle ?? undefined)
     : null;
   const status = evaluation?.status ?? "unverified";
   const message = !material
     ? "Selecione um material do catálogo para conferir os dados técnicos; materiais informados manualmente não são verificados."
-    : !selectedEquipment.catalogPrinter
+    : !printer
       ? "Este equipamento não está vinculado a um modelo publicado no catálogo."
       : null;
   const nozzleHint = !material
     ? "Selecione um material do catálogo para verificar compatibilidade."
     : material.process !== "filament"
       ? "A verificação de bico não se aplica a impressoras de resina."
-      : !selectedEquipment.catalogPrinter
+      : !printer
         ? "Vincule este equipamento a um modelo publicado para verificar o bico."
         : nozzles.length === 0
           ? "O catálogo não tem bicos publicados para esta checagem."
@@ -90,7 +90,7 @@ function MaterialCompatibilityNote({ equipmentId, materialName, equipment, mater
 
   return <div className={`calculator-compatibility is-${status}`} role="status">
     <strong>Material e impressora: {compatibilityText[status]}</strong>
-    {material?.process === "filament" && selectedEquipment.catalogPrinter && nozzles.length > 0 && <label>Bico para esta checagem<select value={nozzleId} onChange={(event) => onNozzleChange(event.target.value)}><option value="">Sem bico selecionado</option>{nozzles.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name} · {item.diameterMm} mm</option>)}</select></label>}
+    {material?.process === "filament" && printer && nozzles.length > 0 && <label>Bico para esta checagem<select value={nozzleId} onChange={(event) => onNozzleChange(event.target.value)}><option value="">Sem bico selecionado</option>{nozzles.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name} · {item.diameterMm} mm</option>)}</select></label>}
     <small>{nozzleHint}</small>
     {message ? <p>{message}</p> : <ul>{evaluation?.checks.map((check) => <li key={check.key}>{check.label}: {check.detail}</li>)}</ul>}
   </div>;
@@ -109,13 +109,17 @@ function CostField({ label, suffix, hint, value, onChange, step = "any", min = 0
   );
 }
 
-export function PriceCalculator({ equipment = [], products = [], profiles = [], materials = [], nozzles = [], materialNotice = null, equipmentNotice = null, productNotice = null, profileNotice = null, canSaveCalculations = false, canUseOcr = false, ocrConfigured = false, savedCalculations = [], savedCalculationsError = false, storeId = null, sourceAttachmentsError = false, initialProductId = "", initialPriceTargetId = "" }: {
+export function PriceCalculator({ equipment = [], printers = [], products = [], profiles = [], materials = [], nozzles = [], materialNotice = null, equipmentNotice = null, productNotice = null, profileNotice = null, canSaveCalculations = false, canUseOcr = false, ocrConfigured = false, savedCalculations = [], savedCalculationsError = false, storeId = null, sourceAttachmentsError = false, initialProductId = "", initialPriceTargetId = "" }: {
   equipment?: CalculatorEquipment[]; equipmentNotice?: string | null; canSaveCalculations?: boolean; canUseOcr?: boolean; ocrConfigured?: boolean;
+  printers?: PrinterEntry[];
   products?: CalculatorProduct[]; productNotice?: string | null; profiles?: CalculatorProfile[]; profileNotice?: string | null;
   materials?: CalculatorMaterial[]; nozzles?: NozzleEntry[]; materialNotice?: string | null;
   savedCalculations?: SavedCalculation[]; savedCalculationsError?: boolean; storeId?: string | null; sourceAttachmentsError?: boolean;
   initialProductId?: string; initialPriceTargetId?: string;
 }) {
+  const printerSort = (a: PrinterEntry, b: PrinterEntry) => `${a.brand} ${a.model} ${a.variant}`.localeCompare(`${b.brand} ${b.model} ${b.variant}`, "pt-BR");
+  const fdmPrinters = printers.filter((item) => item.technology === "FDM").sort(printerSort);
+  const resinPrinters = printers.filter((item) => item.technology !== "FDM").sort(printerSort);
   const [fields, setFields] = useState(initialFields);
   const [extras, setExtras] = useState<ExtraField[]>([]);
   const [productionComponents, setProductionComponents] = useState<ProductionComponentFields[]>([]);
@@ -123,6 +127,7 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
   const [pricingMode, setPricingMode] = useState<"margin" | "markup">("margin");
   const [calculationTitle, setCalculationTitle] = useState("");
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
+  const [selectedCatalogPrinterId, setSelectedCatalogPrinterId] = useState("");
   const [selectedNozzleId, setSelectedNozzleId] = useState("");
   const [componentNozzleIds, setComponentNozzleIds] = useState<Record<string, string>>({});
   const [selectedProductId, setSelectedProductId] = useState(initialProductId);
@@ -368,12 +373,14 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
     const selected = equipment.find((item) => item.id === id);
     if (!selected) {
       setSelectedEquipmentId("");
+      setSelectedCatalogPrinterId("");
       setSelectedNozzleId("");
       setFields((current) => ({ ...current, maintenancePerHour: "" }));
       return;
     }
     if (selectedEquipmentId !== id) setSelectedNozzleId("");
     setSelectedEquipmentId(id);
+    setSelectedCatalogPrinterId(selected.catalogPrinter?.id ?? "");
     const rates = deriveEquipmentRates(selected);
     setFields((current) => ({
       ...current,
@@ -382,6 +389,11 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
       ...(rates.depreciationPerHour == null ? {} : { depreciationPerHour: String(rates.depreciationPerHour) }),
       maintenancePerHour: rates.maintenancePerHour == null ? "" : String(rates.maintenancePerHour),
     }));
+  }
+
+  function selectCatalogPrinter(id: string) {
+    setSelectedCatalogPrinterId(id);
+    setSelectedNozzleId("");
   }
 
   function applySelectedProfile() {
@@ -538,7 +550,9 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
             <div className="price-fields-grid">
               <CostField label="Peças prontas no lote" suffix="un." step="1" max={MAX_BATCH_QUANTITY} value={fields.batchQuantity} onChange={(value) => updateField("batchQuantity", value)} />
               {materials.length > 0 && <label className="price-field"><span>Material do catálogo técnico</span><select value={materials.find((item) => materialLabel(item) === fields.material)?.id ?? ""} onChange={(event) => updateField("material", materialLabel(materials.find((item) => item.id === event.target.value)))}>
-                <option value="">Selecionar ou informar manualmente</option>{materials.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name} ({item.family}){item.process === "resin" ? " · resina" : " · filamento"}</option>)}
+                <option value="">Selecionar ou informar manualmente</option>
+                <optgroup label="Filamentos para FDM">{materials.filter((item) => item.process === "filament").map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name} ({item.family})</option>)}</optgroup>
+                <optgroup label="Resinas para SLA / MSLA / DLP">{materials.filter((item) => item.process === "resin").map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.name} ({item.family})</option>)}</optgroup>
               </select></label>}
               {materialNotice && <p className="price-field-hint" role="status">Catálogo indisponível. A identificação do material pode ser informada manualmente.</p>}
               <label className="price-field"><span>Filamento ou resina</span><div className="price-input-wrap"><input type="text" maxLength={120} value={fields.material} onChange={(event) => updateField("material", event.target.value)} placeholder="Ex.: PLA, marca e cor" /></div></label>
@@ -566,7 +580,15 @@ export function PriceCalculator({ equipment = [], products = [], profiles = [], 
           <section className="price-card">
             <div className="price-card-heading"><span className="price-step">02</span><div><h2>Máquina e energia</h2><p>Use horas, potência e custos medidos para a execução completa do lote. O tempo da impressora é contado uma vez.</p></div></div>
             {equipment.length > 0 && <label className="equipment-calculator-select">Equipamento cadastrado<select value={selectedEquipmentId} onChange={(event) => selectEquipment(event.target.value)}><option value="">Sem equipamento (manter campos manuais)</option>{equipment.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select><small>Selecionar preenche dados conhecidos; o equipamento fica vinculado ao salvar e os campos continuam editáveis.</small></label>}
-            <MaterialCompatibilityNote equipmentId={selectedEquipmentId} materialName={fields.material} equipment={equipment} materials={materials} nozzles={nozzles} nozzleId={selectedNozzleId} onNozzleChange={setSelectedNozzleId} />
+            {printers.length > 0 && !selectedEquipmentId && <label className="equipment-calculator-select">Modelo da impressora
+              <select value={selectedCatalogPrinterId} onChange={(event) => selectCatalogPrinter(event.target.value)}>
+                <option value="">Selecionar modelo do catálogo</option>
+                <optgroup label={`FDM · ${fdmPrinters.length} opções`}>{fdmPrinters.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.model} · {item.variant}</option>)}</optgroup>
+                <optgroup label={`Impressoras de resina · ${resinPrinters.length} opções`}>{resinPrinters.map((item) => <option key={item.id} value={item.id}>{item.brand} · {item.model} · {item.variant}</option>)}</optgroup>
+              </select>
+              <small>Escolha um modelo para conferir materiais e bicos. Potência, tarifa, depreciação e manutenção continuam manuais. <Link href="/catalogos">Ver especificações</Link></small>
+            </label>}
+            <MaterialCompatibilityNote equipmentId={selectedEquipmentId} catalogPrinter={printers.find((item) => item.id === selectedCatalogPrinterId)} materialName={fields.material} equipment={equipment} materials={materials} nozzles={nozzles} nozzleId={selectedNozzleId} onNozzleChange={setSelectedNozzleId} />
             <div className="price-fields-grid">
               <CostField label="Tempo de impressão" suffix="horas" value={fields.printHours} onChange={(value) => updateField("printHours", value)} />
               <CostField label="Potência média" suffix="W" hint="Use a média medida, não a potência nominal." value={fields.averagePowerWatts} onChange={(value) => updateField("averagePowerWatts", value)} />
