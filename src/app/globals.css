@@ -1681,3 +1681,38 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
 .gradient-waves-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 @media (max-width: 680px) { .hero-wave-layer { inset-inline: -8vw; opacity: .72; } }
 @media (prefers-reduced-motion: reduce) { .hero-wave-layer { background: radial-gradient(ellipse at 72% 45%, color-mix(in srgb, var(--blue-light) 18%, transparent), transparent 66%); } }
+
+/* Shared visual system across marketplace, maker, buyer and admin screens. */
+:root { --radius-control: 8px; --radius-card: 10px; --content-reading-size: 14px; }
+body { font-size: 16px; }
+.site-header { background: var(--paper); backdrop-filter: none; }
+.header-inner { min-height: 72px; }
+.main-nav a, .header-login { font-size: 14px; }
+.icon-button { width: 44px; height: 44px; }
+.header-maker { min-height: 44px; padding-inline: 15px; border-radius: var(--radius-control); font-size: 12px; }
+.main-nav.is-open { top: calc(100% - 1px); z-index: 11; max-height: min(72svh, 600px); overflow-y: auto; border-color: var(--line-strong); box-shadow: 0 14px 30px var(--shadow-wash); animation: nav-open .18s ease-out both; }
+.main-nav a { min-height: 48px; align-content: center; }
+@keyframes nav-open { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+.button { min-height: 48px; border-radius: var(--radius-control); font-size: 13px; transition: transform .16s ease, background-color .16s ease, border-color .16s ease, color .16s ease; }
+.button:active:not(:disabled) { transform: translateY(1px) scale(.985); }
+.button:focus-visible, .icon-button:focus-visible, .viewer-icon-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+button:disabled { cursor: not-allowed; }
+.eyebrow { font-size: 11px; }
+.account-kicker { font-size: 11px; }
+.account-card, .homepage-banner, .model-gallery-card, .favorite-card, .featured-store-card, .store-directory-card, .equipment-card, .admin-overview-card, .admin-review-card, .designer-card, .designer-profile-card, .digital-license-card, .digital-report-card, .price-card, .price-results, .technical-panel, .compatibility-panel, .viewer-layout { border-radius: var(--radius-card); }
+.technical-panel-icon.is-purple { color: var(--brand); }
+
+main :is(.price-note p, .price-card-heading p, .price-field, .price-field-hint, .calculator-compatibility, .calculator-compatibility small, .calculator-compatibility p, .price-history-heading > div > p:last-child, .price-history-locked p, .price-history-empty, .price-save-form label, .calculator-profile-apply label, .technical-panel-heading p, .technical-select, .technical-facts dt, .technical-empty-panel > p, .compatibility-panel p, .compatibility-checks li p, .compatibility-disclaimer, .catalog-source-note, .catalog-next-step a, .viewer-empty p, .viewer-empty > span, .viewer-loading, .viewer-message, .viewer-page-foot, .viewer-empty-inspector, .inspector-description, .unit-note, .scale-note, .viewer-profile-status, .viewer-profile-details, .model-library-note, .model-library-message) { font-size: max(12px, var(--content-reading-size)); }
+main :is(.price-intro-copy, .technical-intro > div:first-child > p:last-child, .account-heading > p:last-child, .hero-description, .viewer-empty p) { line-height: 1.7; }
+.featured-store-card, .store-directory-card, .designer-card, a.admin-overview-card { transition: transform .16s ease, border-color .16s ease, background-color .16s ease; }
+.featured-store-card:hover, .store-directory-card:hover, .designer-card:hover, a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--brand); }
+
+@media (max-width: 650px) {
+  body { font-size: 16px; }
+  .header-inner, .site-header .header-inner { min-height: 68px; }
+  .main-nav { top: calc(100% - 1px); }
+  .main-nav a { min-height: 50px; padding-block: 14px; font-size: 15px; }
+  .button { min-height: 48px; }
+  .account-heading h1, .technical-intro h1, .price-intro h1 { line-height: 1.05; }
+  main :is(.price-note p, .price-card-heading p, .price-field, .price-field-hint, .calculator-compatibility, .calculator-compatibility small, .calculator-compatibility p, .price-history-heading > div > p:last-child, .price-history-locked p, .price-history-empty, .price-save-form label, .calculator-profile-apply label, .technical-panel-heading p, .technical-select, .technical-facts dt, .technical-empty-panel > p, .compatibility-panel p, .compatibility-checks li p, .compatibility-disclaimer, .catalog-source-note, .catalog-next-step a, .viewer-empty p, .viewer-empty > span, .viewer-loading, .viewer-message, .viewer-page-foot, .viewer-empty-inspector, .inspector-description, .unit-note, .scale-note, .viewer-profile-status, .viewer-profile-details, .model-library-note, .model-library-message) { font-size: max(13px, var(--content-reading-size)); }
+}
