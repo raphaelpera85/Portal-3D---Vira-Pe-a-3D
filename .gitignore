@@ -11,4 +11,5 @@ playwright-report/
 *.tsbuildinfo
 next-env.d.ts
 .vercel/
+.agents/skills/
 supabase/.temp/

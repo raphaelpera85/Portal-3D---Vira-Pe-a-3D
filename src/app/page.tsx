@@ -8,6 +8,7 @@ import { getUserWithRole } from "@/lib/auth-role.server";
 import { filterHomepageModelShowcase, modelShowcase } from "@/lib/model-showcase";
 import { FeaturedModelShowcase } from "@/components/model-showcase";
 import { addPublishedCreatorPreviews, loadPublishedCreatorModels } from "@/lib/creator-models.server";
+import GradientWaves from "@/components/GradientWaves";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { ...(getSiteUrl() ? { alternates: { canonical: "/" }, openGraph: { url: "/" } } : {}) };
@@ -92,6 +93,29 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
       }).replace(/</g, "\\u003c") }} />
       <main id="main-content" tabIndex={-1}>
         <section className="hero shell">
+          <div className="hero-wave-layer" aria-hidden="true">
+            <GradientWaves
+              horizonColor="#dbeafe"
+              waveColor="#60a5fa"
+              crestColor="#dcfce7"
+              lightMode
+              speed={0.16}
+              amplitude={1.2}
+              waveScale={0.45}
+              turbulence={7}
+              swell={8}
+              brightness={0.42}
+              opacity={0.38}
+              grain={0}
+              quality="low"
+              intro={false}
+              mouseInteraction={false}
+              parallaxStrength={0}
+              swellOnClick={false}
+              dpr={1}
+              className="hero-wave-canvas"
+            />
+          </div>
           <div className="hero-copy">
             <p className="eyebrow"><span className="eyebrow-dot" /> FEITO PERTO. FEITO DO SEU JEITO.</p>
             <h1>Sua ideia<br /><em>vira realidade.</em></h1>

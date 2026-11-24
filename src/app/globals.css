@@ -1673,3 +1673,11 @@ a.admin-overview-card:hover { transform: translateY(-2px); border-color: var(--b
   .price-print-report > p { margin: 7px 0; }
   .price-print-report tr { break-inside: avoid; }
 }
+
+.hero { position: relative; isolation: isolate; }
+.hero-copy, .hero-art { z-index: 1; }
+.hero-wave-layer { position: absolute; z-index: 0; inset: 0 -3vw; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse at 72% 45%, color-mix(in srgb, var(--blue-light) 25%, transparent), transparent 66%); }
+.gradient-waves-root { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.gradient-waves-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+@media (max-width: 680px) { .hero-wave-layer { inset-inline: -8vw; opacity: .72; } }
+@media (prefers-reduced-motion: reduce) { .hero-wave-layer { background: radial-gradient(ellipse at 72% 45%, color-mix(in srgb, var(--blue-light) 18%, transparent), transparent 66%); } }
